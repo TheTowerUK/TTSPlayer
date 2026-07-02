@@ -1,0 +1,42 @@
+name: ttsplayer
+description: Lightweight local-first home media player.
+version: 0.2.0+1
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Video playback — video_player on mobile; media_kit on Windows desktop
+  video_player: ^2.9.1
+  media_kit: ^1.2.6
+  media_kit_video: ^2.0.1
+  media_kit_libs_windows_video: ^1.0.11
+
+  # State management — lightweight ChangeNotifier wiring
+  provider: ^6.1.2
+
+  # Persist playback positions locally
+  shared_preferences: ^2.3.2
+
+  # HTTP fetching for remote catalog.json (NAS/Caddy endpoint)
+  http: ^1.2.1
+
+  # Local file path resolution
+  path_provider: ^2.1.3
+
+  # File picker — lets users point at local folders / NAS mounts
+  file_picker: ^8.1.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/catalog.json
+    - assets/scan.history.json
