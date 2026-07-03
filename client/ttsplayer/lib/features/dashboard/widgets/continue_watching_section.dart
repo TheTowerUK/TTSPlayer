@@ -28,20 +28,63 @@ class ContinueWatchingSection extends StatelessWidget {
             ),
           )
         else
-          SizedBox(
-            height: 148,
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              scrollDirection: Axis.horizontal,
-              itemCount: entries.length,
-              separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
-              itemBuilder: (context, index) {
-                final entry = entries[index];
-                return _ContinueWatchingCard(entry: entry);
-              },
-            ),
-          ),
+          _ContinueWatchingCarousel(entries: entries),
       ],
+    );
+  }
+}
+
+class _ContinueWatchingCarousel extends StatefulWidget {
+  final List<ContinueWatchingEntry> entries;
+
+  const _ContinueWatchingCarousel({required this.entries});
+
+  @override
+  State<_ContinueWatchingCarousel> createState() =>
+      _ContinueWatchingCarouselState();
+}
+
+class _ContinueWatchingCarouselState extends State<_ContinueWatchingCarousel> {
+  static const _cardHeight = 148.0;
+  static const _scrollbarGutter = 12.0;
+
+  late final ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: _cardHeight + _scrollbarGutter,
+      child: Scrollbar(
+        controller: _scrollController,
+        thumbVisibility: true,
+        notificationPredicate: (notification) =>
+            notification.metrics.axis == Axis.horizontal,
+        child: ListView.separated(
+          controller: _scrollController,
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          scrollDirection: Axis.horizontal,
+          physics: const ClampingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics(),
+          ),
+          itemCount: widget.entries.length,
+          separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
+          itemBuilder: (context, index) {
+            return _ContinueWatchingCard(entry: widget.entries[index]);
+          },
+        ),
+      ),
     );
   }
 }
