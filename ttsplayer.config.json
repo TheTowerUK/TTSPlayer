@@ -1,0 +1,16 @@
+{
+  "catalogueVersion": 1,
+  "cataloguePath": "Y:\\Media\\catalog.json",
+  "historyPath": "Y:\\Media\\scan.history.json",
+  "maxHistoryEntries": 50,
+  "mediaRoots": [
+    {
+      "name": "NAS Media",
+      "path": "Y:\\Media",
+      "uncPath": "\\\\MEDIATNAS-B725\\Media",
+      "type": "smb",
+      "enabled": true,
+      "notes": "SMB share mounted as Y: on Windows. uncPath is used as fallback if the drive letter is unavailable."
+    }
+  ]
+}

@@ -1,0 +1,108 @@
+{
+  "catalogue": {
+    "id": "2026-06-30T19:00:00Z-MOCK01",
+    "scanner_version": "0.3.0",
+    "catalogue_version": 2,
+    "supported_extensions": ["avi", "m4v", "mkv", "mov", "mp4"]
+  },
+  "scan": {
+    "started": "2026-06-30T19:00:00+00:00",
+    "completed": "2026-06-30T19:00:02+00:00",
+    "duration_seconds": 2,
+    "sources": 1,
+    "folders": 3,
+    "items": 5,
+    "warnings": 0
+  },
+  "generated_at": "2026-06-30T19:00:02+00:00",
+  "sources": [
+    {
+      "name": "NAS Media",
+      "root_path": "Y:\\Media",
+      "type": "smb",
+      "accessible": true
+    }
+  ],
+  "total_items": 5,
+  "folders": [
+    {
+      "id": "d3b4c5e6f7a80001",
+      "name": "Videos",
+      "path": "Y:\\Media\\Videos",
+      "item_count": 3,
+      "items": [
+        {
+          "id": "a1b2c3d4e5f60001",
+          "title": "The Grand Adventure",
+          "year": 2023,
+          "duration_seconds": 6840,
+          "file_path": "Y:\\Media\\Videos\\the_grand_adventure.mp4",
+          "thumbnail_path": null,
+          "size_bytes": 4831838208,
+          "status": "available"
+        },
+        {
+          "id": "a1b2c3d4e5f60002",
+          "title": "Family Road Trip",
+          "year": 2022,
+          "duration_seconds": 5400,
+          "file_path": "Y:\\Media\\Videos\\family_road_trip.mp4",
+          "thumbnail_path": null,
+          "size_bytes": 3221225472,
+          "status": "available"
+        }
+      ],
+      "subfolders": [
+        {
+          "id": "d3b4c5e6f7a80002",
+          "name": "Home Videos",
+          "path": "Y:\\Media\\Videos\\Home Videos",
+          "item_count": 1,
+          "items": [
+            {
+              "id": "a1b2c3d4e5f60003",
+              "title": "Birthday Party 2025",
+              "year": 2025,
+              "duration_seconds": 720,
+              "file_path": "Y:\\Media\\Videos\\Home Videos\\birthday_2025.mp4",
+              "thumbnail_path": null,
+              "size_bytes": 536870912,
+              "status": "available"
+            }
+          ],
+          "subfolders": []
+        }
+      ]
+    },
+    {
+      "id": "d3b4c5e6f7a80003",
+      "name": "Music",
+      "path": "Y:\\Media\\Music",
+      "item_count": 2,
+      "items": [
+        {
+          "id": "a1b2c3d4e5f60004",
+          "title": "Summer Playlist",
+          "year": 2024,
+          "duration_seconds": 3600,
+          "file_path": "Y:\\Media\\Music\\summer_playlist.mp4",
+          "thumbnail_path": null,
+          "size_bytes": 1073741824,
+          "status": "available"
+        },
+        {
+          "id": "a1b2c3d4e5f60005",
+          "title": "Concert Live 2023",
+          "year": 2023,
+          "duration_seconds": 5400,
+          "file_path": "Y:\\Media\\Music\\concert_live_2023.mp4",
+          "thumbnail_path": null,
+          "size_bytes": 2147483648,
+          "status": "available"
+        }
+      ],
+      "subfolders": []
+    }
+  ],
+  "scan_warnings": []
+}

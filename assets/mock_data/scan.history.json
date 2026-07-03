@@ -1,0 +1,25 @@
+{
+  "max_entries": 50,
+  "entries": [
+    {
+      "catalogue_id": "2026-06-30T19:00:00Z-MOCK01",
+      "completed": "2026-06-30T19:00:02Z",
+      "success": true,
+      "sources": 1,
+      "folders": 3,
+      "items": 5,
+      "warnings": 0,
+      "duration_seconds": 2
+    },
+    {
+      "catalogue_id": "2026-06-30T08:01:44Z-MOCK00",
+      "completed": "2026-06-30T08:01:46Z",
+      "success": true,
+      "sources": 1,
+      "folders": 3,
+      "items": 4,
+      "warnings": 1,
+      "duration_seconds": 2
+    }
+  ]
+}
