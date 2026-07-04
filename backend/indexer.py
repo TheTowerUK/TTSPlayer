@@ -18,6 +18,7 @@ Standard library only — no third-party dependencies.
 import argparse
 import hashlib
 import json
+import os
 import secrets
 import subprocess
 import sys
@@ -41,8 +42,26 @@ if hasattr(sys.stderr, "reconfigure"):
 #                     in a way the client must detect. The app reads this
 #                     to decide whether it understands the file.
 # ------------------------------------------------------------------
-SCANNER_VERSION = "0.3.0"
+SCANNER_VERSION = "0.3.2"
 CATALOGUE_VERSION = 2
+
+# ------------------------------------------------------------------
+# Supported media extensions — single source for full and library scans.
+# ------------------------------------------------------------------
+
+_VIDEO_EXTENSIONS = frozenset({".mp4", ".mkv", ".mov", ".m4v", ".avi"})
+_IMAGE_EXTENSIONS = frozenset({
+    ".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp", ".tif", ".tiff",
+})
+SUPPORTED_EXTENSIONS = _VIDEO_EXTENSIONS | _IMAGE_EXTENSIONS
+
+# Lowercase names without the dot — written to catalog.json and shown in the client.
+SUPPORTED_EXTENSIONS_SORTED: list[str] = sorted(
+    ext.removeprefix(".") for ext in SUPPORTED_EXTENSIONS
+)
+
+# When True, unsupported file extensions are logged to stderr (never warnings).
+_debug: bool = False
 
 
 def make_catalogue_id(ts: datetime) -> str:
@@ -76,6 +95,76 @@ def _log_skipped_extension(path: Path) -> None:
         print(f"  [debug] skipped unsupported: {path.name}", file=sys.stderr)
 
 
+def _log_skipped_sidecar(path: Path) -> None:
+    """Log an artwork sidecar skipped from catalogue indexing."""
+    if _debug:
+        print(f"  [debug] skipped artwork sidecar: {path.name}", file=sys.stderr)
+
+
+# Artwork sidecar basenames — keep aligned with ArtworkService named sidecars.
+_ARTWORK_BASENAMES = frozenset({"poster", "folder", "cover", "thumb", "artwork"})
+_SIDECAR_IMAGE_EXTENSIONS = frozenset({".jpg", ".jpeg", ".png", ".webp"})
+
+
+def is_named_artwork_sidecar(filename: str) -> bool:
+    """True for poster.jpg, cover.png, etc."""
+    lower = filename.lower()
+    for base in _ARTWORK_BASENAMES:
+        for ext in _SIDECAR_IMAGE_EXTENSIONS:
+            if lower == f"{base}{ext}":
+                return True
+    return False
+
+
+def _folder_contains_video(file_entries: list[Path]) -> bool:
+    return any(e.suffix.lower() in _VIDEO_EXTENSIONS for e in file_entries)
+
+
+def _video_stems_in_folder(file_entries: list[Path]) -> set[str]:
+    return {
+        e.stem.lower()
+        for e in file_entries
+        if e.suffix.lower() in _VIDEO_EXTENSIONS
+    }
+
+
+def is_artwork_sidecar(entry: Path, file_entries: list[Path]) -> bool:
+    """
+    True when an image file is acting as artwork for sibling video media.
+
+    Named sidecars (poster.jpg, cover.png, …) are excluded only when the
+    folder also contains video files.  Stem-matched images (movie.jpg beside
+    movie.mp4) are excluded whenever a video with the same stem exists.
+    Standalone images in image libraries remain indexed.
+    """
+    if entry.suffix.lower() not in _IMAGE_EXTENSIONS:
+        return False
+
+    has_video = _folder_contains_video(file_entries)
+    if is_named_artwork_sidecar(entry.name):
+        return has_video
+
+    return entry.stem.lower() in _video_stems_in_folder(file_entries)
+
+
+def _index_files_in_folder(
+    file_entries: list[Path],
+    warnings: list[dict],
+    counters: dict,
+    indent: str = "",
+) -> list[dict]:
+    """Index supported media files, omitting artwork sidecars."""
+    items: list[dict] = []
+    for entry in file_entries:
+        if is_artwork_sidecar(entry, file_entries):
+            _log_skipped_sidecar(entry)
+            continue
+        item = _handle_media_file(entry, warnings, counters, indent=indent)
+        if item is not None:
+            items.append(item)
+    return items
+
+
 def _handle_media_file(
     entry: Path,
     warnings: list[dict],
@@ -95,15 +184,88 @@ def _handle_media_file(
         print(f"{indent}[file] {entry.name}")
     return item
 
-SUPPORTED_EXTENSIONS = frozenset({".mp4", ".mkv", ".mov", ".m4v", ".avi"})
 
-# Lowercase names without the dot — written to catalog.json and shown in the client.
-SUPPORTED_EXTENSIONS_SORTED: list[str] = sorted(
-    ext.removeprefix(".") for ext in SUPPORTED_EXTENSIONS
-)
+# ------------------------------------------------------------------
+# Path normalization
+# ------------------------------------------------------------------
 
-# When True, unsupported file extensions are logged to stderr (never warnings).
-_debug: bool = False
+def normalize_path(path: str | Path) -> str:
+    """Case-insensitive, separator-normalized path for stable comparisons."""
+    return os.path.normcase(os.path.normpath(str(path)))
+
+
+def _alternate_root_path(path_str: str, from_root: str, to_root: str) -> str:
+    """Swap a path prefix between equivalent roots (e.g. Y: drive ↔ UNC)."""
+    norm_path = normalize_path(path_str)
+    norm_from = normalize_path(from_root)
+    norm_to = normalize_path(to_root)
+    if norm_path == norm_from:
+        return norm_to
+    prefix = norm_from + os.sep
+    if norm_path.startswith(prefix):
+        rel = norm_path[len(prefix):]
+        return normalize_path(os.path.join(norm_to, rel))
+    return norm_path
+
+
+def resolve_library_path(path_str: str, config: dict | None = None) -> Path | None:
+    """
+    Resolve a library folder for rescan — same accessibility rules as full scan,
+    including UNC ↔ drive-letter fallbacks from config media roots.
+    """
+    resolved = resolve_media_path(path_str)
+    if resolved is not None:
+        return resolved
+
+    if not config:
+        return None
+
+    for root_cfg in config.get("mediaRoots", []):
+        local = root_cfg.get("path")
+        unc = root_cfg.get("uncPath")
+        if not local or not unc:
+            continue
+        for alt in (
+            _alternate_root_path(path_str, local, unc),
+            _alternate_root_path(path_str, unc, local),
+        ):
+            if alt != normalize_path(path_str):
+                resolved = resolve_media_path(alt)
+                if resolved is not None:
+                    return resolved
+
+    return None
+
+
+def _recalculate_item_count(node: dict) -> int:
+    """Refresh item_count on a folder node and return the total."""
+    count = len(node.get("items", []))
+    for sub in node.get("subfolders", []):
+        count += _recalculate_item_count(sub)
+    node["item_count"] = count
+    return count
+
+
+def _replace_folder_in_tree(
+    folders: list[dict],
+    target_norm: str,
+    new_node: dict,
+) -> bool:
+    """Replace a folder node anywhere in the catalogue tree."""
+    for i, folder in enumerate(folders):
+        if normalize_path(folder["path"]) == target_norm:
+            folders[i] = new_node
+            return True
+        subfolders = folder.get("subfolders", [])
+        if _replace_folder_in_tree(subfolders, target_norm, new_node):
+            _recalculate_item_count(folder)
+            return True
+    return False
+
+
+def _sum_item_counts(folders: list[dict]) -> int:
+    return sum(f.get("item_count", 0) for f in folders)
+
 
 # Filesystem errors that produce a warning and continue rather than abort.
 _FS_ERRORS = (FileNotFoundError, PermissionError, OSError)
@@ -293,13 +455,19 @@ def make_item(file_path: Path, warnings: list[dict]) -> dict | None:
     available / missing / restricted / …
     """
     str_path = str(file_path)
+    suffix = file_path.suffix.lower()
     try:
         size = file_path.stat().st_size
+        duration = (
+            None
+            if suffix in _IMAGE_EXTENSIONS
+            else get_duration_seconds(str_path)
+        )
         return {
             "id": path_id(str_path),
             "title": clean_title(file_path.stem),
             "year": None,
-            "duration_seconds": get_duration_seconds(str_path),
+            "duration_seconds": duration,
             "file_path": str_path,
             "thumbnail_path": None,
             "size_bytes": size,
@@ -344,6 +512,11 @@ def scan_folder(
         _warn(warnings, str(folder), exc)
         return None
 
+    file_entries = [
+        entry for entry in entries
+        if not entry.name.startswith(".") and entry.is_file()
+    ]
+
     for entry in entries:
         if entry.name.startswith("."):
             continue
@@ -354,17 +527,17 @@ def scan_folder(
                 if child is not None:
                     subfolders.append(child)
 
-            elif entry.is_file():
-                item = _handle_media_file(entry, warnings, counters, indent=f"{indent}  ")
-                if item is not None:
-                    items.append(item)
-
         except _FS_ERRORS as exc:
-            # File/folder disappeared mid-scan (deleted, SMB drop, etc.).
-            # Skip this entry; the rest of the folder continues.
             _warn(warnings, str(entry), exc)
         except Exception as exc:
             _warn(warnings, str(entry), exc)
+
+    items = _index_files_in_folder(
+        file_entries,
+        warnings,
+        counters,
+        indent=f"{indent}  ",
+    )
 
     if not items and not subfolders:
         return None  # prune empty or fully-inaccessible folders
@@ -408,6 +581,11 @@ def scan_root(
         _warn(warnings, str(root), exc)
         return [], 0
 
+    root_files = [
+        entry for entry in root_entries
+        if not entry.name.startswith(".") and entry.is_file()
+    ]
+
     for entry in root_entries:
         if entry.name.startswith("."):
             continue
@@ -420,15 +598,17 @@ def scan_root(
                     folders.append(node)
                     total_items += node["item_count"]
 
-            elif entry.is_file():
-                item = _handle_media_file(entry, warnings, counters, indent="  ")
-                if item is not None:
-                    root_level_items.append(item)
-
         except _FS_ERRORS as exc:
             _warn(warnings, str(entry), exc)
         except Exception as exc:
             _warn(warnings, str(entry), exc)
+
+    root_level_items = _index_files_in_folder(
+        root_files,
+        warnings,
+        counters,
+        indent="  ",
+    )
 
     if root_level_items:
         root_node = {
@@ -514,6 +694,7 @@ def _library_rescan(
     output_path: Path,
     history_path: Path,
     max_entries: int,
+    config: dict | None = None,
 ) -> None:
     """
     Rescan a single top-level library folder and merge the result into the
@@ -554,7 +735,7 @@ def _library_rescan(
     # ------------------------------------------------------------------
     # 2. Resolve and scan the requested library path
     # ------------------------------------------------------------------
-    library_path = resolve_media_path(library_path_str)
+    library_path = resolve_library_path(library_path_str, config)
     if library_path is None:
         raise SystemExit(f"Library path is not accessible: {library_path_str}")
 
@@ -569,15 +750,11 @@ def _library_rescan(
         )
 
     # ------------------------------------------------------------------
-    # 3 & 4. Merge — replace matching node by path, or append if new
+    # 3 & 4. Merge — replace matching node anywhere in the tree, or append
     # ------------------------------------------------------------------
     existing_folders: list[dict] = catalog.get("folders", [])
-    merged = False
-    for i, folder in enumerate(existing_folders):
-        if Path(folder["path"]) == library_path:
-            existing_folders[i] = new_node
-            merged = True
-            break
+    target_norm = normalize_path(library_path)
+    merged = _replace_folder_in_tree(existing_folders, target_norm, new_node)
 
     if not merged:
         existing_folders.append(new_node)
@@ -586,7 +763,7 @@ def _library_rescan(
     # ------------------------------------------------------------------
     # 5. Recalculate total_items across all branches
     # ------------------------------------------------------------------
-    total_items = sum(f["item_count"] for f in existing_folders)
+    total_items = _sum_item_counts(existing_folders)
 
     # ------------------------------------------------------------------
     # 6. Update catalogue identity and scan block
@@ -718,6 +895,7 @@ def main() -> None:
                 output_path,
                 history_path_cfg,
                 max_entries_cfg,
+                config=config,
             )
             return
 

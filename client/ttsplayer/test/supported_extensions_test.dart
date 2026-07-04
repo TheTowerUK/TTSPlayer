@@ -18,11 +18,12 @@ void main() {
   test('CatalogueInfo falls back when supported_extensions is absent', () {
     final info = CatalogueInfo.fromJson({
       'id': 'TEST-ID',
-      'scanner_version': '0.3.0',
+      'scanner_version': '0.3.1',
       'catalogue_version': 2,
     });
 
     expect(info.supportedExtensions, SupportedExtensions.all);
+    expect(info.supportedExtensions, contains('jpg'));
   });
 
   test('Catalog exposes supported extension label from catalogue block', () {

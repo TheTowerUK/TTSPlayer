@@ -45,12 +45,7 @@ class FolderScreen extends StatelessWidget {
         if (folder == null) {
           return Scaffold(
             appBar: TtsAppBar(title: folderName),
-            body: const EmptyState(
-              icon: Icons.folder_off_outlined,
-              title: 'Folder not in catalogue',
-              subtitle:
-                  'It may have been removed or renamed during the last scan.',
-            ),
+            body: _FolderMissingBody(folderName: folderName),
           );
         }
 
@@ -68,6 +63,48 @@ class FolderScreen extends StatelessWidget {
               : _FolderContent(folder: folder),
         );
       },
+    );
+  }
+}
+
+/// Shown when a folder path is no longer in the catalogue after a rescan.
+class _FolderMissingBody extends StatelessWidget {
+  final String folderName;
+
+  const _FolderMissingBody({required this.folderName});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: AppSpacing.errorView,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.folder_off_outlined,
+                size: AppIcons.hero, color: AppColors.textLow),
+            const SizedBox(height: AppSpacing.base),
+            Text(
+              '“$folderName” is no longer in the catalogue.',
+              style: AppTypography.bodyMuted,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            const Text(
+              'It may have been removed or renamed during the last scan.',
+              style: AppTypography.caption,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            FilledButton.icon(
+              onPressed: () =>
+                  Navigator.of(context).popUntil((route) => route.isFirst),
+              icon: const Icon(Icons.home_outlined, size: AppIcons.md),
+              label: const Text('Back to Dashboard'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

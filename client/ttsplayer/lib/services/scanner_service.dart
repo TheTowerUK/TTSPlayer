@@ -101,18 +101,29 @@ class ScannerService extends ChangeNotifier {
 
   /// Full rescan — runs the indexer against all configured media roots.
   Future<void> runScan(CatalogService catalogService) =>
-      _run(const [], catalogService);
+      _run(const [], catalogService, navigateHomeOnSuccess: true);
 
   /// Library rescan — rescans [libraryPath] only and merges the refreshed
   /// branch into the existing catalog.json.
   ///
   /// [libraryPath] is the exact filesystem path stored in the folder node
   /// (e.g. `Y:\Media\Videos`).  Never invented or inferred.
+  ///
+  /// On success the catalogue is refreshed in place — navigation is unchanged.
   Future<void> runLibraryScan(
     String libraryPath,
     CatalogService catalogService,
   ) =>
-      _run(['--library-path', libraryPath], catalogService);
+      _run(
+        ['--library-path', libraryPath],
+        catalogService,
+        navigateHomeOnSuccess: false,
+      );
+
+  /// Whether a successful scan should reset navigation to the dashboard.
+  @visibleForTesting
+  static bool navigatesHomeAfterSuccess(List<String> extraArgs) =>
+      !extraArgs.contains('--library-path');
 
   void clearError() {
     _errorMessage = null;
@@ -125,8 +136,9 @@ class ScannerService extends ChangeNotifier {
 
   Future<void> _run(
     List<String> extraArgs,
-    CatalogService catalogService,
-  ) async {
+    CatalogService catalogService, {
+    required bool navigateHomeOnSuccess,
+  }) async {
     if (_isScanning) return;
 
     if (kIsWeb || !Platform.isWindows) {
@@ -179,7 +191,9 @@ class ScannerService extends ChangeNotifier {
 
       if (exitCode == 0) {
         await catalogService.rescan();
-        popNavigationToHome();
+        if (navigateHomeOnSuccess) {
+          popNavigationToHome();
+        }
       } else {
         final detail = stderr.isNotEmpty ? stderr : 'No details captured.';
         _errorMessage = 'Scanner exited with code $exitCode. $detail';
