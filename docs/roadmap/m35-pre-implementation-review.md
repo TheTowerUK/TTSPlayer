@@ -255,8 +255,9 @@ Aligned with [v0.4.0-dev.md](../release/v0.4.0-dev.md):
 |---|---|---|
 | **1** | URL mapping doc + `caddy.config` + deployment/smoke docs | ✅ Complete |
 | **2** | Deploy Caddy on TNAS; run smoke tests (incl. Range 206) | **Next** (reference HTTP provider) |
-| **2.5** | [Media access abstraction](../architecture/media-access-abstraction.md) | Document for acceptance |
-| **3** | `MediaLocationResolver` + providers in Flutter | Blocked until **2.5 accepted** |
+| **2.5** | [Media access abstraction](../architecture/media-access-abstraction.md) | ✅ Accepted — 2026-07-05 |
+| **3a** | `MediaLocationResolver` + providers in Flutter | ✅ Complete |
+| **3b** | Wire into `PlaybackService` + artwork | Blocked until 3a complete |
 | **4** | `CatalogService` HTTP startup + rescan refresh | Phase 3 |
 | **5** | `CatalogueSourceKind.network` + Storage Status / chip updates | Phase 4 |
 | **6** | Wire resolver into `PlaybackService` + artwork | Phase 3 |
@@ -264,7 +265,7 @@ Aligned with [v0.4.0-dev.md](../release/v0.4.0-dev.md):
 | **8** | Hide scanner UI on non-Windows; smoke Android/iOS builds | Phase 4–7 |
 | **9** | Tests + desktop regression suite | Throughout |
 
-**Gate:** No player/network startup code until Phase 2.5 accepted.
+**Gate:** Phase 2.5 accepted. Phase 3a limits scope to resolver + tests; no player/network startup wiring until Phase 3b.
 
 ---
 
@@ -298,9 +299,9 @@ Aligned with [v0.4.0-dev.md](../release/v0.4.0-dev.md):
 - [x] TNAS deployment guide written
 - [x] HTTP Range smoke test procedure documented
 - [ ] **Phase 2:** Deploy on TNAS and pass smoke checklist
-- [ ] **Phase 2.5:** Accept [media access abstraction](../architecture/media-access-abstraction.md)
+- [x] **Phase 2.5:** Accept [media access abstraction](../architecture/media-access-abstraction.md) — 2026-07-05
 
-**Next step:** Phase 2 — [TNAS Caddy deploy checklist](../deployment/tnas-caddy-deploy-checklist.md). Phase 3 blocked until Phase 2.5 accepted — [phase status](../deployment/m35-phase-status.md).
+**Next step:** Phase 3a — [Phase 3 plan](./m35-phase-3-plan.md). Phase 2 (TNAS Caddy) optional in parallel — [phase status](../deployment/m35-phase-status.md).
 
 ---
 

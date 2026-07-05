@@ -1,6 +1,6 @@
 # Media Access Abstraction
 
-**Status:** Proposed — Phase 2.5 (documentation gate before Flutter resolver)  
+**Status:** Accepted — Phase 2.5 (2026-07-05). Phase 3a complete; Phase 3b not started.  
 **Cycle:** `v0.4.0-dev` / M3.5
 
 → [Path mapping](./path-mapping.md) (HTTP serving layer rules)  
@@ -128,7 +128,7 @@ Today these touch raw paths — **Phase 3 refactors them to call the resolver**:
 | `playback_platform.dart` | Thin URI normalisation only |
 | `ArtworkService` | Local file existence checks on sidecar paths |
 
-No player or network startup changes until this document is **accepted** (Phase 2.5 gate).
+No player or network startup changes until Phase **3b** wires the resolver into playback.
 
 ---
 
@@ -138,35 +138,33 @@ No player or network startup changes until this document is **accepted** (Phase 
 |---|---|---|
 | **1** | Serving-layer docs, `caddy.config`, local Caddy validation | ✅ Complete locally |
 | **2** | TNAS deployment validation (smoke tests on NAS) | ⛔ Blocked — operational |
-| **2.5** | **Media access abstraction** (this document) | 🎯 Document & accept |
-| **3** | Flutter `MediaLocationResolver` + provider implementations | ⛔ Blocked until **2.5 accepted** |
+| **2.5** | **Media access abstraction** (this document) | ✅ Accepted — 2026-07-05 |
+| **3a** | Flutter `MediaLocationResolver` + unit tests | ✅ Complete |
+| **3b** | Wire resolver into playback and artwork | ⛔ Blocked until 3a complete |
 
-Phase 2 (TNAS + Caddy) is an **optional reference implementation** for the HTTP provider — it validates [path-mapping.md](./path-mapping.md) but is not a prerequisite to *accepting* the abstraction doc.
+Phase 2 (TNAS + Caddy) is an **optional reference implementation** for the HTTP provider — it validates [path-mapping.md](./path-mapping.md) but is not a prerequisite to accepting the abstraction doc.
 
-Phase 3 implementation should still use Phase 2 results to integration-test the HTTP provider when available.
+Phase 3a should use Phase 2 results to integration-test the HTTP provider when available.
 
 ---
 
-## Acceptance criteria (Phase 2.5 gate)
+## Acceptance criteria (Phase 2.5 gate) — met
 
-Phase 2.5 is **accepted** when:
+Phase 2.5 was **accepted** 2026-07-05:
 
 1. This document is reviewed and linked from roadmap / phase status
 2. Provider types and resolver contract are agreed
 3. TNAS/Caddy is explicitly labelled a reference deployment, not a hard dependency
 4. Phase 3 scope is clear: resolver + providers only — no ad-hoc HTTP in `PlaybackService`
 
-Only then: begin Phase 3 Flutter implementation.
-
 ---
 
-## Phase 3 implementation notes (future — not started)
+## Phase 3a implementation (in progress)
 
-- `MediaLocationResolver` as a dedicated service (or module under `services/media_access/`)
+- `MediaLocationResolver` under `client/ttsplayer/lib/services/media_access/`
 - `LocalFileProvider`, `HttpServingProvider` as first two implementations
-- `PlaybackService` and `ArtworkService` call resolver; no direct `File(path)` for play paths on network mode
-- Unit tests per provider + platform matrix
-- Settings: NAS base URL, active provider profile
+- Unit tests: `test/media_location_resolver_test.dart`
+- **Not yet wired:** `PlaybackService`, `ArtworkService`, `main.dart` (Phase 3b)
 
 ---
 

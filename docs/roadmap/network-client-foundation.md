@@ -27,8 +27,9 @@ This milestone exists **between** M3 (Windows-first polish) and M7 (true multi-d
 |---|---|
 | **1** | Serving-layer docs, `caddy.config`, local validation — ✅ complete |
 | **2** | TNAS deployment smoke tests — optional reference HTTP deployment |
-| **2.5** | [Media access abstraction](../architecture/media-access-abstraction.md) — **required before Flutter resolver** |
-| **3** | Flutter `MediaLocationResolver` — blocked until Phase 2.5 **accepted** |
+| **2.5** | [Media access abstraction](../architecture/media-access-abstraction.md) — **accepted** |
+| **3a** | Flutter `MediaLocationResolver` + unit tests — complete |
+| **3b** | Wire resolver into playback and artwork | Blocked until 3a |
 
 **Gate:** No player or network startup code changes until [media access abstraction](../architecture/media-access-abstraction.md) is accepted.
 

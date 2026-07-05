@@ -136,9 +136,9 @@ Sidecar files excluded from catalogue item listings remain valid artwork URLs wh
 
 ---
 
-## Client resolver (Phase 3 — blocked until Phase 2.5 accepted)
+## Client resolver (Phase 3a — implemented, not yet wired)
 
-Implement as `HttpServingProvider` behind [MediaLocationResolver](./media-access-abstraction.md). Must:
+Implemented as `HttpServingProvider` behind [MediaLocationResolver](./media-access-abstraction.md). Must:
 
 - Accept configurable `nasHost` (e.g. `https://mediatnas.local`)
 - Try all three root prefixes when stripping `file_path`

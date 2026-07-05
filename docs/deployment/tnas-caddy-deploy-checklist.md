@@ -259,9 +259,7 @@ When **8a–8c pass on the NAS** (not localhost):
 1. Update [m35-phase-status.md](./m35-phase-status.md) with dated TNAS smoke results
 2. Tag optional checkpoint: `m35-serving-layer`
 
-**Flutter implementation** requires Phase **2.5 accepted** ([media access abstraction](../architecture/media-access-abstraction.md)), then Phase 3 `MediaLocationResolver` — not raw path playback.
-
-**Until Phase 3:** no `CatalogService` HTTP startup changes, no playback resolver code, no mobile settings UI.
+**Flutter implementation:** Phase **2.5 accepted** (2026-07-05). Phase **3a** `MediaLocationResolver` + tests complete — not yet wired to playback ([Phase 3 plan](../roadmap/m35-phase-3-plan.md)).
 
 ---
 
@@ -291,8 +289,8 @@ When **8a–8c pass on the NAS** (not localhost):
 | 7. Caddy running | | ☐ |
 | 8. Smoke tests (200 / 206) | | ☐ |
 | 9. Phase 2 recorded | | ☐ |
-| 2.5. Media access abstraction accepted | | ☐ |
-| 3. Flutter resolver started | | ☐ |
+| 2.5. Media access abstraction accepted | 2026-07-05 | ☑ |
+| 3. Flutter resolver started | 2026-07-05 | ☑ |
 
 ---
 
