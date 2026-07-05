@@ -4,8 +4,11 @@
 **Status:** Current milestone — `v0.4.0-dev` development cycle  
 **Architecture impact:** Adds HTTP access mode to the existing Flutter client; does **not** change catalogue schema or filesystem-first indexing.
 
-→ [Mobile delivery overview](./mobile-delivery.md)  
-→ [Full roadmap](./roadmap.md)
+→ [Pre-implementation review](./m35-pre-implementation-review.md)  
+→ [Path mapping](../architecture/path-mapping.md)  
+→ [TNAS deploy checklist](../deployment/tnas-caddy-deploy-checklist.md)  
+→ [Phase status](../deployment/m35-phase-status.md)  
+→ [Mobile delivery overview](./mobile-delivery.md)
 
 ---
 
@@ -22,8 +25,8 @@ This milestone exists **between** M3 (Windows-first polish) and M7 (true multi-d
 | Area | Goal |
 |---|---|
 | NAS catalogue | `catalog.json` hosted and reachable over HTTPS |
-| Serving layer | Caddy or Nginx deployed on TNAS; range requests for video |
-| Path resolver | Translate scanner `file_path` values to stream URLs |
+| Serving layer | Caddy on TNAS — [deployment guide](../deployment/tnas-serving-layer.md); range requests for video |
+| Path resolver | Translate scanner `file_path` to stream URLs — [spec](../architecture/path-mapping.md) |
 | Mobile settings | Configure NAS base URL and catalogue endpoint |
 | Platform targets | Android / iOS smoke builds on home network |
 | Scanner | Disable local subprocess scanner on mobile; reload from NAS |

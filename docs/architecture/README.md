@@ -9,6 +9,10 @@ System design notes for TTSPlayer — scanner, catalogue schema, client services
 - **Atomic writes** — failed scans never corrupt a working catalogue.
 - **Local-first** — the app functions offline against a local or NAS path.
 
+Detailed architecture documents:
+
+- [Path mapping (M3.5)](./path-mapping.md) — canonical filesystem → HTTPS URL rules
+
 ## Key components
 
 | Component | Location | Role |
@@ -16,6 +20,7 @@ System design notes for TTSPlayer — scanner, catalogue schema, client services
 | Indexer | `backend/indexer.py` | Crawls media roots → `catalog.json` |
 | Catalogue model | `client/ttsplayer/lib/models/` | Parses folder tree, items, scan metadata |
 | CatalogService | `client/ttsplayer/lib/services/catalog_service.dart` | Loads and reloads catalogue |
+| Caddy config | `backend/caddy.config` | HTTPS static file server (M3.5) |
 | ScannerService | `client/ttsplayer/lib/services/scanner_service.dart` | Runs indexer subprocess |
 | PlaybackService | `client/ttsplayer/lib/services/playback_service.dart` | Windows: media_kit; other: video_player |
 
