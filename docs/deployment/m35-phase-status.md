@@ -1,8 +1,9 @@
-# M3.5 Phase Status — Serving Layer
+# M3.5 Phase Status — Serving Layer & Media Access
 
 **Last updated:** 2026-07-05  
 **Cycle:** `v0.4.0-dev`
 
+→ [Media access abstraction](../architecture/media-access-abstraction.md)  
 → [TNAS deploy checklist](./tnas-caddy-deploy-checklist.md)  
 → [Path mapping](../architecture/path-mapping.md)  
 → [Pre-implementation review](../roadmap/m35-pre-implementation-review.md)
@@ -14,10 +15,23 @@
 | Phase | Scope | Status |
 |---|---|---|
 | **Phase 1** | Path mapping spec, `caddy.config`, deployment docs, local Caddy validation | ✅ **Complete locally** |
-| **Phase 2** | Deploy Caddy on TNAS; run HTTPS smoke tests on real hardware | ⛔ **Blocked** — pending TNAS Caddy deployment |
-| **Phase 3+** | Flutter path resolver, HTTP catalogue lifecycle, mobile | ⛔ **Blocked** — until TNAS `/media` Range returns **206** |
+| **Phase 2** | Deploy Caddy on TNAS; HTTPS smoke tests on real hardware | ⛔ **Blocked** — pending TNAS Caddy deployment |
+| **Phase 2.5** | Media access abstraction — provider-neutral `MediaLocationResolver` spec | 🎯 **Document for acceptance** |
+| **Phase 3** | Flutter resolver + provider implementations | ⛔ **Blocked** — until Phase **2.5 accepted** |
 
-**Flutter resolver work remains blocked** until Phase 2 passes on the NAS.
+**Do not implement player or network startup changes until Phase 2.5 is accepted.**
+
+Phase 2 (TNAS serving) is an **optional reference implementation** for the HTTP provider. It does not replace Phase 2.5 documentation.
+
+---
+
+## Gates
+
+| Gate | Requirement |
+|---|---|
+| Phase 2 complete | TNAS `/catalog.json` → 200; `/media/...` → 200; Range → **206** |
+| Phase 2.5 accepted | [Media access abstraction](../architecture/media-access-abstraction.md) reviewed and agreed |
+| Phase 3 start | Phase 2.5 accepted (Phase 2 strongly recommended for HTTP integration testing) |
 
 ---
 
@@ -29,16 +43,16 @@ Environment: Windows dev machine → TNAS `MEDIATNAS-B725` (`192.168.178.130` / 
 
 | Test | URL | Result |
 |---|---|---|
-| Catalogue (HTTP) | `http://192.168.178.130/catalog.json` | **404** — TNAS nginx default UI; no TTSPlayer route |
+| Catalogue (HTTP) | `http://192.168.178.130/catalog.json` | **404** — TOS nginx default UI; no TTSPlayer route |
 | Media (HTTP) | `http://192.168.178.130/media/Images/Photos/Family/Photos%20for%20Angela/VID_20180714_200000.mp4` | **404** |
 | Catalogue (HTTPS) | `https://192.168.178.130/catalog.json` | **502 Bad Gateway** — existing proxy; Caddy not serving |
-| Ports 80 / 443 | — | Open (nginx on 80; HTTPS proxy broken or misconfigured) |
+| Ports 80 / 443 | — | Open |
 
-**Conclusion:** Path mapping and `backend/caddy.config` are documented but **not deployed on TNAS**. Phase 2 required before any Flutter HTTP/resolver work.
+**Conclusion:** Caddy not deployed on TNAS. Phase 2 operational work remains.
 
 ### Local validation (config logic) — passed
 
-Caddy 2.9.1 run locally against `Y:\Media` using the same route structure as `backend/caddy.config` (HTTP test instance). Sample media path validated against real catalogue entry.
+Caddy 2.9.1 run locally against `Y:\Media` using the same route structure as `backend/caddy.config` (HTTP test instance).
 
 | Test | Expected | Result |
 |---|---|---|
@@ -60,16 +74,27 @@ Y:\Media\Images\Photos\Family\Photos for Angela\VID_20180714_200000.mp4
 
 ## Unblock criteria
 
-Phase 2 is done when all of the following pass **on the TNAS hostname** (not localhost):
+### Phase 2 (TNAS serving)
 
-1. `GET https://<nas-host>/catalog.json` → **200**
-2. `GET https://<nas-host>/media/<relative-path>` → **200** for a known catalogue item
-3. `GET` with `Range: bytes=0-1023` → **206** with valid `Content-Range`
+On the NAS hostname:
 
-Only then: begin Flutter `PathResolverService` (Phase 3).
+1. `GET https://<nas-host>:8443/catalog.json` → **200**
+2. `GET https://<nas-host>:8443/media/<relative-path>` → **200**
+3. `Range: bytes=0-1023` → **206** + `Content-Range`
+
+### Phase 2.5 (abstraction)
+
+1. [media-access-abstraction.md](../architecture/media-access-abstraction.md) accepted
+2. TNAS/Caddy documented as reference deployment only
+
+### Phase 3 (Flutter)
+
+Begin `MediaLocationResolver` only after Phase 2.5 acceptance.
 
 ---
 
-## Next action
+## Next actions
 
-Follow [TNAS Caddy deploy checklist](./tnas-caddy-deploy-checklist.md).
+1. **Phase 2:** [TNAS Caddy deploy checklist](./tnas-caddy-deploy-checklist.md)
+2. **Phase 2.5:** Review and accept [media access abstraction](../architecture/media-access-abstraction.md)
+3. **Phase 3:** Implement resolver (blocked)

@@ -254,16 +254,17 @@ Aligned with [v0.4.0-dev.md](../release/v0.4.0-dev.md):
 | Phase | Work | Status |
 |---|---|---|
 | **1** | URL mapping doc + `caddy.config` + deployment/smoke docs | ✅ Complete |
-| **2** | Deploy Caddy on TNAS; run smoke tests (incl. Range 206) | **Next** |
-| **3** | `PathResolverService` in Flutter | Blocked on Phase 2 |
+| **2** | Deploy Caddy on TNAS; run smoke tests (incl. Range 206) | **Next** (reference HTTP provider) |
+| **2.5** | [Media access abstraction](../architecture/media-access-abstraction.md) | Document for acceptance |
+| **3** | `MediaLocationResolver` + providers in Flutter | Blocked until **2.5 accepted** |
 | **4** | `CatalogService` HTTP startup + rescan refresh | Phase 3 |
 | **5** | `CatalogueSourceKind.network` + Storage Status / chip updates | Phase 4 |
 | **6** | Wire resolver into `PlaybackService` + artwork | Phase 3 |
-| **7** | Mobile settings (NAS base URL, catalogue URL) | Phase 4 |
+| **7** | Mobile settings (media roots, base URL, provider) | Phase 4 |
 | **8** | Hide scanner UI on non-Windows; smoke Android/iOS builds | Phase 4–7 |
 | **9** | Tests + desktop regression suite | Throughout |
 
-**Do not start with mobile builds.** Serving layer + resolver + HTTP catalogue lifecycle first.
+**Gate:** No player/network startup code until Phase 2.5 accepted.
 
 ---
 
@@ -297,8 +298,9 @@ Aligned with [v0.4.0-dev.md](../release/v0.4.0-dev.md):
 - [x] TNAS deployment guide written
 - [x] HTTP Range smoke test procedure documented
 - [ ] **Phase 2:** Deploy on TNAS and pass smoke checklist
+- [ ] **Phase 2.5:** Accept [media access abstraction](../architecture/media-access-abstraction.md)
 
-**Next step:** Follow the [TNAS Caddy deploy checklist](../deployment/tnas-caddy-deploy-checklist.md). Flutter resolver remains blocked — see [phase status](../deployment/m35-phase-status.md).
+**Next step:** Phase 2 — [TNAS Caddy deploy checklist](../deployment/tnas-caddy-deploy-checklist.md). Phase 3 blocked until Phase 2.5 accepted — [phase status](../deployment/m35-phase-status.md).
 
 ---
 
@@ -315,4 +317,5 @@ Aligned with [v0.4.0-dev.md](../release/v0.4.0-dev.md):
 | `client/ttsplayer/lib/services/playback_service.dart` | Playback |
 | `client/ttsplayer/lib/services/playback_platform.dart` | URI normalisation |
 | `client/ttsplayer/lib/services/scanner_service.dart` | Windows scanner subprocess |
+| `docs/architecture/media-access-abstraction.md` | Provider-neutral resolver (Phase 2.5) |
 | `docs/roadmap/network-client-foundation.md` | M3.5 success criteria |

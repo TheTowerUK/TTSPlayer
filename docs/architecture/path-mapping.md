@@ -2,17 +2,17 @@
 
 **Status:** Approved  
 **Cycle:** `v0.4.0-dev`  
-**Applies to:** NAS serving layer (Caddy) and future Flutter path resolver
+**Applies to:** HTTP serving layer (Caddy) and `HttpServingProvider` inside [MediaLocationResolver](./media-access-abstraction.md)
 
+→ [Media access abstraction](./media-access-abstraction.md)  
 → [TNAS deployment guide](../deployment/tnas-serving-layer.md)  
-→ [M3.5 goals](../roadmap/network-client-foundation.md)  
-→ [Pre-implementation review](../roadmap/m35-pre-implementation-review.md)
+→ [M3.5 goals](../roadmap/network-client-foundation.md)
 
 ---
 
 ## Media roots
 
-These three prefixes refer to the **same logical media library**. The path resolver must recognise all of them.
+These three prefixes refer to the **same logical media library**. `HttpServingProvider` (see [media access abstraction](./media-access-abstraction.md)) must recognise all of them when stripping paths.
 
 | Environment | Root prefix |
 |---|---|
@@ -136,9 +136,9 @@ Sidecar files excluded from catalogue item listings remain valid artwork URLs wh
 
 ---
 
-## Client resolver (Phase 3 — not yet implemented)
+## Client resolver (Phase 3 — blocked until Phase 2.5 accepted)
 
-The Flutter path resolver (future work) must:
+Implement as `HttpServingProvider` behind [MediaLocationResolver](./media-access-abstraction.md). Must:
 
 - Accept configurable `nasHost` (e.g. `https://mediatnas.local`)
 - Try all three root prefixes when stripping `file_path`

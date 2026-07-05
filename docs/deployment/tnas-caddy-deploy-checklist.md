@@ -252,15 +252,16 @@ Full command reference: [tnas-serving-layer.md](./tnas-serving-layer.md)
 
 ---
 
-### 9. Unblock Flutter resolver
+### 9. Record Phase 2 completion (does not alone unblock Flutter)
 
 When **8a–8c pass on the NAS** (not localhost):
 
 1. Update [m35-phase-status.md](./m35-phase-status.md) with dated TNAS smoke results
 2. Tag optional checkpoint: `m35-serving-layer`
-3. Begin Phase 3: Flutter `PathResolverService` per [path-mapping.md](../architecture/path-mapping.md)
 
-**Until step 9:** no `CatalogService` HTTP startup changes, no playback resolver, no mobile settings UI.
+**Flutter implementation** requires Phase **2.5 accepted** ([media access abstraction](../architecture/media-access-abstraction.md)), then Phase 3 `MediaLocationResolver` — not raw path playback.
+
+**Until Phase 3:** no `CatalogService` HTTP startup changes, no playback resolver code, no mobile settings UI.
 
 ---
 
@@ -289,7 +290,9 @@ When **8a–8c pass on the NAS** (not localhost):
 | 6. `caddy validate` | | ☐ |
 | 7. Caddy running | | ☐ |
 | 8. Smoke tests (200 / 206) | | ☐ |
-| 9. Flutter unblocked | | ☐ |
+| 9. Phase 2 recorded | | ☐ |
+| 2.5. Media access abstraction accepted | | ☐ |
+| 3. Flutter resolver started | | ☐ |
 
 ---
 
@@ -298,6 +301,7 @@ When **8a–8c pass on the NAS** (not localhost):
 | File | Purpose |
 |---|---|
 | `backend/caddy.config` | Production Caddy site config |
-| `docs/architecture/path-mapping.md` | Filesystem → URL rules |
-| `docs/deployment/m35-phase-status.md` | Phase 1 local results; unblock criteria |
+| `docs/architecture/path-mapping.md` | HTTP provider path → URL rules |
+| `docs/architecture/media-access-abstraction.md` | Provider-neutral resolver model |
+| `docs/deployment/m35-phase-status.md` | Phase status and gates |
 | `ttsplayer.config.json` | Windows dev roots (`Y:\Media`, UNC) |
