@@ -1,8 +1,10 @@
 # M3.5 Phase Status — Serving Layer & Media Access
 
 **Last updated:** 2026-07-05  
-**Cycle:** `v0.4.0-dev`
+**Cycle:** `v0.4.0-dev`  
+**Milestone:** M3.5 **Accepted** — Phase 4 may begin
 
+→ [M3.5 final acceptance](../release/m3.5-media-access-complete.md#m35-final-acceptance)  
 → [Media access abstraction](../architecture/media-access-abstraction.md)  
 → [TNAS reference provider checklist](./tnas-caddy-deploy-checklist.md)  
 → [Path mapping](../architecture/path-mapping.md)  
@@ -19,14 +21,10 @@
 | **Phase 2.5** | Media access abstraction — provider-neutral `MediaLocationResolver` spec | ✅ **Accepted** — 2026-07-05 |
 | **Phase 3a** | Flutter `MediaLocationResolver` + unit tests (no playback wiring) | ✅ **Complete** |
 | **Phase 3b** | Wire resolver into playback and artwork | ✅ **Complete** |
+| **M3.5** | Exit criteria + final acceptance | ✅ **Accepted** — 2026-07-05 |
+| **Phase 4** | Network catalogue + provider configuration | 🎯 **Active** |
 
-**Phase 3b complete** — resolver wired at playback and artwork consumption boundaries only. No catalogue loading, scanning, or settings changes.
-
-**M3.5 architecture checkpoint:** tag `m3.5-media-access-complete` — [release snapshot](../release/m3.5-media-access-complete.md)
-
-**TNAS+Caddy reference provider validated on HTTP :8443.** TLS deferred due Windows/Caddy internal cert issue.
-
-Phase 2 (TNAS serving) validated routing, path mapping, file serving, and video Range support on real hardware. It does not block Phase 4 planning.
+**M3.5 accepted** — tag `m3.5-media-access-complete` — [final acceptance](../release/m3.5-media-access-complete.md#m35-final-acceptance).
 
 ---
 
@@ -126,20 +124,19 @@ Resolver wired into `PlaybackService.play()` and `ArtworkImage` load path. Catal
 
 ---
 
-## Exit criteria before Phase 4
+## Exit criteria before Phase 4 — satisfied (2026-07-05)
 
-Complete both validations before opening **Phase 4 — Network Catalogue & Provider Configuration**.
+### Windows regression — **PASS**
 
-### Windows regression (required)
+- [x] Play video from `Y:\Media`
+- [x] Seek forwards/backwards
+- [x] Pause/resume
+- [x] Stop/close playback
+- [x] Artwork loads — pass with observation ([backlog](../roadmap/backlog-artwork-discovery-improvements.md))
+- [x] Resume position unchanged
+- [x] Startup behaviour unchanged
 
-- [ ] Play video from `Y:\Media`
-- [ ] Seek forwards/backwards
-- [ ] Pause/resume
-- [ ] Stop/close playback
-- [x] Artwork loads — **pass with observation** (most OK; some sidecar matches fail — [backlog](../roadmap/backlog-artwork-discovery-improvements.md), not M3.5)
-- [ ] Resume position unchanged
-
-Behaviour must match pre-M3.5 — the abstraction should be transparent on desktop. Known artwork sidecar matching gaps are tracked separately and do not fail M3.5.
+Full checklist: [Windows regression](../release/m3.5-media-access-complete.md#windows-regression-checklist)
 
 ### TNAS validation — complete (HTTP :8443)
 
@@ -155,6 +152,6 @@ Per [TNAS Caddy reference provider checklist](./tnas-caddy-deploy-checklist.md):
 
 ## Next actions
 
-1. **Exit criteria:** Windows regression (required) — [checklist](../release/m3.5-media-access-complete.md#windows-regression-checklist)
-2. **Phase 2 follow-up:** TLS on `:8443` when Windows/Caddy cert issue resolved
-3. **Phase 4:** Network catalogue + provider configuration — see [release snapshot](../release/m3.5-media-access-complete.md#phase-4-preview)
+1. **Phase 4:** Network catalogue + provider configuration — [preview](../release/m3.5-media-access-complete.md#phase-4-preview)
+2. **Follow-up:** TLS on `:8443` when Windows/Caddy cert issue resolved
+3. **Backlog:** [Artwork discovery improvements](../roadmap/backlog-artwork-discovery-improvements.md) (Phase 4.x)

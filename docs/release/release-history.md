@@ -3,10 +3,11 @@
 ## M3.5 – Media Access Foundation
 
 **Date:** July 2026  
-**Milestone:** M3.5 (architecture checkpoint)  
+**Milestone:** M3.5 — **Accepted** 2026-07-05  
 **Tag:** `m3.5-media-access-complete`
 
-→ [Full release snapshot](./m3.5-media-access-complete.md)
+→ [Full release snapshot](./m3.5-media-access-complete.md)  
+→ [Final acceptance](./m3.5-media-access-complete.md#m35-final-acceptance)
 
 ### Added
 
@@ -17,16 +18,24 @@
 - Caddy reference serving layer and TNAS deployment docs
 - Resolver and integration unit tests
 
+### Acceptance (2026-07-05)
+
+- Windows regression: **PASS**
+- TNAS reference HTTP provider validated on `:8443` (TLS deferred)
+- Artwork: functional; discovery observation tracked in backlog (non-blocking)
+
+Phase 4 may begin.
+
 ### Not included (Phase 4+)
 
 - HTTP catalogue loading
 - Runtime provider selection UI
 - Scanner changes
 
-### Exit criteria before Phase 4
+### Deferred (not required for M3.5 acceptance)
 
-- Windows desktop regression (play, seek, artwork, resume)
-- TNAS Caddy smoke tests (`/catalog.json`, `/media/`, Range 206)
+- HTTPS / `tls internal` on TNAS
+- HTTP catalogue loading, provider settings UI (Phase 4)
 
 ---
 
