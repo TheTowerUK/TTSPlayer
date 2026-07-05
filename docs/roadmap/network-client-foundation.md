@@ -8,7 +8,7 @@
 → [Pre-implementation review](./m35-pre-implementation-review.md)  
 → [Media access abstraction](../architecture/media-access-abstraction.md)  
 → [Path mapping](../architecture/path-mapping.md)  
-→ [TNAS deploy checklist](../deployment/tnas-caddy-deploy-checklist.md)  
+→ [TNAS reference provider checklist](../deployment/tnas-caddy-deploy-checklist.md)  
 → [Phase status](../deployment/m35-phase-status.md)  
 → [Mobile delivery overview](./mobile-delivery.md)
 
@@ -27,7 +27,7 @@ This milestone exists **between** M3 (Windows-first polish) and M7 (true multi-d
 | Phase | Scope |
 |---|---|
 | **1** | Serving-layer docs, `caddy.config`, local validation — ✅ complete |
-| **2** | TNAS deployment smoke tests — optional reference HTTP deployment |
+| **2** | TNAS reference HTTP provider validation | ✅ Complete (HTTP :8443) |
 | **2.5** | [Media access abstraction](../architecture/media-access-abstraction.md) — **accepted** |
 | **3a** | Flutter `MediaLocationResolver` + unit tests | ✅ complete |
 | **3b** | Wire resolver into playback and artwork | ✅ complete |

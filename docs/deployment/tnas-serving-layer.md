@@ -5,7 +5,7 @@
 **Platform:** TerraMaster NAS (TNAS) + Caddy
 
 → [Path mapping specification](../architecture/path-mapping.md)  
-→ [TNAS deploy checklist](./tnas-caddy-deploy-checklist.md)  
+→ [TNAS reference provider checklist](./tnas-caddy-deploy-checklist.md)  
 → [Phase status & smoke results](./m35-phase-status.md)  
 → [Caddy config](../../backend/caddy.config)  
 → [M3.5 goals](../roadmap/network-client-foundation.md)

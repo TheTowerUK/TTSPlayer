@@ -1,13 +1,16 @@
-# TNAS Caddy Deploy Checklist
+# TNAS Caddy Reference Provider Checklist
 
-**Milestone:** M3.5 Network Client Foundation  
-**Phase:** 2 — operational deployment on TerraMaster NAS  
+**Milestone:** M3.5 — optional HTTP provider validation  
+**Phase:** 2 — TNAS + Caddy reference deployment (parallel to Flutter work)  
 **Prerequisite:** Phase 1 complete — [path mapping](../architecture/path-mapping.md), [caddy.config](../../backend/caddy.config), [local validation note](./m35-phase-status.md)
 
 → [Serving layer guide](./tnas-serving-layer.md) (smoke test commands)  
-→ [Phase status](./m35-phase-status.md)
+→ [Phase status](./m35-phase-status.md)  
+→ [Media access abstraction](../architecture/media-access-abstraction.md)
 
-**Do not start Flutter path resolver work until step 9 passes on the NAS.**
+This checklist validates the **optional TNAS+Caddy HTTP provider**. It is not a core Flutter unblock gate.
+
+Flutter resolver work is no longer blocked by this checklist; Phase 2.5 and Phase 3 are governed by the [Media Access Abstraction](../architecture/media-access-abstraction.md).
 
 ---
 
@@ -17,7 +20,7 @@
 |---|---|
 | NAS hostname | Example: `MEDIATNAS-B725.fritz.box` or `192.168.178.130` |
 | Windows mount | `Y:\Media` → same tree as TNAS `/volume1/Media` |
-| Config file | `backend/caddy.config` in the repo |
+| Config file | `backend/Caddyfile` (Docker) or `backend/caddy.config` (native Caddy) |
 | Conflict | TNAS OS ships **nginx on port 80** (TOS web UI); HTTPS on **443** may already be in use |
 
 ---
@@ -86,30 +89,7 @@ Document your chosen ports in the TNAS OS firewall if needed.
 
 #### Option B — Docker with read-only mount
 
-1. Create a Caddyfile whose site block listens on **`:8443`** (recommended first deploy):
-
-   ```
-   {
-       admin off
-   }
-
-   :8443 {
-       tls internal
-
-       handle /catalog.json {
-           root * /volume1/Media
-           file_server
-           header Content-Type application/json
-       }
-
-       handle_path /media/* {
-           root * /volume1/Media
-           @blocked not path *.mp4 *.mkv *.mov *.m4v *.avi *.jpg *.jpeg *.png *.webp *.gif *.bmp *.tif *.tiff
-           respond @blocked 403
-           file_server
-       }
-   }
-   ```
+1. Copy [`backend/Caddyfile`](../../backend/Caddyfile) to the NAS (site block listens on **`:8443`**).
 
 2. Run with matching port mapping — host **8443** → container **8443**:
 
@@ -252,14 +232,14 @@ Full command reference: [tnas-serving-layer.md](./tnas-serving-layer.md)
 
 ---
 
-### 9. Record Phase 2 completion (does not alone unblock Flutter)
+### 9. Record reference provider validation (optional checkpoint)
 
 When **8a–8c pass on the NAS** (not localhost):
 
 1. Update [m35-phase-status.md](./m35-phase-status.md) with dated TNAS smoke results
 2. Tag optional checkpoint: `m35-serving-layer`
 
-**Flutter implementation:** Phase **2.5 accepted** (2026-07-05). Phase **3a** `MediaLocationResolver` + tests complete — not yet wired to playback ([Phase 3 plan](../roadmap/m35-phase-3-plan.md)).
+**Flutter status (independent of this checklist):** Phase **2.5** accepted (2026-07-05). Phase **3a** `MediaLocationResolver` + tests complete. Phase **3b** playback/artwork wiring complete ([Phase 3 plan](../roadmap/m35-phase-3-plan.md)).
 
 ---
 
@@ -287,10 +267,11 @@ When **8a–8c pass on the NAS** (not localhost):
 | 5. Config deployed | | ☐ |
 | 6. `caddy validate` | | ☐ |
 | 7. Caddy running | | ☐ |
-| 8. Smoke tests (200 / 206) | | ☐ |
-| 9. Phase 2 recorded | | ☐ |
+| 8. Smoke tests (200 / 206) | 2026-07-05 | ☑ |
+| 9. Reference provider validation recorded | 2026-07-05 | ☑ |
 | 2.5. Media access abstraction accepted | 2026-07-05 | ☑ |
-| 3. Flutter resolver started | 2026-07-05 | ☑ |
+| 3a. MediaLocationResolver complete | 2026-07-05 | ☑ |
+| 3b. Playback/artwork wiring complete | 2026-07-05 | ☑ |
 
 ---
 
@@ -298,7 +279,8 @@ When **8a–8c pass on the NAS** (not localhost):
 
 | File | Purpose |
 |---|---|
-| `backend/caddy.config` | Production Caddy site config |
+| `backend/Caddyfile` | Docker TNAS site config (`:8443`, `tls internal`) |
+| `backend/caddy.config` | Native Caddy site config (hostname / production) |
 | `docs/architecture/path-mapping.md` | HTTP provider path → URL rules |
 | `docs/architecture/media-access-abstraction.md` | Provider-neutral resolver model |
 | `docs/deployment/m35-phase-status.md` | Phase status and gates |

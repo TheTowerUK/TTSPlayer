@@ -1,0 +1,28 @@
+# TTSPlayer — Caddy Docker site config (TNAS reference HTTP provider)
+#
+# Mount on TNAS: -v /volume1/Media:/volume1/Media:ro
+#                 -v /path/to/Caddyfile:/etc/caddy/Caddyfile:ro
+# Port map:       -p 8443:8443
+#
+# See: docs/deployment/tnas-caddy-deploy-checklist.md
+
+{
+    admin off
+}
+
+:8443 {
+    tls internal
+
+    handle /catalog.json {
+        root * /volume1/Media
+        file_server
+        header Content-Type application/json
+    }
+
+    handle_path /media/* {
+        root * /volume1/Media
+        @blocked not path *.mp4 *.mkv *.mov *.m4v *.avi *.jpg *.jpeg *.png *.webp *.gif *.bmp *.tif *.tiff
+        respond @blocked 403
+        file_server
+    }
+}

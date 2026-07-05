@@ -137,7 +137,7 @@ No player or network startup changes until Phase **3b** wires the resolver into 
 | Phase | Scope | Status |
 |---|---|---|
 | **1** | Serving-layer docs, `caddy.config`, local Caddy validation | ✅ Complete locally |
-| **2** | TNAS deployment validation (smoke tests on NAS) | ⛔ Blocked — operational |
+| **2** | TNAS reference HTTP provider validation | ✅ Complete (HTTP :8443, 2026-07-05) |
 | **2.5** | **Media access abstraction** (this document) | ✅ Accepted — 2026-07-05 |
 | **3a** | Flutter `MediaLocationResolver` + unit tests | ✅ Complete |
 | **3b** | Wire resolver into playback and artwork | ✅ Complete |
@@ -173,6 +173,6 @@ Phase 2.5 was **accepted** 2026-07-05:
 | Document | Role |
 |---|---|
 | [path-mapping.md](./path-mapping.md) | HTTP provider path → URL rules |
-| [tnas-caddy-deploy-checklist.md](../deployment/tnas-caddy-deploy-checklist.md) | Reference HTTP deployment |
+| [tnas-caddy-deploy-checklist.md](../deployment/tnas-caddy-deploy-checklist.md) | Optional TNAS+Caddy reference HTTP provider |
 | [m35-pre-implementation-review.md](../roadmap/m35-pre-implementation-review.md) | Client gap analysis |
 | `playback_service.dart` | Current play path (to refactor) |

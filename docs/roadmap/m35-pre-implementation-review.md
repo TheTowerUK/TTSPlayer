@@ -254,7 +254,7 @@ Aligned with [v0.4.0-dev.md](../release/v0.4.0-dev.md):
 | Phase | Work | Status |
 |---|---|---|
 | **1** | URL mapping doc + `caddy.config` + deployment/smoke docs | ✅ Complete |
-| **2** | Deploy Caddy on TNAS; run smoke tests (incl. Range 206) | **Next** (reference HTTP provider) |
+| **2** | Deploy Caddy on TNAS; run smoke tests (incl. Range 206) | ✅ HTTP :8443 validated — TLS follow-up |
 | **2.5** | [Media access abstraction](../architecture/media-access-abstraction.md) | ✅ Accepted — 2026-07-05 |
 | **3a** | `MediaLocationResolver` + providers in Flutter | ✅ Complete |
 | **3b** | Wire into `PlaybackService` + artwork | Blocked until 3a complete |
@@ -298,7 +298,7 @@ Aligned with [v0.4.0-dev.md](../release/v0.4.0-dev.md):
 - [x] Extension allowlist synced with indexer
 - [x] TNAS deployment guide written
 - [x] HTTP Range smoke test procedure documented
-- [ ] **Phase 2:** Deploy on TNAS and pass smoke checklist
+- [x] **Phase 2:** TNAS reference provider validated on HTTP `:8443` — 2026-07-05 (TLS deferred)
 - [x] **Phase 2.5:** Accept [media access abstraction](../architecture/media-access-abstraction.md) — 2026-07-05
 
 **Next step:** Phase 3a — [Phase 3 plan](./m35-phase-3-plan.md). Phase 2 (TNAS Caddy) optional in parallel — [phase status](../deployment/m35-phase-status.md).
