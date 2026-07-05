@@ -1,6 +1,6 @@
 # M3 Sprint 4 — Polish & Experience Refinement
 
-**Status:** Approved — implementation follows Sprint 3 checkpoint  
+**Status:** Complete — shipped with `m3-complete`  
 **Theme:** Close Milestone 3 — cohesive, polished, intentional  
 **Platform:** Windows desktop only
 

@@ -70,6 +70,9 @@ class MediaItem {
   /// Defaults to [MediaItemStatus.available] when absent from catalog.json.
   final MediaItemStatus status;
 
+  /// First time this item appeared in a successful catalogue write (ISO-8601).
+  final DateTime? addedAt;
+
   const MediaItem({
     required this.id,
     required this.title,
@@ -79,6 +82,7 @@ class MediaItem {
     this.thumbnailPath,
     this.sizeBytes,
     this.status = MediaItemStatus.available,
+    this.addedAt,
   });
 
   factory MediaItem.fromJson(Map<String, dynamic> json) {
@@ -91,7 +95,13 @@ class MediaItem {
       thumbnailPath: json['thumbnail_path'] as String?,
       sizeBytes: json['size_bytes'] as int?,
       status: MediaItemStatus.fromString(json['status'] as String?),
+      addedAt: _parseAddedAt(json['added_at']),
     );
+  }
+
+  static DateTime? _parseAddedAt(dynamic raw) {
+    if (raw is! String || raw.isEmpty) return null;
+    return DateTime.tryParse(raw);
   }
 
   Map<String, dynamic> toJson() => {
@@ -103,6 +113,7 @@ class MediaItem {
         'thumbnail_path': thumbnailPath,
         'size_bytes': sizeBytes,
         'status': status.name,
+        if (addedAt != null) 'added_at': addedAt!.toUtc().toIso8601String(),
       };
 
   /// Human-readable duration, e.g. "1h 54m" or "43m".

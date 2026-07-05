@@ -42,7 +42,7 @@ if hasattr(sys.stderr, "reconfigure"):
 #                     in a way the client must detect. The app reads this
 #                     to decide whether it understands the file.
 # ------------------------------------------------------------------
-SCANNER_VERSION = "0.3.2"
+SCANNER_VERSION = "0.3.3"
 CATALOGUE_VERSION = 2
 
 # ------------------------------------------------------------------
@@ -265,6 +265,52 @@ def _replace_folder_in_tree(
 
 def _sum_item_counts(folders: list[dict]) -> int:
     return sum(f.get("item_count", 0) for f in folders)
+
+
+def _walk_folder_nodes(folders: list[dict]):
+    """Yield every folder node in the catalogue tree."""
+    for folder in folders:
+        yield folder
+        for sub in folder.get("subfolders", []):
+            yield from _walk_folder_nodes([sub])
+
+
+def _build_added_at_lookup(folders: list[dict]) -> dict[str, str]:
+    """Map item id → existing added_at from a catalogue tree."""
+    lookup: dict[str, str] = {}
+    for folder in _walk_folder_nodes(folders):
+        for item in folder.get("items", []):
+            item_id = item.get("id")
+            added_at = item.get("added_at")
+            if item_id and added_at:
+                lookup[item_id] = added_at
+    return lookup
+
+
+def _apply_added_at_to_folders(
+    folders: list[dict],
+    lookup: dict[str, str],
+    default_iso: str,
+) -> None:
+    """Stamp added_at on every item — preserve first-seen timestamps when known."""
+    for folder in _walk_folder_nodes(folders):
+        for item in folder.get("items", []):
+            item_id = item.get("id")
+            if not item_id:
+                continue
+            item["added_at"] = lookup.get(item_id, default_iso)
+
+
+def _load_added_at_lookup(output_path: Path) -> dict[str, str]:
+    """Read added_at values from an existing catalog.json if present."""
+    if not output_path.is_file():
+        return {}
+    try:
+        with open(output_path, encoding="utf-8") as f:
+            catalog = json.load(f)
+        return _build_added_at_lookup(catalog.get("folders", []))
+    except Exception:
+        return {}
 
 
 # Filesystem errors that produce a warning and continue rather than abort.
@@ -753,6 +799,10 @@ def _library_rescan(
     # 3 & 4. Merge — replace matching node anywhere in the tree, or append
     # ------------------------------------------------------------------
     existing_folders: list[dict] = catalog.get("folders", [])
+    added_at_default = datetime.now(timezone.utc).isoformat()
+    added_at_lookup = _build_added_at_lookup(existing_folders)
+    _apply_added_at_to_folders([new_node], added_at_lookup, added_at_default)
+
     target_norm = normalize_path(library_path)
     merged = _replace_folder_in_tree(existing_folders, target_norm, new_node)
 
@@ -969,6 +1019,9 @@ def main() -> None:
     duration_seconds = int((scan_completed - scan_started).total_seconds())
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    added_at_lookup = _load_added_at_lookup(output_path)
+    _apply_added_at_to_folders(all_folders, added_at_lookup, scan_completed.isoformat())
 
     catalogue_id = make_catalogue_id(scan_started)
 

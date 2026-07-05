@@ -18,6 +18,22 @@ abstract final class CardLayout {
   static double get continueWatchingListHeight =>
       continueWatchingCardHeight + continueWatchingScrollbarGutter;
 
+  /// Portrait media cards in the Recently Added carousel.
+  static const double recentlyAddedCardWidth = 160;
+  static const double recentlyAddedCardHeight = 240;
+  static const double recentlyAddedScrollbarGutter = 12;
+
+  static double get recentlyAddedListHeight =>
+      recentlyAddedCardHeight + recentlyAddedScrollbarGutter;
+
+  /// Landscape folder cards in the Featured Folders carousel.
+  static const double featuredFolderCardWidth = 280;
+  static const double featuredFolderCardHeight = 200;
+  static const double featuredFolderScrollbarGutter = 12;
+
+  static double get featuredFolderListHeight =>
+      featuredFolderCardHeight + featuredFolderScrollbarGutter;
+
   /// Artwork band height that never exceeds the card bounds.
   static double artworkBandHeight({
     required double width,

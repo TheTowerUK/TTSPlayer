@@ -1,52 +1,53 @@
 import 'package:flutter/material.dart';
 
-import '../../../screens/item_detail_screen.dart';
+import '../../../models/media_folder.dart';
+import '../../../screens/folder_screen.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/card_layout.dart';
 import '../../../widgets/empty_state.dart';
 import '../../../widgets/section_header.dart';
-import '../../../widgets/tts_media_card.dart';
-import '../dashboard_service.dart';
+import '../../../widgets/tts_folder_card.dart';
 
-class RecentlyAddedSection extends StatelessWidget {
-  final List<RecentlyAddedEntry> entries;
+class FeaturedFoldersSection extends StatelessWidget {
+  final List<MediaFolder> folders;
 
-  const RecentlyAddedSection({super.key, required this.entries});
+  const FeaturedFoldersSection({super.key, required this.folders});
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SectionHeader(title: 'Recently Added'),
+        const SectionHeader(title: 'Featured Folders'),
         const SizedBox(height: AppSpacing.md),
-        if (entries.isEmpty)
+        if (folders.isEmpty)
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: EmptyState(
-              icon: Icons.new_releases_outlined,
-              title: 'No recently added items yet.',
+              icon: Icons.folder_special_outlined,
+              title: 'No featured folders yet.',
               subtitle:
-                  'Rescan your libraries to record when new files are indexed.',
+                  'Browse your libraries — folders with content will appear here after a rescan.',
             ),
           )
         else
-          _RecentlyAddedCarousel(entries: entries),
+          _FeaturedFoldersCarousel(folders: folders),
       ],
     );
   }
 }
 
-class _RecentlyAddedCarousel extends StatefulWidget {
-  final List<RecentlyAddedEntry> entries;
+class _FeaturedFoldersCarousel extends StatefulWidget {
+  final List<MediaFolder> folders;
 
-  const _RecentlyAddedCarousel({required this.entries});
+  const _FeaturedFoldersCarousel({required this.folders});
 
   @override
-  State<_RecentlyAddedCarousel> createState() => _RecentlyAddedCarouselState();
+  State<_FeaturedFoldersCarousel> createState() =>
+      _FeaturedFoldersCarouselState();
 }
 
-class _RecentlyAddedCarouselState extends State<_RecentlyAddedCarousel> {
+class _FeaturedFoldersCarouselState extends State<_FeaturedFoldersCarousel> {
   late final ScrollController _scrollController;
 
   @override
@@ -64,7 +65,7 @@ class _RecentlyAddedCarouselState extends State<_RecentlyAddedCarousel> {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: CardLayout.recentlyAddedListHeight,
+      height: CardLayout.featuredFolderListHeight,
       child: Scrollbar(
         controller: _scrollController,
         thumbVisibility: true,
@@ -72,23 +73,25 @@ class _RecentlyAddedCarouselState extends State<_RecentlyAddedCarousel> {
           controller: _scrollController,
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          itemCount: widget.entries.length,
+          itemCount: widget.folders.length,
           separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
           itemBuilder: (context, index) {
-            final entry = widget.entries[index];
+            final folder = widget.folders[index];
             return Semantics(
               button: true,
-              label: 'Recently added: ${entry.item.title}',
+              label: 'Featured folder: ${folder.name}, ${folder.totalItems} items',
               child: SizedBox(
-                width: CardLayout.recentlyAddedCardWidth,
-                height: CardLayout.recentlyAddedCardHeight,
-                child: TtsMediaCard(
-                  item: entry.item,
-                  parentFolder: entry.parentFolder,
+                width: CardLayout.featuredFolderCardWidth,
+                height: CardLayout.featuredFolderCardHeight,
+                child: TtsFolderCard(
+                  folder: folder,
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => ItemDetailScreen(item: entry.item),
+                      builder: (_) => FolderScreen(
+                        folderPath: folder.path,
+                        folderName: folder.name,
+                      ),
                     ),
                   ),
                 ),

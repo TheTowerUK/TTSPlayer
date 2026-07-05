@@ -258,5 +258,62 @@ class LibraryMergeTests(unittest.TestCase):
             self.assertIn(".mp4", video_exts)
 
 
+class AddedAtTests(unittest.TestCase):
+    def test_apply_added_at_stamps_new_items(self):
+        folders = [{"items": [{"id": "a"}, {"id": "b"}], "subfolders": []}]
+        default = "2026-07-05T10:00:00+00:00"
+        indexer._apply_added_at_to_folders(folders, {}, default)
+        self.assertEqual(folders[0]["items"][0]["added_at"], default)
+        self.assertEqual(folders[0]["items"][1]["added_at"], default)
+
+    def test_apply_added_at_preserves_existing(self):
+        folders = [{"items": [{"id": "a"}], "subfolders": []}]
+        lookup = {"a": "2026-01-01T00:00:00+00:00"}
+        indexer._apply_added_at_to_folders(
+            folders, lookup, "2026-07-05T10:00:00+00:00"
+        )
+        self.assertEqual(folders[0]["items"][0]["added_at"], "2026-01-01T00:00:00+00:00")
+
+    def test_build_lookup_from_nested_tree(self):
+        folders = [
+            {
+                "items": [{"id": "root"}],
+                "subfolders": [
+                    {
+                        "items": [{"id": "nested", "added_at": "2026-03-01T12:00:00+00:00"}],
+                        "subfolders": [],
+                    }
+                ],
+            }
+        ]
+        lookup = indexer._build_added_at_lookup(folders)
+        self.assertEqual(lookup["nested"], "2026-03-01T12:00:00+00:00")
+        self.assertNotIn("root", lookup)
+
+    def test_load_added_at_lookup_from_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            catalog_path = Path(tmp) / "catalog.json"
+            catalog_path.write_text(
+                json.dumps(
+                    {
+                        "folders": [
+                            {
+                                "items": [
+                                    {
+                                        "id": "keep",
+                                        "added_at": "2026-02-01T08:00:00+00:00",
+                                    }
+                                ],
+                                "subfolders": [],
+                            }
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+            lookup = indexer._load_added_at_lookup(catalog_path)
+            self.assertEqual(lookup["keep"], "2026-02-01T08:00:00+00:00")
+
+
 if __name__ == "__main__":
     unittest.main()

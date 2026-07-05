@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../features/search/search_navigation.dart';
@@ -20,6 +21,8 @@ import 'widgets/dashboard_quick_search_bar.dart';
 import 'widgets/dashboard_welcome_header.dart';
 import 'widgets/libraries_section.dart';
 import 'widgets/recent_activity_section.dart';
+import 'widgets/dashboard_overview_panel.dart';
+import 'widgets/featured_folders_section.dart';
 import 'widgets/recently_added_section.dart';
 import 'widgets/storage_status_section.dart';
 
@@ -177,8 +180,18 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: TtsAppBar(
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.keyF, control: true): () =>
+            openSearchScreen(context, autofocus: true),
+        const SingleActivator(LogicalKeyboardKey.escape): () {
+          if (Navigator.canPop(context)) Navigator.pop(context);
+        },
+      },
+      child: Focus(
+        autofocus: true,
+        child: Scaffold(
+          appBar: TtsAppBar(
         title: 'TTSPlayer',
         showHome: false,
         extraActions: [
@@ -225,9 +238,9 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
             },
           ),
         ],
-      ),
-      body: Consumer2<CatalogService, ScannerService>(
-        builder: (context, catalogService, scannerService, _) {
+          ),
+          body: Consumer2<CatalogService, ScannerService>(
+            builder: (context, catalogService, scannerService, _) {
           if (catalogService.isLoading && catalogService.catalog == null) {
             return const LoadingCard(message: 'Loading Library…');
           }
@@ -301,6 +314,8 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
                             catalogPath: data.catalogPath,
                           ),
                           const SizedBox(height: AppSpacing.md),
+                          DashboardOverviewPanel(catalog: data.catalog),
+                          const SizedBox(height: AppSpacing.section),
                           DashboardQuickSearchBar(
                             onTap: () =>
                                 openSearchScreen(context, autofocus: true),
@@ -310,9 +325,11 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
                             entries: data.continueWatching,
                           ),
                           const SizedBox(height: AppSpacing.section),
-                          LibrariesSection(libraries: data.libraries),
+                          RecentlyAddedSection(entries: data.recentlyAdded),
                           const SizedBox(height: AppSpacing.section),
-                          const RecentlyAddedSection(),
+                          FeaturedFoldersSection(folders: data.featuredFolders),
+                          const SizedBox(height: AppSpacing.section),
+                          LibrariesSection(libraries: data.libraries),
                           const SizedBox(height: AppSpacing.section),
                           RecentActivitySection(
                             entries: data.recentActivity,
@@ -334,6 +351,8 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
             },
           );
         },
+          ),
+        ),
       ),
     );
   }

@@ -113,10 +113,11 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.byType(CustomScrollView), findsOneWidget);
     expect(find.text('Welcome back'), findsOneWidget);
+    expect(find.text('Overview'), findsOneWidget);
     expect(find.text('CONTINUE WATCHING'), findsOneWidget);
     expect(find.text('STORAGE STATUS'), findsNothing);
 
-    await tester.drag(find.byType(CustomScrollView), const Offset(0, -1200));
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -2200));
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);

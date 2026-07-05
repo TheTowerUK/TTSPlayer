@@ -95,5 +95,9 @@ abstract final class AppTheme {
             foregroundColor: AppColors.primary,
           ),
         ),
+
+        // Keyboard focus ring — visible on desktop navigation
+        focusColor: AppColors.primary.withAlpha(40),
+        hoverColor: AppColors.cardHover,
       );
 }

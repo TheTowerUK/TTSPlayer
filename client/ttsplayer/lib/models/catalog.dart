@@ -334,6 +334,70 @@ class Catalog {
     return null;
   }
 
+  /// Folder node that directly contains [item], if any.
+  MediaFolder? parentFolderOf(MediaItem item) {
+    MediaFolder? search(MediaFolder folder) {
+      if (folder.items.any((i) => i.id == item.id)) return folder;
+      for (final sub in folder.subfolders) {
+        final found = search(sub);
+        if (found != null) return found;
+      }
+      return null;
+    }
+    for (final folder in folders) {
+      final found = search(folder);
+      if (found != null) return found;
+    }
+    return null;
+  }
+
+  /// Prominent subfolders for dashboard surfacing — excludes library roots.
+  List<MediaFolder> featuredFolders({int maxCount = 8}) {
+    final libraryPaths =
+        libraryFolders.map((f) => _normalizePath(f.path)).toSet();
+
+    final candidates = <MediaFolder>[];
+
+    void walk(MediaFolder folder) {
+      final norm = _normalizePath(folder.path);
+      if (libraryPaths.contains(norm)) {
+        for (final sub in folder.subfolders) {
+          walk(sub);
+        }
+        return;
+      }
+      if (folder.totalItems > 0) {
+        candidates.add(folder);
+      }
+      for (final sub in folder.subfolders) {
+        walk(sub);
+      }
+    }
+
+    for (final lib in libraryFolders) {
+      for (final sub in lib.subfolders) {
+        walk(sub);
+      }
+    }
+
+    candidates.sort((a, b) {
+      final byCount = b.totalItems.compareTo(a.totalItems);
+      if (byCount != 0) return byCount;
+      return a.name.compareTo(b.name);
+    });
+
+    return candidates.take(maxCount).toList(growable: false);
+  }
+
+  /// Largest top-level library by direct [MediaFolder.itemCount].
+  MediaFolder? get largestLibrary {
+    final libs = libraryFolders;
+    if (libs.isEmpty) return null;
+    return libs.reduce(
+      (a, b) => a.itemCount >= b.itemCount ? a : b,
+    );
+  }
+
   bool get isEmpty => folders.isEmpty;
   bool get hasOfflineSources => sources.any((s) => !s.accessible);
   bool get hasScanWarnings => scanWarnings.isNotEmpty;
