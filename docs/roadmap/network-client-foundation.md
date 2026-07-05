@@ -1,9 +1,10 @@
 # M3.5 — Network Client Foundation
 
-**Theme:** Network Client  
-**Status:** Current milestone — `v0.4.0-dev` development cycle  
-**Architecture impact:** Adds HTTP access mode to the existing Flutter client; does **not** change catalogue schema or filesystem-first indexing.
+**Theme:** Media Access Foundation → Network Catalogue & Provider Configuration  
+**Status:** Architecture checkpoint complete — tag `m3.5-media-access-complete`; Phase 4 next  
+**Architecture impact:** Provider-neutral resolver at playback/artwork boundaries; catalogue schema unchanged.
 
+→ [M3.5 checkpoint release](../release/m3.5-media-access-complete.md)  
 → [Pre-implementation review](./m35-pre-implementation-review.md)  
 → [Media access abstraction](../architecture/media-access-abstraction.md)  
 → [Path mapping](../architecture/path-mapping.md)  
@@ -28,10 +29,25 @@ This milestone exists **between** M3 (Windows-first polish) and M7 (true multi-d
 | **1** | Serving-layer docs, `caddy.config`, local validation — ✅ complete |
 | **2** | TNAS deployment smoke tests — optional reference HTTP deployment |
 | **2.5** | [Media access abstraction](../architecture/media-access-abstraction.md) — **accepted** |
-| **3a** | Flutter `MediaLocationResolver` + unit tests — complete |
-| **3b** | Wire resolver into playback and artwork | Blocked until 3a |
+| **3a** | Flutter `MediaLocationResolver` + unit tests | ✅ complete |
+| **3b** | Wire resolver into playback and artwork | ✅ complete |
+| **4** | Network catalogue + provider configuration | **Next** — after exit criteria |
 
-**Gate:** No player or network startup code changes until [media access abstraction](../architecture/media-access-abstraction.md) is accepted.
+**Checkpoint:** `m3.5-media-access-complete` — Phases 1–3b delivered.
+
+**Gate before Phase 4:** Windows desktop regression + TNAS smoke tests — [phase status](../deployment/m35-phase-status.md#exit-criteria-before-phase-4).
+
+---
+
+## Phase 4 — Network Catalogue & Provider Configuration
+
+Not “NAS support” — **configurable media access** with NAS as one HTTP provider:
+
+- HTTP-backed catalogue loading (`CatalogService`)
+- User-configurable providers (Local, SMB, HTTP)
+- Provider preference and fallback logic
+- Runtime configuration UI
+- Optional automatic provider discovery (future)
 
 ---
 

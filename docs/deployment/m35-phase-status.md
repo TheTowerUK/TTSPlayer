@@ -22,7 +22,9 @@
 
 **Phase 3b complete** — resolver wired at playback and artwork consumption boundaries only. No catalogue loading, scanning, or settings changes.
 
-Phase 2 (TNAS serving) is an **optional reference implementation** for the HTTP provider. It continues in parallel and does not block Phase 3a.
+**M3.5 architecture checkpoint:** tag `m3.5-media-access-complete` — [release snapshot](../release/m3.5-media-access-complete.md)
+
+Phase 2 (TNAS serving) is an **optional reference implementation** for the HTTP provider. It continues in parallel and does not block Phase 4 planning.
 
 ---
 
@@ -100,7 +102,32 @@ Resolver wired into `PlaybackService.play()` and `ArtworkImage` load path. Catal
 
 ---
 
+## Exit criteria before Phase 4
+
+Complete both validations before opening **Phase 4 — Network Catalogue & Provider Configuration**.
+
+### Windows regression (required)
+
+- [ ] Play video from `Y:\Media`
+- [ ] Seek, pause/resume, next/previous
+- [ ] Artwork loads
+- [ ] Resume position unchanged
+
+Behaviour must match pre-M3.5 — the abstraction should be transparent on desktop.
+
+### TNAS validation (parallel)
+
+Per [TNAS Caddy deploy checklist](./tnas-caddy-deploy-checklist.md):
+
+- [ ] `/catalog.json` → **200**
+- [ ] `/media/...` → **200**
+- [ ] Range → **206**
+- [ ] HTTP playback smoke test (when ready)
+
+---
+
 ## Next actions
 
-1. **Phase 2:** [TNAS Caddy deploy checklist](./tnas-caddy-deploy-checklist.md) — optional HTTP reference validation
-2. **Phase 4:** `CatalogService` HTTP startup + settings (when ready)
+1. **Exit criteria:** Windows regression + TNAS smoke tests (above)
+2. **Phase 2:** [TNAS Caddy deploy checklist](./tnas-caddy-deploy-checklist.md)
+3. **Phase 4:** Network catalogue + provider configuration — see [release snapshot](../release/m3.5-media-access-complete.md#phase-4-preview)

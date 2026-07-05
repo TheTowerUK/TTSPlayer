@@ -16,7 +16,7 @@ Project identity and planning live here.
 |---|---|---|
 | M2 | First Playable Release | ✅ v0.2.0 |
 | M3 | Personal Media Experience | ✅ v0.3.0 |
-| M3.5 | Network Client Foundation | 🎯 `v0.4.0-dev` Phase 2 / 2.5 |
+| M3.5 | Media Access Foundation | ✅ `m3.5-media-access-complete` — Phase 4 next |
 | M4 | [Rich Media Libraries](./roadmap/m4-rich-media-libraries.md) | Planned (after M3.5) |
 | M5 | Music Library | Planned |
 | M6 | Books & Comics | Planned |

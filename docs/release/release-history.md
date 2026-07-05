@@ -1,5 +1,35 @@
 # Release History
 
+## M3.5 – Media Access Foundation
+
+**Date:** July 2026  
+**Milestone:** M3.5 (architecture checkpoint)  
+**Tag:** `m3.5-media-access-complete`
+
+→ [Full release snapshot](./m3.5-media-access-complete.md)
+
+### Added
+
+- Provider-neutral media access architecture
+- `MediaLocationResolver` with local filesystem and HTTP serving providers
+- Playback and artwork integration at consumption boundaries
+- Canonical path mapping specification
+- Caddy reference serving layer and TNAS deployment docs
+- Resolver and integration unit tests
+
+### Not included (Phase 4+)
+
+- HTTP catalogue loading
+- Runtime provider selection UI
+- Scanner changes
+
+### Exit criteria before Phase 4
+
+- Windows desktop regression (play, seek, artwork, resume)
+- TNAS Caddy smoke tests (`/catalog.json`, `/media/`, Range 206)
+
+---
+
 ## v0.3.0 – Personal Media Experience
 
 **Date:** July 2026  
