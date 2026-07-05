@@ -1,10 +1,11 @@
 # M3.5 — Network Client Foundation
 
 **Theme:** Media Access Foundation → Network Catalogue & Provider Configuration  
-**Status:** Architecture checkpoint complete — tag `m3.5-media-access-complete`; Phase 4 next  
-**Architecture impact:** Provider-neutral resolver at playback/artwork boundaries; catalogue schema unchanged.
+**Status:** M3.5 **closed** (tag `m3.5-media-access-complete` @ `fa0f66a`) · **Phase 4 active**  
+**Architecture impact:** Provider-neutral resolver at playback/artwork boundaries; Phase 4 adds catalogue loading and provider configuration.
 
-→ [M3.5 checkpoint release](../release/m3.5-media-access-complete.md)  
+→ [M3.5 final acceptance](../release/m3.5-media-access-complete.md#m35-final-acceptance)  
+→ [Phase 4 plan](./m35-phase-4-plan.md)  
 → [Pre-implementation review](./m35-pre-implementation-review.md)  
 → [Media access abstraction](../architecture/media-access-abstraction.md)  
 → [Path mapping](../architecture/path-mapping.md)  
@@ -31,23 +32,28 @@ This milestone exists **between** M3 (Windows-first polish) and M7 (true multi-d
 | **2.5** | [Media access abstraction](../architecture/media-access-abstraction.md) — **accepted** |
 | **3a** | Flutter `MediaLocationResolver` + unit tests | ✅ complete |
 | **3b** | Wire resolver into playback and artwork | ✅ complete |
-| **4** | Network catalogue + provider configuration | **Next** — after exit criteria |
+| **4** | [Network catalogue + provider configuration](./m35-phase-4-plan.md) | 🎯 **Active** |
 
-**Checkpoint:** `m3.5-media-access-complete` — Phases 1–3b delivered.
+**M3.5 closed** — critical fixes only; all new capability is Phase 4 or backlog.
 
-**Gate before Phase 4:** Windows desktop regression + TNAS smoke tests — [phase status](../deployment/m35-phase-status.md#exit-criteria-before-phase-4).
+**Gate before Phase 4:** ✅ satisfied 2026-07-05 — [phase status](../deployment/m35-phase-status.md#exit-criteria-before-phase-4-satisfied-2026-07-05).
 
 ---
 
 ## Phase 4 — Network Catalogue & Provider Configuration
 
-Not “NAS support” — **configurable media access** with NAS as one HTTP provider:
+→ Full plan: [m35-phase-4-plan.md](./m35-phase-4-plan.md)
 
-- HTTP-backed catalogue loading (`CatalogService`)
-- User-configurable providers (Local, SMB, HTTP)
-- Provider preference and fallback logic
-- Runtime configuration UI
-- Optional automatic provider discovery (future)
+**M3.5:** Can TTSPlayer access media through a provider-neutral abstraction? → **Yes.**  
+**Phase 4:** How do users configure and use multiple providers seamlessly?
+
+- HTTP-backed catalogue loading
+- Configurable media providers (Local, SMB, HTTP)
+- Provider selection and fallback
+- Settings UI for provider configuration
+- HTTPS/TLS refinement for the HTTP provider
+
+Not “NAS support” — **configurable media access** with NAS as one HTTP provider.
 
 ---
 

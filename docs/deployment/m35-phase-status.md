@@ -152,6 +152,8 @@ Per [TNAS Caddy reference provider checklist](./tnas-caddy-deploy-checklist.md):
 
 ## Next actions
 
-1. **Phase 4:** Network catalogue + provider configuration — [preview](../release/m3.5-media-access-complete.md#phase-4-preview)
-2. **Follow-up:** TLS on `:8443` when Windows/Caddy cert issue resolved
+1. **Phase 4:** [Network catalogue & provider configuration](../roadmap/m35-phase-4-plan.md) — **active**
+2. **Follow-up:** TLS on `:8443` when Windows/Caddy cert issue resolved (Phase 4)
 3. **Backlog:** [Artwork discovery improvements](../roadmap/backlog-artwork-discovery-improvements.md) (Phase 4.x)
+
+**M3.5 closed** — critical resolver/playback fixes only; no milestone scope creep.
