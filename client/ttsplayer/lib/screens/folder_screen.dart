@@ -201,7 +201,7 @@ class _FolderContent extends StatelessWidget {
                 maxCrossAxisExtent: AppSpacing.gridSubfolder,
                 mainAxisSpacing: AppSpacing.gridGap,
                 crossAxisSpacing: AppSpacing.gridGap,
-                childAspectRatio: AppSpacing.gridAspectFolder,
+                childAspectRatio: AppSpacing.gridAspectLibrary,
               ),
             ),
           ),
@@ -218,6 +218,7 @@ class _FolderContent extends StatelessWidget {
                   final item = folder.items[index];
                   return TtsMediaCard(
                     item: item,
+                    parentFolder: folder,
                     onTap: () => _openDetail(context, item),
                   );
                 },

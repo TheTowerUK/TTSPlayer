@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/media_item.dart';
+import '../services/artwork/artwork_service.dart';
 import '../services/playback_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/artwork/artwork_image.dart';
 import '../widgets/tts_app_bar.dart';
 import 'player_screen.dart';
 
@@ -43,19 +45,17 @@ class _PosterArea extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final candidate = context.read<ArtworkService>().forMediaItem(item);
+
     return AspectRatio(
       aspectRatio: 16 / 9,
       child: Stack(
         fit: StackFit.expand,
         children: [
-          item.thumbnailPath != null
-              ? Image.network(
-                  item.thumbnailPath!,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const _Placeholder(),
-                )
-              : const _Placeholder(),
-
+          ArtworkImage(
+            candidate: candidate,
+            iconSize: 64,
+          ),
           if (item.status != MediaItemStatus.available)
             Positioned(
               top: 12,
@@ -63,20 +63,6 @@ class _PosterArea extends StatelessWidget {
               child: _StatusBadge(status: item.status),
             ),
         ],
-      ),
-    );
-  }
-}
-
-class _Placeholder extends StatelessWidget {
-  const _Placeholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: AppColors.card,
-      child: const Center(
-        child: Icon(Icons.movie_outlined, size: 64, color: AppColors.textFaint),
       ),
     );
   }

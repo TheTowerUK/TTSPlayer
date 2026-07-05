@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../models/media_folder.dart';
+import '../services/artwork/artwork_service.dart';
 import '../theme/app_theme.dart';
+import 'artwork/card_artwork_band.dart';
+import 'card_layout.dart';
 
-/// Reusable library card — icon, name, item count, and Browse action.
+/// Reusable library card — artwork band, name, item count, and Browse action.
 class LibraryCard extends StatefulWidget {
   final MediaFolder folder;
   final VoidCallback onBrowse;
@@ -22,21 +26,10 @@ class _LibraryCardState extends State<LibraryCard> {
   bool _hovered = false;
   bool _pressed = false;
 
-  Color get _bgColor {
-    if (_pressed) return AppColors.cardPressed;
-    if (_hovered) return AppColors.cardHover;
-    return AppColors.card;
-  }
-
-  Color get _borderColor {
-    if (_hovered || _pressed) {
-      return AppColors.primary.withAlpha(50);
-    }
-    return AppColors.border;
-  }
-
   @override
   Widget build(BuildContext context) {
+    final artworkService = context.read<ArtworkService>();
+    final candidate = artworkService.forLibrary(widget.folder);
     final count = widget.folder.totalItems;
     final label = '$count item${count == 1 ? '' : 's'}';
 
@@ -47,55 +40,84 @@ class _LibraryCardState extends State<LibraryCard> {
         _hovered = false;
         _pressed = false;
       }),
-      child: AnimatedContainer(
-        duration: AppAnimations.standard,
-        curve: AppAnimations.smooth,
-        decoration: BoxDecoration(
-          color: _bgColor,
-          borderRadius: AppRadius.cardRadius,
-          border: Border.all(color: _borderColor, width: 1),
-        ),
-        padding: AppSpacing.cardPremium,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: const BoxDecoration(
-                color: AppColors.chip,
-                borderRadius: AppRadius.chipRadius,
-              ),
-              child: Icon(
-                Icons.folder_outlined,
-                size: AppIcons.lg,
-                color: _hovered ? AppColors.primary : AppColors.textLow,
-              ),
+      child: GestureDetector(
+        onTap: widget.onBrowse,
+        onTapDown: (_) => setState(() => _pressed = true),
+        onTapUp: (_) => setState(() => _pressed = false),
+        onTapCancel: () => setState(() => _pressed = false),
+        child: AnimatedScale(
+          scale: _pressed ? AppAnimations.pressScale : 1.0,
+          duration: AppAnimations.fast,
+          curve: AppAnimations.enter,
+          child: AnimatedContainer(
+            duration: AppDurations.hover,
+            curve: AppAnimations.smooth,
+            decoration: AppCardStyles.decoration(
+              hovered: _hovered,
+              pressed: _pressed,
             ),
-            const Spacer(),
-            Text(
-              widget.folder.name,
-              style: AppTypography.cardTitle,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+            clipBehavior: Clip.antiAlias,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SizedBox(
+                      height: CardLayout.artworkBandHeight(
+                        width: constraints.maxWidth,
+                        maxHeight: constraints.maxHeight,
+                      ),
+                      child: CardArtworkBand(
+                        candidate: candidate,
+                        iconSize: AppIcons.folder,
+                      ),
+                    ),
+                    Expanded(
+                      child: Padding(
+                        padding: kCardFooterPadding,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                widget.folder.name,
+                                style: AppTypography.cardTitle.copyWith(
+                                  fontSize: AppTypography.size16,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.xs),
+                            Text(
+                              label,
+                              style: AppTypography.cardSubtitle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const Spacer(),
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: TextButton(
+                                onPressed: widget.onBrowse,
+                                style: TextButton.styleFrom(
+                                  foregroundColor: AppColors.primary,
+                                  padding: AppSpacing.buttonSm,
+                                  minimumSize: Size.zero,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                child: const Text('Browse'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(label, style: AppTypography.cardSubtitle),
-            const SizedBox(height: AppSpacing.md),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton(
-                onPressed: widget.onBrowse,
-                style: TextButton.styleFrom(
-                  foregroundColor: AppColors.primary,
-                  padding: AppSpacing.buttonSm,
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: const Text('Browse'),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

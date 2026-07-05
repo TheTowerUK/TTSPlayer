@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 
 import 'features/dashboard/dashboard_screen.dart';
 import 'navigation/app_navigator.dart';
+import 'services/artwork/artwork_service.dart';
 import 'services/catalog_service.dart';
 import 'services/playback_service.dart';
 import 'services/scan_history_service.dart';
@@ -22,6 +23,7 @@ void main() {
   runApp(
     MultiProvider(
       providers: [
+        Provider(create: (_) => ArtworkService()),
         ChangeNotifierProvider(create: (_) => CatalogService()),
         ChangeNotifierProvider(create: (_) => PlaybackService()),
         ChangeNotifierProvider(create: (_) => ScannerService()),
@@ -40,6 +42,7 @@ class TTSPlayerApp extends StatelessWidget {
     return MaterialApp(
       title: 'TTSPlayer',
       navigatorKey: rootNavigatorKey,
+      navigatorObservers: [routeObserver],
       debugShowCheckedModeBanner: false,
       theme: AppTheme.dark,
       home: const DashboardScreen(),

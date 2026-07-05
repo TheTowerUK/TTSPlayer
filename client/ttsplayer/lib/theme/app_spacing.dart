@@ -15,6 +15,7 @@ abstract final class AppSpacing {
   static const double lg   = 20;
   static const double xl   = 24;
   static const double xxl  = 32;
+  static const double page = 40;
 
   // ---------------------------------------------------------------------------
   // Semantic gap constants
@@ -27,7 +28,13 @@ abstract final class AppSpacing {
   static const double labelGap = 6;
 
   /// Between dashboard sections (vertical rhythm).
-  static const double section = 28;
+  static const double section = 32;
+
+  /// Continue Watching hero card width.
+  static const double continueWatchingCardWidth = 320;
+
+  /// Search result poster thumb width.
+  static const double searchThumbWidth = 56;
 
   /// Inner padding for premium cards.
   static const double cardInner = 20;
@@ -45,8 +52,8 @@ abstract final class AppSpacing {
   /// Max cross-axis extent for media item cards.
   static const double gridMedia = 280.0;
 
-  /// Child aspect ratio for folder/library cards (slightly landscape).
-  static const double gridAspectFolder = 1.15;
+  /// Child aspect ratio for folder/library cards with 16:9 artwork band + footer.
+  static const double gridAspectLibrary = 0.82;
 
   /// Child aspect ratio for media cards (portrait, movie-poster style).
   static const double gridAspectMedia = 0.72;
@@ -59,7 +66,7 @@ abstract final class AppSpacing {
   // ---------------------------------------------------------------------------
 
   /// Standard page / grid padding (16 all sides).
-  static const EdgeInsets page = EdgeInsets.all(base);
+  static const EdgeInsets insetPage = EdgeInsets.all(base);
 
   /// Dashboard content padding (horizontal 20, vertical 16).
   static const EdgeInsets dashboard = EdgeInsets.symmetric(

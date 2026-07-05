@@ -49,4 +49,10 @@ void main() {
     expect(entries.first.item.id, 'item-1');
     expect(entries.first.resume.savedPosition.inSeconds, 120);
   });
+
+  test('resumeDataVersion starts at zero', () {
+    SharedPreferences.setMockInitialValues({});
+    final playback = PlaybackService();
+    expect(playback.resumeDataVersion, 0);
+  });
 }

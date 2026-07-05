@@ -16,6 +16,7 @@ abstract final class AppRadius {
   static const double button = 10;
   static const double card   = 12;
   static const double dialog = 16;
+  static const double hero = 16;
   static const double section = 12;
 
   // ---------------------------------------------------------------------------
@@ -33,6 +34,9 @@ abstract final class AppRadius {
 
   static const BorderRadius dialogRadius =
       BorderRadius.all(Radius.circular(dialog));
+
+  static const BorderRadius heroRadius =
+      BorderRadius.all(Radius.circular(hero));
 
   static const BorderRadius sectionRadius =
       BorderRadius.all(Radius.circular(section));

@@ -163,6 +163,12 @@ class PlaybackService extends ChangeNotifier {
   // Guard against calling _clearPosition() on every completed tick.
   bool _completionCleared = false;
 
+  /// Incremented whenever persisted resume data changes (save, clear, flush).
+  int _resumeDataVersion = 0;
+
+  /// Bumps when [SharedPreferences] resume keys change — dashboard listens for this.
+  int get resumeDataVersion => _resumeDataVersion;
+
   static const _posKeyPrefix = 'position_';
   static const _durKeyPrefix = 'duration_';
   static const _initTimeout = Duration(seconds: 15);
@@ -418,6 +424,27 @@ class PlaybackService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Test helper — persists resume state without starting playback.
+  @visibleForTesting
+  Future<void> persistResumeStateForTest(
+    String itemId,
+    Duration position, {
+    Duration? duration,
+  }) async {
+    await _savePosition(itemId, position);
+    if (duration != null) {
+      await _saveDuration(itemId, duration);
+    }
+    notifyListeners();
+  }
+
+  /// Test helper — clears persisted resume state without playback.
+  @visibleForTesting
+  Future<void> clearResumeStateForTest(String itemId) async {
+    await _clearPosition(itemId);
+    notifyListeners();
+  }
+
   // ---------------------------------------------------------------------------
   // Backend-specific init / control
   // ---------------------------------------------------------------------------
@@ -504,6 +531,8 @@ class PlaybackService extends ChangeNotifier {
   Future<void> _savePosition(String itemId, Duration position) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('$_posKeyPrefix$itemId', position.inSeconds);
+    _markResumeDataChanged();
+    notifyListeners();
   }
 
   Future<void> _saveDuration(String itemId, Duration duration) async {
@@ -521,6 +550,12 @@ class PlaybackService extends ChangeNotifier {
   Future<void> _clearPosition(String itemId) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('$_posKeyPrefix$itemId');
+    _markResumeDataChanged();
+    notifyListeners();
+  }
+
+  void _markResumeDataChanged() {
+    _resumeDataVersion++;
   }
 
   Future<void> _flushPosition() async {
@@ -557,7 +592,7 @@ class PlaybackService extends ChangeNotifier {
 
     if (isCompleted && _currentItem != null && !_completionCleared) {
       _completionCleared = true;
-      _clearPosition(_currentItem!.id);
+      unawaited(_clearPosition(_currentItem!.id));
     }
 
     final pos = position;
@@ -565,7 +600,7 @@ class PlaybackService extends ChangeNotifier {
       final now = DateTime.now();
       if (now.difference(_lastPositionSave) >= _saveInterval) {
         _lastPositionSave = now;
-        _savePosition(_currentItem!.id, pos);
+        unawaited(_savePosition(_currentItem!.id, pos));
       }
     }
 

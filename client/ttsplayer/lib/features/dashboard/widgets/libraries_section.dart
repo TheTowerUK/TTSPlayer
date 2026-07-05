@@ -38,7 +38,7 @@ class LibrariesSection extends StatelessWidget {
                 maxCrossAxisExtent: AppSpacing.gridLibrary,
                 mainAxisSpacing: AppSpacing.gridGap,
                 crossAxisSpacing: AppSpacing.gridGap,
-                childAspectRatio: 0.95,
+                childAspectRatio: AppSpacing.gridAspectLibrary,
               ),
               itemCount: libraries.length,
               itemBuilder: (context, index) {

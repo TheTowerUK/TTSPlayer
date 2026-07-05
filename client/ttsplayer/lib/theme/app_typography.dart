@@ -14,10 +14,12 @@ abstract final class AppTypography {
   static const double size12 = 12; // banner text, chip labels, player time
   static const double size13 = 13; // dialog label rows, secondary actions
   static const double size14 = 14; // dashboard subtitle, section context
-  static const double size16 = 16; // play/action buttons, card titles
+  static const double size16 = 16; // play/action buttons
   static const double size17 = 17; // player overlay title
-  static const double size18 = 18; // completed-view item title
-  static const double size22 = 22; // dashboard header
+  static const double size18 = 18; // card titles
+  static const double size22 = 22; // section headings
+  static const double size24 = 24; // section headings (large)
+  static const double size32 = 32; // page titles
 
   // ---------------------------------------------------------------------------
   // Named styles — regular body
@@ -78,10 +80,10 @@ abstract final class AppTypography {
     letterSpacing: 1.2,
   );
 
-  /// Card title — folder name, media title (16 px semi-bold).
+  /// Card title — folder name, media title (18 px semi-bold).
   static const TextStyle cardTitle = TextStyle(
     color: AppColors.textPrimary,
-    fontSize: size16,
+    fontSize: size18,
     fontWeight: FontWeight.w600,
   );
 
@@ -91,11 +93,18 @@ abstract final class AppTypography {
     fontSize: size12,
   );
 
-  /// Dashboard page header (22 px bold).
+  /// Dashboard page header (32 px bold).
   static const TextStyle dashboardHeader = TextStyle(
     color: AppColors.textPrimary,
-    fontSize: size22,
+    fontSize: size32,
     fontWeight: FontWeight.w700,
+  );
+
+  /// Human-readable section heading (22 px semi-bold).
+  static const TextStyle sectionTitle = TextStyle(
+    color: AppColors.textPrimary,
+    fontSize: size22,
+    fontWeight: FontWeight.w600,
   );
 
   /// Dashboard sub-header / context text (14 px muted).

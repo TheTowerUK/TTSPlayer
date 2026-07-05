@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../../../services/artwork/artwork_service.dart';
 import '../../../theme/app_theme.dart';
+import '../../../widgets/artwork/artwork_image.dart';
 import '../models/search_result.dart';
 
 class SearchResultRow extends StatelessWidget {
@@ -19,6 +22,8 @@ class SearchResultRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final item = result.item;
     final playable = item.status.isPlayable;
+    final artworkService = context.read<ArtworkService>();
+    final candidate = artworkService.forMediaItem(item);
 
     return Material(
       color: AppColors.card,
@@ -35,17 +40,17 @@ class SearchResultRow extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: const BoxDecoration(
-                  color: AppColors.chip,
-                  borderRadius: AppRadius.chipRadius,
-                ),
-                child: Icon(
-                  _iconForExtension(item.extension),
-                  color: AppColors.textLow,
-                  size: AppIcons.lg,
+              SizedBox(
+                width: AppSpacing.searchThumbWidth,
+                child: AspectRatio(
+                  aspectRatio: 2 / 3,
+                  child: ClipRRect(
+                    borderRadius: AppRadius.chipRadius,
+                    child: ArtworkImage(
+                      candidate: candidate,
+                      iconSize: AppIcons.md,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(width: AppSpacing.base),
@@ -110,19 +115,6 @@ class SearchResultRow extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  static IconData _iconForExtension(String extension) {
-    switch (extension) {
-      case 'mp4':
-      case 'mkv':
-      case 'mov':
-      case 'm4v':
-      case 'avi':
-        return Icons.movie_outlined;
-      default:
-        return Icons.insert_drive_file_outlined;
-    }
   }
 }
 

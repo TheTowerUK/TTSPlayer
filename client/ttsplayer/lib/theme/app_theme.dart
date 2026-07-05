@@ -9,7 +9,9 @@
 library app_theme;
 
 export 'app_animations.dart';
+export 'app_card_styles.dart';
 export 'app_colors.dart';
+export 'app_durations.dart';
 export 'app_icons.dart';
 export 'app_radius.dart';
 export 'app_spacing.dart';

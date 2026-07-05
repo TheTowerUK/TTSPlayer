@@ -1,21 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../models/media_folder.dart';
 import '../models/media_item.dart';
+import '../services/artwork/artwork_service.dart';
 import '../theme/app_theme.dart';
+import 'artwork/artwork_image.dart';
 
-/// Premium media item card with desktop hover and animated press effects.
+/// Premium media item card with artwork, desktop hover, and press effects.
 ///
-/// Portrait layout: thumbnail occupies the top portion; title and metadata
-/// sit below in a fixed-height area.  A status badge appears in the top-right
-/// corner for non-available items.
+/// Portrait layout: poster occupies the top portion; title and metadata
+/// sit below. A status badge appears for non-available items.
 class TtsMediaCard extends StatefulWidget {
   final MediaItem item;
   final VoidCallback onTap;
+  final MediaFolder? parentFolder;
 
   const TtsMediaCard({
     super.key,
     required this.item,
     required this.onTap,
+    this.parentFolder,
   });
 
   @override
@@ -26,19 +31,16 @@ class _TtsMediaCardState extends State<TtsMediaCard> {
   bool _hovered = false;
   bool _pressed = false;
 
-  Color get _bgColor {
-    if (_pressed) return AppColors.cardPressed;
-    if (_hovered) return AppColors.cardHover;
-    return AppColors.card;
-  }
-
-  Color get _borderColor {
-    if (_hovered || _pressed) return AppColors.primary.withAlpha(50);
-    return AppColors.border;
-  }
+  static const double _metadataMaxHeight = 72;
 
   @override
   Widget build(BuildContext context) {
+    final artworkService = context.read<ArtworkService>();
+    final candidate = artworkService.forMediaItem(
+      widget.item,
+      parentFolder: widget.parentFolder,
+    );
+
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       onEnter: (_) => setState(() => _hovered = true),
@@ -56,32 +58,24 @@ class _TtsMediaCardState extends State<TtsMediaCard> {
           duration: AppAnimations.fast,
           curve: AppAnimations.enter,
           child: AnimatedContainer(
-            duration: AppAnimations.standard,
+            duration: AppDurations.hover,
             curve: AppAnimations.smooth,
-            decoration: BoxDecoration(
-              color: _bgColor,
-              borderRadius: AppRadius.cardRadius,
-              border: Border.all(color: _borderColor, width: 1),
+            decoration: AppCardStyles.decoration(
+              hovered: _hovered,
+              pressed: _pressed,
             ),
             clipBehavior: Clip.antiAlias,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Thumbnail — takes up remaining space above metadata area
                 Expanded(
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      widget.item.thumbnailPath != null
-                          ? Image.network(
-                              widget.item.thumbnailPath!,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) =>
-                                  const _ThumbnailPlaceholder(),
-                            )
-                          : const _ThumbnailPlaceholder(),
-
-                      // Status badge — only for non-available items
+                      ArtworkImage(
+                        candidate: candidate,
+                        fit: BoxFit.cover,
+                      ),
                       if (widget.item.status != MediaItemStatus.available)
                         Positioned(
                           top: AppSpacing.sm,
@@ -91,22 +85,28 @@ class _TtsMediaCardState extends State<TtsMediaCard> {
                     ],
                   ),
                 ),
-
-                // Metadata area
-                Padding(
-                  padding: AppSpacing.card,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.item.title,
-                        style: AppTypography.cardTitle.copyWith(fontSize: AppTypography.size13),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
-                      _MetaRow(item: widget.item),
-                    ],
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: _metadataMaxHeight),
+                  child: Padding(
+                    padding: AppSpacing.card,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            widget.item.title,
+                            style: AppTypography.cardTitle.copyWith(
+                              fontSize: AppTypography.size14,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        _MetaRow(item: widget.item),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -117,29 +117,6 @@ class _TtsMediaCardState extends State<TtsMediaCard> {
     );
   }
 }
-
-// ---------------------------------------------------------------------------
-// Thumbnail placeholder
-// ---------------------------------------------------------------------------
-
-class _ThumbnailPlaceholder extends StatelessWidget {
-  const _ThumbnailPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: AppColors.chip,
-      child: const Center(
-        child: Icon(Icons.play_circle_outline,
-            size: AppIcons.folderLarge, color: AppColors.textDisabled),
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Metadata row — year · duration
-// ---------------------------------------------------------------------------
 
 class _MetaRow extends StatelessWidget {
   final MediaItem item;
@@ -162,10 +139,6 @@ class _MetaRow extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Status badge
-// ---------------------------------------------------------------------------
-
 class _StatusBadge extends StatelessWidget {
   final MediaItemStatus status;
 
@@ -174,16 +147,19 @@ class _StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (label, color) = switch (status) {
-      MediaItemStatus.missing     => ('Missing',     AppColors.statusMissing),
+      MediaItemStatus.missing => ('Missing', AppColors.statusMissing),
       MediaItemStatus.unavailable => ('Unavailable', AppColors.statusUnavailable),
-      MediaItemStatus.restricted  => ('Restricted',  AppColors.statusRestricted),
+      MediaItemStatus.restricted => ('Restricted', AppColors.statusRestricted),
       MediaItemStatus.unsupported => ('Unsupported', AppColors.statusDefault),
-      MediaItemStatus.skipped     => ('Skipped',     AppColors.statusDefault),
-      _                           => ('Unknown',     AppColors.statusDefault),
+      MediaItemStatus.skipped => ('Skipped', AppColors.statusDefault),
+      _ => ('Unknown', AppColors.statusDefault),
     };
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 3),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: 3,
+      ),
       decoration: BoxDecoration(
         color: color.withAlpha(220),
         borderRadius: AppRadius.chipRadius,

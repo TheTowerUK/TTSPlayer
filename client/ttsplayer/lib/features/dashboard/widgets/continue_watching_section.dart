@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../../screens/player_screen.dart';
+import '../../../services/artwork/artwork_service.dart';
 import '../../../services/playback_service.dart';
 import '../../../theme/app_theme.dart';
+import '../../../widgets/artwork/artwork_image.dart';
+import '../../../widgets/artwork/card_artwork_band.dart';
+import '../../../widgets/card_layout.dart';
 import '../../../widgets/empty_state.dart';
 import '../../../widgets/section_header.dart';
 
@@ -45,9 +50,6 @@ class _ContinueWatchingCarousel extends StatefulWidget {
 }
 
 class _ContinueWatchingCarouselState extends State<_ContinueWatchingCarousel> {
-  static const _cardHeight = 148.0;
-  static const _scrollbarGutter = 12.0;
-
   late final ScrollController _scrollController;
 
   @override
@@ -65,7 +67,7 @@ class _ContinueWatchingCarouselState extends State<_ContinueWatchingCarousel> {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: _cardHeight + _scrollbarGutter,
+      height: CardLayout.continueWatchingListHeight,
       child: Scrollbar(
         controller: _scrollController,
         thumbVisibility: true,
@@ -96,15 +98,19 @@ class _ContinueWatchingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final artworkService = context.read<ArtworkService>();
+    final candidate = artworkService.forMediaItem(entry.item);
     final progress = entry.progressFraction;
 
     return SizedBox(
-      width: 260,
+      width: AppSpacing.continueWatchingCardWidth,
+      height: CardLayout.continueWatchingCardHeight,
       child: Material(
         color: AppColors.card,
-        borderRadius: AppRadius.cardRadius,
+        borderRadius: AppRadius.heroRadius,
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
-          borderRadius: AppRadius.cardRadius,
+          borderRadius: AppRadius.heroRadius,
           onTap: () => Navigator.push(
             context,
             MaterialPageRoute(
@@ -113,64 +119,82 @@ class _ContinueWatchingCard extends StatelessWidget {
           ),
           child: Container(
             decoration: BoxDecoration(
-              borderRadius: AppRadius.cardRadius,
+              borderRadius: AppRadius.heroRadius,
               border: Border.all(color: AppColors.border),
             ),
-            padding: AppSpacing.cardPremium,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Row(
-                  children: [
-                    const Icon(Icons.movie_outlined,
-                        color: AppColors.textLow, size: AppIcons.lg),
-                    const SizedBox(width: AppSpacing.sm),
-                    Expanded(
-                      child: Text(
+                Expanded(
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      ArtworkImage(candidate: candidate),
+                      if (progress != null)
+                        Positioned(
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          child: LinearProgressIndicator(
+                            value: progress.clamp(0.0, 1.0),
+                            minHeight: 4,
+                            backgroundColor: AppColors.progressTrack,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: kHeroCardFooterPadding,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
                         entry.item.title,
-                        style: AppTypography.cardTitle,
+                        style: AppTypography.cardTitle.copyWith(
+                          fontSize: AppTypography.size16,
+                          height: 1.2,
+                        ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                  ],
-                ),
-                const Spacer(),
-                if (progress != null) ...[
-                  ClipRRect(
-                    borderRadius: AppRadius.chipRadius,
-                    child: LinearProgressIndicator(
-                      value: progress.clamp(0.0, 1.0),
-                      minHeight: 4,
-                      backgroundColor: AppColors.chip,
-                      color: AppColors.primary,
-                    ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              entry.resume.formattedPosition,
+                              style: AppTypography.cardSubtitle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          TextButton.icon(
+                            onPressed: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => PlayerScreen(item: entry.item),
+                              ),
+                            ),
+                            icon: const Icon(
+                              Icons.play_arrow_outlined,
+                              size: AppIcons.lg,
+                            ),
+                            label: const Text('Resume'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: AppColors.primary,
+                              padding: AppSpacing.buttonSm,
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              visualDensity: VisualDensity.compact,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: AppSpacing.xs),
-                ],
-                Row(
-                  children: [
-                    Text(
-                      entry.resume.formattedPosition,
-                      style: AppTypography.cardSubtitle,
-                    ),
-                    const Spacer(),
-                    TextButton(
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => PlayerScreen(item: entry.item),
-                        ),
-                      ),
-                      style: TextButton.styleFrom(
-                        foregroundColor: AppColors.primary,
-                        padding: AppSpacing.buttonSm,
-                        minimumSize: Size.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      child: const Text('Resume'),
-                    ),
-                  ],
                 ),
               ],
             ),

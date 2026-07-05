@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../features/search/search_navigation.dart';
 import '../../features/library_manager/library_manager_screen.dart';
+import '../../navigation/app_navigator.dart';
 import '../../services/catalog_service.dart';
 import '../../services/playback_service.dart';
 import '../../services/scan_history_service.dart';
@@ -29,11 +30,15 @@ class DashboardScreen extends StatefulWidget {
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
   final _dashboardService = DashboardService();
+  final _scrollController = ScrollController();
   Future<DashboardSnapshot>? _snapshotFuture;
   ScannerConfigSummary? _config;
   int _buildGeneration = 0;
+  PlaybackService? _playback;
+  int _lastResumeDataVersion = 0;
+  ModalRoute<void>? _subscribedRoute;
 
   @override
   void initState() {
@@ -44,6 +49,47 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (!mounted) return;
       await _reloadDashboardData();
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final playback = context.read<PlaybackService>();
+    if (!identical(_playback, playback)) {
+      _playback?.removeListener(_onPlaybackResumeChanged);
+      _playback = playback;
+      _lastResumeDataVersion = playback.resumeDataVersion;
+      _playback!.addListener(_onPlaybackResumeChanged);
+    }
+    final route = ModalRoute.of(context);
+    if (route != null && !identical(_subscribedRoute, route)) {
+      if (_subscribedRoute != null) {
+        routeObserver.unsubscribe(this);
+      }
+      routeObserver.subscribe(this, route);
+      _subscribedRoute = route;
+    }
+  }
+
+  @override
+  void dispose() {
+    routeObserver.unsubscribe(this);
+    _playback?.removeListener(_onPlaybackResumeChanged);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didPopNext() {
+    _reloadDashboardData();
+  }
+
+  void _onPlaybackResumeChanged() {
+    final playback = _playback;
+    if (playback == null || !mounted) return;
+    if (playback.resumeDataVersion == _lastResumeDataVersion) return;
+    _lastResumeDataVersion = playback.resumeDataVersion;
+    _reloadDashboardData();
   }
 
   Future<void> _reloadDashboardData() async {
@@ -63,6 +109,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() {
       _config = config;
       _buildGeneration++;
+      _lastResumeDataVersion = context.read<PlaybackService>().resumeDataVersion;
       _snapshotFuture = _dashboardService.build(
         catalog: catalog,
         sourceKind: catalogService.catalogueSourceKind,
@@ -203,48 +250,51 @@ class _DashboardScreenState extends State<DashboardScreen> {
             );
           }
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              DashboardBanners(
-                catalogService: catalogService,
-                scannerError: scannerService.errorMessage,
-                onDismissScannerError: scannerService.clearError,
-                onRetryScanner: () {
-                  scannerService.runScan(catalogService).then((_) {
-                    if (mounted) _reloadDashboardData();
-                  });
-                },
-                onRetryCatalogue: () async {
-                  await catalogService.rescan();
-                  if (mounted) _reloadDashboardData();
-                },
-              ),
-              Expanded(
-                child: FutureBuilder<DashboardSnapshot>(
-                  key: ValueKey(_buildGeneration),
-                  future: _snapshotFuture,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState != ConnectionState.done) {
-                      return const LoadingCard(message: 'Preparing dashboard…');
-                    }
-                    final data = snapshot.data;
-                    if (data == null) {
-                      return const EmptyState(
-                        icon: Icons.dashboard_outlined,
-                        title: 'Dashboard unavailable.',
-                        subtitle: 'Could not assemble dashboard data.',
-                      );
-                    }
+          return FutureBuilder<DashboardSnapshot>(
+            key: ValueKey(_buildGeneration),
+            future: _snapshotFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState != ConnectionState.done) {
+                return const LoadingCard(message: 'Preparing dashboard…');
+              }
+              final data = snapshot.data;
+              if (data == null) {
+                return const EmptyState(
+                  icon: Icons.dashboard_outlined,
+                  title: 'Dashboard unavailable.',
+                  subtitle: 'Could not assemble dashboard data.',
+                );
+              }
 
-                    return SingleChildScrollView(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: AppSpacing.base,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+              return Scrollbar(
+                controller: _scrollController,
+                thumbVisibility: true,
+                child: CustomScrollView(
+                  controller: _scrollController,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: DashboardBanners(
+                        catalogService: catalogService,
+                        scannerError: scannerService.errorMessage,
+                        onDismissScannerError: scannerService.clearError,
+                        onRetryScanner: () {
+                          scannerService.runScan(catalogService).then((_) {
+                            if (mounted) _reloadDashboardData();
+                          });
+                        },
+                        onRetryCatalogue: () async {
+                          await catalogService.rescan();
+                          if (mounted) _reloadDashboardData();
+                        },
+                      ),
+                    ),
+                    SliverPadding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: AppSpacing.base,
+                      ),
+                      sliver: SliverList(
+                        delegate: SliverChildListDelegate([
                           DashboardWelcomeHeader(
                             catalog: data.catalog,
                             sourceKind: data.sourceKind,
@@ -252,36 +302,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                           const SizedBox(height: AppSpacing.md),
                           DashboardQuickSearchBar(
-                            onTap: () => openSearchScreen(context, autofocus: true),
+                            onTap: () =>
+                                openSearchScreen(context, autofocus: true),
                           ),
                           const SizedBox(height: AppSpacing.section),
-                            ContinueWatchingSection(
-                              entries: data.continueWatching,
-                            ),
-                            const SizedBox(height: AppSpacing.section),
-                            LibrariesSection(libraries: data.libraries),
-                            const SizedBox(height: AppSpacing.section),
-                            const RecentlyAddedSection(),
-                            const SizedBox(height: AppSpacing.section),
-                            RecentActivitySection(
-                              entries: data.recentActivity,
-                            ),
-                            const SizedBox(height: AppSpacing.section),
-                            StorageStatusSection(
-                              sourceKind: data.sourceKind,
-                              catalogPath: data.catalogPath,
-                              mediaRoot: _config?.mediaRoot,
-                              uncPath: _config?.uncPath,
-                            ),
-                            const SizedBox(height: AppSpacing.section),
-                          ],
-                        ),
+                          ContinueWatchingSection(
+                            entries: data.continueWatching,
+                          ),
+                          const SizedBox(height: AppSpacing.section),
+                          LibrariesSection(libraries: data.libraries),
+                          const SizedBox(height: AppSpacing.section),
+                          const RecentlyAddedSection(),
+                          const SizedBox(height: AppSpacing.section),
+                          RecentActivitySection(
+                            entries: data.recentActivity,
+                          ),
+                          const SizedBox(height: AppSpacing.section),
+                          StorageStatusSection(
+                            sourceKind: data.sourceKind,
+                            catalogPath: data.catalogPath,
+                            mediaRoot: _config?.mediaRoot,
+                            uncPath: _config?.uncPath,
+                          ),
+                          const SizedBox(height: AppSpacing.section),
+                        ]),
                       ),
-                    );
-                  },
+                    ),
+                  ],
                 ),
-              ),
-            ],
+              );
+            },
           );
         },
       ),

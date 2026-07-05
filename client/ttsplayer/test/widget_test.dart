@@ -2,6 +2,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:ttsplayer/main.dart';
+import 'package:ttsplayer/services/artwork/artwork_service.dart';
 import 'package:ttsplayer/services/catalog_service.dart';
 import 'package:ttsplayer/services/playback_service.dart';
 import 'package:ttsplayer/services/scan_history_service.dart';
@@ -12,6 +13,7 @@ void main() {
     await tester.pumpWidget(
       MultiProvider(
         providers: [
+          Provider(create: (_) => ArtworkService()),
           ChangeNotifierProvider(create: (_) => CatalogService()),
           ChangeNotifierProvider(create: (_) => PlaybackService()),
           ChangeNotifierProvider(create: (_) => ScannerService()),
