@@ -5,7 +5,8 @@ Canonical milestone detail lives in [`docs/roadmap/`](docs/roadmap/).
 | Milestone | Theme | Status |
 |---|---|---|
 | M2 | [First Playable Release](docs/roadmap/roadmap.md#m2--first-playable-release) | ✅ v0.2.0 |
-| M3 | [Personal Media Experience](docs/roadmap/m3-personal-media-experience.md) | 🎯 Current |
+| M3 | [Personal Media Experience](docs/roadmap/m3-personal-media-experience.md) | 🎯 Sprint 4 |
+| M4 | [Rich Media Libraries](docs/roadmap/m4-rich-media-libraries.md) | Planned (documented) |
 | M3.5 | [Network Client Foundation](docs/roadmap/network-client-foundation.md) | Planned |
 | M7 | [Multi-device Experience](docs/roadmap/mobile-delivery.md#m7--multi-device-experience) | Planned |
 
@@ -35,10 +36,10 @@ Canonical milestone detail lives in [`docs/roadmap/`](docs/roadmap/).
 |---|---|---|
 | Sprint 1 | Dashboard & Library Foundation | ✓ |
 | Sprint 2 | Global Search & Discovery | ✓ |
-| Sprint 3 | Artwork & Thumbnails | □ |
-| Sprint 4 | UI Polish & Collections | □ |
+| Sprint 3 | Artwork & Visual Identity | ✓ |
+| Sprint 4 | Polish & Experience Refinement | 🎯 |
 
-Sprint 2 checkpoint: dashboard, library manager, and catalogue search complete. Next: presentation and visual identity.
+Sprint 3 checkpoint (`m3-sprint-3`): artwork, design tokens, card upgrades. Sprint 4: Featured Folders, Recently Added, dashboard polish — see [Sprint 4 plan](docs/roadmap/m3-sprint-4-plan.md).
 
 → [Full M3 goals](docs/roadmap/m3-personal-media-experience.md)
 

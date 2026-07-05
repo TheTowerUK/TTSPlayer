@@ -1,27 +1,29 @@
 # M3 — Personal Media Experience
 
 **Theme:** Personal Media Experience  
-**Status:** Current milestone  
+**Status:** Current milestone — Sprint 4 in progress (final polish)  
 **Platform focus:** Windows-first polish  
 **Architecture impact:** None — experience-layer improvements on the existing local/UNC folder-tree catalogue.
 
 → [Full roadmap](./roadmap.md)  
+→ [Sprint 4 plan](./m3-sprint-4-plan.md)  
+→ [M4 preview (next milestone)](./m4-rich-media-libraries.md)  
 → [Mobile delivery (future — not M3 scope)](./mobile-delivery.md)
 
 ---
 
 ## M3 Progress
 
-Internal sprint checkpoint — roughly halfway through M3. Foundation (dashboard, catalogue access, search) is stable; remaining sprints focus on presentation and polish.
-
 | Sprint | Focus | Status |
 |---|---|---|
 | Sprint 1 | Dashboard & Library Foundation | ✓ Complete |
 | Sprint 2 | Global Search & Discovery | ✓ Complete |
-| Sprint 3 | Artwork & Thumbnails | Planned |
-| Sprint 4 | UI Polish & Collections | Planned |
+| Sprint 3 | Artwork & Visual Identity | ✓ Complete (`m3-sprint-3`) |
+| Sprint 4 | Polish & Experience Refinement | 🎯 In progress |
 
-**Checkpoint (Sprint 2):** Dashboard, Library Manager, Continue Watching, Storage Status, and catalogue-wide search are in place. Sprint 3 can concentrate on visual identity rather than infrastructure or data handling.
+**Checkpoint (Sprint 3):** Design tokens, `ArtworkService`, card upgrades, sidecar-aware artwork, dashboard live refresh, and vertical scroll. Sprint 4 closes the milestone with `added_at`, Featured Folders, overview panel, and polish.
+
+→ [Sprint 4 implementation plan](./m3-sprint-4-plan.md)
 
 ---
 
@@ -35,12 +37,14 @@ Windows-first improvements to how the user manages and enjoys their library:
 | Dashboard | Home layout: libraries, scan summary, status at a glance |
 | Continue Watching | Surface in-progress items from playback history |
 | Artwork / thumbnails | Posters in grids and detail views; placeholder on failure |
-| Recently Added | Newest catalogue items — **requires per-item `added_at` from indexer** (Sprint 1: empty state only) |
+| Recently Added | Newest catalogue items via per-item `added_at` from indexer (Sprint 4) |
+| Featured Folders | Prominent catalogue folders on dashboard — not user-curated collections (Sprint 4) |
 | Catalogue search | Find items by title across the loaded catalogue |
 | Diagnostics | Playback and catalogue health visible when something fails |
 | NAS / demo status | Clear **Live NAS** vs **Demo** labelling and path visibility |
 | Folder browsing | Improved navigation, hierarchy, and empty states |
-| Collections | User-curated lists (favourites, watch later) — app state, not filesystem |
+
+**Deferred beyond M3:** User-curated Collections, Favourites, and Watch Later — app-state organisation for a future milestone once the platform supports richer library management.
 
 ---
 
@@ -73,9 +77,10 @@ These belong to later milestones and must not pull M3 off course:
 | Path-to-URL resolver | M3.5 |
 | NAS Caddy/Nginx deployment | M3.5 (infra; can start in parallel with late M3) |
 | Remote control / multi-device sync | M7 |
-| New media types (images, music, books) | M4–M6 |
+| Dedicated image/music/book experiences | M4–M6 |
 | Filesystem restructuring or virtual libraries | Never (see project rules) |
 | External metadata APIs (TMDB, etc.) | Out of scope until requested |
+| User-curated Collections / Favourites | Future milestone (post-M3) |
 
 ---
 
@@ -88,5 +93,11 @@ M3 is done when a Windows user can:
 3. Browse top-level **libraries** that mirror their NAS folder structure
 4. Browse folders with **thumbnails** and clearer hierarchy
 5. **Search** the catalogue by title without leaving the app
-6. Save items to a **Collection** and return to them later
+6. Discover **Featured Folders** and **Recently Added** items from catalogue data alone
 7. Understand playback or catalogue failures via **diagnostics**, not blank screens
+
+---
+
+## After M3
+
+When Sprint 4 completes, M3 is feature-complete for Windows personal media. The next deliberate step is **[M4 — Rich Media Libraries](./m4-rich-media-libraries.md)** (image browsing and viewing), documented in advance so the transition is planned rather than reactive.

@@ -50,11 +50,11 @@ Same Flutter app, HTTP access mode: NAS-hosted `catalog.json`, Caddy/Nginx HTTPS
 
 ---
 
-## M4 — Image Library
+## M4 — Rich Media Libraries
 
-**Status:** Planned
+**Status:** Planned — [detailed goals](./m4-rich-media-libraries.md)
 
-Photo and image browsing from the user's folder structure.
+Photo and image browsing from the user's folder structure. Builds on M3 artwork and folder navigation; documented during M3 Sprint 4 closure.
 
 ---
 
