@@ -31,21 +31,23 @@ End-to-end playback on Windows, folder-tree browsing, rescan, resume, and error 
 
 ## M3 — Personal Media Experience
 
-**Status:** 🎯 Current
+**Status:** ✅ Complete (v0.3.0)
 
-Windows-first polish: library manager, dashboard, Continue Watching, thumbnails, search, diagnostics, Live NAS / Demo visibility. No mobile or network-client work.
+Windows-first polish: library manager, dashboard, Continue Watching, thumbnails, search, diagnostics, Live NAS / Demo visibility.
 
-→ [M3 goals](./m3-personal-media-experience.md)
+→ [M3 goals](./m3-personal-media-experience.md)  
+→ [Release snapshot](../release/v0.3.0.md)
 
 ---
 
 ## M3.5 — Network Client Foundation
 
-**Status:** Planned (bridge — not current scope)
+**Status:** 🎯 Current (`v0.4.0-dev`)
 
 Same Flutter app, HTTP access mode: NAS-hosted `catalog.json`, Caddy/Nginx HTTPS, media streaming with range support, path-to-URL resolver, mobile settings, Android/iOS smoke builds. **Depends on NAS serving layer first.**
 
 → [M3.5 goals](./network-client-foundation.md)  
+→ [Development cycle](../release/v0.4.0-dev.md)  
 → [Mobile delivery overview](./mobile-delivery.md)
 
 ---

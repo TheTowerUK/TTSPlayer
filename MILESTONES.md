@@ -5,9 +5,9 @@ Canonical milestone detail lives in [`docs/roadmap/`](docs/roadmap/).
 | Milestone | Theme | Status |
 |---|---|---|
 | M2 | [First Playable Release](docs/roadmap/roadmap.md#m2--first-playable-release) | ✅ v0.2.0 |
-| M3 | [Personal Media Experience](docs/roadmap/m3-personal-media-experience.md) | ✅ Complete |
-| M4 | [Rich Media Libraries](docs/roadmap/m4-rich-media-libraries.md) | Planned (documented) |
-| M3.5 | [Network Client Foundation](docs/roadmap/network-client-foundation.md) | Planned |
+| M3 | [Personal Media Experience](docs/roadmap/m3-personal-media-experience.md) | ✅ v0.3.0 |
+| M3.5 | [Network Client Foundation](docs/roadmap/network-client-foundation.md) | 🎯 Current (`v0.4.0-dev`) |
+| M4 | [Rich Media Libraries](docs/roadmap/m4-rich-media-libraries.md) | Planned (after M3.5) |
 | M7 | [Multi-device Experience](docs/roadmap/mobile-delivery.md#m7--multi-device-experience) | Planned |
 
 → [Roadmap principles](docs/roadmap/principles.md)  
@@ -28,7 +28,7 @@ Canonical milestone detail lives in [`docs/roadmap/`](docs/roadmap/).
 
 ## M3 — Personal Media Experience
 
-**Status:** Complete — tag `m3-complete`
+**Status:** Complete — tag `v0.3.0` / `m3-complete`
 
 ### M3 Progress
 
@@ -45,8 +45,11 @@ Sprint checkpoints: `m3-sprint-3`, `m3-complete`. Sprint 4 delivered Featured Fo
 
 ---
 
-## M3.5 — Network Client Foundation (planned)
+## M3.5 — Network Client Foundation (current)
 
+**Version line:** `v0.4.0-dev`  
 Bridge milestone: same Flutter app, HTTPS access mode. Depends on NAS serving layer first.
 
+→ [M3.5 goals](docs/roadmap/network-client-foundation.md)  
+→ [Development cycle](docs/release/v0.4.0-dev.md)  
 → [Mobile delivery overview](docs/roadmap/mobile-delivery.md)

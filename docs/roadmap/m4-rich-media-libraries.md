@@ -1,7 +1,7 @@
 # M4 — Rich Media Libraries
 
 **Theme:** Rich Media Libraries  
-**Status:** Planned (documented during M3 Sprint 4 — not yet in development)  
+**Status:** Planned — begins after M3.5 (`v0.4.0-dev` cycle)  
 **Platform focus:** Windows-first; builds on the M3 personal media experience  
 **Architecture impact:** Extends content-type handling and browsing UX on the existing folder-tree catalogue — no virtual libraries, no metadata providers.
 

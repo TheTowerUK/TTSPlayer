@@ -1,7 +1,7 @@
 # M3.5 — Network Client Foundation
 
 **Theme:** Network Client  
-**Status:** Planned (bridge milestone — not current scope)  
+**Status:** Current milestone — `v0.4.0-dev` development cycle  
 **Architecture impact:** Adds HTTP access mode to the existing Flutter client; does **not** change catalogue schema or filesystem-first indexing.
 
 → [Mobile delivery overview](./mobile-delivery.md)  

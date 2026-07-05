@@ -2,7 +2,8 @@
 
 Shipping history and version notes for TTSPlayer.
 
-- **[v0.3.0 — Personal Media Experience](./v0.3.0.md)** — M3 release snapshot
+- **[v0.3.0 — Personal Media Experience](./v0.3.0.md)** — M3 release (closed)
+- **[v0.4.0-dev — Development cycle](./v0.4.0-dev.md)** — M3.5 Network Client Foundation (active)
 - **[Release history](./release-history.md)** — changelog by version
 
 When tagging a release:

@@ -1,7 +1,7 @@
 # M3 — Personal Media Experience
 
 **Theme:** Personal Media Experience  
-**Status:** Current milestone — Sprint 4 in progress (final polish)  
+**Status:** Current milestone — development cycle `v0.4.0-dev` (M3.5 Network Client Foundation follows)  
 **Platform focus:** Windows-first polish  
 **Architecture impact:** None — experience-layer improvements on the existing local/UNC folder-tree catalogue.
 
@@ -19,7 +19,7 @@
 | Sprint 1 | Dashboard & Library Foundation | ✓ Complete |
 | Sprint 2 | Global Search & Discovery | ✓ Complete |
 | Sprint 3 | Artwork & Visual Identity | ✓ Complete (`m3-sprint-3`) |
-| Sprint 4 | Polish & Experience Refinement | 🎯 In progress |
+| Sprint 4 | Polish & Experience Refinement | ✓ Complete |
 
 **Checkpoint (Sprint 3):** Design tokens, `ArtworkService`, card upgrades, sidecar-aware artwork, dashboard live refresh, and vertical scroll. Sprint 4 closes the milestone with `added_at`, Featured Folders, overview panel, and polish.
 

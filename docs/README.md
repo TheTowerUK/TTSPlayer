@@ -14,9 +14,9 @@ Project identity and planning live here.
 | Milestone | Theme | Status |
 |---|---|---|
 | M2 | First Playable Release | ✅ v0.2.0 |
-| M3 | Personal Media Experience | 🎯 Sprint 4 |
-| M3.5 | Network Client Foundation | Planned |
-| M4 | [Rich Media Libraries](./roadmap/m4-rich-media-libraries.md) | Planned (documented) |
+| M3 | Personal Media Experience | ✅ v0.3.0 |
+| M3.5 | Network Client Foundation | 🎯 `v0.4.0-dev` |
+| M4 | [Rich Media Libraries](./roadmap/m4-rich-media-libraries.md) | Planned (after M3.5) |
 | M5 | Music Library | Planned |
 | M6 | Books & Comics | Planned |
 | M7 | Multi-device Experience | Planned |
