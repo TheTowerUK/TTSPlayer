@@ -9,6 +9,8 @@ import 'package:ttsplayer/models/media_item.dart';
 import 'package:ttsplayer/navigation/app_navigator.dart';
 import 'package:ttsplayer/services/artwork/artwork_service.dart';
 import 'package:ttsplayer/services/catalog_service.dart';
+import 'package:ttsplayer/services/media_access/media_access_config.dart';
+import 'package:ttsplayer/services/media_access/media_location_resolver.dart';
 import 'package:ttsplayer/services/playback_service.dart';
 import 'package:ttsplayer/services/scan_history_service.dart';
 import 'package:ttsplayer/services/scanner_service.dart';
@@ -73,11 +75,21 @@ Catalog _tallDashboardCatalog() {
 Widget _dashboardHarness(Catalog catalog) {
   return MultiProvider(
     providers: [
+      Provider(
+        create: (_) => MediaLocationResolver(
+          config: MediaAccessConfig.development(),
+          isWindowsDesktop: false,
+        ),
+      ),
       Provider(create: (_) => ArtworkService(fileExists: (_) => false)),
       ChangeNotifierProvider<CatalogService>.value(
         value: _FakeCatalogService(catalog),
       ),
-      ChangeNotifierProvider(create: (_) => PlaybackService()),
+      ChangeNotifierProvider(
+        create: (context) => PlaybackService(
+          mediaLocationResolver: context.read<MediaLocationResolver>(),
+        ),
+      ),
       ChangeNotifierProvider(create: (_) => ScannerService()),
       ChangeNotifierProvider<ScanHistoryService>.value(
         value: _FakeScanHistoryService(),

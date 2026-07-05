@@ -22,12 +22,13 @@ void main() {
       expect(result.isPresent, isFalse);
     });
 
-    test('existing local file reports size', () async {
+    test('existing local file URI passes through checkFilePresence', () async {
       final temp = await Directory.systemTemp.createTemp('ttsplayer_preflight_');
       final file = File('${temp.path}/sample.mp4');
       await file.writeAsBytes([0, 1, 2, 3]);
 
-      final result = await checkFilePresence(file.path);
+      final fileUri = Uri.file(file.path).toString();
+      final result = await checkFilePresence(fileUri);
 
       expect(result.isLocal, isTrue);
       expect(result.exists, isTrue);
