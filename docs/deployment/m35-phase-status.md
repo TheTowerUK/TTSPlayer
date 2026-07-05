@@ -24,7 +24,7 @@
 | **Phase 3b** | Wire resolver into playback and artwork | ✅ **Complete** |
 | **M3.5** | Exit criteria + final acceptance | ✅ **Accepted** — 2026-07-05 |
 | **Phase 4** | Network catalogue + provider configuration | 🎯 **Active** — [plan](../roadmap/m35-phase-4-plan.md) |
-| **4.1** | HTTP catalogue provider (`CatalogService.loadFromUrl()`) | ⛔ Not started |
+| **4.1** | HTTP catalogue provider (`CatalogService.loadFromUrl()`) | ✅ **Complete** — not wired to startup |
 | **4.2** | Media provider configuration model | ⛔ Not started |
 | **4.3** | Settings UI | ⛔ Not started |
 | **4.4** | Provider selection & fallback | ⛔ Not started |
@@ -158,7 +158,7 @@ Per [TNAS Caddy reference provider checklist](./tnas-caddy-deploy-checklist.md):
 
 ## Next actions
 
-1. **Phase 4.1:** HTTP catalogue provider — [plan](../roadmap/m35-phase-4-plan.md#phase-41--http-catalogue-provider)
+1. **Phase 4.2:** Media provider configuration model — [plan](../roadmap/m35-phase-4-plan.md#phase-42--media-provider-configuration-model)
 2. **Follow-up:** TLS on `:8443` when Windows/Caddy cert issue resolved (Phase 4)
 3. **Backlog:** [Artwork discovery improvements](../roadmap/backlog-artwork-discovery-improvements.md) (Phase 4.x)
 

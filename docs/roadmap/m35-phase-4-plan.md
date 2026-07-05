@@ -52,7 +52,7 @@ Implement in order. Each sub-phase has a **single responsibility** and its own d
 
 | Sub-phase | Focus | Status |
 |---|---|---|
-| **4.1** | HTTP catalogue provider (`CatalogService.loadFromUrl()`) | ⛔ Not started |
+| **4.1** | HTTP catalogue provider (`CatalogService.loadFromUrl()`) | ✅ **Complete** — not wired to startup |
 | **4.2** | Media provider configuration model | ⛔ Not started |
 | **4.3** | Settings UI | ⛔ Not started |
 | **4.4** | Provider selection & fallback | ⛔ Not started |
@@ -62,7 +62,11 @@ Wire sub-phases in **separate commits** where possible — same rollback discipl
 
 ---
 
-### Phase 4.1 — HTTP catalogue provider
+### Phase 4.1 — HTTP catalogue provider — complete
+
+**Status:** Complete — HTTP catalogue loading exists; **not wired into startup or settings**.
+
+**Implementation discipline:** `loadFromUrl()` is an explicit capability, not a replacement for local loading. The app behaves exactly as before unless `loadFromUrl()` is called (e.g. manual URL entry on dashboard).
 
 **Scope:** Add HTTP catalogue loading capability. Local catalogue startup remains the default.
 
@@ -76,12 +80,12 @@ Wire sub-phases in **separate commits** where possible — same rollback discipl
 
 **Definition of done:**
 
-- [ ] `CatalogService.loadFromUrl()` (or equivalent) with bounded timeout
-- [ ] Success path: valid JSON loads catalogue
-- [ ] Failure paths tested: invalid JSON, timeout, network error — previous catalogue preserved
-- [ ] Unit tests for 200, invalid JSON, timeout/failure
-- [ ] No settings UI; no global provider selection changes
-- [ ] `flutter analyze` clean; tests pass
+- [x] `CatalogService.loadFromUrl()` with bounded timeout (15s default)
+- [x] Success path: valid JSON loads catalogue
+- [x] Failure paths: invalid JSON, non-200, timeout, network — previous catalogue preserved
+- [x] Unit tests for 200, invalid JSON, HTTP error, timeout, network failure
+- [x] No settings UI; no global provider selection changes; `loadOnStartup` unchanged
+- [x] `flutter analyze` clean; tests pass
 
 ---
 

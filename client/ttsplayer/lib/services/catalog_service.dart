@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -14,6 +15,18 @@ import '../models/catalogue_validation_result.dart';
 enum CatalogSource { bundled, localFile, remoteUrl }
 
 class CatalogService extends ChangeNotifier {
+  CatalogService({
+    http.Client? httpClient,
+    Duration? catalogFetchTimeout,
+  })  : _httpClient = httpClient ?? http.Client(),
+        _catalogFetchTimeout =
+            catalogFetchTimeout ?? catalogFetchTimeoutDefault;
+
+  final http.Client _httpClient;
+  final Duration _catalogFetchTimeout;
+
+  /// Default bounded timeout for [loadFromUrl].
+  static const catalogFetchTimeoutDefault = Duration(seconds: 15);
   Catalog? _catalog;
   bool _isLoading = false;
   String? _errorMessage;
@@ -189,21 +202,36 @@ class CatalogService extends ChangeNotifier {
   }
 
   /// Load from a remote URL.
+  ///
+  /// Explicit capability only — not used by [loadOnStartup]. On failure the
+  /// previously loaded catalogue is preserved and [errorMessage] is set.
   Future<void> loadFromUrl(String url) async {
     await _load(
       source: CatalogSource.remoteUrl,
-      loader: () async {
-        final response = await http
-            .get(Uri.parse(url))
-            .timeout(const Duration(seconds: 15));
-        if (response.statusCode != 200) {
-          throw Exception('HTTP ${response.statusCode} from $url');
-        }
-        return response.body;
-      },
+      loader: () => _fetchCatalogBody(url),
       identifier: url,
     );
     if (_errorMessage == null) _isUsingFallback = false;
+  }
+
+  Future<String> _fetchCatalogBody(String url) async {
+    try {
+      final response = await _httpClient
+          .get(Uri.parse(url))
+          .timeout(_catalogFetchTimeout);
+      if (response.statusCode != 200) {
+        throw HttpException(
+          'HTTP ${response.statusCode} loading catalogue from $url',
+          uri: Uri.parse(url),
+        );
+      }
+      return response.body;
+    } on TimeoutException {
+      throw TimeoutException(
+        'Timed out loading catalogue from $url',
+        _catalogFetchTimeout,
+      );
+    }
   }
 
   /// Load the bundled mock catalogue (always available offline).
@@ -449,9 +477,26 @@ class CatalogService extends ChangeNotifier {
 
     try {
       final raw = await loader();
-      final json = jsonDecode(raw) as Map<String, dynamic>;
+
+      final Map<String, dynamic> json;
+      try {
+        json = jsonDecode(raw) as Map<String, dynamic>;
+      } on FormatException {
+        _errorMessage = 'Catalogue response could not be parsed as JSON.';
+        return;
+      }
+
+      final Catalog parsed;
+      try {
+        parsed = Catalog.fromJson(json);
+      } catch (e) {
+        _errorMessage = 'Catalogue response was not a valid catalogue.';
+        debugPrint('[CatalogService] Catalog.fromJson failed: $e');
+        return;
+      }
+
       // Only replace on success — a failed load preserves the current catalogue.
-      _catalog = Catalog.fromJson(json);
+      _catalog = parsed;
       _catalogPath = identifier;
       if (identifier != 'bundled') {
         _lastRefreshedAt = DateTime.now();
@@ -460,8 +505,14 @@ class CatalogService extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_prefKeySource, source.name);
       await prefs.setString(_prefKeyPath, identifier);
+    } on TimeoutException {
+      _errorMessage = 'Timed out loading catalogue. Check the URL and network.';
+    } on SocketException catch (e) {
+      _errorMessage = 'Network error loading catalogue: ${e.message}';
+    } on HttpException catch (e) {
+      _errorMessage = e.message;
     } catch (e) {
-      _errorMessage = e.toString();
+      _errorMessage = 'Could not load catalogue: $e';
     } finally {
       _isLoading = false;
       notifyListeners();
