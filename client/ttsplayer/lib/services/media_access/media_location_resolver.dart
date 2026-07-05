@@ -7,8 +7,7 @@ import 'resolved_media_location.dart';
 
 /// Resolves catalogue [file_path] values to playable URIs via access providers.
 ///
-/// Playback and artwork should use this instead of raw filesystem paths.
-/// Not yet wired into [PlaybackService] — Phase 3a implementation only.
+/// Playback and artwork resolve catalogue [file_path] values at consumption time.
 class MediaLocationResolver {
   final MediaAccessConfig config;
 

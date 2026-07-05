@@ -2,16 +2,34 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 
+import 'media_access/media_location_resolver.dart';
+
 /// Windows MVP uses media_kit — video_player has no Windows implementation.
 bool get useMediaKitPlayback => !kIsWeb && Platform.isWindows;
 
-/// Normalise catalogue file paths to a URI [MediaKit] can open.
-String mediaUriForPlayback(String filePath) {
-  if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
-    return filePath;
+/// Normalises a resolved URI (or legacy filesystem path) for the playback engine.
+///
+/// Catalogue paths must be resolved via [MediaLocationResolver] in
+/// [PlaybackService.play] before calling this.
+String mediaUriForPlayback(
+  String pathOrUri, {
+  MediaLocationResolver? resolver,
+}) {
+  if (resolver != null &&
+      !pathOrUri.startsWith('http://') &&
+      !pathOrUri.startsWith('https://') &&
+      !pathOrUri.startsWith('file://')) {
+    final resolved = resolver.resolve(pathOrUri);
+    if (resolved.isPlayable && resolved.uri != null) {
+      return resolved.uri!;
+    }
   }
-  if (filePath.startsWith('file://')) {
-    return filePath;
+
+  if (pathOrUri.startsWith('http://') || pathOrUri.startsWith('https://')) {
+    return pathOrUri;
   }
-  return Uri.file(filePath).toString();
+  if (pathOrUri.startsWith('file://')) {
+    return pathOrUri;
+  }
+  return Uri.file(pathOrUri).toString();
 }

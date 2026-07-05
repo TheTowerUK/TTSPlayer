@@ -140,7 +140,7 @@ No player or network startup changes until Phase **3b** wires the resolver into 
 | **2** | TNAS deployment validation (smoke tests on NAS) | ⛔ Blocked — operational |
 | **2.5** | **Media access abstraction** (this document) | ✅ Accepted — 2026-07-05 |
 | **3a** | Flutter `MediaLocationResolver` + unit tests | ✅ Complete |
-| **3b** | Wire resolver into playback and artwork | ⛔ Blocked until 3a complete |
+| **3b** | Wire resolver into playback and artwork | ✅ Complete |
 
 Phase 2 (TNAS + Caddy) is an **optional reference implementation** for the HTTP provider — it validates [path-mapping.md](./path-mapping.md) but is not a prerequisite to accepting the abstraction doc.
 
@@ -164,7 +164,7 @@ Phase 2.5 was **accepted** 2026-07-05:
 - `MediaLocationResolver` under `client/ttsplayer/lib/services/media_access/`
 - `LocalFileProvider`, `HttpServingProvider` as first two implementations
 - Unit tests: `test/media_location_resolver_test.dart`
-- **Not yet wired:** `PlaybackService`, `ArtworkService`, `main.dart` (Phase 3b)
+- **Not yet wired:** `CatalogService`, settings UI (future phases)
 
 ---
 

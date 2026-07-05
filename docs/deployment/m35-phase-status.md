@@ -18,9 +18,9 @@
 | **Phase 2** | Deploy Caddy on TNAS; HTTPS smoke tests on real hardware | ⛔ **Blocked** — pending TNAS Caddy deployment |
 | **Phase 2.5** | Media access abstraction — provider-neutral `MediaLocationResolver` spec | ✅ **Accepted** — 2026-07-05 |
 | **Phase 3a** | Flutter `MediaLocationResolver` + unit tests (no playback wiring) | ✅ **Complete** |
-| **Phase 3b** | Wire resolver into playback and artwork | ⛔ **Blocked** — pending approval to wire |
+| **Phase 3b** | Wire resolver into playback and artwork | ✅ **Complete** |
 
-**Phase 2.5 accepted** — resolver implementation is limited to `MediaLocationResolver` and tests first. Do not change playback startup broadly until Phase 3b.
+**Phase 3b complete** — resolver wired at playback and artwork consumption boundaries only. No catalogue loading, scanning, or settings changes.
 
 Phase 2 (TNAS serving) is an **optional reference implementation** for the HTTP provider. It continues in parallel and does not block Phase 3a.
 
@@ -94,14 +94,13 @@ On the NAS hostname:
 1. `MediaLocationResolver` + unit tests — see [Phase 3 plan](../roadmap/m35-phase-3-plan.md)
 2. No `PlaybackService` wiring in this phase
 
-### Phase 3b (integration)
+### Phase 3b (integration) — complete
 
-Wire resolver into playback and artwork after Phase 3a definition of done.
+Resolver wired into `PlaybackService.play()` and `ArtworkImage` load path. Catalogue paths unchanged.
 
 ---
 
 ## Next actions
 
 1. **Phase 2:** [TNAS Caddy deploy checklist](./tnas-caddy-deploy-checklist.md) — optional HTTP reference validation
-2. **Phase 3a:** [Phase 3 plan](../roadmap/m35-phase-3-plan.md) — resolver + tests
-3. **Phase 3b:** Wire resolver into playback (after 3a)
+2. **Phase 4:** `CatalogService` HTTP startup + settings (when ready)

@@ -1,6 +1,6 @@
 # M3.5 Phase 3 — MediaLocationResolver Implementation Plan
 
-**Status:** Phase 3a complete — awaiting Phase 3b wiring approval  
+**Status:** Phase 3a + 3b complete — resolver wired at consumption boundaries.
 **Accepted:** Phase 2.5 — 2026-07-05  
 **Cycle:** `v0.4.0-dev`
 

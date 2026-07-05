@@ -9,6 +9,9 @@ import 'package:video_player/video_player.dart';
 
 import '../models/catalog.dart';
 import '../models/media_item.dart';
+import 'media_access/media_access_config.dart';
+import 'media_access/media_location_resolver.dart';
+import 'media_access/resolved_media_location.dart';
 import 'playback_platform.dart';
 
 // ---------------------------------------------------------------------------
@@ -37,36 +40,36 @@ class PlaybackFilePresence {
   bool get isPresent => exists == true;
 }
 
-Future<PlaybackFilePresence> checkFilePresence(String filePath) async {
-  final isRemote = filePath.startsWith('http://') ||
-      filePath.startsWith('https://');
+Future<PlaybackFilePresence> checkFilePresence(String pathOrUri) async {
+  final isRemote = pathOrUri.startsWith('http://') ||
+      pathOrUri.startsWith('https://');
 
   if (isRemote) {
-    return PlaybackFilePresence(path: filePath, isLocal: false);
+    return PlaybackFilePresence(path: pathOrUri, isLocal: false);
   }
 
   try {
-    final file = filePath.startsWith('file://')
-        ? File.fromUri(Uri.parse(filePath))
-        : File(filePath);
+    final file = pathOrUri.startsWith('file://')
+        ? File.fromUri(Uri.parse(pathOrUri))
+        : File(pathOrUri);
     final exists = await file.exists();
     if (!exists) {
       return PlaybackFilePresence(
-        path: filePath,
+        path: pathOrUri,
         isLocal: true,
         exists: false,
       );
     }
     final length = await file.length();
     return PlaybackFilePresence(
-      path: filePath,
+      path: pathOrUri,
       isLocal: true,
       exists: true,
       lengthBytes: length,
     );
   } catch (e) {
     return PlaybackFilePresence(
-      path: filePath,
+      path: pathOrUri,
       isLocal: true,
       exists: null,
       error: e.toString(),
@@ -147,6 +150,24 @@ class ContinueWatchingEntry {
 // ---------------------------------------------------------------------------
 
 class PlaybackService extends ChangeNotifier {
+  PlaybackService({MediaLocationResolver? mediaLocationResolver})
+      : _mediaLocationResolver = mediaLocationResolver ?? _defaultMediaLocationResolver();
+
+  final MediaLocationResolver _mediaLocationResolver;
+
+  static MediaLocationResolver _defaultMediaLocationResolver() {
+    return MediaLocationResolver(
+      config: MediaAccessConfig.development(),
+      isWindowsDesktop: !kIsWeb && Platform.isWindows,
+    );
+  }
+
+  /// Resolves catalogue paths at the playback boundary (tests / diagnostics).
+  @visibleForTesting
+  ResolvedMediaLocation resolveCataloguePath(String filePath) {
+    return _mediaLocationResolver.resolve(filePath);
+  }
+
   VideoPlayerController? _videoController;
   Player? _mediaKitPlayer;
   VideoController? _mediaKitVideoController;
@@ -300,7 +321,15 @@ class PlaybackService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final presence = await checkFilePresence(item.filePath);
+      final location = _mediaLocationResolver.resolve(item.filePath);
+      if (!location.isPlayable || location.uri == null) {
+        _errorMessage = location.errorReason ?? playbackFailedMessage;
+        _logState('Error: media location unresolved (${location.status.name})');
+        return;
+      }
+
+      final mediaUri = location.uri!;
+      final presence = await checkFilePresence(mediaUri);
       _logFilePresenceAnswer(presence);
 
       if (presence.isLocal && presence.exists == false) {
@@ -319,9 +348,9 @@ class PlaybackService extends ChangeNotifier {
       _logInitProbeAnswer(testing: true);
       try {
         if (useMediaKitPlayback) {
-          await _initMediaKit(item.filePath, generation);
+          await _initMediaKit(mediaUri, generation);
         } else {
-          await _initVideoPlayer(item.filePath, generation);
+          await _initVideoPlayer(mediaUri, generation);
         }
       } catch (e) {
         _logInitProbeAnswer(success: false, reason: e.toString());
@@ -449,12 +478,12 @@ class PlaybackService extends ChangeNotifier {
   // Backend-specific init / control
   // ---------------------------------------------------------------------------
 
-  Future<void> _initMediaKit(String filePath, int generation) async {
+  Future<void> _initMediaKit(String mediaUri, int generation) async {
     _mediaKitPlayer = Player();
     _mediaKitVideoController = VideoController(_mediaKitPlayer!);
     _attachMediaKitListeners(generation);
 
-    final media = Media(mediaUriForPlayback(filePath));
+    final media = Media(mediaUriForPlayback(mediaUri));
     await _mediaKitPlayer!.open(media, play: false).timeout(
       _initTimeout,
       onTimeout: () => throw TimeoutException(
@@ -477,8 +506,8 @@ class PlaybackService extends ChangeNotifier {
     }
   }
 
-  Future<void> _initVideoPlayer(String filePath, int generation) async {
-    _videoController = _buildVideoPlayerController(filePath);
+  Future<void> _initVideoPlayer(String mediaUri, int generation) async {
+    _videoController = _buildVideoPlayerController(mediaUri);
     await _videoController!.initialize().timeout(
       _initTimeout,
       onTimeout: () => throw TimeoutException(
@@ -567,14 +596,14 @@ class PlaybackService extends ChangeNotifier {
     }
   }
 
-  static VideoPlayerController _buildVideoPlayerController(String filePath) {
-    if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
-      return VideoPlayerController.networkUrl(Uri.parse(filePath));
+  static VideoPlayerController _buildVideoPlayerController(String mediaUri) {
+    if (mediaUri.startsWith('http://') || mediaUri.startsWith('https://')) {
+      return VideoPlayerController.networkUrl(Uri.parse(mediaUri));
     }
-    if (filePath.startsWith('file://')) {
-      return VideoPlayerController.file(File.fromUri(Uri.parse(filePath)));
+    if (mediaUri.startsWith('file://')) {
+      return VideoPlayerController.file(File.fromUri(Uri.parse(mediaUri)));
     }
-    return VideoPlayerController.file(File(filePath));
+    return VideoPlayerController.file(File(mediaUri));
   }
 
   // ---------------------------------------------------------------------------
