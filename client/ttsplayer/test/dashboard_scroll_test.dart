@@ -9,7 +9,7 @@ import 'package:ttsplayer/models/media_item.dart';
 import 'package:ttsplayer/navigation/app_navigator.dart';
 import 'package:ttsplayer/services/artwork/artwork_service.dart';
 import 'package:ttsplayer/services/catalog_service.dart';
-import 'package:ttsplayer/services/media_access/media_access_config.dart';
+import 'package:ttsplayer/services/media_access/media_provider_config_service.dart';
 import 'package:ttsplayer/services/media_access/media_location_resolver.dart';
 import 'package:ttsplayer/services/playback_service.dart';
 import 'package:ttsplayer/services/scan_history_service.dart';
@@ -75,9 +75,10 @@ Catalog _tallDashboardCatalog() {
 Widget _dashboardHarness(Catalog catalog) {
   return MultiProvider(
     providers: [
+      ChangeNotifierProvider(create: (_) => MediaProviderConfigService()),
       Provider(
-        create: (_) => MediaLocationResolver(
-          config: MediaAccessConfig.development(),
+        create: (context) => MediaLocationResolver(
+          config: context.read<MediaProviderConfigService>().mediaAccess,
           isWindowsDesktop: false,
         ),
       ),

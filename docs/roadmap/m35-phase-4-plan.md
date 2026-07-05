@@ -53,7 +53,7 @@ Implement in order. Each sub-phase has a **single responsibility** and its own d
 | Sub-phase | Focus | Status |
 |---|---|---|
 | **4.1** | HTTP catalogue provider (`CatalogService.loadFromUrl()`) | ✅ **Complete** — not wired to startup |
-| **4.2** | Media provider configuration model | ⛔ Not started |
+| **4.2** | Media provider configuration model | ✅ **Complete** — not wired to startup selection |
 | **4.3** | Settings UI | ⛔ Not started |
 | **4.4** | Provider selection & fallback | ⛔ Not started |
 | **4.5** | HTTPS/TLS refinement and production validation | ⛔ Not started |
@@ -89,19 +89,21 @@ Wire sub-phases in **separate commits** where possible — same rollback discipl
 
 ---
 
-### Phase 4.2 — Media provider configuration model
+### Phase 4.2 — Media provider configuration model — complete
 
-**Scope:** Persisted `MediaAccessConfig` — media roots, HTTP base URL, access mode — readable by `MediaLocationResolver` and `CatalogService`.
+**Status:** Complete — model and persistence exist; **`load()` not called at startup**; no settings UI.
 
-**Out of scope:** Settings UI (4.3), fallback ordering (4.4).
+**Scope:** Persisted `MediaProviderConfig` — local and HTTP catalogue provider definitions plus `MediaAccessConfig` for the resolver.
+
+**Out of scope:** Settings UI (4.3), fallback ordering (4.4), startup catalogue selection from saved config.
 
 **Definition of done:**
 
-- [ ] Configuration model with `fromJson` / `toJson` or equivalent persistence
-- [ ] Defaults match current development config (`Y:\Media`, UNC, `/volume1/Media`)
-- [ ] `MediaLocationResolver` receives config from a single source (not hardcoded in `main.dart`)
-- [ ] Unit tests for load/save and default fallback
-- [ ] No settings screen yet
+- [x] Configuration model with `fromJson` / `toJson` and validation
+- [x] Defaults match current behaviour (`Y:\Media`, UNC, `/volume1/Media`)
+- [x] `MediaLocationResolver` reads `mediaAccess` from `MediaProviderConfigService` (defaults until `load()` is wired)
+- [x] Unit tests for validation, JSON round-trip, load/save, invalid fallback
+- [x] No settings screen; `CatalogService.loadOnStartup` unchanged
 
 ---
 

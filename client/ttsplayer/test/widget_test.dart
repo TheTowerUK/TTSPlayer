@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:ttsplayer/main.dart';
 import 'package:ttsplayer/services/artwork/artwork_service.dart';
 import 'package:ttsplayer/services/catalog_service.dart';
-import 'package:ttsplayer/services/media_access/media_access_config.dart';
+import 'package:ttsplayer/services/media_access/media_provider_config_service.dart';
 import 'package:ttsplayer/services/media_access/media_location_resolver.dart';
 import 'package:ttsplayer/services/playback_service.dart';
 import 'package:ttsplayer/services/scan_history_service.dart';
@@ -15,9 +15,10 @@ void main() {
     await tester.pumpWidget(
       MultiProvider(
         providers: [
+          ChangeNotifierProvider(create: (_) => MediaProviderConfigService()),
           Provider(
-            create: (_) => MediaLocationResolver(
-              config: MediaAccessConfig.development(),
+            create: (context) => MediaLocationResolver(
+              config: context.read<MediaProviderConfigService>().mediaAccess,
               isWindowsDesktop: false,
             ),
           ),

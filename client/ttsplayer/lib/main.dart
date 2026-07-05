@@ -9,7 +9,7 @@ import 'features/dashboard/dashboard_screen.dart';
 import 'navigation/app_navigator.dart';
 import 'services/artwork/artwork_service.dart';
 import 'services/catalog_service.dart';
-import 'services/media_access/media_access_config.dart';
+import 'services/media_access/media_provider_config_service.dart';
 import 'services/media_access/media_location_resolver.dart';
 import 'services/playback_service.dart';
 import 'services/scan_history_service.dart';
@@ -25,9 +25,12 @@ void main() {
   runApp(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider(
+          create: (_) => MediaProviderConfigService(),
+        ),
         Provider(
-          create: (_) => MediaLocationResolver(
-            config: MediaAccessConfig.development(),
+          create: (context) => MediaLocationResolver(
+            config: context.read<MediaProviderConfigService>().mediaAccess,
             isWindowsDesktop: !kIsWeb && Platform.isWindows,
           ),
         ),

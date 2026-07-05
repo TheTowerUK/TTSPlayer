@@ -11,6 +11,7 @@ import '../models/catalog.dart';
 import '../models/media_item.dart';
 import 'media_access/media_access_config.dart';
 import 'media_access/media_location_resolver.dart';
+import 'media_access/media_provider_config.dart';
 import 'media_access/resolved_media_location.dart';
 import 'playback_platform.dart';
 
@@ -157,7 +158,7 @@ class PlaybackService extends ChangeNotifier {
 
   static MediaLocationResolver _defaultMediaLocationResolver() {
     return MediaLocationResolver(
-      config: MediaAccessConfig.development(),
+      config: MediaProviderConfig.defaults().mediaAccess,
       isWindowsDesktop: !kIsWeb && Platform.isWindows,
     );
   }

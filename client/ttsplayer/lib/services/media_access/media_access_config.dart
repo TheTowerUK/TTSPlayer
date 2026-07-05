@@ -30,7 +30,8 @@ class MediaAccessConfig {
     '/volume1/Media',
   ];
 
-  factory MediaAccessConfig.development({
+  /// Default resolver configuration for desktop development.
+  factory MediaAccessConfig.defaults({
     String? httpMediaBaseUrl,
     MediaAccessMode mode = MediaAccessMode.localPreferred,
   }) {
@@ -39,5 +40,70 @@ class MediaAccessConfig {
       httpMediaBaseUrl: httpMediaBaseUrl,
       mode: mode,
     );
+  }
+
+  /// Alias retained for existing tests and call sites.
+  factory MediaAccessConfig.development({
+    String? httpMediaBaseUrl,
+    MediaAccessMode mode = MediaAccessMode.localPreferred,
+  }) {
+    return MediaAccessConfig.defaults(
+      httpMediaBaseUrl: httpMediaBaseUrl,
+      mode: mode,
+    );
+  }
+
+  factory MediaAccessConfig.fromJson(Map<String, dynamic> json) {
+    final rootsRaw = json['mediaRoots'] as List<dynamic>? ?? defaultMediaRoots;
+    final mediaRoots = rootsRaw.map((e) => e.toString()).toList();
+
+    final modeName = json['mode'] as String?;
+    MediaAccessMode mode = MediaAccessMode.localPreferred;
+    if (modeName != null) {
+      for (final candidate in MediaAccessMode.values) {
+        if (candidate.name == modeName) {
+          mode = candidate;
+          break;
+        }
+      }
+    }
+
+    final httpBase = json['httpMediaBaseUrl'] as String?;
+    return MediaAccessConfig(
+      mediaRoots: mediaRoots,
+      httpMediaBaseUrl: httpBase?.trim().isEmpty == true ? null : httpBase,
+      mode: mode,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'mediaRoots': mediaRoots,
+        if (httpMediaBaseUrl != null) 'httpMediaBaseUrl': httpMediaBaseUrl,
+        'mode': mode.name,
+      };
+
+  /// Validation errors; empty when valid.
+  List<String> validate() {
+    final errors = <String>[];
+    if (mediaRoots.isEmpty) {
+      errors.add('mediaAccess.mediaRoots must not be empty.');
+    }
+    for (var i = 0; i < mediaRoots.length; i++) {
+      if (mediaRoots[i].trim().isEmpty) {
+        errors.add('mediaAccess.mediaRoots[$i] must not be empty.');
+      }
+    }
+
+    final base = httpMediaBaseUrl?.trim();
+    if (base != null && base.isNotEmpty && !_isHttpUrl(base)) {
+      errors.add('mediaAccess.httpMediaBaseUrl must use http or https.');
+    }
+    return errors;
+  }
+
+  static bool _isHttpUrl(String value) {
+    final uri = Uri.tryParse(value);
+    if (uri == null || !uri.hasScheme) return false;
+    return uri.scheme == 'http' || uri.scheme == 'https';
   }
 }
