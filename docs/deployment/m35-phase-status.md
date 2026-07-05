@@ -8,6 +8,7 @@
 → [Media access abstraction](../architecture/media-access-abstraction.md)  
 → [TNAS reference provider checklist](./tnas-caddy-deploy-checklist.md)  
 → [Path mapping](../architecture/path-mapping.md)  
+→ [Phase 4 plan](../roadmap/m35-phase-4-plan.md)  
 → [Pre-implementation review](../roadmap/m35-pre-implementation-review.md)
 
 ---
@@ -22,7 +23,12 @@
 | **Phase 3a** | Flutter `MediaLocationResolver` + unit tests (no playback wiring) | ✅ **Complete** |
 | **Phase 3b** | Wire resolver into playback and artwork | ✅ **Complete** |
 | **M3.5** | Exit criteria + final acceptance | ✅ **Accepted** — 2026-07-05 |
-| **Phase 4** | Network catalogue + provider configuration | 🎯 **Active** |
+| **Phase 4** | Network catalogue + provider configuration | 🎯 **Active** — [plan](../roadmap/m35-phase-4-plan.md) |
+| **4.1** | HTTP catalogue provider (`CatalogService.loadFromUrl()`) | ⛔ Not started |
+| **4.2** | Media provider configuration model | ⛔ Not started |
+| **4.3** | Settings UI | ⛔ Not started |
+| **4.4** | Provider selection & fallback | ⛔ Not started |
+| **4.5** | HTTPS/TLS refinement and production validation | ⛔ Not started |
 
 **M3.5 accepted** — tag `m3.5-media-access-complete` — [final acceptance](../release/m3.5-media-access-complete.md#m35-final-acceptance).
 
@@ -152,7 +158,7 @@ Per [TNAS Caddy reference provider checklist](./tnas-caddy-deploy-checklist.md):
 
 ## Next actions
 
-1. **Phase 4:** [Network catalogue & provider configuration](../roadmap/m35-phase-4-plan.md) — **active**
+1. **Phase 4.1:** HTTP catalogue provider — [plan](../roadmap/m35-phase-4-plan.md#phase-41--http-catalogue-provider)
 2. **Follow-up:** TLS on `:8443` when Windows/Caddy cert issue resolved (Phase 4)
 3. **Backlog:** [Artwork discovery improvements](../roadmap/backlog-artwork-discovery-improvements.md) (Phase 4.x)
 

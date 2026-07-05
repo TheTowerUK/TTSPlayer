@@ -44,16 +44,18 @@ This milestone exists **between** M3 (Windows-first polish) and M7 (true multi-d
 
 → Full plan: [m35-phase-4-plan.md](./m35-phase-4-plan.md)
 
+| Sub-phase | Focus |
+|---|---|
+| **4.1** | HTTP catalogue provider (`CatalogService.loadFromUrl()`) |
+| **4.2** | Media provider configuration model |
+| **4.3** | Settings UI |
+| **4.4** | Provider selection & fallback |
+| **4.5** | HTTPS/TLS refinement and production validation |
+
 **M3.5:** Can TTSPlayer access media through a provider-neutral abstraction? → **Yes.**  
 **Phase 4:** How do users configure and use multiple providers seamlessly?
 
-- HTTP-backed catalogue loading
-- Configurable media providers (Local, SMB, HTTP)
-- Provider selection and fallback
-- Settings UI for provider configuration
-- HTTPS/TLS refinement for the HTTP provider
-
-Not “NAS support” — **configurable media access** with NAS as one HTTP provider.
+Use the same cadence as M3.5: document first, small testable sub-phases, separate commits, close before moving on.
 
 ---
 
