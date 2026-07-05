@@ -18,7 +18,7 @@
 | NAS hostname | Example: `MEDIATNAS-B725.fritz.box` or `192.168.178.130` |
 | Windows mount | `Y:\Media` → same tree as TNAS `/volume1/Media` |
 | Config file | `backend/caddy.config` in the repo |
-| Conflict | TNAS ships **nginx on port 80**; HTTPS on **443** may already be in use |
+| Conflict | TNAS OS ships **nginx on port 80** (TOS web UI); HTTPS on **443** may already be in use |
 
 ---
 
@@ -63,37 +63,76 @@ Choose **one** strategy:
 
 | Strategy | When to use |
 |---|---|
-| **A. Alternate ports** | Keep TNOS nginx on 443; run Caddy on e.g. `:8443` for TTSPlayer only (simplest for first deploy) |
-| **B. Reverse-proxy integration** | Configure TNOS nginx to proxy `/catalog.json` and `/media/*` to Caddy on an internal port |
-| **C. Replace front door** | Stop TNOS web UI on 443 and let Caddy bind 443 (disrupts TNOS HTTPS admin — not recommended unless you understand impact) |
+| **A. Alternate ports** | Keep TOS/TNAS OS nginx on 443; run Caddy on e.g. `:8443` for TTSPlayer only (simplest for first deploy) |
+| **B. Reverse-proxy integration** | Configure TOS/TNAS OS nginx to proxy `/catalog.json` and `/media/*` to Caddy on an internal port |
+| **C. Replace front door** | Stop the TOS web UI on 443 and let Caddy bind 443 (disrupts TOS HTTPS admin — not recommended unless you understand impact) |
 
 **Recommended for first deploy:** Strategy **A** — Caddy on `:8443` with `tls internal`, then smoke-test at `https://<nas-host>:8443/...`. Move to 443 after validation.
 
-Document your chosen ports in TNOS firewall if needed.
+Document your chosen ports in the TNAS OS firewall if needed.
 
 ---
 
 ### 4. Choose deployment mode
 
+**Port mapping rule:** The Caddy **site address** in the Caddyfile (e.g. `:8443` or `:443`) is the port Caddy listens on **inside** the container or process. Docker `-p host:container` must map your host port to that **same** container port — publishing `-p 8443:8443` does nothing if the Caddyfile still binds `:443`.
+
 #### Option A — Caddy binary / system service
 
 - Install Caddy 2.x for TNAS architecture (check `uname -m`)
 - Copy `backend/caddy.config` to the NAS (e.g. `/volume1/Media/caddy/caddy.config`)
-- Replace `<YOUR_DOMAIN>` with hostname or `:8443` site address
-- For LAN-only: add `tls internal` inside the site block (see [serving layer guide](./tnas-serving-layer.md#tls-options))
+- Set the site address to `:8443` (first deploy) or your hostname — see step 5
+- For LAN-only: use `tls internal` inside the site block (see [serving layer guide](./tnas-serving-layer.md#tls-options))
 
 #### Option B — Docker with read-only mount
 
-```bash
-docker run -d --name ttsplayer-caddy \
-  -p 8443:8443 \
-  -v /volume1/Media:/volume1/Media:ro \
-  -v /path/to/caddy.config:/etc/caddy/Caddyfile:ro \
-  caddy:2-alpine \
-  caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
-```
+1. Create a Caddyfile whose site block listens on **`:8443`** (recommended first deploy):
 
-Adjust published port and config path. Mount **`/volume1/Media` read-only**.
+   ```
+   {
+       admin off
+   }
+
+   :8443 {
+       tls internal
+
+       handle /catalog.json {
+           root * /volume1/Media
+           file_server
+           header Content-Type application/json
+       }
+
+       handle_path /media/* {
+           root * /volume1/Media
+           @blocked not path *.mp4 *.mkv *.mov *.m4v *.avi *.jpg *.jpeg *.png *.webp *.gif *.bmp *.tif *.tiff
+           respond @blocked 403
+           file_server
+       }
+   }
+   ```
+
+2. Run with matching port mapping — host **8443** → container **8443**:
+
+   ```bash
+   docker run -d --name ttsplayer-caddy \
+     -p 8443:8443 \
+     -v /volume1/Media:/volume1/Media:ro \
+     -v /path/to/Caddyfile:/etc/caddy/Caddyfile:ro \
+     caddy:2-alpine \
+     caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
+   ```
+
+3. **If** the Caddyfile site address is `:443` instead, map host 8443 to container 443:
+
+   ```bash
+   docker run -d --name ttsplayer-caddy \
+     -p 8443:443 \
+     ...
+   ```
+
+   Prefer aligning the Caddyfile to `:8443` so `-p 8443:8443` is obvious and less error-prone.
+
+Mount **`/volume1/Media` read-only**. Adjust config path and image tag for your TNAS.
 
 Pick one mode and record it in your NAS runbook.
 
@@ -145,7 +184,7 @@ caddy validate --config /path/to/caddy.config --adapter caddyfile
 caddy run --config /path/to/caddy.config --adapter caddyfile
 ```
 
-For production, configure a startup task / systemd / TNOS app so Caddy survives reboot.
+For production, configure a startup task / systemd / TNAS OS app launcher so Caddy survives reboot.
 
 **Pass:** process running; chosen port listening (`ss -tlnp | grep 8443` or `443`).
 
@@ -231,7 +270,7 @@ When **8a–8c pass on the NAS** (not localhost):
 |---|---|
 | 404 on `/catalog.json` | Caddy not running, wrong root, or nginx still fronting without proxy rules |
 | 404 on `/media/...` | Missing `handle_path`; URL includes erroneous `/Media/` segment |
-| 502 on HTTPS | Existing TNOS proxy target down — use alternate port (8443) first |
+| 502 on HTTPS | Existing TOS/TNAS OS proxy target down — use alternate port (8443) first |
 | 200 instead of 206 on Range | Request not reaching Caddy `file_server`; check proxy buffering |
 | 403 on valid video | Extension not in allowlist — sync with `indexer.py` |
 | Certificate errors on phone | Export/trust Caddy `tls internal` CA |

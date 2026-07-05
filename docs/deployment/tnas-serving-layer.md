@@ -88,14 +88,15 @@ caddy validate --config /volume1/Media/caddy/caddy.config
 caddy run --config /volume1/Media/caddy/caddy.config
 ```
 
-For production, configure Caddy as a system service or TNAS startup task so it survives reboot.
+For production, configure Caddy as a system service or TNAS OS startup task so it survives reboot.
 
 ### 4. Open firewall ports
 
-- **443/tcp** — HTTPS (required)
+- **8443/tcp** — recommended for first deploy (avoids conflict with TOS on 443)
+- **443/tcp** — use when Caddy owns the HTTPS front door
 - **80/tcp** — HTTP → HTTPS redirect if using public ACME
 
-Home-network-only deployments may use `:443` with internal TLS (see below).
+Home-network-only deployments may use `:8443` with `tls internal` (see below).
 
 ---
 
@@ -111,7 +112,16 @@ Best for: remote access outside the LAN (future milestones).
 
 Use Caddy **`tls internal`** or install a private CA certificate on test phones.
 
-Example site block adjustment:
+Example site block for first deploy on port 8443:
+
+```
+:8443 {
+    tls internal
+    # ... handlers ...
+}
+```
+
+Or hostname-based:
 
 ```
 mediatnas.local {
