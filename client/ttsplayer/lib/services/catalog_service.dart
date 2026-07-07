@@ -10,6 +10,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/catalog.dart';
 import '../models/catalogue_source_kind.dart';
 import '../models/catalogue_validation_result.dart';
+import 'media_access/catalogue_provider_selector.dart';
+import 'media_access/media_catalogue_provider.dart';
+import 'media_access/media_provider_config.dart';
+import 'media_access/remote_fetch_errors.dart';
 
 /// Source from which the catalog is loaded.
 enum CatalogSource { bundled, localFile, remoteUrl }
@@ -36,6 +40,15 @@ class CatalogService extends ChangeNotifier {
   /// True when the bundled asset is being used because the live NAS catalogue
   /// was unreachable.  Drives the "Demo catalogue in use" banner.
   bool _isUsingFallback = false;
+
+  /// User-facing message when [isUsingFallback] is true.
+  String get fallbackBannerMessage {
+    if (activeProviderConfig.httpCatalogueUrl != null) {
+      return 'Demo catalogue in use — configured remote catalogue could not be loaded.';
+    }
+    return 'Demo catalogue in use — live NAS catalogue not reachable '
+        '(${liveCataloguePaths.join(' or ')}).';
+  }
 
   Catalog? get catalog => _catalog;
   bool get isLoading => _isLoading;
@@ -102,7 +115,26 @@ class CatalogService extends ChangeNotifier {
     r'd:\temp\catalog.json',
   };
 
-  /// Catalogue ID for which the user dismissed the scan-warnings banner.
+  /// Persisted provider config used for [loadOnStartup] and [rescan].
+  MediaProviderConfig? _activeProviderConfig;
+
+  /// When false, skips scanner-config and last-good pref paths (tests only).
+  @visibleForTesting
+  bool includeLegacyCataloguePaths = true;
+
+  /// When false, skips [scannerConfigPath] catalogue path during startup
+  /// (tests only). [includeLegacyCataloguePaths] must still be true.
+  @visibleForTesting
+  bool includeScannerConfigCataloguePath = true;
+
+  /// Active provider config, or [MediaProviderConfig.defaults] when unset.
+  MediaProviderConfig get activeProviderConfig =>
+      _activeProviderConfig ?? MediaProviderConfig.defaults();
+
+  /// Updates provider config for subsequent [rescan] calls without reloading.
+  void setProviderConfig(MediaProviderConfig config) {
+    _activeProviderConfig = config;
+  }
   /// Persisted in shared_preferences — does not modify catalog.json.
   String? _dismissedWarningsCatalogueId;
   bool _dismissedStateLoaded = false;
@@ -121,23 +153,31 @@ class CatalogService extends ChangeNotifier {
 
   /// Called once on app launch.
   ///
-  /// Tries each path in [liveCataloguePaths] in order, silently.
-  /// Falls back to the bundled asset if none succeed, with [isUsingFallback]
-  /// set to true so the UI can surface a non-blocking "Demo catalogue" banner.
-  Future<void> loadOnStartup() async {
+  /// Tries configured catalogue providers in priority order ([providerConfig]
+  /// or [MediaProviderConfig.defaults]). Falls back to the bundled asset when
+  /// none succeed, with [isUsingFallback] set so the UI can show a demo banner.
+  Future<void> loadOnStartup({MediaProviderConfig? providerConfig}) async {
+    if (providerConfig != null) {
+      _activeProviderConfig = providerConfig;
+    }
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     await _loadDismissedState();
 
-    final liveLoaded = await _tryLivePaths();
+    final attempt =
+        await _tryProviderCatalogue(activeProviderConfig);
 
-    if (liveLoaded) {
+    if (attempt.didSucceed) {
       _isUsingFallback = false;
+      _errorMessage = null;
     } else {
-      // NAS not reachable — fall back to bundled without surfacing an error.
+      // All configured providers failed — fall back to bundled and surface why.
       _isUsingFallback = true;
+      if (attempt.lastError != null) {
+        _errorMessage = attempt.lastError;
+      }
       try {
         final raw = await rootBundle.loadString('assets/catalog.json');
         final json = jsonDecode(raw) as Map<String, dynamic>;
@@ -168,15 +208,15 @@ class CatalogService extends ChangeNotifier {
 
     await _loadDismissedState();
 
-    final success = await _tryLivePaths();
+    final attempt = await _tryProviderCatalogue(activeProviderConfig);
 
-    if (success) {
+    if (attempt.didSucceed) {
       _isUsingFallback = false;
+      _errorMessage = null;
     } else {
-      _errorMessage =
-          'Could not reach live NAS catalogue '
-          '(${liveCataloguePaths.join(' or ')}). '
-          'Check that the NAS drive is mounted.';
+      _errorMessage = attempt.lastError ??
+          'Could not load catalogue from configured providers. '
+          'Check network, drive mounts, and Settings.';
     }
 
     _isLoading = false;
@@ -212,26 +252,6 @@ class CatalogService extends ChangeNotifier {
       identifier: url,
     );
     if (_errorMessage == null) _isUsingFallback = false;
-  }
-
-  Future<String> _fetchCatalogBody(String url) async {
-    try {
-      final response = await _httpClient
-          .get(Uri.parse(url))
-          .timeout(_catalogFetchTimeout);
-      if (response.statusCode != 200) {
-        throw HttpException(
-          'HTTP ${response.statusCode} loading catalogue from $url',
-          uri: Uri.parse(url),
-        );
-      }
-      return response.body;
-    } on TimeoutException {
-      throw TimeoutException(
-        'Timed out loading catalogue from $url',
-        _catalogFetchTimeout,
-      );
-    }
   }
 
   /// Load the bundled mock catalogue (always available offline).
@@ -363,39 +383,153 @@ class CatalogService extends ChangeNotifier {
     _dismissedStateLoaded = true;
   }
 
-  /// Tries catalogue paths in priority order:
-  ///   1. [cataloguePath] from [scannerConfigPath]
-  ///   2. Last successfully loaded path (shared_preferences)
-  ///   3. [liveCataloguePaths] fallbacks
-  Future<bool> _tryLivePaths() async {
-    final candidates = <String>[];
+  /// Tries configured catalogue providers in priority order.
+  Future<_ProviderCatalogueAttempt> _tryProviderCatalogue(
+    MediaProviderConfig config,
+  ) async {
+    final legacyLocal = <MediaCatalogueProviderDefinition>[];
 
-    final fromConfig = await _cataloguePathFromConfig();
-    if (fromConfig != null) candidates.add(fromConfig);
+    if (includeLegacyCataloguePaths) {
+      if (includeScannerConfigCataloguePath) {
+        final fromConfig = await _cataloguePathFromConfig();
+        if (fromConfig != null) {
+          legacyLocal.add(_legacyProviderForPath(fromConfig));
+        }
+      }
 
-    final prefs = await SharedPreferences.getInstance();
-    final savedPath = prefs.getString(_prefKeyPath);
-    if (savedPath != null &&
-        savedPath != 'bundled' &&
-        !_isBlockedCataloguePath(savedPath)) {
-      candidates.add(savedPath);
-    }
-
-    candidates.addAll(liveCataloguePaths);
-
-    final seen = <String>{};
-    for (final path in candidates) {
-      final key = path.toLowerCase();
-      if (seen.contains(key) || _isBlockedCataloguePath(path)) continue;
-      seen.add(key);
-
-      final file = File(path);
-      if (await file.exists()) {
-        debugPrint('[CatalogService] loading catalogue from ${file.path}');
-        return _tryLoadLiveFile(file);
+      final prefs = await SharedPreferences.getInstance();
+      final savedPath = prefs.getString(_prefKeyPath);
+      if (savedPath != null &&
+          savedPath != 'bundled' &&
+          !_isBlockedCataloguePath(savedPath)) {
+        legacyLocal.add(_legacyProviderForPath(savedPath));
       }
     }
-    return false;
+
+    final providers = CatalogueProviderSelector.orderedProviders(
+      config: config,
+      legacyLocalProviders: legacyLocal,
+    );
+
+    String? lastError;
+    for (final provider in providers) {
+      final errorBefore = _errorMessage;
+      _errorMessage = null;
+      final loaded = await _tryCatalogueProvider(provider);
+      if (loaded) {
+        return _ProviderCatalogueAttempt.success;
+      }
+      final attemptError = _errorMessage;
+      _errorMessage = errorBefore;
+      lastError = attemptError ?? lastError;
+    }
+    return _ProviderCatalogueAttempt.failed(lastError);
+  }
+
+  static MediaCatalogueProviderDefinition _legacyProviderForPath(String path) {
+    if (_isRemoteCatalogueUrl(path)) {
+      return MediaCatalogueProviderDefinition.http(path);
+    }
+    return MediaCatalogueProviderDefinition.localFile(path);
+  }
+
+  static bool _isRemoteCatalogueUrl(String path) {
+    final uri = Uri.tryParse(path.trim());
+    if (uri == null || !uri.hasScheme) return false;
+    return uri.scheme == 'http' || uri.scheme == 'https';
+  }
+
+  Future<bool> _tryCatalogueProvider(
+    MediaCatalogueProviderDefinition provider,
+  ) async {
+    try {
+      switch (provider.kind) {
+        case MediaCatalogueProviderKind.localFile:
+          return _tryLoadLocalCataloguePath(provider.location);
+        case MediaCatalogueProviderKind.http:
+          return _tryLoadHttpCatalogue(provider.location);
+      }
+    } catch (e) {
+      debugPrint(
+        '[CatalogService] catalogue provider failed (${provider.location}): $e',
+      );
+      return false;
+    }
+  }
+
+  Future<bool> _tryLoadLocalCataloguePath(String path) async {
+    if (_isBlockedCataloguePath(path)) return false;
+    final file = File(path);
+    if (!await file.exists()) return false;
+    debugPrint('[CatalogService] loading catalogue from ${file.path}');
+    return _tryLoadLiveFile(file);
+  }
+
+  Future<bool> _tryLoadHttpCatalogue(String url) async {
+    try {
+      final raw = await _fetchCatalogBody(url);
+      final json = jsonDecode(raw) as Map<String, dynamic>;
+      _catalog = Catalog.fromJson(json);
+      _catalogPath = url;
+      _lastRefreshedAt = DateTime.now();
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_prefKeySource, CatalogSource.remoteUrl.name);
+      await prefs.setString(_prefKeyPath, url);
+      return true;
+    } on TimeoutException catch (e) {
+      _errorMessage = RemoteFetchErrors.catalogueLoadMessage(e, url);
+      debugPrint('[CatalogService] HTTP catalogue load failed for $url: $e');
+      return false;
+    } on SocketException catch (e) {
+      _errorMessage = RemoteFetchErrors.catalogueLoadMessage(e, url);
+      debugPrint('[CatalogService] HTTP catalogue load failed for $url: $e');
+      return false;
+    } on HandshakeException catch (e) {
+      _errorMessage = RemoteFetchErrors.catalogueLoadMessage(e, url);
+      debugPrint('[CatalogService] HTTP catalogue load failed for $url: $e');
+      return false;
+    } on CertificateException catch (e) {
+      _errorMessage = RemoteFetchErrors.catalogueLoadMessage(e, url);
+      debugPrint('[CatalogService] HTTP catalogue load failed for $url: $e');
+      return false;
+    } on TlsException catch (e) {
+      _errorMessage = RemoteFetchErrors.catalogueLoadMessage(e, url);
+      debugPrint('[CatalogService] HTTP catalogue load failed for $url: $e');
+      return false;
+    } on HttpException catch (e) {
+      _errorMessage = RemoteFetchErrors.catalogueLoadMessage(e, url);
+      debugPrint('[CatalogService] HTTP catalogue load failed for $url: $e');
+      return false;
+    } on FormatException catch (e) {
+      _errorMessage = 'Catalogue response could not be parsed as JSON.';
+      debugPrint('[CatalogService] HTTP catalogue load failed for $url: $e');
+      return false;
+    } catch (e) {
+      _errorMessage = RemoteFetchErrors.catalogueLoadMessage(e, url);
+      debugPrint('[CatalogService] HTTP catalogue load failed for $url: $e');
+      return false;
+    }
+  }
+
+  Future<String> _fetchCatalogBody(String url) async {
+    try {
+      final response = await _httpClient
+          .get(Uri.parse(url))
+          .timeout(_catalogFetchTimeout);
+      if (response.statusCode != 200) {
+        throw HttpException(
+          'HTTP ${response.statusCode} loading catalogue from $url',
+          uri: Uri.parse(url),
+        );
+      }
+      return response.body;
+    } on TimeoutException {
+      throw TimeoutException(
+        'Timed out loading catalogue from $url',
+        _catalogFetchTimeout,
+      );
+    }
   }
 
   static bool _isBlockedCataloguePath(String path) =>
@@ -506,18 +640,43 @@ class CatalogService extends ChangeNotifier {
       await prefs.setString(_prefKeySource, source.name);
       await prefs.setString(_prefKeyPath, identifier);
     } on TimeoutException {
-      _errorMessage = 'Timed out loading catalogue. Check the URL and network.';
+      _errorMessage = RemoteFetchErrors.catalogueLoadMessage(
+        TimeoutException('timed out', _catalogFetchTimeout),
+        identifier,
+      );
     } on SocketException catch (e) {
-      _errorMessage = 'Network error loading catalogue: ${e.message}';
+      _errorMessage = RemoteFetchErrors.catalogueLoadMessage(e, identifier);
+    } on HandshakeException catch (e) {
+      _errorMessage = RemoteFetchErrors.catalogueLoadMessage(e, identifier);
+    } on CertificateException catch (e) {
+      _errorMessage = RemoteFetchErrors.catalogueLoadMessage(e, identifier);
+    } on TlsException catch (e) {
+      _errorMessage = RemoteFetchErrors.catalogueLoadMessage(e, identifier);
     } on HttpException catch (e) {
-      _errorMessage = e.message;
+      _errorMessage = RemoteFetchErrors.catalogueLoadMessage(e, identifier);
     } catch (e) {
-      _errorMessage = 'Could not load catalogue: $e';
+      _errorMessage = RemoteFetchErrors.catalogueLoadMessage(e, identifier);
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
+}
+
+/// Result of trying all configured catalogue providers during startup/rescan.
+class _ProviderCatalogueAttempt {
+  final bool didSucceed;
+  final String? lastError;
+
+  const _ProviderCatalogueAttempt._({
+    required this.didSucceed,
+    this.lastError,
+  });
+
+  static const success = _ProviderCatalogueAttempt._(didSucceed: true);
+
+  factory _ProviderCatalogueAttempt.failed(String? lastError) =>
+      _ProviderCatalogueAttempt._(didSucceed: false, lastError: lastError);
 }
 
 /// Read-only paths from [CatalogService.scannerConfigPath].

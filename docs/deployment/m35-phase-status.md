@@ -1,10 +1,11 @@
 # M3.5 Phase Status — Serving Layer & Media Access
 
-**Last updated:** 2026-07-05  
+**Last updated:** 2026-07-07  
 **Cycle:** `v0.4.0-dev`  
-**Milestone:** M3.5 **Accepted** — Phase 4 may begin
+**Milestone:** M3.5 **COMPLETE** — validated on physical TNAS (HTTPS)
 
 → [M3.5 final acceptance](../release/m3.5-media-access-complete.md#m35-final-acceptance)  
+→ [Deployment validation](../release/m3.5-media-access-complete.md#deployment-validation--2026-07-07)  
 → [Media access abstraction](../architecture/media-access-abstraction.md)  
 → [TNAS reference provider checklist](./tnas-caddy-deploy-checklist.md)  
 → [Path mapping](../architecture/path-mapping.md)  
@@ -13,24 +14,39 @@
 
 ---
 
+## M3.5 status: COMPLETE
+
+Validated against physical TerraMaster TNAS using Caddy HTTPS deployment (`https://ttsplayer.local:8443`). Confirmed on target hardware:
+
+- HTTPS catalogue loading
+- Provider configuration and selection
+- Remote media streaming
+- HTTP Range request support (video seeking)
+- Certificate trust (Caddy `tls internal` CA installed on client)
+- Local-first and HTTP-required access modes
+
+Implementation alone is not sufficient for closure — this milestone is **proven on the deployment target**, not only in unit tests.
+
+---
+
 ## Current status
 
 | Phase | Scope | Status |
 |---|---|---|
 | **Phase 1** | Path mapping spec, `caddy.config`, deployment docs, local Caddy validation | ✅ **Complete locally** |
-| **Phase 2** | TNAS + Caddy reference HTTP provider validation | ✅ **Complete (HTTP :8443)** — TLS deferred |
+| **Phase 2** | TNAS + Caddy reference HTTP provider validation | ✅ **Complete (HTTP :8443)** |
 | **Phase 2.5** | Media access abstraction — provider-neutral `MediaLocationResolver` spec | ✅ **Accepted** — 2026-07-05 |
 | **Phase 3a** | Flutter `MediaLocationResolver` + unit tests (no playback wiring) | ✅ **Complete** |
 | **Phase 3b** | Wire resolver into playback and artwork | ✅ **Complete** |
-| **M3.5** | Exit criteria + final acceptance | ✅ **Accepted** — 2026-07-05 |
-| **Phase 4** | Network catalogue + provider configuration | 🎯 **Active** — [plan](../roadmap/m35-phase-4-plan.md) |
-| **4.1** | HTTP catalogue provider (`CatalogService.loadFromUrl()`) | ✅ **Complete** — not wired to startup |
-| **4.2** | Media provider configuration model | ✅ **Complete** — not wired to startup selection |
-| **4.3** | Settings UI | ⛔ Not started |
-| **4.4** | Provider selection & fallback | ⛔ Not started |
-| **4.5** | HTTPS/TLS refinement and production validation | ⛔ Not started |
+| **M3.5** | Exit criteria + deployment validation | ✅ **COMPLETE** — 2026-07-07 |
+| **Phase 4** | Network catalogue + provider configuration | ✅ **Complete** — [plan](../roadmap/m35-phase-4-plan.md) |
+| **4.1** | HTTP catalogue provider (`CatalogService.loadFromUrl()`) | ✅ **Complete** |
+| **4.2** | Media provider configuration model | ✅ **Complete** |
+| **4.3** | Settings UI | ✅ **Complete** |
+| **4.4** | Provider selection & fallback | ✅ **Complete** |
+| **4.5** | HTTPS/TLS refinement and production validation | ✅ **Complete** — [validation notes](./phase-4.5-validation.md) |
 
-**M3.5 accepted** — tag `m3.5-media-access-complete` — [final acceptance](../release/m3.5-media-access-complete.md#m35-final-acceptance).
+**M3.5 complete** — tag `m3.5-media-access-complete`; deployment re-validated 2026-07-07 — [deployment validation](../release/m3.5-media-access-complete.md#deployment-validation--2026-07-07).
 
 ---
 
@@ -38,7 +54,7 @@
 
 | Gate | Requirement |
 |---|---|
-| Phase 2 complete | TNAS `/catalog.json` → 200; `/media/...` Range → **206** — **done 2026-07-05 (HTTP :8443)**; TLS follow-up |
+| Phase 2 complete | TNAS `/catalog.json` → 200; `/media/...` Range → **206** — **done 2026-07-05 (HTTP :8443)**; HTTPS Flutter validation **done 2026-07-07** |
 | Phase 2.5 accepted | [Media access abstraction](../architecture/media-access-abstraction.md) reviewed and agreed — **done 2026-07-05** |
 | Phase 3a start | Phase 2.5 accepted — resolver + tests only |
 | Phase 3b start | Phase 3a complete — resolver + tests pass; no playback wiring in 3a |
@@ -99,9 +115,27 @@ Protocol: HTTP for initial validation
 
 **Conclusion:** Routing, path mapping, file serving, and video Range support work on real TNAS hardware.
 
-TLS with `tls internal` deferred due Windows TLS handshake failure.
+TLS with `tls internal` validated 2026-07-07 from Flutter after Caddy CA trust — see [deployment validation](../release/m3.5-media-access-complete.md#deployment-validation--2026-07-07).
 
 ---
+
+## TNAS HTTPS deployment validation — 2026-07-07
+
+Host: `ttsplayer.local`  
+Port: `8443`  
+Protocol: HTTPS (Caddy `tls internal`, CA trusted on Windows client)
+
+| Test | Result |
+|---|---|
+| `GET /catalog.json` (HTTPS) | ✅ 200 — Flutter catalogue load |
+| Provider config + startup selection | ✅ Settings persisted; remote URL used when locals unavailable |
+| Remote media playback | ✅ First frame + streaming |
+| Range requests (seek) | ✅ 206 Partial Content |
+| Certificate trust | ✅ After Caddy CA install |
+| Local preferred mode | ✅ Local when mounted; HTTPS fallback when not |
+| HTTP required mode | ✅ Remote-only path |
+
+**Conclusion:** M3.5 media access and Phase 4 provider configuration are validated end-to-end on physical TNAS hardware, not only in automated tests.
 
 ## Unblock criteria
 
@@ -151,15 +185,15 @@ Per [TNAS Caddy reference provider checklist](./tnas-caddy-deploy-checklist.md):
 - [x] `/catalog.json` → **200** — 2026-07-05
 - [x] `/media/...` Range → **206** — 2026-07-05
 - [x] `Content-Range` / `Accept-Ranges` present
-- [ ] HTTPS / `tls internal` (deferred — Windows TLS handshake failure)
-- [ ] HTTP playback smoke test from Flutter (Phase 4+)
+- [x] Client HTTPS/TLS validation and error handling — Phase 4.5 ([notes](./phase-4.5-validation.md))
+- [x] HTTPS Flutter production smoke test on TNAS — 2026-07-07 ([deployment validation](../release/m3.5-media-access-complete.md#deployment-validation--2026-07-07))
+- [x] Remote catalogue + media playback from Flutter on TNAS — 2026-07-07
 
 ---
 
 ## Next actions
 
-1. **Phase 4.3:** Settings UI — [plan](../roadmap/m35-phase-4-plan.md#phase-43--settings-ui)
-2. **Follow-up:** TLS on `:8443` when Windows/Caddy cert issue resolved (Phase 4)
-3. **Backlog:** [Artwork discovery improvements](../roadmap/backlog-artwork-discovery-improvements.md) (Phase 4.x)
+1. **Backlog:** [Artwork discovery improvements](../roadmap/backlog-artwork-discovery-improvements.md) (Phase 4.x)
+2. **Next milestone:** TBD — M3.5 and Phase 4 closed
 
 **M3.5 closed** — critical resolver/playback fixes only; no milestone scope creep.

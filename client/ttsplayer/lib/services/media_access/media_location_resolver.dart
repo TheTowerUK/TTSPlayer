@@ -35,23 +35,33 @@ class MediaLocationResolver {
       );
     }
 
-    if (config.mode == MediaAccessMode.localPreferred && isWindowsDesktop) {
-      return LocalFileProvider.resolve(
+    if (config.mode == MediaAccessMode.localPreferred) {
+      if (isWindowsDesktop) {
+        final local = LocalFileProvider.resolve(
+          filePath: trimmed,
+          isWindowsDesktop: true,
+        );
+        if (local.isPlayable) return local;
+      }
+
+      final http = HttpServingProvider.resolve(
         filePath: trimmed,
-        isWindowsDesktop: true,
+        config: config,
       );
+      if (http.isPlayable) return http;
+
+      if (isWindowsDesktop) {
+        return LocalFileProvider.resolve(
+          filePath: trimmed,
+          isWindowsDesktop: true,
+        );
+      }
+      return http;
     }
 
-    final httpResult = HttpServingProvider.resolve(
+    return HttpServingProvider.resolve(
       filePath: trimmed,
       config: config,
     );
-    if (httpResult.isPlayable) return httpResult;
-
-    if (config.mode == MediaAccessMode.httpRequired) {
-      return httpResult;
-    }
-
-    return httpResult;
   }
 }

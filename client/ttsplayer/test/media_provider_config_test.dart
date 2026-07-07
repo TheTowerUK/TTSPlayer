@@ -81,7 +81,30 @@ void main() {
       );
     });
 
-    test('accepts valid HTTP catalogue and media base URLs', () {
+    test('accepts valid HTTPS catalogue and media base URLs', () {
+      final config = MediaProviderConfig(
+        catalogueProviders: const [
+          MediaCatalogueProviderDefinition.localFile(
+            r'Y:\Media\catalog.json',
+          ),
+          MediaCatalogueProviderDefinition.http(
+            'https://192.168.178.130:8443/catalog.json',
+          ),
+        ],
+        mediaAccess: MediaAccessConfig.defaults(
+          httpMediaBaseUrl: 'https://192.168.178.130:8443/media/',
+        ),
+      );
+
+      expect(config.validate(), isEmpty);
+      expect(config.securityWarnings(), isEmpty);
+      expect(
+        config.httpCatalogueUrl,
+        'https://192.168.178.130:8443/catalog.json',
+      );
+    });
+
+    test('accepts plain HTTP in localPreferred with security warnings', () {
       final config = MediaProviderConfig(
         catalogueProviders: const [
           MediaCatalogueProviderDefinition.localFile(
@@ -97,9 +120,30 @@ void main() {
       );
 
       expect(config.validate(), isEmpty);
+      expect(config.securityWarnings(), isNotEmpty);
       expect(
         config.httpCatalogueUrl,
         'http://192.168.178.130:8443/catalog.json',
+      );
+    });
+
+    test('rejects plain HTTP when httpRequired mode is selected', () {
+      final config = MediaProviderConfig(
+        catalogueProviders: const [
+          MediaCatalogueProviderDefinition.http(
+            'http://192.168.178.130:8443/catalog.json',
+          ),
+        ],
+        mediaAccess: MediaAccessConfig.defaults(
+          httpMediaBaseUrl: 'http://192.168.178.130:8443/media/',
+          mode: MediaAccessMode.httpRequired,
+        ),
+      );
+
+      expect(config.validate(), isNotEmpty);
+      expect(
+        config.validate().any((e) => e.contains('https://')),
+        isTrue,
       );
     });
   });
@@ -112,11 +156,11 @@ void main() {
             r'Y:\Media\catalog.json',
           ),
           MediaCatalogueProviderDefinition.http(
-            'http://nas.local:8443/catalog.json',
+            'https://nas.local:8443/catalog.json',
           ),
         ],
         mediaAccess: MediaAccessConfig.defaults(
-          httpMediaBaseUrl: 'http://nas.local:8443/media/',
+          httpMediaBaseUrl: 'https://nas.local:8443/media/',
           mode: MediaAccessMode.httpRequired,
         ),
       );
@@ -206,6 +250,26 @@ void main() {
       expect(loaded.validate(), isEmpty);
       expect(loaded.localCataloguePaths,
           MediaProviderConfig.defaultLocalCataloguePaths);
+    });
+
+    test('resetToDefaults removes persisted config', () async {
+      SharedPreferences.setMockInitialValues({});
+      final service = MediaProviderConfigService();
+      final custom = MediaProviderConfig(
+        catalogueProviders: const [
+          MediaCatalogueProviderDefinition.http(
+            'http://192.168.0.10:8443/catalog.json',
+          ),
+        ],
+        mediaAccess: MediaAccessConfig.defaults(),
+      );
+      await service.save(custom);
+
+      await service.resetToDefaults();
+
+      expect(service.config.toJson(), MediaProviderConfig.defaults().toJson());
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString(MediaProviderConfigService.prefKey), isNull);
     });
   });
 }

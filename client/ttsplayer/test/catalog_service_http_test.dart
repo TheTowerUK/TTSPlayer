@@ -138,6 +138,57 @@ void main() {
       expect(service.errorMessage, contains('Network error'));
       expect(service.catalog?.catalogueIdentity, 'LOCAL-BEFORE-NET');
     });
+
+    test('HTTPS 200 with valid JSON loads catalogue', () async {
+      const httpsUrl = 'https://192.168.178.130:8443/catalog.json';
+      final client = MockClient((request) async {
+        expect(request.url.toString(), httpsUrl);
+        return http.Response(
+          jsonEncode(minimalCatalogJson('HTTPS-CAT-1')),
+          200,
+          headers: {'content-type': 'application/json'},
+        );
+      });
+
+      final service = CatalogService(httpClient: client);
+      await service.loadFromUrl(httpsUrl);
+
+      expect(service.errorMessage, isNull);
+      expect(service.catalogPath, httpsUrl);
+      expect(service.catalog?.catalogueIdentity, 'HTTPS-CAT-1');
+    });
+
+    test('TLS handshake failure fails gracefully', () async {
+      const httpsUrl = 'https://nas.example:8443/catalog.json';
+      final client = MockClient((request) async {
+        throw HandshakeException('CERTIFICATE_VERIFY_FAILED');
+      });
+
+      final service = CatalogService(httpClient: client);
+      await seedLocalCatalog(service, 'LOCAL-BEFORE-TLS');
+
+      await service.loadFromUrl(httpsUrl);
+
+      expect(service.errorMessage, isNotNull);
+      expect(service.errorMessage!.toLowerCase(), contains('secure connection'));
+      expect(service.catalog?.catalogueIdentity, 'LOCAL-BEFORE-TLS');
+    });
+
+    test('certificate error fails gracefully', () async {
+      const httpsUrl = 'https://nas.example:8443/catalog.json';
+      final client = MockClient((request) async {
+        throw CertificateException('Bad certificate');
+      });
+
+      final service = CatalogService(httpClient: client);
+      await seedLocalCatalog(service, 'LOCAL-BEFORE-CERT');
+
+      await service.loadFromUrl(httpsUrl);
+
+      expect(service.errorMessage, isNotNull);
+      expect(service.errorMessage!.toLowerCase(), contains('certificate'));
+      expect(service.catalog?.catalogueIdentity, 'LOCAL-BEFORE-CERT');
+    });
   });
 
   group('CatalogService local loading unchanged', () {

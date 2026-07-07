@@ -16,29 +16,33 @@ import 'services/scan_history_service.dart';
 import 'services/scanner_service.dart';
 import 'theme/app_theme.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   if (!kIsWeb && Platform.isWindows) {
     MediaKit.ensureInitialized();
   }
 
+  final providerConfigService = MediaProviderConfigService();
+  await providerConfigService.load();
+
+  final isWindowsDesktop = !kIsWeb && Platform.isWindows;
+  final mediaLocationResolver = MediaLocationResolver(
+    config: providerConfigService.mediaAccess,
+    isWindowsDesktop: isWindowsDesktop,
+  );
+
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(
-          create: (_) => MediaProviderConfigService(),
+        ChangeNotifierProvider<MediaProviderConfigService>.value(
+          value: providerConfigService,
         ),
-        Provider(
-          create: (context) => MediaLocationResolver(
-            config: context.read<MediaProviderConfigService>().mediaAccess,
-            isWindowsDesktop: !kIsWeb && Platform.isWindows,
-          ),
-        ),
+        Provider<MediaLocationResolver>.value(value: mediaLocationResolver),
         Provider(create: (_) => ArtworkService()),
         ChangeNotifierProvider(create: (_) => CatalogService()),
         ChangeNotifierProvider(
-          create: (context) => PlaybackService(
-            mediaLocationResolver: context.read<MediaLocationResolver>(),
+          create: (_) => PlaybackService(
+            mediaLocationResolver: mediaLocationResolver,
           ),
         ),
         ChangeNotifierProvider(create: (_) => ScannerService()),

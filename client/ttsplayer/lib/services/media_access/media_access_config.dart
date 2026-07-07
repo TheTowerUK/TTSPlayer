@@ -1,3 +1,5 @@
+import 'remote_url_security.dart';
+
 /// How [MediaLocationResolver] chooses between local file and HTTP providers.
 enum MediaAccessMode {
   /// Windows desktop: map filesystem paths to file URIs when possible.
@@ -95,15 +97,26 @@ class MediaAccessConfig {
     }
 
     final base = httpMediaBaseUrl?.trim();
-    if (base != null && base.isNotEmpty && !_isHttpUrl(base)) {
-      errors.add('mediaAccess.httpMediaBaseUrl must use http or https.');
+    if (base != null && base.isNotEmpty) {
+      errors.addAll(
+        RemoteUrlSecurity.validateRemoteUrl(
+          base,
+          fieldPrefix: 'mediaAccess.httpMediaBaseUrl',
+          mode: mode,
+        ).errors,
+      );
     }
     return errors;
   }
 
-  static bool _isHttpUrl(String value) {
-    final uri = Uri.tryParse(value);
-    if (uri == null || !uri.hasScheme) return false;
-    return uri.scheme == 'http' || uri.scheme == 'https';
+  /// Non-blocking security warnings for the configured media base URL.
+  List<String> securityWarnings() {
+    final base = httpMediaBaseUrl?.trim();
+    if (base == null || base.isEmpty) return const [];
+    return RemoteUrlSecurity.validateRemoteUrl(
+      base,
+      fieldPrefix: 'mediaAccess.httpMediaBaseUrl',
+      mode: mode,
+    ).warnings;
   }
 }

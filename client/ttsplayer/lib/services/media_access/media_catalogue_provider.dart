@@ -1,3 +1,6 @@
+import 'media_access_config.dart';
+import 'remote_url_security.dart';
+
 /// How a catalogue is loaded — local filesystem path or HTTP URL.
 enum MediaCatalogueProviderKind {
   localFile,
@@ -42,7 +45,10 @@ class MediaCatalogueProviderDefinition {
   }
 
   /// Validation errors for this definition; empty when valid.
-  List<String> validate({required String fieldPrefix}) {
+  List<String> validate({
+    required String fieldPrefix,
+    MediaAccessMode mode = MediaAccessMode.localPreferred,
+  }) {
     final errors = <String>[];
     final trimmed = location.trim();
     if (trimmed.isEmpty) {
@@ -56,16 +62,27 @@ class MediaCatalogueProviderDefinition {
           errors.add('$fieldPrefix: local file path must not be a URL.');
         }
       case MediaCatalogueProviderKind.http:
-        if (!_isHttpUrl(trimmed)) {
-          errors.add('$fieldPrefix: HTTP catalogue URL must use http or https.');
-        }
+        errors.addAll(
+          RemoteUrlSecurity.validateRemoteUrl(
+            trimmed,
+            fieldPrefix: fieldPrefix,
+            mode: mode,
+          ).errors,
+        );
     }
     return errors;
   }
 
-  static bool _isHttpUrl(String value) {
-    final uri = Uri.tryParse(value);
-    if (uri == null || !uri.hasScheme) return false;
-    return uri.scheme == 'http' || uri.scheme == 'https';
+  /// Non-blocking security warnings for remote HTTP catalogue URLs.
+  List<String> securityWarnings({
+    required String fieldPrefix,
+    MediaAccessMode mode = MediaAccessMode.localPreferred,
+  }) {
+    if (kind != MediaCatalogueProviderKind.http) return const [];
+    return RemoteUrlSecurity.validateRemoteUrl(
+      location,
+      fieldPrefix: fieldPrefix,
+      mode: mode,
+    ).warnings;
   }
 }

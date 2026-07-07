@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:ttsplayer/models/media_folder.dart';
 import 'package:ttsplayer/models/media_item.dart';
 import 'package:ttsplayer/services/artwork/artwork_service.dart';
+import 'package:ttsplayer/services/media_access/media_location_resolver.dart';
+import 'package:ttsplayer/services/media_access/media_provider_config_service.dart';
 import 'package:ttsplayer/services/playback_service.dart';
 import 'package:ttsplayer/theme/app_theme.dart';
 import 'package:ttsplayer/widgets/card_layout.dart';
@@ -105,13 +107,20 @@ void main() {
 }
 
 Widget _wrap(ArtworkService artworkService, Widget child) {
-  return MaterialApp(
-    theme: AppTheme.dark,
-    home: Scaffold(
-      body: Provider<ArtworkService>.value(
-        value: artworkService,
-        child: child,
+  return MultiProvider(
+    providers: [
+      ChangeNotifierProvider(create: (_) => MediaProviderConfigService()),
+      Provider(
+        create: (context) => MediaLocationResolver(
+          config: context.read<MediaProviderConfigService>().mediaAccess,
+          isWindowsDesktop: false,
+        ),
       ),
+      Provider<ArtworkService>.value(value: artworkService),
+    ],
+    child: MaterialApp(
+      theme: AppTheme.dark,
+      home: Scaffold(body: child),
     ),
   );
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../features/settings/settings_navigation.dart';
 import '../theme/app_theme.dart';
 import '../features/search/search_navigation.dart';
 import 'home_button.dart';
@@ -37,37 +38,16 @@ class TtsAppBar extends StatelessWidget implements PreferredSizeWidget {
           tooltip: 'Search',
           onPressed: () => openSearchScreen(context),
         ),
-        const _DisabledActionButton(
-          icon: Icons.settings_outlined,
-          label: 'Settings',
+        IconButton(
+          key: const Key('open_settings'),
+          icon: const Icon(Icons.settings_outlined),
+          tooltip: 'Settings',
+          onPressed: () {
+            openMediaProviderSettingsScreen(context);
+          },
         ),
         const SizedBox(width: AppSpacing.xs),
       ],
-    );
-  }
-}
-
-class _DisabledActionButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-
-  const _DisabledActionButton({required this.icon, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return IconButton(
-      icon: Icon(icon, color: AppColors.textLow),
-      tooltip: '$label — Coming Soon',
-      onPressed: () {
-        ScaffoldMessenger.of(context).removeCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('$label is coming soon.'),
-            duration: const Duration(seconds: 2),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      },
     );
   }
 }

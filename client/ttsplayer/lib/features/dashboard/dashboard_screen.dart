@@ -6,6 +6,7 @@ import '../../features/search/search_navigation.dart';
 import '../../features/library_manager/library_manager_screen.dart';
 import '../../navigation/app_navigator.dart';
 import '../../services/catalog_service.dart';
+import '../../services/media_access/media_provider_config_service.dart';
 import '../../services/playback_service.dart';
 import '../../services/scan_history_service.dart';
 import '../../services/scanner_service.dart';
@@ -47,8 +48,11 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final configService = context.read<MediaProviderConfigService>();
       final catalogService = context.read<CatalogService>();
-      await catalogService.loadOnStartup();
+      await catalogService.loadOnStartup(
+        providerConfig: configService.config,
+      );
       if (!mounted) return;
       await _reloadDashboardData();
     });

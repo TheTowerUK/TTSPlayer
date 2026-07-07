@@ -9,6 +9,7 @@ import 'package:ttsplayer/models/media_item.dart';
 import 'package:ttsplayer/navigation/app_navigator.dart';
 import 'package:ttsplayer/services/artwork/artwork_service.dart';
 import 'package:ttsplayer/services/catalog_service.dart';
+import 'package:ttsplayer/services/media_access/media_provider_config.dart';
 import 'package:ttsplayer/services/media_access/media_provider_config_service.dart';
 import 'package:ttsplayer/services/media_access/media_location_resolver.dart';
 import 'package:ttsplayer/services/playback_service.dart';
@@ -28,7 +29,7 @@ class _FakeCatalogService extends CatalogService {
   bool get isLoading => false;
 
   @override
-  Future<void> loadOnStartup() async {}
+  Future<void> loadOnStartup({MediaProviderConfig? providerConfig}) async {}
 
   @override
   Future<ScannerConfigSummary?> readScannerConfig() async => null;

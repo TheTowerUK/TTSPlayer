@@ -232,6 +232,54 @@ Full command reference: [tnas-serving-layer.md](./tnas-serving-layer.md)
 
 ---
 
+### 10. Flutter production smoke test (Phase 4.5)
+
+After Caddy serves **HTTPS** on `:8443` (`tls internal` or trusted cert), validate the Flutter client against the same endpoints.
+
+→ Detailed rules: [phase-4.5-validation.md](./phase-4.5-validation.md)
+
+#### 10a. Certificate validity
+
+Trust the Caddy internal CA on Windows (export from Caddy storage → install to **Trusted Root Certification Authorities**), or use a hostname with a cert the OS already trusts.
+
+```powershell
+# Routing check (ignores cert trust)
+Invoke-WebRequest -Uri "https://<nas-host>:8443/catalog.json" `
+  -SkipCertificateCheck -UseBasicParsing | Select-Object StatusCode
+
+# Production check (must succeed without -SkipCertificateCheck after CA trust)
+Invoke-WebRequest -Uri "https://<nas-host>:8443/catalog.json" -UseBasicParsing |
+  Select-Object StatusCode
+```
+
+**Pass:** `200` without `-SkipCertificateCheck` once the CA is trusted.
+
+#### 10b. Catalogue URL in Settings
+
+| Field | Example |
+|---|---|
+| Remote catalogue URL | `https://<nas-host>:8443/catalog.json` |
+| Remote media base URL | `https://<nas-host>:8443/media/` |
+| Access mode | **HTTP required** for remote-only test; **Local preferred** for mixed LAN |
+
+Save, restart the app, confirm the catalogue loads without an error banner.
+
+#### 10c. Media URL and Range playback
+
+Play a video from the catalogue. Seek forward and back.
+
+**Pass:** First frame renders; seek works (Caddy returned **206** with `Content-Range` — same as step 8c).
+
+#### 10d. Client validation spot-check
+
+| URL | Mode | Expected |
+|---|---|---|
+| `https://…` | Any | Save OK |
+| `http://…` | Local preferred | Save OK with security warning |
+| `http://…` | HTTP required | Save blocked |
+
+---
+
 ### 9. Record reference provider validation (optional checkpoint)
 
 When **8a–8c pass on the NAS** (not localhost):
@@ -252,7 +300,8 @@ When **8a–8c pass on the NAS** (not localhost):
 | 502 on HTTPS | Existing TOS/TNAS OS proxy target down — use alternate port (8443) first |
 | 200 instead of 206 on Range | Request not reaching Caddy `file_server`; check proxy buffering |
 | 403 on valid video | Extension not in allowlist — sync with `indexer.py` |
-| Certificate errors on phone | Export/trust Caddy `tls internal` CA |
+| Certificate errors on phone | Export/trust Caddy `tls internal` CA — see [Phase 4.5 validation](./phase-4.5-validation.md) |
+| Flutter TLS banner on catalogue load | Trust CA on device or switch to valid cert; plain HTTP only allowed in local preferred mode |
 
 ---
 
@@ -268,6 +317,7 @@ When **8a–8c pass on the NAS** (not localhost):
 | 6. `caddy validate` | | ☐ |
 | 7. Caddy running | | ☐ |
 | 8. Smoke tests (200 / 206) | 2026-07-05 | ☑ |
+| 10. Flutter production smoke (HTTPS + app) | 2026-07-07 | ☑ |
 | 9. Reference provider validation recorded | 2026-07-05 | ☑ |
 | 2.5. Media access abstraction accepted | 2026-07-05 | ☑ |
 | 3a. MediaLocationResolver complete | 2026-07-05 | ☑ |

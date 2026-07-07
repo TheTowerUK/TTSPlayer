@@ -172,6 +172,35 @@ void main() {
       expect(result.errorReason, isNotNull);
     });
 
+    test('localPreferred on non-Windows falls back to HTTP when configured',
+        () {
+      final resolver = MediaLocationResolver(
+        config: MediaAccessConfig.development(
+          httpMediaBaseUrl: httpBase,
+          mode: MediaAccessMode.localPreferred,
+        ),
+        isWindowsDesktop: false,
+      );
+
+      final result = resolver.resolve(r'Y:\Media\Videos\movie.mp4');
+      expect(result.isPlayable, isTrue);
+      expect(result.providerType, MediaAccessProviderType.httpServing);
+    });
+
+    test('httpRequired does not use local file on Windows desktop', () {
+      final resolver = MediaLocationResolver(
+        config: MediaAccessConfig.development(
+          httpMediaBaseUrl: httpBase,
+          mode: MediaAccessMode.httpRequired,
+        ),
+        isWindowsDesktop: true,
+      );
+
+      final result = resolver.resolve(r'Y:\Media\Videos\movie.mp4');
+      expect(result.providerType, MediaAccessProviderType.httpServing);
+      expect(result.uri, contains('8443/media/'));
+    });
+
     test('unresolved when HTTP path not under configured roots', () {
       final resolver = MediaLocationResolver(
         config: MediaAccessConfig.development(

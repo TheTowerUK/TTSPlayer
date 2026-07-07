@@ -26,7 +26,10 @@ class DashboardBanners extends StatelessWidget {
     return Column(
       children: [
         if (catalogService.isUsingFallback)
-          _FallbackBanner(onRetry: onRetryCatalogue),
+          _FallbackBanner(
+            message: catalogService.fallbackBannerMessage,
+            onRetry: onRetryCatalogue,
+          ),
         if (catalogService.errorMessage != null)
           _MessageBanner(
             message: catalogService.errorMessage!,
@@ -52,9 +55,13 @@ class DashboardBanners extends StatelessWidget {
 }
 
 class _FallbackBanner extends StatefulWidget {
+  final String message;
   final VoidCallback onRetry;
 
-  const _FallbackBanner({required this.onRetry});
+  const _FallbackBanner({
+    required this.message,
+    required this.onRetry,
+  });
 
   @override
   State<_FallbackBanner> createState() => _FallbackBannerState();
@@ -77,8 +84,7 @@ class _FallbackBannerState extends State<_FallbackBanner> {
             const SizedBox(width: AppSpacing.iconGap),
             Expanded(
               child: Text(
-                'Demo catalogue in use — live NAS catalogue not reachable '
-                '(${CatalogService.liveCataloguePaths.join(' or ')}).',
+                widget.message,
                 style: const TextStyle(
                   color: AppColors.primaryLight,
                   fontSize: AppTypography.size12,
