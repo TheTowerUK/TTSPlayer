@@ -1,0 +1,9 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Roadmap & principles
+    url: https://github.com/TheTowerUK/TTSPlayer/blob/master/docs/roadmap/principles.md
+  - name: Pre-written milestone issues (M4–M7)
+    url: https://github.com/TheTowerUK/TTSPlayer/blob/master/docs/github/milestone-issues.md
+issue_templates:
+  - bug_report.md
+  - milestone-tracker.md

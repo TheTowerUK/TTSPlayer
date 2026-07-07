@@ -42,11 +42,12 @@ Windows-first polish: library manager, dashboard, Continue Watching, thumbnails,
 
 ## M3.5 — Network Client Foundation
 
-**Status:** 🎯 Current (`v0.4.0-dev`)
+**Status:** ✅ Complete — [`m3.5-complete`](../release/m3.5-media-access-complete.md#deployment-validation--2026-07-07) (2026-07-07)
 
-Same Flutter app, HTTP access mode: NAS-hosted `catalog.json`, Caddy/Nginx HTTPS, media streaming with range support, path-to-URL resolver, mobile settings, Android/iOS smoke builds. **Depends on NAS serving layer first.**
+HTTPS catalogue loading, provider configuration UI, startup provider selection, and end-to-end validation on TerraMaster TNAS + Caddy. Android/iOS home-network smoke builds remain optional follow-up.
 
-→ [M3.5 goals](./network-client-foundation.md)  
+→ [M3.5 release snapshot](../release/m3.5-media-access-complete.md)  
+→ [Phase 4 plan](./m35-phase-4-plan.md)  
 → [Development cycle](../release/v0.4.0-dev.md)  
 → [Mobile delivery overview](./mobile-delivery.md)
 
