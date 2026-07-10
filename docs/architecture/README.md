@@ -10,10 +10,32 @@ System design notes for TTSPlayer — scanner, catalogue schema, client services
 - **Local-first** — the app functions offline against a local or NAS path.
 - **Storage-backend neutral** — playback uses [MediaLocationResolver](./media-access-abstraction.md), not raw catalogue paths.
 
-Detailed architecture documents:
+## M3.5 foundation (complete)
 
-- [Path mapping (M3.5)](./path-mapping.md) — HTTP serving layer: filesystem → URL rules
-- [Media access abstraction (M3.5)](./media-access-abstraction.md) — provider-neutral playable URI model
+| Document | Status |
+|---|---|
+| [Path mapping](./path-mapping.md) | Accepted — HTTP serving layer rules |
+| [Media access abstraction](./media-access-abstraction.md) | Accepted — provider-neutral playable URI model |
+
+## M4 planning (active)
+
+Planning documents for [M4 — User Experience and Platform Integration](../roadmap/m4-plan.md). These describe **intent and baseline** — not implemented M4 work.
+
+| Document | Phase | Status |
+|---|---|---|
+| [Provider management](./provider-management.md) | 4.1 | Planning |
+| [Settings](./settings.md) | 4.2 | Planning |
+| [Library experience](./library.md) | 4.3 | Planning |
+| [Playback](./playback.md) | 4.4 | Planning |
+| [Diagnostics](./diagnostics.md) | 4.6 | Planning |
+
+Performance and caching (Phase 4.5) will be documented at sub-phase kickoff.
+
+## Architecture Decision Records
+
+Significant cross-layer decisions are recorded as ADRs:
+
+→ [ADR framework](./decisions/README.md) · [Template](./decisions/ADR-template.md)
 
 ## Key components
 
@@ -21,8 +43,10 @@ Detailed architecture documents:
 |---|---|---|
 | Indexer | `backend/indexer.py` | Crawls media roots → `catalog.json` |
 | Catalogue model | `client/ttsplayer/lib/models/` | Parses folder tree, items, scan metadata |
-| CatalogService | `client/ttsplayer/lib/services/catalog_service.dart` | Loads and reloads catalogue |
-| Caddy config | `backend/caddy.config` | HTTPS static file server (M3.5) |
+| CatalogService | `client/ttsplayer/lib/services/catalog_service.dart` | Loads catalogue; HTTP and local providers; fallback |
+| MediaProviderConfigService | `client/ttsplayer/lib/services/media_access/` | Persisted provider configuration (M3.5) |
+| MediaLocationResolver | `client/ttsplayer/lib/services/media_access/` | Resolves catalogue paths → playable URI |
+| Caddy config | `backend/caddy.config` | HTTPS static file server (M3.5 reference) |
 | ScannerService | `client/ttsplayer/lib/services/scanner_service.dart` | Runs indexer subprocess |
-| PlaybackService | `client/ttsplayer/lib/services/playback_service.dart` | Windows: media_kit; other: video_player — **to use MediaLocationResolver (Phase 3)** |
-| MediaLocationResolver | *Phase 3* | Resolves catalogue paths → playable URI via access providers |
+| PlaybackService | `client/ttsplayer/lib/services/playback_service.dart` | Windows: media_kit; other: video_player; uses resolver |
+| ArtworkService | `client/ttsplayer/lib/services/artwork/` | Sidecar and placeholder artwork |

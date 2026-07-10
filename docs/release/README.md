@@ -26,7 +26,7 @@ Shipping history and milestone snapshots for TTSPlayer.
 
 ## Current work
 
-**M4 — Rich Media Libraries** — [roadmap spec](../roadmap/m4-rich-media-libraries.md)
+**M4 — User Experience and Platform Integration** — [M4 plan](../roadmap/m4-plan.md) · [v0.5.0-dev tracker](./v0.5.0-dev.md)
 
 ---
 
@@ -38,7 +38,7 @@ Milestones and development branches are tracked separately: a completed mileston
 |---|---|
 | Latest validated release | M3.5 (`m3.5-complete`) |
 | Development branch | `m4-development` |
-| Current work | M4 |
+| Current work | M4 (`v0.5.0-dev`) |
 
 ---
 
@@ -46,6 +46,7 @@ Milestones and development branches are tracked separately: a completed mileston
 
 | Document | Milestone | Tag |
 |---|---|---|
+| [v0.5.0-dev — M4 development cycle](./v0.5.0-dev.md) | M4 (active) | — |
 | [M3.5 — Configurable HTTPS Media Platform](./m3.5-media-access-complete.md) | M3.5 | `m3.5-complete` |
 | [v0.3.0 — Personal Media Experience](./v0.3.0.md) | M3 | `v0.3.0` / `m3-complete` |
 | [v0.4.0-dev — M3.5 development cycle](./v0.4.0-dev.md) | M3.5 (archived) | — |

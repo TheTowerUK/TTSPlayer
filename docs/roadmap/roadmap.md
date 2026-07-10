@@ -14,7 +14,7 @@ Living milestone plan. Each milestone builds on the previous without changing th
 | Foundation | M1–M2 | Solid playable platform |
 | Personal UX | M3 | Polished personal media experience |
 | Network access | M3.5 | Network-aware media access |
-| Content expansion | M4–M6 | Images, music, books |
+| Content expansion | M5–M6 | Music, books (images deferred) |
 | Multi-device | M7 | Multi-device media ecosystem |
 
 ---
@@ -53,11 +53,15 @@ HTTPS catalogue loading, provider configuration UI, startup provider selection, 
 
 ---
 
-## M4 — Rich Media Libraries
+## M4 — User Experience and Platform Integration
 
-**Status:** Planned — [detailed goals](./m4-rich-media-libraries.md)
+**Status:** Planning — branch `m4-development`, `v0.5.0-dev`
 
-Photo and image browsing from the user's folder structure. Builds on M3 artwork and folder navigation; documented during M3 Sprint 4 closure.
+Polish the personal media application: provider management, settings framework, library UX, playback improvements, caching, diagnostics, and release documentation. Builds on M3.5 provider-neutral architecture without replacing filesystem-driven libraries.
+
+→ [M4 plan](./m4-plan.md)  
+→ [v0.5.0-dev tracker](../release/v0.5.0-dev.md)  
+→ [Architecture planning](../architecture/README.md)
 
 ---
 

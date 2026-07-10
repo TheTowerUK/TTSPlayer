@@ -1,4 +1,6 @@
-# M4 — Rich Media Libraries
+> **Superseded scope note (2026-07-10):** This document described **content-domain expansion** (image libraries) as M4. Active M4 is now **[User Experience and Platform Integration](./m4-plan.md)** on branch `m4-development` (`v0.5.0-dev`). Retain this file as reference for a future content-expansion milestone; do not treat it as the active M4 plan.
+
+# M4 — Rich Media Libraries (superseded draft)
 
 **Theme:** Rich Media Libraries  
 **Status:** Planned — begins after M3.5 (`v0.4.0-dev` cycle)  
