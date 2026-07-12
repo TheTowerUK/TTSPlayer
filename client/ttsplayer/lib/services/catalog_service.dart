@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/catalog.dart';
+import '../models/catalogue_provider_snapshot.dart';
 import '../models/catalogue_source_kind.dart';
 import '../models/catalogue_validation_result.dart';
 import 'media_access/catalogue_provider_selector.dart';
@@ -40,8 +41,9 @@ class CatalogService extends ChangeNotifier {
   String? _catalogPath;
   DateTime? _lastRefreshedAt;
 
-  /// True when the bundled asset is being used because the live NAS catalogue
-  /// was unreachable.  Drives the "Demo catalogue in use" banner.
+  /// True when the bundled demo asset is active because **all** configured
+  /// providers failed on startup (not when a later provider succeeds after an
+  /// earlier failure — that is [isDegradedLoad]). Drives the demo fallback banner.
   bool _isUsingFallback = false;
 
   /// User-facing message when [isUsingFallback] is true.
@@ -59,6 +61,24 @@ class CatalogService extends ChangeNotifier {
   String? get catalogPath => _catalogPath;
   DateTime? get lastRefreshedAt => _lastRefreshedAt;
   bool get isUsingFallback => _isUsingFallback;
+
+  /// Session-scoped provider load snapshot (ADR-001). Not persisted.
+  CatalogueProviderSnapshot get providerSnapshot =>
+      _providerSnapshot ??
+      CatalogueProviderSnapshot.initial(config: activeProviderConfig);
+
+  /// Provider that supplied the current catalogue, if known.
+  MediaCatalogueProviderDefinition? get activeCatalogueProvider =>
+      _activeCatalogueProvider ?? providerSnapshot.activeProvider;
+
+  /// When the active catalogue was last successfully replaced.
+  DateTime? get lastCatalogueLoadAt => _lastCatalogueLoadAt;
+
+  /// When the most recent provider-chain load cycle started.
+  DateTime? get lastLoadStartedAt => _lastLoadStartedAt;
+
+  /// True when the active provider loaded after earlier failures (localPreferred).
+  bool get isDegradedLoad => providerSnapshot.isDegradedLoad;
 
   /// True when the bundled demo asset is active (auto-fallback or user-selected).
   bool get isDemoCatalogue =>
@@ -142,6 +162,13 @@ class CatalogService extends ChangeNotifier {
   String? _dismissedWarningsCatalogueId;
   bool _dismissedStateLoaded = false;
 
+  CatalogueProviderSnapshot? _providerSnapshot;
+  CatalogueProviderLoadTracker? _loadTracker;
+  MediaCatalogueProviderDefinition? _activeCatalogueProvider;
+  DateTime? _sessionStartedAt;
+  DateTime? _lastLoadStartedAt;
+  DateTime? _lastCatalogueLoadAt;
+
   /// True when the loaded catalogue has scan warnings the user has not
   /// dismissed for this catalogue revision.
   bool get shouldShowScanWarnings {
@@ -187,8 +214,19 @@ class CatalogService extends ChangeNotifier {
         _catalog = Catalog.fromJson(json);
         _catalogPath = 'bundled';
         _notifyCatalogReplaced();
+        _activeCatalogueProvider = null;
+        _finalizeProviderSnapshot(
+          chainSucceeded: false,
+          demoFallback: true,
+          demoWithoutProvider: true,
+        );
       } catch (e) {
         _errorMessage = 'Could not load any catalogue: $e';
+        _finalizeProviderSnapshot(
+          chainSucceeded: false,
+          demoFallback: false,
+          demoWithoutProvider: false,
+        );
       }
     }
 
@@ -197,10 +235,21 @@ class CatalogService extends ChangeNotifier {
   }
 
   // ---------------------------------------------------------------------------
-  // Rescan
+  // Rescan / refresh
   // ---------------------------------------------------------------------------
 
-  /// Reloads the live NAS catalogue.
+  /// Reloads [catalog.json] from the full eligible provider chain (ADR-002).
+  ///
+  /// Alias for [rescan]. This is **catalogue refresh** — it re-attempts configured
+  /// local/HTTP catalogue sources in priority order. It does **not** run the
+  /// filesystem indexer or [ScannerService] scan.
+  Future<void> refreshCatalogue() => rescan();
+
+  /// Re-attempts the full eligible provider chain and replaces the catalogue on
+  /// success.
+  ///
+  /// Same behaviour as [refreshCatalogue]. Not a filesystem/indexer scan — use
+  /// [ScannerService] for that.
   ///
   /// On success: active catalogue is replaced, [isUsingFallback] cleared.
   /// On failure: error banner shown, existing catalogue preserved — the user
@@ -221,6 +270,11 @@ class CatalogService extends ChangeNotifier {
       _errorMessage = attempt.lastError ??
           'Could not load catalogue from configured providers. '
           'Check network, drive mounts, and Settings.';
+      _finalizeProviderSnapshot(
+        chainSucceeded: false,
+        demoFallback: isUsingFallback,
+        demoWithoutProvider: false,
+      );
     }
 
     _isLoading = false;
@@ -415,24 +469,98 @@ class CatalogService extends ChangeNotifier {
       }
     }
 
-    final providers = CatalogueProviderSelector.orderedProviders(
+    final attemptChain = CatalogueProviderSelector.orderedProviders(
       config: config,
       legacyLocalProviders: legacyLocal,
     );
+    final skipped =
+        CatalogueProviderSelector.configurationExcludedProviders(
+      config: config,
+      attemptChain: attemptChain,
+    );
+
+    _loadTracker = CatalogueProviderLoadTracker(
+      config: config,
+      attemptChain: attemptChain,
+      skippedProviders: skipped,
+    );
+
+    final cycleStart = DateTime.now().toUtc();
+    _sessionStartedAt ??= cycleStart;
+    _lastLoadStartedAt = cycleStart;
+    _loadTracker!.beginCycle(cycleStart);
 
     String? lastError;
-    for (final provider in providers) {
+    for (var i = 0; i < attemptChain.length; i++) {
+      final provider = attemptChain[i];
+      _loadTracker!.markLoading(i, DateTime.now().toUtc());
+
       final errorBefore = _errorMessage;
       _errorMessage = null;
       final loaded = await _tryCatalogueProvider(provider);
       if (loaded) {
+        final hadEarlierFailure = _loadTracker!.records
+            .take(i)
+            .any((r) => r.health == CatalogueProviderHealth.failed);
+        _loadTracker!.markSuccess(
+          i,
+          DateTime.now().toUtc(),
+          hadEarlierFailure: hadEarlierFailure,
+        );
+        _activeCatalogueProvider = provider;
+        _lastCatalogueLoadAt = _lastRefreshedAt;
+        _finalizeProviderSnapshot(
+          chainSucceeded: true,
+          demoFallback: false,
+          demoWithoutProvider: false,
+        );
         return _ProviderCatalogueAttempt.success;
       }
+
       final attemptError = _errorMessage;
       _errorMessage = errorBefore;
       lastError = attemptError ?? lastError;
+      _loadTracker!.markFailed(
+        i,
+        attemptError ?? _loadFailureMessage(provider),
+        DateTime.now().toUtc(),
+      );
     }
+
+    _loadTracker!.markAllAttemptedFailed(lastError);
+    _finalizeProviderSnapshot(
+      chainSucceeded: false,
+      demoFallback: false,
+      demoWithoutProvider: false,
+    );
     return _ProviderCatalogueAttempt.failed(lastError);
+  }
+
+  void _finalizeProviderSnapshot({
+    required bool chainSucceeded,
+    required bool demoFallback,
+    required bool demoWithoutProvider,
+  }) {
+    final tracker = _loadTracker;
+    if (tracker == null) return;
+
+    _providerSnapshot = tracker.build(
+      loadedCatalogueIdentity: _catalog?.catalogueIdentity,
+      catalogPath: _catalogPath,
+      lastCatalogueLoadAt: _lastCatalogueLoadAt,
+      sessionStartedAt: _sessionStartedAt,
+      isDemoFallback: demoFallback || isUsingFallback,
+      demoActiveWithoutProvider: demoWithoutProvider,
+    );
+  }
+
+  static String _loadFailureMessage(MediaCatalogueProviderDefinition provider) {
+    switch (provider.kind) {
+      case MediaCatalogueProviderKind.localFile:
+        return 'Could not load catalogue from ${provider.location}.';
+      case MediaCatalogueProviderKind.http:
+        return 'Could not load catalogue from ${provider.location}.';
+    }
   }
 
   static MediaCatalogueProviderDefinition _legacyProviderForPath(String path) {

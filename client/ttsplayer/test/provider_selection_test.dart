@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ttsplayer/models/catalogue_provider_snapshot.dart';
 import 'package:ttsplayer/services/catalog_service.dart';
 import 'package:ttsplayer/services/media_access/media_access_config.dart';
 import 'package:ttsplayer/services/media_access/media_catalogue_provider.dart';
@@ -108,6 +109,23 @@ void main() {
       expect(service.catalogPath, localFile.path);
       expect(service.catalog?.catalogueIdentity, 'LOCAL');
       expect(httpCalled, isFalse);
+
+      final snapshot = service.providerSnapshot;
+      expect(service.activeCatalogueProvider?.location, localFile.path);
+      expect(snapshot.isDegradedLoad, isFalse);
+      expect(
+        snapshot.providers
+            .firstWhere((r) => r.definition.location == localFile.path)
+            .health,
+        CatalogueProviderHealth.success,
+      );
+      final httpRecord = snapshot.providers
+          .where((r) => r.definition.kind == MediaCatalogueProviderKind.http);
+      if (httpRecord.isNotEmpty) {
+        expect(httpRecord.first.health, CatalogueProviderHealth.idle);
+      }
+      expect(service.lastCatalogueLoadAt, isNotNull);
+      expect(service.lastLoadStartedAt, isNotNull);
     });
 
     test('localPreferred falls back to HTTP when local files missing', () async {
@@ -137,6 +155,15 @@ void main() {
       expect(service.catalogPath, httpCatalogUrl);
       expect(service.catalog?.catalogueIdentity, 'HTTP-FALLBACK');
       expect(service.errorMessage, isNull);
+
+      final snapshot = service.providerSnapshot;
+      expect(snapshot.isDegradedLoad, isTrue);
+      expect(
+        snapshot.providers
+            .firstWhere((r) => r.definition.location == httpCatalogUrl)
+            .health,
+        CatalogueProviderHealth.degraded,
+      );
     });
 
     test(
@@ -330,6 +357,155 @@ void main() {
       await service.rescan();
       expect(service.catalog?.catalogueIdentity, 'GOOD');
       expect(service.errorMessage, isNotNull);
+      expect(service.lastCatalogueLoadAt, isNotNull);
+      expect(
+        service.providerSnapshot.providers.every(
+          (r) => r.health == CatalogueProviderHealth.failed,
+        ),
+        isTrue,
+      );
+    });
+
+    test('refreshCatalogue retries full provider chain in order', () async {
+      final first = File('${tempDir.path}/first.json');
+      final second = File('${tempDir.path}/second.json');
+      await first.writeAsString(jsonEncode(minimalCatalogJson(id: 'FIRST')));
+      await second.writeAsString(jsonEncode(minimalCatalogJson(id: 'SECOND')));
+
+      final service = CatalogService()
+        ..includeLegacyCataloguePaths = false;
+      await service.loadOnStartup(
+        providerConfig: MediaProviderConfig(
+          catalogueProviders: [
+            MediaCatalogueProviderDefinition.localFile(first.path),
+            MediaCatalogueProviderDefinition.localFile(second.path),
+          ],
+          mediaAccess: MediaAccessConfig.defaults(),
+        ),
+      );
+      expect(service.catalog?.catalogueIdentity, 'FIRST');
+
+      await first.delete();
+      await service.refreshCatalogue();
+
+      expect(service.catalog?.catalogueIdentity, 'SECOND');
+      final snapshot = service.providerSnapshot;
+      expect(
+        snapshot.providers.firstWhere((r) => r.definition.location == first.path).health,
+        CatalogueProviderHealth.failed,
+      );
+      expect(
+        snapshot.providers.firstWhere((r) => r.definition.location == second.path).health,
+        CatalogueProviderHealth.degraded,
+      );
+    });
+
+    test('startup demo fallback snapshot records failed providers and demo flags',
+        () async {
+      final client = MockClient((request) async {
+        throw HandshakeException('CERTIFICATE_VERIFY_FAILED');
+      });
+
+      final service = CatalogService(httpClient: client)
+        ..includeLegacyCataloguePaths = false;
+      await service.loadOnStartup(
+        providerConfig: MediaProviderConfig(
+          catalogueProviders: const [
+            MediaCatalogueProviderDefinition.localFile(
+              r'Z:\Missing\catalog.json',
+            ),
+            MediaCatalogueProviderDefinition.http(httpsCatalogUrl),
+          ],
+          mediaAccess: MediaAccessConfig.defaults(
+            httpMediaBaseUrl: httpsBase,
+          ),
+        ),
+      );
+
+      expect(service.isUsingFallback, isTrue);
+      expect(service.catalogPath, 'bundled');
+      expect(service.activeCatalogueProvider, isNull);
+
+      final snapshot = service.providerSnapshot;
+      expect(snapshot.isDemoFallback, isTrue);
+      expect(snapshot.demoActiveWithoutProvider, isTrue);
+      expect(snapshot.isDegradedLoad, isFalse);
+      expect(snapshot.activeProvider, isNull);
+      expect(snapshot.activeRecord, isNull);
+      expect(
+        snapshot.providers.every(
+          (r) => r.health == CatalogueProviderHealth.failed,
+        ),
+        isTrue,
+      );
+    });
+
+    test('httpRequired demo fallback includes skipped local providers', () async {
+      SharedPreferences.setMockInitialValues({});
+
+      final service = CatalogService()
+        ..includeLegacyCataloguePaths = false;
+      await service.loadOnStartup(
+        providerConfig: MediaProviderConfig(
+          catalogueProviders: const [
+            MediaCatalogueProviderDefinition.localFile(
+              r'Z:\Missing\catalog.json',
+            ),
+          ],
+          mediaAccess: MediaAccessConfig.defaults(
+            mode: MediaAccessMode.httpRequired,
+          ),
+        ),
+      );
+
+      expect(service.isUsingFallback, isTrue);
+      final snapshot = service.providerSnapshot;
+      expect(snapshot.isDemoFallback, isTrue);
+      expect(snapshot.demoActiveWithoutProvider, isTrue);
+      expect(snapshot.activeProvider, isNull);
+      expect(
+        snapshot.providers.any(
+          (r) => r.health == CatalogueProviderHealth.skipped,
+        ),
+        isTrue,
+      );
+    });
+
+    test('httpRequired marks local providers skipped in snapshot', () async {
+      final localFile = File('${tempDir.path}/skipped-local.json');
+      await localFile.writeAsString(jsonEncode(minimalCatalogJson(id: 'LOCAL')));
+
+      final client = MockClient((request) async {
+        return http.Response(
+          jsonEncode(minimalCatalogJson(id: 'HTTP-ONLY')),
+          200,
+        );
+      });
+
+      final service = CatalogService(httpClient: client)
+        ..includeLegacyCataloguePaths = false;
+      await service.loadOnStartup(
+        providerConfig: MediaProviderConfig(
+          catalogueProviders: [
+            MediaCatalogueProviderDefinition.localFile(localFile.path),
+            const MediaCatalogueProviderDefinition.http(httpCatalogUrl),
+          ],
+          mediaAccess: MediaAccessConfig.defaults(
+            mode: MediaAccessMode.httpRequired,
+          ),
+        ),
+      );
+
+      final skipped = service.providerSnapshot.providers
+          .where((r) => r.health == CatalogueProviderHealth.skipped)
+          .toList();
+      expect(skipped, isNotEmpty);
+      expect(
+        skipped.every(
+          (r) => r.definition.kind == MediaCatalogueProviderKind.localFile,
+        ),
+        isTrue,
+      );
     });
   });
 

@@ -97,5 +97,30 @@ void main() {
 
       expect(ordered.length, 1);
     });
+
+    test('configurationExcludedProviders lists locals under httpRequired', () {
+      final config = MediaProviderConfig(
+        catalogueProviders: const [
+          MediaCatalogueProviderDefinition.localFile(
+            r'Y:\Media\catalog.json',
+          ),
+          MediaCatalogueProviderDefinition.http(
+            'http://192.168.0.10:8443/catalog.json',
+          ),
+        ],
+        mediaAccess: MediaAccessConfig.defaults(
+          mode: MediaAccessMode.httpRequired,
+        ),
+      );
+
+      final ordered = CatalogueProviderSelector.orderedProviders(config: config);
+      final skipped = CatalogueProviderSelector.configurationExcludedProviders(
+        config: config,
+        attemptChain: ordered,
+      );
+
+      expect(skipped.length, 1);
+      expect(skipped.single.kind, MediaCatalogueProviderKind.localFile);
+    });
   });
 }

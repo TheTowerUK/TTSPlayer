@@ -27,6 +27,24 @@ abstract final class CatalogueProviderSelector {
     return _dedupe(attempts);
   }
 
+  static String providerKey(MediaCatalogueProviderDefinition provider) =>
+      _dedupeKey(provider);
+
+  /// Local catalogue providers excluded from the chain under [httpRequired].
+  static List<MediaCatalogueProviderDefinition> configurationExcludedProviders({
+    required MediaProviderConfig config,
+    required List<MediaCatalogueProviderDefinition> attemptChain,
+  }) {
+    if (config.mediaAccess.mode != MediaAccessMode.httpRequired) {
+      return const [];
+    }
+    final attemptKeys = attemptChain.map(_dedupeKey).toSet();
+    return config.catalogueProviders
+        .where((p) => p.kind == MediaCatalogueProviderKind.localFile)
+        .where((p) => !attemptKeys.contains(_dedupeKey(p)))
+        .toList();
+  }
+
   static List<MediaCatalogueProviderDefinition> _dedupe(
     List<MediaCatalogueProviderDefinition> providers,
   ) {
