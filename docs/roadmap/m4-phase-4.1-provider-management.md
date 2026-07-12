@@ -259,15 +259,22 @@ stateDiagram-v2
 ## Definition of done
 
 - [x] ADR-001, ADR-002, ADR-003 reviewed and **Accepted** (2026-07-12)
-- [ ] `CatalogService` exposes provider snapshot without breaking existing public API
-- [ ] Provider Status panel visible on dashboard with active provider and refresh action
-- [ ] Refresh catalogue preserves last-good catalogue on failure
-- [ ] M3.5 provider order and fallback semantics unchanged (V1–V8 pass)
-- [ ] `flutter analyze` clean for touched files
-- [ ] New unit tests for snapshot + refresh; widget smoke for status panel
-- [ ] Windows smoke: local file, HTTPS catalogue, degraded fallback
-- [ ] [provider-management.md](../architecture/provider-management.md) status → **Accepted**
-- [ ] [v0.5.0-dev.md](../release/v0.5.0-dev.md) phase 4.1 table updated
+- [ ] `CatalogService` exposes provider snapshot without breaking existing public API — **implemented; validation in progress**
+- [ ] Provider Status panel visible on dashboard with active provider and refresh action — **implemented**
+- [ ] Refresh catalogue preserves last-good catalogue on failure — **implemented**
+- [ ] M3.5 provider order and fallback semantics unchanged (V1–V8 pass) — **automated tests extended**
+- [ ] `flutter analyze` clean for touched files — pending CI/local run
+- [ ] New unit tests for snapshot + refresh; widget smoke for status panel — **added**
+- [ ] Windows smoke: local file, HTTPS catalogue, degraded fallback — **not run in this pass**
+- [ ] [provider-management.md](../architecture/provider-management.md) status → **Accepted** — **doc updated; closure after smoke**
+- [ ] [v0.5.0-dev.md](../release/v0.5.0-dev.md) phase 4.1 table updated — **in progress**
+
+### Implementation notes (2026-07-12)
+
+- Legacy `StorageStatusSection` removed; dashboard uses `ProviderStatusSection`.
+- `refreshCatalogue()` is an alias for `rescan()` — no separate code path.
+- Manual `loadFromFile` / `loadFromUrl` do not update provider snapshot (spec: no `degraded` for manual loads).
+- Demo fallback on startup calls `_finalizeProviderSnapshot` twice (chain failure, then demo active) — final snapshot reflects demo state with failed provider records.
 
 ---
 

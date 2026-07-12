@@ -1,6 +1,6 @@
 # Provider Management (M4 planning)
 
-**Status:** Specification **Accepted** — implementation pending ([Phase 4.1 spec](../roadmap/m4-phase-4.1-provider-management.md))  
+**Status:** **Implemented (Phase 4.1)** — session snapshot, `CatalogService` instrumentation, and dashboard Provider Status panel on `m4-development`; Windows smoke and final DoD closure pending  
 **Related roadmap phase:** [M4 Phase 4.1 — Provider Management](../roadmap/m4-plan.md#phase-41--provider-management)
 
 → [Media access abstraction](./media-access-abstraction.md)  
@@ -34,7 +34,20 @@ Define how users **see, understand, and act on** catalogue provider state after 
 | Readable errors | `remote_fetch_errors.dart` — TLS, timeout, network messages |
 | Artwork cache | Cleared on successful catalogue replacement (`onCatalogReplaced`) |
 
-**Not in baseline (M4.1 deliverables):** structured health model, provider snapshot, Provider Status panel, unified refresh labelling — see [implementation spec](../roadmap/m4-phase-4.1-provider-management.md).
+## Phase 4.1 implementation (2026-07-12)
+
+| Component | Location | Notes |
+|---|---|---|
+| `CatalogueProviderHealth` | `lib/models/catalogue_provider_snapshot.dart` | Session-only; ADR-001 |
+| `CatalogueProviderLoadTracker` | same | Builds snapshot during provider-chain attempts |
+| `CatalogService.providerSnapshot` | `lib/services/catalog_service.dart` | Exposes active provider, timestamps, degraded/demo flags |
+| `CatalogService.refreshCatalogue()` | same | Alias for `rescan()` — catalogue reload, not filesystem scan |
+| Provider Status panel | `lib/features/dashboard/widgets/provider_status_section.dart` | Replaces legacy Storage Status (ADR-003) |
+| Degraded banner | `lib/features/dashboard/widgets/dashboard_banners.dart` | Optional warning when fallback provider active |
+
+**Removed:** `StorageStatusSection` (legacy Live NAS / Fallback NAS / Demo chip UI).
+
+**Unchanged:** `CatalogueProviderSelector` ordering; M3.5 demo fallback; artwork cache clear on success only; no provider health persistence.
 
 ---
 
