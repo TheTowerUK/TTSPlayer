@@ -1,6 +1,6 @@
 # M4 Phase 4.2 — Settings Framework (Implementation Specification)
 
-**Status:** Specification — **Proposed** (documentation in progress, 2026-07-12)  
+**Status:** Specification — **Accepted** (2026-07-12) · Implementation **ready to begin**  
 **Milestone:** M4 — User Experience and Platform Integration  
 **Branch:** `m4-development`  
 **Development version:** `v0.5.0-dev`  
@@ -11,13 +11,13 @@
 → [Provider management (4.1 complete)](../architecture/provider-management.md)  
 → [v0.5.0-dev release tracker](../release/v0.5.0-dev.md)
 
-**ADRs (Proposed):**
+**ADRs (Accepted 2026-07-12):**
 
 - [ADR-004: Settings Storage and Versioning](../architecture/decisions/ADR-004-settings-storage-and-versioning.md)
 - [ADR-005: Settings Information Architecture](../architecture/decisions/ADR-005-settings-information-architecture.md)
 - [ADR-006: Settings Validation and Apply Behaviour](../architecture/decisions/ADR-006-settings-validation-and-apply-behaviour.md)
 
-**Do not start implementation** until this specification and ADRs are reviewed and accepted.
+Follow the established M4 cadence: envelope model → persistence → migration → validation → UI shell → provider integration → testing → Windows validation → closure.
 
 ---
 
@@ -50,13 +50,21 @@ Evolve the existing M3.5 provider settings screen and scattered preference keys 
 | Deliverable | Description |
 |---|---|
 | Settings envelope + migration | ADR-004 `ttsplayer_settings_v1` |
-| `SettingsService` (name indicative) | Load, migrate, validate, save, reset groups |
+| `SettingsRepository` | Load, migrate, validate, save, reset groups (persistence layer — not a runtime service) |
 | `SettingsScreen` shell | Grouped sections per ADR-005 |
 | Provider section integration | Refactor existing form into Library & Providers |
 | Network section | Persist catalogue fetch timeout (first network pref) |
 | Diagnostics section | App version, reset settings |
 | Unsaved-change handling | ADR-006 |
-| Tests + migration scenarios | S1–S12 |
+| Tests + migration scenarios | S1–S13 |
+
+### Persistence layer naming
+
+Use **`SettingsRepository`** for the load/save/migrate/validate component — not `SettingsService`.
+
+TTSPlayer `*Service` types (`CatalogService`, `PlaybackService`, `ArtworkService`) own **runtime behaviour** and long-lived app state. Settings persistence is a **repository-style** concern: read/write versioned configuration, migrate legacy keys, validate drafts, and expose snapshots to consumers. Runtime services read configuration from the repository; they do not embed preference I/O.
+
+`MediaProviderConfigService` may remain as a thin adapter during migration, delegating to `SettingsRepository` for the provider slice, or be folded into the repository in a later refactor step — implementation choice, not a spec change.
 
 ### Explicitly deferred (later phases)
 
@@ -212,7 +220,7 @@ Storage key: `ttsplayer_settings_v1`
 ### Migration flow
 
 ```
-App start → SettingsService.load()
+App start → SettingsRepository.load()
   → if ttsplayer_settings_v1 valid → use
   → else if media_provider_config_v1 valid → migrate → write envelope
   → else defaults
@@ -307,7 +315,7 @@ See [ADR-006](../architecture/decisions/ADR-006-settings-validation-and-apply-be
 |---|---|
 | Migration | S3, S4, S8, S9 — pure Dart |
 | Validation | S5, S6, S7 — reuse provider config tests patterns |
-| SettingsService | Load/save/reset/corrupt recovery |
+| SettingsRepository | Load/save/reset/corrupt recovery; S13 failed migration |
 | Widget | Settings sections render; unsaved dialog (S11) |
 | Regression | All existing `media_provider_settings_screen_test.dart`, `media_provider_config_test.dart`, `provider_selection_test.dart` |
 | Integration | Provider save → resolver update → manual refresh still separate |
@@ -319,23 +327,24 @@ Runtime validation after implementation: configure → restart → confirm persi
 ## Implementation order
 
 1. **Inventory + envelope model** — Dart types mirroring JSON groups; no UI.
-2. **`SettingsService`** — load, migrate, validate, save, reset (ADR-004).
+2. **`SettingsRepository`** — load, migrate, validate, save, reset (ADR-004).
 3. **Validation layer** — centralize group validators; delegate provider to existing code.
 4. **`SettingsScreen` shell** — empty sections with headings.
 5. **Library & Providers integration** — extract/refactor existing form widgets.
 6. **Network timeout** — wire to `CatalogService` constructor/config.
 7. **Diagnostics** — version + reset all.
-8. **Unsaved-change guard** — WillPopScope / `PopScope`.
+8. **Unsaved-change guard** — `PopScope` unsaved-change dialog.
 9. **Navigation update** — app bar + dashboard link to settings shell.
-10. **Tests** — S1–S12.
-11. **Runtime validation + doc closure** — mark ADRs Accepted; update release tracker.
+10. **Tests** — S1–S13.
+11. **Windows runtime validation** — configure → restart → persistence smoke (mirrors 4.1 closure).
+12. **Documentation closure** — update release tracker; mark phase complete.
 
 ---
 
 ## Definition of done
 
-- [ ] ADR-004, ADR-005, ADR-006 reviewed and **Accepted**
-- [ ] `SettingsService` (or equivalent) loads/saves versioned envelope with migration from `media_provider_config_v1`
+- [x] ADR-004, ADR-005, ADR-006 reviewed and **Accepted** (2026-07-12)
+- [ ] `SettingsRepository` loads/saves versioned envelope with migration from `media_provider_config_v1`
 - [ ] `SettingsScreen` with all M4.2 sections present (Playback may be informational only)
 - [ ] Library & Providers parity with current `MediaProviderSettingsScreen` behaviour
 - [ ] Network catalogue timeout configurable within bounds
@@ -343,7 +352,7 @@ Runtime validation after implementation: configure → restart → confirm persi
 - [ ] Unsaved-change handling on back navigation
 - [ ] Provider health/refresh **not** duplicated in settings
 - [ ] `httpRequired` HTTPS rules unchanged
-- [ ] Validation scenarios S1–S12 pass
+- [ ] Validation scenarios S1–S13 pass
 - [ ] `flutter analyze` clean for touched files
 - [ ] [settings.md](../architecture/settings.md) → Implemented / Accepted
 - [ ] [v0.5.0-dev.md](../release/v0.5.0-dev.md) Phase 4.2 updated
@@ -366,6 +375,9 @@ Runtime validation after implementation: configure → restart → confirm persi
 | **S10** | Partial migration (valid provider, invalid network group) | Provider preserved; network defaults |
 | **S11** | Unsaved changes → back | Dialog; Discard reverts; Save persists |
 | **S12** | Provider Save then dashboard Refresh | Catalogue reload uses new config; last-good retained if refresh fails |
+| **S13** | Failed migration — corrupt `ttsplayer_settings_v1` (invalid JSON) with no valid legacy key | App starts normally; settings defaults loaded; warning logged once; no crash; user can Save new valid settings |
+
+**S13 note:** Distinct from S9 (corrupt envelope with possible legacy fallback). S13 covers the case where the envelope is unreadable and no migratable legacy provider config exists — the path users hit after a bad write or manual prefs corruption.
 
 ---
 
@@ -373,11 +385,11 @@ Runtime validation after implementation: configure → restart → confirm persi
 
 | Document | Action |
 |---|---|
-| This spec | Proposed → Accepted at implementation kickoff |
-| ADR-004–006 | Proposed → Accepted at phase close |
-| [settings.md](../architecture/settings.md) | Merge spec; status In progress → Accepted when done |
-| [m4-plan.md](./m4-plan.md) | Link spec; 4.2 spec in progress |
-| [v0.5.0-dev.md](../release/v0.5.0-dev.md) | Phase 4.2 spec tracker |
+| This spec | **Accepted** 2026-07-12 — update at phase closure with implementation notes |
+| ADR-004–006 | **Accepted** 2026-07-12 |
+| [settings.md](../architecture/settings.md) | Spec accepted → **Implemented** at phase close |
+| [m4-plan.md](./m4-plan.md) | 4.2 implementation in progress at kickoff |
+| [v0.5.0-dev.md](../release/v0.5.0-dev.md) | Track implementation + validation |
 
 ---
 

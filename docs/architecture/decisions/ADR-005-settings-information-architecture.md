@@ -1,7 +1,8 @@
 # ADR-005: Settings Information Architecture
 
-**Status:** Proposed  
+**Status:** Accepted  
 **Date:** 2026-07-12  
+**Accepted:** 2026-07-12 (specification sign-off, pre-implementation)  
 **Milestone:** M4 Phase 4.2  
 **Authors:** M4 documentation pass
 

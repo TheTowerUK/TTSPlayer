@@ -70,9 +70,9 @@ Every ADR must include these headings (use [ADR-template.md](./ADR-template.md))
 | [ADR-001](./ADR-001-provider-health-model.md) | Provider Health Model | Accepted |
 | [ADR-002](./ADR-002-provider-refresh-lifecycle.md) | Provider Refresh Lifecycle | Accepted |
 | [ADR-003](./ADR-003-provider-status-presentation.md) | Provider Status Presentation | Accepted |
-| [ADR-004](./ADR-004-settings-storage-and-versioning.md) | Settings Storage and Versioning | Proposed |
-| [ADR-005](./ADR-005-settings-information-architecture.md) | Settings Information Architecture | Proposed |
-| [ADR-006](./ADR-006-settings-validation-and-apply-behaviour.md) | Settings Validation and Apply Behaviour | Proposed |
+| [ADR-004](./ADR-004-settings-storage-and-versioning.md) | Settings Storage and Versioning | Accepted |
+| [ADR-005](./ADR-005-settings-information-architecture.md) | Settings Information Architecture | Accepted |
+| [ADR-006](./ADR-006-settings-validation-and-apply-behaviour.md) | Settings Validation and Apply Behaviour | Accepted |
 
 ---
 

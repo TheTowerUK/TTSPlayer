@@ -1,7 +1,8 @@
 # ADR-004: Settings Storage and Versioning
 
-**Status:** Proposed  
+**Status:** Accepted  
 **Date:** 2026-07-12  
+**Accepted:** 2026-07-12 (specification sign-off, pre-implementation)  
 **Milestone:** M4 Phase 4.2  
 **Authors:** M4 documentation pass
 
@@ -51,12 +52,14 @@ Constraints:
 
 7. **Save atomicity:** validate the full draft envelope in memory; write one JSON string to `ttsplayer_settings_v1` only when valid. Provider configuration continues to use the same validation rules as today (`MediaProviderConfig.validate()`).
 
+8. **Implementation naming:** the persistence component is `SettingsRepository` (load/migrate/save/reset), distinct from runtime `*Service` types that consume configuration.
+
 ---
 
 ## Rationale
 
 - A single envelope gives one migration entry point while preserving the proven M3.5 provider JSON structure inside it.
-- Dual-read avoids silent loss for users who upgrade mid-cycle before the new settings service runs.
+- Dual-read avoids silent loss for users who upgrade mid-cycle before the new settings repository runs.
 - Keeping catalogue and resume keys separate prevents settings reset from wiping browsing state or watch progress accidentally.
 - One-key JSON write matches current `MediaProviderConfigService.save()` behaviour and is sufficient for personal-scale preference size.
 

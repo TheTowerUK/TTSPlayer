@@ -1,13 +1,13 @@
 # Settings Framework (M4 Phase 4.2)
 
-**Status:** Specification **Proposed** — [Phase 4.2 implementation spec](../roadmap/m4-phase-4.2-settings-framework.md) in progress  
+**Status:** Specification **Accepted** (2026-07-12) — implementation ready to begin  
 **Related roadmap phase:** [M4 Phase 4.2 — Settings Framework](../roadmap/m4-plan.md#phase-42--settings-framework)
 
 → [Provider management](./provider-management.md) *(4.1 complete)*  
 → [Playback](./playback.md) *(4.4 — deferred playback prefs)*  
 → [Diagnostics](./diagnostics.md) *(4.6 — deferred deep detail)*
 
-**ADRs (Proposed):**
+**ADRs (Accepted 2026-07-12):**
 
 - [ADR-004: Settings Storage and Versioning](./decisions/ADR-004-settings-storage-and-versioning.md)
 - [ADR-005: Settings Information Architecture](./decisions/ADR-005-settings-information-architecture.md)
@@ -44,12 +44,14 @@ Evolve fragmented settings entry points into a **structured, versioned preferenc
 | Component | Role |
 |---|---|
 | `ttsplayer_settings_v1` envelope | Versioned JSON blob (ADR-004) |
-| `SettingsService` | Load, migrate, validate, save, reset |
+| `SettingsRepository` | Load, migrate, validate, save, reset — **persistence layer** |
 | `SettingsScreen` | Scrollable grouped sections (ADR-005) |
 | Library & Providers section | Evolved provider editor — same fields as today |
 | Network section | Catalogue fetch timeout |
 | Diagnostics section | Version display, reset all settings |
 | Provider status | Remains on dashboard only (ADR-003) |
+
+Runtime services (`CatalogService`, `PlaybackService`, etc.) **consume** settings snapshots from the repository; they do not own preference I/O.
 
 ### Settings vs non-settings persistence
 
@@ -76,9 +78,22 @@ Evolve fragmented settings entry points into a **structured, versioned preferenc
 
 ---
 
+## Apply behaviour (ADR-006)
+
+Configuration changes do **not** automatically reload the catalogue:
+
+```
+Save → configuration updated → Dashboard → Refresh catalogue
+```
+
+Provider health, retry, and refresh remain on the dashboard (ADR-003).
+
+---
+
 ## Failure handling
 
 - Corrupt envelope → safe defaults; log once; optional user notice
+- Failed migration (S13) → defaults; app starts; user can save fresh settings
 - Invalid Save → retain last-good on disk (ADR-006)
 - Partial migration → preserve valid groups
 - Reset all → does not delete playback progress without separate confirm
@@ -87,19 +102,20 @@ Evolve fragmented settings entry points into a **structured, versioned preferenc
 
 ## Testing considerations
 
-See validation scenarios S1–S12 in [Phase 4.2 spec](../roadmap/m4-phase-4.2-settings-framework.md#validation-scenarios).
+See validation scenarios S1–S13 in [Phase 4.2 spec](../roadmap/m4-phase-4.2-settings-framework.md#validation-scenarios).
 
 - Migration tests from `media_provider_config_v1`
+- S13 failed migration recovery (corrupt envelope, no legacy key)
 - Provider validation regression (`media_provider_settings_screen_test.dart`)
 - Widget tests for settings shell and unsaved dialog
 
 ---
 
-## Open decisions (for spec review)
+## Open decisions (implementation)
 
-1. **Single Save for entire screen vs per-section Save** — spec prefers one screen-level Save; confirm in ADR-006 review.
-2. **Post-save hint** — optional snackbar reminding user to refresh catalogue from dashboard?
-3. **Deep link to Library & Providers** — query param vs default scroll position when opened from dashboard.
+1. **Post-save hint** — optional snackbar reminding user to refresh catalogue from dashboard?
+2. **Deep link to Library & Providers** — query param vs default scroll position when opened from dashboard.
+3. **Legacy key removal timing** — dual-read for one release; exact removal version at implementation close.
 
 ---
 

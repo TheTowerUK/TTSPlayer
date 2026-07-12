@@ -1,6 +1,6 @@
 # M4 — User Experience and Platform Integration
 
-**Status:** Active development (`v0.5.0-dev`) — Phase 4.1 complete  
+**Status:** Active development (`v0.5.0-dev`) — Phase 4.1 complete; Phase 4.2 implementation ready  
 **Branch:** `m4-development`  
 **Development version:** `v0.5.0-dev`  
 **Predecessor:** M3.5 Media Access Platform  
@@ -52,7 +52,7 @@ Implement in order unless a documented dependency allows parallel documentation 
 | Sub-phase | Focus | Status |
 |---|---|---|
 | **4.1** | Provider Management | ✅ Complete (2026-07-12) |
-| **4.2** | Settings Framework | 📋 Spec in progress — [implementation spec](./m4-phase-4.2-settings-framework.md) |
+| **4.2** | Settings Framework | 🔄 Spec accepted — [implementation spec](./m4-phase-4.2-settings-framework.md) · ADR-004–006 Accepted |
 | **4.3** | Library Experience | Planned |
 | **4.4** | Playback Improvements | Planned |
 | **4.5** | Performance and Caching | Planned |
