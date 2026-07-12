@@ -35,7 +35,9 @@ Future<void> _pumpSettingsScreen(
   await tester.pump();
   for (var i = 0; i < 10; i++) {
     await tester.pump(const Duration(milliseconds: 100));
-    if (find.byKey(const Key('save_settings')).evaluate().isNotEmpty) break;
+    if (find.byKey(const Key('save_network_settings')).evaluate().isNotEmpty) {
+      break;
+    }
   }
   expect(tester.takeException(), isNull);
 }
@@ -67,6 +69,9 @@ void main() {
       expect(find.byKey(const Key('catalogue_fetch_timeout')), findsOneWidget);
       expect(find.byKey(const Key('app_version')), findsOneWidget);
       expect(find.byKey(const Key('save_settings')), findsOneWidget);
+      expect(find.byKey(const Key('save_network_settings')), findsOneWidget);
+      expect(find.byKey(const Key('open_provider_settings')), findsNothing);
+      expect(find.byKey(const Key('http_catalogue_url')), findsOneWidget);
     });
 
     testWidgets('loads network timeout from repository', (tester) async {
@@ -95,12 +100,12 @@ void main() {
         '30',
       );
       await tester.pump();
-      await tester.ensureVisible(find.byKey(const Key('save_settings')));
-      await tester.tap(find.byKey(const Key('save_settings')));
+      await tester.ensureVisible(find.byKey(const Key('save_network_settings')));
+      await tester.tap(find.byKey(const Key('save_network_settings')));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.text('Settings saved.'), findsOneWidget);
+      expect(find.text('Network settings saved.'), findsOneWidget);
 
       final reloaded = SettingsRepository();
       await reloaded.initialize();
@@ -117,12 +122,12 @@ void main() {
         '999',
       );
       await tester.pump();
-      await tester.ensureVisible(find.byKey(const Key('save_settings')));
-      await tester.tap(find.byKey(const Key('save_settings')));
+      await tester.ensureVisible(find.byKey(const Key('save_network_settings')));
+      await tester.tap(find.byKey(const Key('save_network_settings')));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.byKey(const Key('validation_errors')), findsOneWidget);
+      expect(find.byKey(const Key('network_validation_errors')), findsOneWidget);
     });
 
     testWidgets('scrolls at constrained height', (tester) async {

@@ -1,26 +1,28 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../services/media_access/media_access_config.dart';
-import '../../services/media_access/media_provider_config.dart';
-import '../../services/media_access/media_provider_config_service.dart';
-import '../../theme/app_theme.dart';
-import '../../widgets/tts_app_bar.dart';
+import '../../../services/media_access/media_access_config.dart';
+import '../../../services/media_access/media_provider_config.dart';
+import '../../../services/media_access/media_provider_config_service.dart';
+import '../../../theme/app_theme.dart';
 
-/// Settings screen for catalogue providers and media access configuration.
-///
-/// Phase 4.3 — view, edit, and persist [MediaProviderConfig] only. Startup
-/// catalogue selection and resolver refresh are wired in later sub-phases.
-class MediaProviderSettingsScreen extends StatefulWidget {
-  const MediaProviderSettingsScreen({super.key});
+/// Reusable provider configuration editor for catalogue and media access settings.
+class MediaProviderSettingsForm extends StatefulWidget {
+  const MediaProviderSettingsForm({
+    super.key,
+    this.onDirtyChanged,
+  });
+
+  final ValueChanged<bool>? onDirtyChanged;
 
   @override
-  State<MediaProviderSettingsScreen> createState() =>
-      _MediaProviderSettingsScreenState();
+  MediaProviderSettingsFormState createState() =>
+      MediaProviderSettingsFormState();
 }
 
-class _MediaProviderSettingsScreenState
-    extends State<MediaProviderSettingsScreen> {
+class MediaProviderSettingsFormState extends State<MediaProviderSettingsForm> {
   final _httpCatalogueController = TextEditingController();
   final _httpMediaBaseController = TextEditingController();
 
@@ -36,16 +38,18 @@ class _MediaProviderSettingsScreenState
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _initializeFields());
+    WidgetsBinding.instance.addPostFrameCallback((_) => reloadFromService());
   }
 
-  Future<void> _initializeFields() async {
+  /// Reloads form fields from [MediaProviderConfigService].
+  void reloadFromService() {
     final config = context.read<MediaProviderConfigService>().config;
     if (!mounted) return;
     setState(() {
       _populateFromConfig(config);
       _ready = true;
     });
+    _notifyDirty(false);
   }
 
   @override
@@ -97,7 +101,29 @@ class _MediaProviderSettingsScreenState
     );
   }
 
-  Future<void> _save() async {
+  bool _isDirty() {
+    final draftJson = _buildDraftConfig().toJson();
+    final savedJson =
+        context.read<MediaProviderConfigService>().config.toJson();
+    return jsonEncode(draftJson) != jsonEncode(savedJson);
+  }
+
+  void _notifyDirty([bool? dirty]) {
+    widget.onDirtyChanged?.call(dirty ?? _isDirty());
+  }
+
+  void _onFieldChanged() {
+    if (_validationErrors.isNotEmpty || _validationWarnings.isNotEmpty) {
+      setState(() {
+        _validationErrors = [];
+        _validationWarnings = [];
+      });
+    }
+    _notifyDirty();
+    setState(() {});
+  }
+
+  Future<void> save() async {
     final config = _buildDraftConfig();
     final errors = config.validate();
     if (errors.isNotEmpty) {
@@ -130,6 +156,7 @@ class _MediaProviderSettingsScreenState
         ),
       );
       _populateFromConfig(service.config);
+      _notifyDirty(false);
       if (warnings.isNotEmpty) {
         setState(() => _validationWarnings = warnings);
       }
@@ -170,6 +197,7 @@ class _MediaProviderSettingsScreenState
     setState(() {
       _populateFromConfig(service.config);
     });
+    _notifyDirty(false);
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -183,200 +211,210 @@ class _MediaProviderSettingsScreenState
     setState(() {
       _localCatalogueControllers.add(TextEditingController());
     });
+    _notifyDirty(true);
   }
 
   void _removeLocalCataloguePath(int index) {
     if (_localCatalogueControllers.length <= 1) {
       _localCatalogueControllers.first.clear();
+      _onFieldChanged();
       return;
     }
     setState(() {
       _localCatalogueControllers.removeAt(index).dispose();
     });
+    _notifyDirty(true);
   }
 
   void _addMediaRoot() {
     setState(() {
       _mediaRootControllers.add(TextEditingController());
     });
+    _notifyDirty(true);
   }
 
   void _removeMediaRoot(int index) {
     if (_mediaRootControllers.length <= 1) {
       _mediaRootControllers.first.clear();
+      _onFieldChanged();
       return;
     }
     setState(() {
       _mediaRootControllers.removeAt(index).dispose();
     });
+    _notifyDirty(true);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: const TtsAppBar(title: 'Settings', showHome: true),
-      body: !_ready
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: AppSpacing.insetPage,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                if (_validationErrors.isNotEmpty) ...[
-                  _ValidationErrorsBanner(errors: _validationErrors),
-                  const SizedBox(height: AppSpacing.base),
-                ],
-                if (_validationWarnings.isNotEmpty) ...[
-                  _ValidationWarningsBanner(warnings: _validationWarnings),
-                  const SizedBox(height: AppSpacing.base),
-                ],
-                const _SectionHeader(
-                  title: 'Catalogue providers',
-                  subtitle:
-                      'Local catalogue files are tried in order. An optional '
-                      'HTTP catalogue URL can be added for remote libraries.',
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  'Local catalogue paths',
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                for (var i = 0; i < _localCatalogueControllers.length; i++)
-                  _PathFieldRow(
-                    key: Key('local_catalogue_$i'),
-                    controller: _localCatalogueControllers[i],
-                    hint: r'Y:\Media\catalog.json',
-                    onRemove: () => _removeLocalCataloguePath(i),
-                  ),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton.icon(
-                    key: const Key('add_local_catalogue'),
-                    onPressed: _addLocalCataloguePath,
-                    icon: const Icon(Icons.add),
-                    label: const Text('Add local catalogue path'),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.base),
-                TextField(
-                  key: const Key('http_catalogue_url'),
-                  controller: _httpCatalogueController,
-                  decoration: const InputDecoration(
-                    labelText: 'Remote catalogue URL (optional)',
-                    hintText: 'https://nas.example:8443/catalog.json',
-                    helperText: 'Prefer https:// for production. Plain http:// is allowed in local preferred mode only.',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.section),
-                const _SectionHeader(
-                  title: 'Media access',
-                  subtitle:
-                      'Media roots map catalogue file paths to local or HTTP '
-                      'playback. Mode controls resolver preference.',
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  'Media roots',
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                for (var i = 0; i < _mediaRootControllers.length; i++)
-                  _PathFieldRow(
-                    key: Key('media_root_$i'),
-                    controller: _mediaRootControllers[i],
-                    hint: r'Y:\Media',
-                    onRemove: () => _removeMediaRoot(i),
-                  ),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton.icon(
-                    key: const Key('add_media_root'),
-                    onPressed: _addMediaRoot,
-                    icon: const Icon(Icons.add),
-                    label: const Text('Add media root'),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.base),
-                TextField(
-                  key: const Key('http_media_base_url'),
-                  controller: _httpMediaBaseController,
-                  decoration: const InputDecoration(
-                    labelText: 'Remote media base URL (optional)',
-                    hintText: 'https://nas.example:8443/media/',
-                    helperText: 'Must match the Caddy /media/ prefix. Prefer https:// for production.',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.base),
-                Text(
-                  'Media access mode',
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
-                RadioListTile<MediaAccessMode>(
-                  key: const Key('media_access_mode_local'),
-                  title: const Text('Local preferred'),
-                  value: MediaAccessMode.localPreferred,
-                  groupValue: _mode,
-                  onChanged: (value) {
-                    if (value == null) return;
-                    setState(() => _mode = value);
-                  },
-                ),
-                RadioListTile<MediaAccessMode>(
-                  key: const Key('media_access_mode_http'),
-                  title: const Text('HTTP required'),
-                  value: MediaAccessMode.httpRequired,
-                  groupValue: _mode,
-                  onChanged: (value) {
-                    if (value == null) return;
-                    setState(() => _mode = value);
-                  },
-                ),
-                const SizedBox(height: AppSpacing.section),
-                Row(
-                  children: [
-                    FilledButton.icon(
-                      key: const Key('save_settings'),
-                      onPressed: _saving ? null : _save,
-                      icon: _saving
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.save_outlined),
-                      label: const Text('Save'),
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    OutlinedButton.icon(
-                      key: const Key('reset_settings'),
-                      onPressed: _saving ? null : _confirmReset,
-                      icon: const Icon(Icons.restore_outlined),
-                      label: const Text('Reset to defaults'),
-                    ),
-                  ],
-                ),
-                ],
-              ),
+    if (!_ready) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (_validationErrors.isNotEmpty) ...[
+          _ValidationErrorsBanner(errors: _validationErrors),
+          const SizedBox(height: AppSpacing.base),
+        ],
+        if (_validationWarnings.isNotEmpty) ...[
+          _ValidationWarningsBanner(warnings: _validationWarnings),
+          const SizedBox(height: AppSpacing.base),
+        ],
+        const _SubsectionHeader(
+          title: 'Catalogue providers',
+          subtitle:
+              'Local catalogue files are tried in order. An optional '
+              'HTTP catalogue URL can be added for remote libraries.',
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Text(
+          'Local catalogue paths',
+          style: Theme.of(context).textTheme.titleSmall,
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        for (var i = 0; i < _localCatalogueControllers.length; i++)
+          _PathFieldRow(
+            key: Key('local_catalogue_$i'),
+            controller: _localCatalogueControllers[i],
+            hint: r'Y:\Media\catalog.json',
+            onRemove: () => _removeLocalCataloguePath(i),
+            onChanged: _onFieldChanged,
+          ),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            key: const Key('add_local_catalogue'),
+            onPressed: _addLocalCataloguePath,
+            icon: const Icon(Icons.add),
+            label: const Text('Add local catalogue path'),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.base),
+        TextField(
+          key: const Key('http_catalogue_url'),
+          controller: _httpCatalogueController,
+          onChanged: (_) => _onFieldChanged(),
+          decoration: const InputDecoration(
+            labelText: 'Remote catalogue URL (optional)',
+            hintText: 'https://nas.example:8443/catalog.json',
+            helperText:
+                'Prefer https:// for production. Plain http:// is allowed in local preferred mode only.',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.section),
+        const _SubsectionHeader(
+          title: 'Media access',
+          subtitle:
+              'Media roots map catalogue file paths to local or HTTP '
+              'playback. Mode controls resolver preference.',
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Text(
+          'Media roots',
+          style: Theme.of(context).textTheme.titleSmall,
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        for (var i = 0; i < _mediaRootControllers.length; i++)
+          _PathFieldRow(
+            key: Key('media_root_$i'),
+            controller: _mediaRootControllers[i],
+            hint: r'Y:\Media',
+            onRemove: () => _removeMediaRoot(i),
+            onChanged: _onFieldChanged,
+          ),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            key: const Key('add_media_root'),
+            onPressed: _addMediaRoot,
+            icon: const Icon(Icons.add),
+            label: const Text('Add media root'),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.base),
+        TextField(
+          key: const Key('http_media_base_url'),
+          controller: _httpMediaBaseController,
+          onChanged: (_) => _onFieldChanged(),
+          decoration: const InputDecoration(
+            labelText: 'Remote media base URL (optional)',
+            hintText: 'https://nas.example:8443/media/',
+            helperText:
+                'Must match the Caddy /media/ prefix. Prefer https:// for production.',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.base),
+        Text(
+          'Media access mode',
+          style: Theme.of(context).textTheme.titleSmall,
+        ),
+        RadioListTile<MediaAccessMode>(
+          key: const Key('media_access_mode_local'),
+          title: const Text('Local preferred'),
+          value: MediaAccessMode.localPreferred,
+          groupValue: _mode,
+          onChanged: (value) {
+            if (value == null) return;
+            setState(() => _mode = value);
+            _onFieldChanged();
+          },
+        ),
+        RadioListTile<MediaAccessMode>(
+          key: const Key('media_access_mode_http'),
+          title: const Text('HTTP required'),
+          value: MediaAccessMode.httpRequired,
+          groupValue: _mode,
+          onChanged: (value) {
+            if (value == null) return;
+            setState(() => _mode = value);
+            _onFieldChanged();
+          },
+        ),
+        const SizedBox(height: AppSpacing.base),
+        Row(
+          children: [
+            FilledButton.icon(
+              key: const Key('save_settings'),
+              onPressed: _saving ? null : save,
+              icon: _saving
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.save_outlined),
+              label: const Text('Save'),
             ),
+            const SizedBox(width: AppSpacing.sm),
+            OutlinedButton.icon(
+              key: const Key('reset_settings'),
+              onPressed: _saving ? null : _confirmReset,
+              icon: const Icon(Icons.restore_outlined),
+              label: const Text('Reset to defaults'),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
 
-class _SectionHeader extends StatelessWidget {
+class _SubsectionHeader extends StatelessWidget {
+  const _SubsectionHeader({required this.title, required this.subtitle});
+
   final String title;
   final String subtitle;
-
-  const _SectionHeader({required this.title, required this.subtitle});
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: Theme.of(context).textTheme.titleLarge),
+        Text(title, style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: AppSpacing.xs),
         Text(subtitle, style: AppTypography.bodyMuted),
       ],
@@ -385,9 +423,9 @@ class _SectionHeader extends StatelessWidget {
 }
 
 class _ValidationErrorsBanner extends StatelessWidget {
-  final List<String> errors;
-
   const _ValidationErrorsBanner({required this.errors});
+
+  final List<String> errors;
 
   @override
   Widget build(BuildContext context) {
@@ -425,9 +463,9 @@ class _ValidationErrorsBanner extends StatelessWidget {
 }
 
 class _ValidationWarningsBanner extends StatelessWidget {
-  final List<String> warnings;
-
   const _ValidationWarningsBanner({required this.warnings});
+
+  final List<String> warnings;
 
   @override
   Widget build(BuildContext context) {
@@ -464,16 +502,18 @@ class _ValidationWarningsBanner extends StatelessWidget {
 }
 
 class _PathFieldRow extends StatelessWidget {
-  final TextEditingController controller;
-  final String hint;
-  final VoidCallback onRemove;
-
   const _PathFieldRow({
     super.key,
     required this.controller,
     required this.hint,
     required this.onRemove,
+    required this.onChanged,
   });
+
+  final TextEditingController controller;
+  final String hint;
+  final VoidCallback onRemove;
+  final VoidCallback onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -485,6 +525,7 @@ class _PathFieldRow extends StatelessWidget {
           Expanded(
             child: TextField(
               controller: controller,
+              onChanged: (_) => onChanged(),
               decoration: InputDecoration(
                 hintText: hint,
                 border: const OutlineInputBorder(),

@@ -8,13 +8,10 @@ import '../../services/media_access/media_provider_config_service.dart';
 import '../../services/settings/settings_repository.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/tts_app_bar.dart';
-import 'media_provider_settings_screen.dart';
+import 'widgets/media_provider_settings_form.dart';
 import 'widgets/settings_section.dart';
 
 /// Grouped settings shell (M4 Phase 4.2).
-///
-/// Provider editor integration is a follow-on step; Library & Providers remains
-/// a placeholder with interim navigation to [MediaProviderSettingsScreen].
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -23,16 +20,20 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  final _providerFormKey = GlobalKey<MediaProviderSettingsFormState>();
   final _timeoutController = TextEditingController();
 
   bool _ready = false;
-  bool _saving = false;
+  bool _savingNetwork = false;
+  bool _providerDirty = false;
   int _savedTimeoutSeconds = NetworkSettings.defaultCatalogueFetchTimeoutSeconds;
-  List<String> _validationErrors = [];
+  List<String> _networkValidationErrors = [];
   String? _appVersion;
 
-  bool get _isDirty =>
+  bool get _networkDirty =>
       int.tryParse(_timeoutController.text.trim()) != _savedTimeoutSeconds;
+
+  bool get _hasUnsavedChanges => _networkDirty || _providerDirty;
 
   @override
   void initState() {
@@ -48,58 +49,63 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _bootstrap() async {
     final repository = context.read<SettingsRepository>();
+    final providerService = context.read<MediaProviderConfigService>();
     if (!repository.isLoaded) {
       await repository.initialize();
     }
+    await providerService.load();
+    if (!mounted) return;
     final packageInfo = await PackageInfo.fromPlatform();
     if (!mounted) return;
     setState(() {
-      _populateFromRepository(repository);
+      _populateNetworkFromRepository(repository);
       _appVersion = '${packageInfo.version}+${packageInfo.buildNumber}';
       _ready = true;
     });
   }
 
-  void _populateFromRepository(SettingsRepository repository) {
+  void _populateNetworkFromRepository(SettingsRepository repository) {
     _savedTimeoutSeconds = repository.catalogueFetchTimeoutSeconds;
     _timeoutController.text = '$_savedTimeoutSeconds';
-    _validationErrors = [];
+    _networkValidationErrors = [];
   }
 
   NetworkSettings? _draftNetworkSettings() {
     final parsed = int.tryParse(_timeoutController.text.trim());
     if (parsed == null) {
       setState(() {
-        _validationErrors = ['Catalogue fetch timeout must be a whole number.'];
+        _networkValidationErrors = [
+          'Catalogue fetch timeout must be a whole number.',
+        ];
       });
       return null;
     }
     return NetworkSettings(catalogueFetchTimeoutSeconds: parsed);
   }
 
-  Future<void> _save() async {
+  Future<void> _saveNetwork() async {
     final network = _draftNetworkSettings();
     if (network == null) return;
 
     final errors = network.validate();
     if (errors.isNotEmpty) {
-      setState(() => _validationErrors = errors);
+      setState(() => _networkValidationErrors = errors);
       return;
     }
 
     setState(() {
-      _saving = true;
-      _validationErrors = [];
+      _savingNetwork = true;
+      _networkValidationErrors = [];
     });
 
     final repository = context.read<SettingsRepository>();
     final result = await repository.saveNetworkSettings(network);
 
     if (!mounted) return;
-    setState(() => _saving = false);
+    setState(() => _savingNetwork = false);
 
     if (!result.success) {
-      setState(() => _validationErrors = result.validationErrors);
+      setState(() => _networkValidationErrors = result.validationErrors);
       return;
     }
 
@@ -108,7 +114,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Settings saved.')),
+      const SnackBar(content: Text('Network settings saved.')),
     );
   }
 
@@ -140,11 +146,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (!mounted) return;
 
     if (!result.success) {
-      setState(() => _validationErrors = result.validationErrors);
+      setState(() => _networkValidationErrors = result.validationErrors);
       return;
     }
 
-    setState(() => _populateFromRepository(repository));
+    setState(() => _populateNetworkFromRepository(repository));
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Network settings reset to defaults.')),
     );
@@ -175,17 +181,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (confirmed != true || !mounted) return;
 
     final repository = context.read<SettingsRepository>();
+    final providerService = context.read<MediaProviderConfigService>();
     await repository.resetAllToDefaults();
+    await providerService.resetToDefaults();
     if (!mounted) return;
 
-    setState(() => _populateFromRepository(repository));
+    setState(() => _populateNetworkFromRepository(repository));
+    _providerFormKey.currentState?.reloadFromService();
+    setState(() => _providerDirty = false);
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('All settings reset to defaults.')),
     );
   }
 
   Future<void> _handlePop() async {
-    if (!_isDirty) {
+    if (!_hasUnsavedChanges) {
       if (mounted) Navigator.of(context).pop();
       return;
     }
@@ -194,7 +205,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Unsaved changes'),
-        content: const Text('Save your network settings before leaving?'),
+        content: const Text('Save your changes before leaving?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, _UnsavedAction.cancel),
@@ -215,24 +226,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (!mounted || action == null || action == _UnsavedAction.cancel) return;
 
     if (action == _UnsavedAction.save) {
-      await _save();
-      if (!mounted || _validationErrors.isNotEmpty || _isDirty) return;
+      if (_networkDirty) await _saveNetwork();
+      if (!mounted || _networkValidationErrors.isNotEmpty) return;
+      if (_providerDirty) {
+        await _providerFormKey.currentState?.save();
+      }
+      if (!mounted || _hasUnsavedChanges) return;
     } else {
-      setState(() => _populateFromRepository(context.read<SettingsRepository>()));
+      setState(
+        () => _populateNetworkFromRepository(context.read<SettingsRepository>()),
+      );
+      _providerFormKey.currentState?.reloadFromService();
+      setState(() => _providerDirty = false);
     }
 
     if (mounted) Navigator.of(context).pop();
-  }
-
-  Future<void> _openProviderSettings() async {
-    await context.read<MediaProviderConfigService>().load();
-    if (!mounted) return;
-    await Navigator.push<void>(
-      context,
-      MaterialPageRoute<void>(
-        builder: (_) => const MediaProviderSettingsScreen(),
-      ),
-    );
   }
 
   @override
@@ -266,8 +274,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          if (_validationErrors.isNotEmpty) ...[
-                            _ValidationErrorsBanner(errors: _validationErrors),
+                          if (_networkValidationErrors.isNotEmpty) ...[
+                            _NetworkValidationErrorsBanner(
+                              errors: _networkValidationErrors,
+                            ),
                             const SizedBox(height: AppSpacing.base),
                           ],
                           const SettingsSection(
@@ -285,23 +295,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             description:
                                 'Catalogue providers and media access configuration. '
                                 'See the dashboard for active provider status and refresh.',
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Provider settings will move here in the next step. '
-                                  'Use the interim screen to configure catalogue paths, '
-                                  'media roots, and access mode.',
-                                  style: AppTypography.bodyMuted,
-                                ),
-                                const SizedBox(height: AppSpacing.sm),
-                                OutlinedButton.icon(
-                                  key: const Key('open_provider_settings'),
-                                  onPressed: _openProviderSettings,
-                                  icon: const Icon(Icons.storage_outlined),
-                                  label: const Text('Open provider settings'),
-                                ),
-                              ],
+                            child: MediaProviderSettingsForm(
+                              key: _providerFormKey,
+                              onDirtyChanged: (dirty) {
+                                if (_providerDirty != dirty) {
+                                  setState(() => _providerDirty = dirty);
+                                }
+                              },
                             ),
                           ),
                           const SizedBox(height: AppSpacing.section),
@@ -324,7 +324,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               key: const Key('catalogue_fetch_timeout'),
                               controller: _timeoutController,
                               keyboardType: TextInputType.number,
-                              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                              ],
                               decoration: InputDecoration(
                                 labelText: 'Catalogue fetch timeout (seconds)',
                                 helperText:
@@ -333,8 +335,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 border: const OutlineInputBorder(),
                               ),
                               onChanged: (_) {
-                                if (_validationErrors.isNotEmpty) {
-                                  setState(() => _validationErrors = []);
+                                if (_networkValidationErrors.isNotEmpty) {
+                                  setState(() => _networkValidationErrors = []);
                                 }
                                 setState(() {});
                               },
@@ -360,7 +362,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 const SizedBox(height: AppSpacing.base),
                                 OutlinedButton.icon(
                                   key: const Key('reset_all_settings'),
-                                  onPressed: _saving ? null : _confirmResetAll,
+                                  onPressed:
+                                      _savingNetwork ? null : _confirmResetAll,
                                   icon: const Icon(Icons.restart_alt_outlined),
                                   label: const Text('Reset all settings'),
                                 ),
@@ -371,21 +374,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           Row(
                             children: [
                               FilledButton.icon(
-                                key: const Key('save_settings'),
-                                onPressed: _saving || !_isDirty ? null : _save,
-                                icon: _saving
+                                key: const Key('save_network_settings'),
+                                onPressed: _savingNetwork || !_networkDirty
+                                    ? null
+                                    : _saveNetwork,
+                                icon: _savingNetwork
                                     ? const SizedBox(
                                         width: 18,
                                         height: 18,
-                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
                                       )
                                     : const Icon(Icons.save_outlined),
-                                label: const Text('Save'),
+                                label: const Text('Save network settings'),
                               ),
                               const SizedBox(width: AppSpacing.sm),
                               OutlinedButton.icon(
                                 key: const Key('reset_network_settings'),
-                                onPressed: _saving ? null : _confirmResetNetwork,
+                                onPressed:
+                                    _savingNetwork ? null : _confirmResetNetwork,
                                 icon: const Icon(Icons.restore_outlined),
                                 label: const Text('Reset network defaults'),
                               ),
@@ -404,15 +412,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
 enum _UnsavedAction { save, discard, cancel }
 
-class _ValidationErrorsBanner extends StatelessWidget {
-  const _ValidationErrorsBanner({required this.errors});
+class _NetworkValidationErrorsBanner extends StatelessWidget {
+  const _NetworkValidationErrorsBanner({required this.errors});
 
   final List<String> errors;
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      key: const Key('validation_errors'),
+      key: const Key('network_validation_errors'),
       color: Theme.of(context).colorScheme.errorContainer,
       borderRadius: BorderRadius.circular(AppSpacing.sm),
       child: Padding(
@@ -421,7 +429,7 @@ class _ValidationErrorsBanner extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Fix the following before saving:',
+              'Fix the following before saving network settings:',
               style: Theme.of(context).textTheme.titleSmall,
             ),
             const SizedBox(height: AppSpacing.sm),

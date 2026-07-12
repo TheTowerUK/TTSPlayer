@@ -2,26 +2,32 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:ttsplayer/features/settings/media_provider_settings_screen.dart';
+import 'package:ttsplayer/features/settings/settings_screen.dart';
 import 'package:ttsplayer/services/media_access/media_access_config.dart';
 import 'package:ttsplayer/services/media_access/media_catalogue_provider.dart';
 import 'package:ttsplayer/services/media_access/media_provider_config.dart';
 import 'package:ttsplayer/services/media_access/media_provider_config_service.dart';
+import 'package:ttsplayer/services/settings/settings_repository.dart';
 import 'package:ttsplayer/theme/app_theme.dart';
 
-Widget _settingsHarness(MediaProviderConfigService service) {
-  return ChangeNotifierProvider<MediaProviderConfigService>.value(
-    value: service,
+Widget _providerSettingsHarness(MediaProviderConfigService service) {
+  final repository = SettingsRepository();
+  return MultiProvider(
+    providers: [
+      ChangeNotifierProvider<MediaProviderConfigService>.value(value: service),
+      ChangeNotifierProvider<SettingsRepository>.value(value: repository),
+    ],
     child: MaterialApp(
       theme: AppTheme.dark,
-      home: const MediaProviderSettingsScreen(),
+      home: const SettingsScreen(),
     ),
   );
 }
 
-Future<void> _pumpSettingsScreen(
+Future<void> _pumpProviderSettings(
   WidgetTester tester,
   MediaProviderConfigService service,
 ) async {
@@ -29,12 +35,24 @@ Future<void> _pumpSettingsScreen(
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
 
+  PackageInfo.setMockInitialValues(
+    appName: 'TTSPlayer',
+    packageName: 'ttsplayer',
+    version: '0.4.0-dev.1',
+    buildNumber: '1',
+    buildSignature: '',
+  );
+
   await service.load();
-  await tester.pumpWidget(_settingsHarness(service));
+  await tester.pumpWidget(_providerSettingsHarness(service));
   await tester.pump();
-  await tester.pumpAndSettle();
+  for (var i = 0; i < 20; i++) {
+    await tester.pump(const Duration(milliseconds: 100));
+    if (find.byKey(const Key('save_settings')).evaluate().isNotEmpty) break;
+  }
   expect(tester.takeException(), isNull);
   expect(find.byKey(const Key('save_settings')), findsOneWidget);
+  expect(find.byKey(const Key('open_provider_settings')), findsNothing);
 }
 
 TextEditingController? _fieldController(WidgetTester tester, Key key) {
@@ -65,7 +83,7 @@ void main() {
     });
   });
 
-  group('MediaProviderSettingsScreen', () {
+  group('MediaProviderSettingsForm in SettingsScreen', () {
     testWidgets('loads persisted config into the form', (tester) async {
       SharedPreferences.setMockInitialValues({});
       final service = MediaProviderConfigService();
@@ -82,7 +100,7 @@ void main() {
       );
       await service.save(custom);
 
-      await _pumpSettingsScreen(tester, service);
+      await _pumpProviderSettings(tester, service);
 
       expect(
         _fieldController(tester, const Key('http_catalogue_url'))?.text,
@@ -97,7 +115,7 @@ void main() {
     testWidgets('save persists valid settings', (tester) async {
       SharedPreferences.setMockInitialValues({});
       final service = MediaProviderConfigService();
-      await _pumpSettingsScreen(tester, service);
+      await _pumpProviderSettings(tester, service);
 
       await tester.enterText(
         find.byKey(const Key('http_catalogue_url')),
@@ -134,7 +152,7 @@ void main() {
         (tester) async {
       SharedPreferences.setMockInitialValues({});
       final service = MediaProviderConfigService();
-      await _pumpSettingsScreen(tester, service);
+      await _pumpProviderSettings(tester, service);
 
       await tester.tap(find.byKey(const Key('media_access_mode_http')));
       await tester.pumpAndSettle();
@@ -161,7 +179,7 @@ void main() {
         (tester) async {
       SharedPreferences.setMockInitialValues({});
       final service = MediaProviderConfigService();
-      await _pumpSettingsScreen(tester, service);
+      await _pumpProviderSettings(tester, service);
 
       for (final key in ['local_catalogue_0', 'local_catalogue_1']) {
         await tester.enterText(find.byKey(Key(key)), '');
@@ -199,7 +217,7 @@ void main() {
         ),
       );
 
-      await _pumpSettingsScreen(tester, service);
+      await _pumpProviderSettings(tester, service);
 
       await tester.ensureVisible(find.byKey(const Key('reset_settings')));
       await tester.tap(find.byKey(const Key('reset_settings')));
@@ -225,7 +243,7 @@ void main() {
         (tester) async {
       SharedPreferences.setMockInitialValues({});
       final service = MediaProviderConfigService();
-      await _pumpSettingsScreen(tester, service);
+      await _pumpProviderSettings(tester, service);
 
       await tester.enterText(
         find.byKey(const Key('http_catalogue_url')),
@@ -236,7 +254,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final reloadedService = MediaProviderConfigService();
-      await _pumpSettingsScreen(tester, reloadedService);
+      await _pumpProviderSettings(tester, reloadedService);
 
       expect(
         _fieldController(tester, const Key('http_catalogue_url'))?.text,
