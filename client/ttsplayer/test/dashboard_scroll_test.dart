@@ -135,9 +135,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
-    expect(find.text('STORAGE STATUS'), findsOneWidget);
+    expect(find.text('PROVIDER STATUS'), findsOneWidget);
     expect(
-      tester.getTopLeft(find.text('STORAGE STATUS')).dy,
+      tester.getTopLeft(find.text('PROVIDER STATUS')).dy,
       lessThan(tester.view.physicalSize.height),
     );
   });

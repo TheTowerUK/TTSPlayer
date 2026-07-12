@@ -25,6 +25,8 @@ class DashboardBanners extends StatelessWidget {
     final catalog = catalogService.catalog;
     return Column(
       children: [
+        if (catalogService.isDegradedLoad && !catalogService.isUsingFallback)
+          _DegradedBanner(onRetry: onRetryCatalogue),
         if (catalogService.isUsingFallback)
           _FallbackBanner(
             message: catalogService.fallbackBannerMessage,
@@ -50,6 +52,62 @@ class DashboardBanners extends StatelessWidget {
             onDismiss: catalogService.dismissScanWarnings,
           ),
       ],
+    );
+  }
+}
+
+class _DegradedBanner extends StatefulWidget {
+  final VoidCallback onRetry;
+
+  const _DegradedBanner({required this.onRetry});
+
+  @override
+  State<_DegradedBanner> createState() => _DegradedBannerState();
+}
+
+class _DegradedBannerState extends State<_DegradedBanner> {
+  bool _dismissed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    if (_dismissed) return const SizedBox.shrink();
+    return Material(
+      color: AppColors.warningBannerBg,
+      child: Padding(
+        padding: AppSpacing.banner,
+        child: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded,
+                color: AppColors.warning, size: AppIcons.md),
+            const SizedBox(width: AppSpacing.iconGap),
+            const Expanded(
+              child: Text(
+                'Loaded from fallback source — preferred catalogue provider unavailable.',
+                style: TextStyle(
+                  color: AppColors.warning,
+                  fontSize: AppTypography.size12,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: widget.onRetry,
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.warning,
+                padding: AppSpacing.buttonSm,
+              ),
+              child: const Text('Retry',
+                  style: TextStyle(fontSize: AppTypography.size12)),
+            ),
+            IconButton(
+              icon: const Icon(Icons.close,
+                  size: AppIcons.sm, color: AppColors.textLow),
+              onPressed: () => setState(() => _dismissed = true),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

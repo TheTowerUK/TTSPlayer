@@ -25,7 +25,7 @@ import 'widgets/recent_activity_section.dart';
 import 'widgets/dashboard_overview_panel.dart';
 import 'widgets/featured_folders_section.dart';
 import 'widgets/recently_added_section.dart';
-import 'widgets/storage_status_section.dart';
+import 'widgets/provider_status_section.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -255,7 +255,7 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
               return _BlockingError(
                 message: catalogService.errorMessage!,
                 onRetry: () async {
-                  await catalogService.rescan();
+                  await catalogService.refreshCatalogue();
                   if (mounted) _reloadDashboardData();
                 },
               );
@@ -301,7 +301,7 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
                           });
                         },
                         onRetryCatalogue: () async {
-                          await catalogService.rescan();
+                          await catalogService.refreshCatalogue();
                           if (mounted) _reloadDashboardData();
                         },
                       ),
@@ -339,12 +339,7 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
                             entries: data.recentActivity,
                           ),
                           const SizedBox(height: AppSpacing.section),
-                          StorageStatusSection(
-                            sourceKind: data.sourceKind,
-                            catalogPath: data.catalogPath,
-                            mediaRoot: _config?.mediaRoot,
-                            uncPath: _config?.uncPath,
-                          ),
+                          const ProviderStatusSection(),
                           const SizedBox(height: AppSpacing.section),
                         ]),
                       ),
