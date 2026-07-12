@@ -22,12 +22,15 @@ class CatalogService extends ChangeNotifier {
   CatalogService({
     http.Client? httpClient,
     Duration? catalogFetchTimeout,
+    VoidCallback? onCatalogReplaced,
   })  : _httpClient = httpClient ?? http.Client(),
         _catalogFetchTimeout =
-            catalogFetchTimeout ?? catalogFetchTimeoutDefault;
+            catalogFetchTimeout ?? catalogFetchTimeoutDefault,
+        _onCatalogReplaced = onCatalogReplaced;
 
   final http.Client _httpClient;
   final Duration _catalogFetchTimeout;
+  final VoidCallback? _onCatalogReplaced;
 
   /// Default bounded timeout for [loadFromUrl].
   static const catalogFetchTimeoutDefault = Duration(seconds: 15);
@@ -183,6 +186,7 @@ class CatalogService extends ChangeNotifier {
         final json = jsonDecode(raw) as Map<String, dynamic>;
         _catalog = Catalog.fromJson(json);
         _catalogPath = 'bundled';
+        _notifyCatalogReplaced();
       } catch (e) {
         _errorMessage = 'Could not load any catalogue: $e';
       }
@@ -383,6 +387,11 @@ class CatalogService extends ChangeNotifier {
     _dismissedStateLoaded = true;
   }
 
+  /// Sidecar artwork is resolved at runtime and cached in [ArtworkService].
+  /// Clear that cache whenever a new catalogue revision is loaded so rescans
+  /// and reloads can pick up new poster files beside existing items.
+  void _notifyCatalogReplaced() => _onCatalogReplaced?.call();
+
   /// Tries configured catalogue providers in priority order.
   Future<_ProviderCatalogueAttempt> _tryProviderCatalogue(
     MediaProviderConfig config,
@@ -472,6 +481,7 @@ class CatalogService extends ChangeNotifier {
       _catalog = Catalog.fromJson(json);
       _catalogPath = url;
       _lastRefreshedAt = DateTime.now();
+      _notifyCatalogReplaced();
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_prefKeySource, CatalogSource.remoteUrl.name);
@@ -591,6 +601,7 @@ class CatalogService extends ChangeNotifier {
 
     _catalogPath = file.path;
     _lastRefreshedAt = DateTime.now();
+    _notifyCatalogReplaced();
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_prefKeySource, CatalogSource.localFile.name);
@@ -635,6 +646,7 @@ class CatalogService extends ChangeNotifier {
       if (identifier != 'bundled') {
         _lastRefreshedAt = DateTime.now();
       }
+      _notifyCatalogReplaced();
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_prefKeySource, source.name);

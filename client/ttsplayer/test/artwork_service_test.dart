@@ -189,6 +189,31 @@ void main() {
       service.forMediaItem(item);
       expect(calls, callsAfterFirst);
     });
+
+    test('clearCache re-resolves sidecars added after first lookup', () {
+      final exists = <String, bool>{
+        r'Y:\Media\Movies\film.mp4': true,
+      };
+
+      final service = ArtworkService(
+        fileExists: (path) => exists[path] ?? false,
+      );
+
+      const item = MediaItem(
+        id: 'cache2',
+        title: 'Film',
+        filePath: r'Y:\Media\Movies\film.mp4',
+      );
+
+      expect(service.forMediaItem(item).source, ArtworkSource.placeholder);
+
+      exists[r'Y:\Media\Movies\poster.jpg'] = true;
+      expect(service.forMediaItem(item).source, ArtworkSource.placeholder);
+
+      service.clearCache();
+      expect(service.forMediaItem(item).source, ArtworkSource.sidecar);
+      expect(service.forMediaItem(item).filePath, r'Y:\Media\Movies\poster.jpg');
+    });
   });
 }
 

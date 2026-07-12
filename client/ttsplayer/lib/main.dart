@@ -25,6 +25,8 @@ Future<void> main() async {
   final providerConfigService = MediaProviderConfigService();
   await providerConfigService.load();
 
+  final artworkService = ArtworkService();
+
   final isWindowsDesktop = !kIsWeb && Platform.isWindows;
   final mediaLocationResolver = MediaLocationResolver(
     config: providerConfigService.mediaAccess,
@@ -38,8 +40,12 @@ Future<void> main() async {
           value: providerConfigService,
         ),
         Provider<MediaLocationResolver>.value(value: mediaLocationResolver),
-        Provider(create: (_) => ArtworkService()),
-        ChangeNotifierProvider(create: (_) => CatalogService()),
+        Provider<ArtworkService>.value(value: artworkService),
+        ChangeNotifierProvider(
+          create: (_) => CatalogService(
+            onCatalogReplaced: artworkService.clearCache,
+          ),
+        ),
         ChangeNotifierProvider(
           create: (_) => PlaybackService(
             mediaLocationResolver: mediaLocationResolver,

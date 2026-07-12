@@ -33,6 +33,8 @@ Polish browsing, discovery, and navigation on the **existing folder-tree catalog
 
 **Not in baseline:** in-folder sort/filter controls, favourites, breadcrumbs, unified empty-state patterns across all browse surfaces.
 
+**Runtime artwork cache (2026-07-12):** `ArtworkService` caches sidecar discovery per item. Successful catalogue replacement (scan, rescan, or reload) clears that cache via `CatalogService.onCatalogReplaced` so new poster files beside existing items appear without restarting the app. A broader cache and invalidation strategy remains planned for Phase 4.5.
+
 ---
 
 ## M4 goals
