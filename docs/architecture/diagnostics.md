@@ -12,6 +12,8 @@
 
 Give users and maintainers enough **in-app context** to diagnose catalogue, provider, resolver, and network issues without reading logs or source code.
 
+**Relationship to Phase 4.1:** The dashboard **Provider Status** panel (ADR-003) shows concise operational status and refresh actions. Phase 4.6 adds the **Diagnostics** screen with full detail, export, and resolver/cache introspection — it **supersedes** the need for deep detail on the dashboard, not the 4.1 summary panel.
+
 ---
 
 ## Current baseline (M3 + M3.5)

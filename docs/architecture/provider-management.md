@@ -1,10 +1,16 @@
 # Provider Management (M4 planning)
 
-**Status:** Planning — M4 Phase 4.1  
+**Status:** Specification **Accepted** — implementation pending ([Phase 4.1 spec](../roadmap/m4-phase-4.1-provider-management.md))  
 **Related roadmap phase:** [M4 Phase 4.1 — Provider Management](../roadmap/m4-plan.md#phase-41--provider-management)
 
 → [Media access abstraction](./media-access-abstraction.md)  
 → [M3.5 Phase 4 plan](../roadmap/m35-phase-4-plan.md)
+
+**ADRs (Accepted):**
+
+- [ADR-001: Provider Health Model](./decisions/ADR-001-provider-health-model.md)
+- [ADR-002: Provider Refresh Lifecycle](./decisions/ADR-002-provider-refresh-lifecycle.md)
+- [ADR-003: Provider Status Presentation](./decisions/ADR-003-provider-status-presentation.md)
 
 ---
 
@@ -26,43 +32,27 @@ Define how users **see, understand, and act on** catalogue provider state after 
 | HTTPS enforcement | `localPreferred` warns on HTTP; `httpRequired` rejects plain HTTP |
 | Settings UI | `MediaProviderSettingsScreen` — add/edit/remove providers |
 | Readable errors | `remote_fetch_errors.dart` — TLS, timeout, network messages |
+| Artwork cache | Cleared on successful catalogue replacement (`onCatalogReplaced`) |
 
-**Not in baseline:** unified provider health dashboard, explicit retry/refresh affordance, consolidated active-provider indicator outside settings.
-
----
-
-## M4 goals
-
-- Single coherent **provider management** surface (may extend settings or dashboard)
-- **Active catalogue provider** always visible
-- **Explicit refresh and retry** without full app restart
-- **Health states**: idle, loading, success, degraded (fallback), failed
-- Preserve M3.5 selection order and fallback semantics
+**Not in baseline (M4.1 deliverables):** structured health model, provider snapshot, Provider Status panel, unified refresh labelling — see [implementation spec](../roadmap/m4-phase-4.1-provider-management.md).
 
 ---
 
-## Proposed responsibilities
+## M4.1 target architecture (from ADRs)
 
-| Component | M4.1 role |
+| Component | Role |
 |---|---|
-| `CatalogService` | Expose last attempt result per provider; support targeted refresh |
-| `CatalogueProviderSelector` | Unchanged selection logic unless ADR approves UX-driven reorder |
-| Provider management UI | Status, active provider, refresh/retry actions |
-| Dashboard banners | Align with provider management vocabulary |
-
----
-
-## Data / state considerations
-
-- Provider attempt history may be **in-memory** for session diagnostics; persistence optional
-- Last-good catalogue remains authoritative until a successful refresh replaces it
-- Active provider identity must be derivable from `CatalogService` without duplicating config
+| `CatalogueProviderHealth` + snapshot | Session-scoped health per provider (ADR-001) |
+| `CatalogService.providerSnapshot` | Read-only exposure of attempts and active provider |
+| Catalogue refresh | Full provider chain reload; distinct from indexer scan (ADR-002) |
+| Provider Status panel | Dashboard section replacing legacy Storage Status (ADR-003) |
+| `CatalogueProviderSelector` | **Unchanged** selection order |
 
 ---
 
 ## Failure handling
 
-- Refresh failure: retain catalogue; show actionable error; offer retry
+- Refresh failure: retain catalogue; show actionable error; offer retry (ADR-002)
 - All providers fail: demo or last-good per existing M3.5 rules — no blank catalogue screen
 - TLS/certificate errors: reuse M3.5 readable messages; link to diagnostics (Phase 4.6)
 
@@ -70,31 +60,38 @@ Define how users **see, understand, and act on** catalogue provider state after 
 
 ## Testing considerations
 
-- Extend `provider_selection_test.dart` patterns for refresh and status
-- Widget tests for active-provider display and retry button
+See validation scenarios V1–V10 in [Phase 4.1 spec](../roadmap/m4-phase-4.1-provider-management.md#validation-scenarios).
+
+- Extend `provider_selection_test.dart` for snapshot instrumentation
+- Widget tests for Provider Status panel
 - Regression: legacy `catalog_path` pref migration path
 
 ---
 
-## Open decisions
+## Decisions (resolved in ADRs)
 
-1. **Surface location** — dedicated Provider screen vs dashboard section vs settings subsection?
-2. **Refresh scope** — full provider list retry vs active provider only?
-3. **Health persistence** — session-only vs last-known status across restarts?
-
-Record decisions in ADRs when implementation begins.
+| Question | Decision (ADR) |
+|---|---|
+| Health vocabulary | `idle` / `loading` / `success` / `degraded` / `failed` / `skipped` — see ADR-001 |
+| `degraded` | Active provider after earlier `failed` in same cycle (`localPreferred`) |
+| `skipped` | Config/selector exclusion only — not short-circuit after success |
+| Surface location | Dashboard Provider Status panel (ADR-003) |
+| Refresh scope | Full provider chain (ADR-002) |
+| Health persistence | Session-only (ADR-001) |
+| vs Phase 4.6 | Operational summary only; diagnostics detail deferred |
 
 ---
 
 ## Out of scope
 
 - New provider types (S3, WebDAV, etc.)
-- OAuth or API keys
-- Per-user provider profiles
+- Authentication
+- Multi-user provider profiles
 
 ---
 
 ## Related documents
 
+- [M4 Phase 4.1 implementation spec](../roadmap/m4-phase-4.1-provider-management.md)
 - [settings.md](./settings.md) — Phase 4.2 may host navigation entry
 - [diagnostics.md](./diagnostics.md) — Phase 4.6 deep detail

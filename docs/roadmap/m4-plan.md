@@ -101,10 +101,12 @@ M3.5 implemented provider configuration, local/HTTP catalogue loading, startup s
 
 **Documentation outputs:**
 
-- Update [provider-management.md](../architecture/provider-management.md) from planning → accepted
-- ADR if status model or refresh semantics require a new cross-layer contract
+- [Phase 4.1 implementation specification](./m4-phase-4.1-provider-management.md)
+- Update [provider-management.md](../architecture/provider-management.md) from planning → accepted at phase close
+- [ADR-001](../architecture/decisions/ADR-001-provider-health-model.md), [ADR-002](../architecture/decisions/ADR-002-provider-refresh-lifecycle.md), [ADR-003](../architecture/decisions/ADR-003-provider-status-presentation.md)
 
-→ Architecture: [provider-management.md](../architecture/provider-management.md)
+→ Architecture: [provider-management.md](../architecture/provider-management.md)  
+→ Specification: [m4-phase-4.1-provider-management.md](./m4-phase-4.1-provider-management.md)
 
 ---
 

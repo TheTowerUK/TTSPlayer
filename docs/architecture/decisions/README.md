@@ -65,11 +65,11 @@ Every ADR must include these headings (use [ADR-template.md](./ADR-template.md))
 
 ## Index
 
-No ADRs recorded yet. When accepted, list them here:
-
 | ADR | Title | Status |
 |---|---|---|
-| — | — | — |
+| [ADR-001](./ADR-001-provider-health-model.md) | Provider Health Model | Accepted |
+| [ADR-002](./ADR-002-provider-refresh-lifecycle.md) | Provider Refresh Lifecycle | Accepted |
+| [ADR-003](./ADR-003-provider-status-presentation.md) | Provider Status Presentation | Accepted |
 
 ---
 

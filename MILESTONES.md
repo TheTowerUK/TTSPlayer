@@ -74,5 +74,5 @@ Sprint checkpoints: `m3-sprint-3`, `m3-complete`. Sprint 4 delivered Featured Fo
 Polish settings, provider visibility, library browsing, playback controls, performance, and in-app diagnostics — building on M3 personal UX and M3.5 provider-neutral media access.
 
 → [M4 plan](docs/roadmap/m4-plan.md)  
-→ [v0.5.0-dev tracker](docs/release/v0.5.0-dev.md)  
-→ [Architecture planning](docs/architecture/README.md)
+→ [Phase 4.1 specification](docs/roadmap/m4-phase-4.1-provider-management.md)  
+→ [v0.5.0-dev tracker](docs/release/v0.5.0-dev.md)

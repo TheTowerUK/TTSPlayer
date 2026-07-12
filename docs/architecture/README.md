@@ -23,7 +23,7 @@ Planning documents for [M4 — User Experience and Platform Integration](../road
 
 | Document | Phase | Status |
 |---|---|---|
-| [Provider management](./provider-management.md) | 4.1 | Planning |
+| [Provider management](./provider-management.md) | 4.1 | Spec ready — [implementation spec](../roadmap/m4-phase-4.1-provider-management.md) |
 | [Settings](./settings.md) | 4.2 | Planning |
 | [Library experience](./library.md) | 4.3 | Planning |
 | [Playback](./playback.md) | 4.4 | Planning |
@@ -35,7 +35,7 @@ Performance and caching (Phase 4.5) will be documented at sub-phase kickoff.
 
 Significant cross-layer decisions are recorded as ADRs:
 
-→ [ADR framework](./decisions/README.md) · [Template](./decisions/ADR-template.md)
+→ [ADR framework](./decisions/README.md) · [Template](./decisions/ADR-template.md) · [ADR-001–003](./decisions/README.md#index)
 
 ## Key components
 
