@@ -30,6 +30,9 @@ dependencies:
   # File picker — lets users point at local folders / NAS mounts
   file_picker: ^8.1.2
 
+  # App version display in settings diagnostics
+  package_info_plus: ^9.0.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

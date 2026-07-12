@@ -43,7 +43,7 @@ class TtsAppBar extends StatelessWidget implements PreferredSizeWidget {
           icon: const Icon(Icons.settings_outlined),
           tooltip: 'Settings',
           onPressed: () {
-            openMediaProviderSettingsScreen(context);
+            openSettingsScreen(context);
           },
         ),
         const SizedBox(width: AppSpacing.xs),

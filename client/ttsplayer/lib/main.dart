@@ -11,6 +11,7 @@ import 'services/artwork/artwork_service.dart';
 import 'services/catalog_service.dart';
 import 'services/media_access/media_provider_config_service.dart';
 import 'services/media_access/media_location_resolver.dart';
+import 'services/settings/settings_repository.dart';
 import 'services/playback_service.dart';
 import 'services/scan_history_service.dart';
 import 'services/scanner_service.dart';
@@ -25,6 +26,9 @@ Future<void> main() async {
   final providerConfigService = MediaProviderConfigService();
   await providerConfigService.load();
 
+  final settingsRepository = SettingsRepository();
+  await settingsRepository.initialize();
+
   final artworkService = ArtworkService();
 
   final isWindowsDesktop = !kIsWeb && Platform.isWindows;
@@ -38,6 +42,9 @@ Future<void> main() async {
       providers: [
         ChangeNotifierProvider<MediaProviderConfigService>.value(
           value: providerConfigService,
+        ),
+        ChangeNotifierProvider<SettingsRepository>.value(
+          value: settingsRepository,
         ),
         Provider<MediaLocationResolver>.value(value: mediaLocationResolver),
         Provider<ArtworkService>.value(value: artworkService),

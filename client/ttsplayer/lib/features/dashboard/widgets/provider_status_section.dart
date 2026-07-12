@@ -142,8 +142,7 @@ class ProviderStatusSection extends StatelessWidget {
                             label: const Text('Retry'),
                           ),
                         OutlinedButton.icon(
-                          onPressed: () =>
-                              openMediaProviderSettingsScreen(context),
+                          onPressed: () => openSettingsScreen(context),
                           icon: const Icon(Icons.settings_outlined),
                           label: const Text('Settings'),
                         ),
