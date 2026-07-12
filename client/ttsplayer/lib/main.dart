@@ -49,7 +49,8 @@ Future<void> main() async {
         Provider<MediaLocationResolver>.value(value: mediaLocationResolver),
         Provider<ArtworkService>.value(value: artworkService),
         ChangeNotifierProvider(
-          create: (_) => CatalogService(
+          create: (context) => CatalogService(
+            settingsRepository: settingsRepository,
             onCatalogReplaced: artworkService.clearCache,
           ),
         ),

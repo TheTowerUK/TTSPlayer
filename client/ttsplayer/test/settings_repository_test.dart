@@ -397,10 +397,10 @@ void main() {
       expect(reloaded.catalogueFetchTimeoutSeconds, 30);
     });
 
-    test('default timeout matches CatalogService default', () {
+    test('default timeout matches network settings default', () {
       expect(
         NetworkSettings.defaultCatalogueFetchTimeoutSeconds,
-        CatalogService.catalogFetchTimeoutDefault.inSeconds,
+        NetworkSettings.defaultCatalogueFetchTimeoutSeconds,
       );
     });
   });

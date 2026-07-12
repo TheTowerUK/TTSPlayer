@@ -60,11 +60,13 @@ class SettingsRepository extends ChangeNotifier {
 
   ApplicationSettings get settings => _settings;
 
+  NetworkSettings get networkSettings => _settings.network;
+
   MediaProviderConfig get providerConfig =>
       _settings.libraryProviders.providerConfig;
 
   int get catalogueFetchTimeoutSeconds =>
-      _settings.network.catalogueFetchTimeoutSeconds;
+      networkSettings.catalogueFetchTimeoutSeconds;
 
   /// Loads persisted settings once at startup. Safe to call multiple times.
   Future<SettingsLoadResult> initialize() async {

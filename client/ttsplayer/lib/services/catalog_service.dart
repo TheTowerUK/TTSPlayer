@@ -7,6 +7,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/application_settings.dart';
 import '../models/catalog.dart';
 import '../models/catalogue_provider_snapshot.dart';
 import '../models/catalogue_source_kind.dart';
@@ -15,6 +16,7 @@ import 'media_access/catalogue_provider_selector.dart';
 import 'media_access/media_catalogue_provider.dart';
 import 'media_access/media_provider_config.dart';
 import 'media_access/remote_fetch_errors.dart';
+import 'settings/settings_repository.dart';
 
 /// Source from which the catalog is loaded.
 enum CatalogSource { bundled, localFile, remoteUrl }
@@ -22,19 +24,41 @@ enum CatalogSource { bundled, localFile, remoteUrl }
 class CatalogService extends ChangeNotifier {
   CatalogService({
     http.Client? httpClient,
+    SettingsRepository? settingsRepository,
     Duration? catalogFetchTimeout,
     VoidCallback? onCatalogReplaced,
   })  : _httpClient = httpClient ?? http.Client(),
-        _catalogFetchTimeout =
-            catalogFetchTimeout ?? catalogFetchTimeoutDefault,
+        _settingsRepository = settingsRepository,
+        _catalogFetchTimeoutOverride = catalogFetchTimeout,
         _onCatalogReplaced = onCatalogReplaced;
 
   final http.Client _httpClient;
-  final Duration _catalogFetchTimeout;
+  final SettingsRepository? _settingsRepository;
+
+  /// Test-only override; production uses [SettingsRepository.networkSettings].
+  final Duration? _catalogFetchTimeoutOverride;
   final VoidCallback? _onCatalogReplaced;
 
-  /// Default bounded timeout for [loadFromUrl].
-  static const catalogFetchTimeoutDefault = Duration(seconds: 15);
+  /// Default bounded timeout when no [SettingsRepository] is attached.
+  static Duration get catalogFetchTimeoutDefault => const Duration(
+        seconds: NetworkSettings.defaultCatalogueFetchTimeoutSeconds,
+      );
+
+  /// Resolved timeout for HTTP catalogue fetches (reads repository each call).
+  @visibleForTesting
+  Duration get catalogFetchTimeout => _resolveCatalogFetchTimeout();
+
+  Duration _resolveCatalogFetchTimeout() {
+    final override = _catalogFetchTimeoutOverride;
+    if (override != null) {
+      return override;
+    }
+    final seconds =
+        _settingsRepository?.networkSettings.catalogueFetchTimeoutSeconds ??
+            NetworkSettings.defaultCatalogueFetchTimeoutSeconds;
+    return Duration(seconds: seconds);
+  }
+
   Catalog? _catalog;
   bool _isLoading = false;
   String? _errorMessage;
@@ -651,10 +675,9 @@ class CatalogService extends ChangeNotifier {
   }
 
   Future<String> _fetchCatalogBody(String url) async {
+    final timeout = _resolveCatalogFetchTimeout();
     try {
-      final response = await _httpClient
-          .get(Uri.parse(url))
-          .timeout(_catalogFetchTimeout);
+      final response = await _httpClient.get(Uri.parse(url)).timeout(timeout);
       if (response.statusCode != 200) {
         throw HttpException(
           'HTTP ${response.statusCode} loading catalogue from $url',
@@ -665,7 +688,7 @@ class CatalogService extends ChangeNotifier {
     } on TimeoutException {
       throw TimeoutException(
         'Timed out loading catalogue from $url',
-        _catalogFetchTimeout,
+        timeout,
       );
     }
   }
@@ -781,7 +804,7 @@ class CatalogService extends ChangeNotifier {
       await prefs.setString(_prefKeyPath, identifier);
     } on TimeoutException {
       _errorMessage = RemoteFetchErrors.catalogueLoadMessage(
-        TimeoutException('timed out', _catalogFetchTimeout),
+        TimeoutException('timed out', _resolveCatalogFetchTimeout()),
         identifier,
       );
     } on SocketException catch (e) {
