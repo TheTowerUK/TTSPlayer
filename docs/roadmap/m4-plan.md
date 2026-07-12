@@ -1,6 +1,6 @@
 # M4 — User Experience and Platform Integration
 
-**Status:** Planning  
+**Status:** Active development (`v0.5.0-dev`) — Phase 4.1 complete  
 **Branch:** `m4-development`  
 **Development version:** `v0.5.0-dev`  
 **Predecessor:** M3.5 Media Access Platform  
@@ -51,8 +51,8 @@ Implement in order unless a documented dependency allows parallel documentation 
 
 | Sub-phase | Focus | Status |
 |---|---|---|
-| **4.1** | Provider Management | Planned |
-| **4.2** | Settings Framework | Planned |
+| **4.1** | Provider Management | ✅ Complete (2026-07-12) |
+| **4.2** | Settings Framework | Planned (next) |
 | **4.3** | Library Experience | Planned |
 | **4.4** | Playback Improvements | Planned |
 | **4.5** | Performance and Caching | Planned |

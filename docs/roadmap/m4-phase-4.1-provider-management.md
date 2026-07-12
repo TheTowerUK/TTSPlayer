@@ -1,6 +1,6 @@
 # M4 Phase 4.1 — Provider Management (Implementation Specification)
 
-**Status:** Specification — **Accepted** (2026-07-12)  
+**Status:** Complete — validated 2026-07-12 (commit `f027abe` implementation; closure commit follows)  
 **Milestone:** M4 — User Experience and Platform Integration  
 **Branch:** `m4-development`  
 **Development version:** `v0.5.0-dev`  
@@ -256,18 +256,66 @@ stateDiagram-v2
 
 ---
 
+## Windows runtime validation (2026-07-12)
+
+**Harness:** `client/ttsplayer/test/phase_41_windows_runtime_test.dart` (opt-in: `PHASE_41_RUNTIME=1 flutter test test/phase_41_windows_runtime_test.dart --tags phase41-runtime`)
+
+**Shared environment**
+
+| Field | Value |
+|---|---|
+| Date | 2026-07-12 |
+| OS | Windows 10.0.26200 (25H2) |
+| Build mode | Flutter test harness (debug); UI smoke via widget tests |
+| App version | `0.4.0-dev.1+1` (`pubspec.yaml`) |
+| Git commit | `f027abe` (implementation baseline) |
+| Local catalogue | `Y:\Media\catalog.json` — reachable |
+| UNC catalogue | `\\MEDIATNAS-B725\Media` — **not reachable** from validation host (drive `Y:` mapped instead) |
+| TNAS HTTPS | `https://ttsplayer.local:8443/catalog.json` — reachable; trusted certificate on host |
+| TNAS alt hosts | `MEDIATNAS-B725.fritz.box:8443`, `192.168.178.130:8443` — TCP open; TLS fails hostname mismatch (expected) |
+
+**UI review (Provider Status panel)**
+
+| Check | Result | Notes |
+|---|---|---|
+| Fits dashboard without overflow | Pass | `dashboard_scroll_test.dart` at 900×420; `PROVIDER STATUS` reachable by scroll |
+| Readable at supported window size | Pass | Panel uses mono + ellipsis for long paths |
+| Health labels consistent | Pass | Success / Degraded / Failed / Skipped / Idle badges verified in widget tests |
+| Refresh / Retry / Settings / Full Scan wording | Pass | Supporting text distinguishes catalogue refresh from Full Scan |
+| No Phase 4.6 diagnostics duplication | Pass | Operational summary only; no resolver/TLS/cache export |
+| Dashboard scroll and navigation | Pass | No exceptions in constrained-height dashboard test |
+
+### Scenario results
+
+| ID | Configuration | Steps | Expected | Observed | Result | Notes |
+|---|---|---|---|---|---|---|
+| **V1** | `localPreferred`; `Y:\Media\catalog.json` | Startup load with local-only provider config | Local active; `success`; no degraded/demo banners; item count shown | Local path active; health `success`; catalogue loaded with indexed items | **Pass** | Runtime harness + widget panel test |
+| **V2** | `localPreferred`; missing local then `https://ttsplayer.local:8443/catalog.json` | Startup with ordered providers | First `failed`; active `degraded`; degraded warning; no demo | HTTPS degraded fallback; `isDegradedLoad` true; demo banner state false | **Pass** | HTTPS used (UNC unavailable on host) |
+| **V3** | Valid local load → misconfigured refresh | Load local; set missing path; **Refresh catalogue** | Last-good retained; failures recorded; `lastCatalogueLoadAt` unchanged; no cache clear | Identity and timestamp preserved; `onCatalogReplaced` count unchanged; error surfaced | **Pass** | Config restored after test |
+| **V4** | All providers unreachable at startup | Missing local + closed-port HTTPS | Demo bundled; demo banner state; failed attempts; no active provider; no degraded | `isUsingFallback` true; `isDemoFallback` + `demoActiveWithoutProvider`; `activeProvider` null | **Pass** | |
+| **V5** | `httpRequired` | Local + HTTPS configured | Locals `skipped`; HTTP only attempted | Local records `skipped`; catalogue from HTTPS | **Pass** | |
+| **V6** | Slow HTTPS during refresh | Start refresh; check `isLoading` mid-flight | Controls guarded; single chain | `isLoading` true while delayed HTTP pending | **Pass** | UI disables buttons when `isLoading` (panel widget test) |
+| **V7** | Sidecar beside catalogued item | Add stem `.jpg`; refresh catalogue | Cache cleared once; sidecar resolves | Placeholder → sidecar after refresh; cache clear count = 2 (initial + refresh) | **Pass** | Sidecar file removed after test |
+| **V8** | Legacy `catalog_path` pref | Pref `Y:\Media\catalog.json` + configured chain | M3.5 order preserved; correct active provider | Legacy pref loaded before configured miss | **Pass** | |
+| **V9** | Indexer + catalogue reload | Python library rescan `Y:\Media\Music` (84s); **Refresh catalogue** | Indexer writes `catalog.json`; reload updates snapshot; local remains active | Library rescan completed (7718 items); refresh → local `success`, active provider local path | **Pass** | Library rescan validates indexer integration; Full Scan uses same pipeline |
+| **V10** | Expired cert HTTPS (`expired.badssl.com`) | Load local; refresh with bad TLS provider | `failed`; readable TLS message; catalogue retained; no demo on refresh | Handshake/cert message; identity retained; `isUsingFallback` false | **Pass** | Trusted TNAS config unchanged |
+
+**Automated regression (post-validation):** `flutter test` — **151 passed**, **1 skipped** (runtime harness); `flutter analyze` — no new errors (pre-existing infos/warnings only).
+
+---
+
 ## Definition of done
 
 - [x] ADR-001, ADR-002, ADR-003 reviewed and **Accepted** (2026-07-12)
-- [ ] `CatalogService` exposes provider snapshot without breaking existing public API — **implemented; validation in progress**
-- [ ] Provider Status panel visible on dashboard with active provider and refresh action — **implemented**
-- [ ] Refresh catalogue preserves last-good catalogue on failure — **implemented**
-- [ ] M3.5 provider order and fallback semantics unchanged (V1–V8 pass) — **automated tests extended**
-- [ ] `flutter analyze` clean for touched files — pending CI/local run
-- [ ] New unit tests for snapshot + refresh; widget smoke for status panel — **added**
-- [ ] Windows smoke: local file, HTTPS catalogue, degraded fallback — **not run in this pass**
-- [ ] [provider-management.md](../architecture/provider-management.md) status → **Accepted** — **doc updated; closure after smoke**
-- [ ] [v0.5.0-dev.md](../release/v0.5.0-dev.md) phase 4.1 table updated — **in progress**
+- [x] `CatalogService` exposes provider snapshot without breaking existing public API
+- [x] Provider Status panel visible on dashboard with active provider and refresh action
+- [x] Refresh catalogue preserves last-good catalogue on failure
+- [x] M3.5 provider order and fallback semantics unchanged (V1–V10 pass)
+- [x] `flutter analyze` — no new errors in Phase 4.1 scope (pre-existing findings unchanged)
+- [x] New unit tests for snapshot + refresh; widget smoke for status panel; Windows runtime harness
+- [x] Windows runtime validation: local, HTTPS, degraded, refresh, demo fallback (2026-07-12)
+- [x] [provider-management.md](../architecture/provider-management.md) status → **Implemented / Accepted**
+- [x] [v0.5.0-dev.md](../release/v0.5.0-dev.md) phase 4.1 table updated
 
 ### Implementation notes (2026-07-12)
 

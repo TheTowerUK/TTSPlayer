@@ -1,10 +1,11 @@
-# Provider Management (M4 planning)
+# Provider Management (M4 Phase 4.1)
 
-**Status:** **Implemented (Phase 4.1)** — session snapshot, `CatalogService` instrumentation, and dashboard Provider Status panel on `m4-development`; Windows smoke and final DoD closure pending  
-**Related roadmap phase:** [M4 Phase 4.1 — Provider Management](../roadmap/m4-plan.md#phase-41--provider-management)
+**Status:** **Implemented / Accepted** — validated on Windows 2026-07-12  
+**Related roadmap phase:** [M4 Phase 4.1 — Provider Management](../roadmap/m4-plan.md#phase-41--provider-management) *(complete)*
 
 → [Media access abstraction](./media-access-abstraction.md)  
-→ [M3.5 Phase 4 plan](../roadmap/m35-phase-4-plan.md)
+→ [Phase 4.1 specification](../roadmap/m4-phase-4.1-provider-management.md)  
+→ [Runtime validation results](../roadmap/m4-phase-4.1-provider-management.md#windows-runtime-validation-2026-07-12)
 
 **ADRs (Accepted):**
 
@@ -20,64 +21,47 @@ Define how users **see, understand, and act on** catalogue provider state after 
 
 ---
 
-## Current baseline (M3.5 complete)
+## Validated runtime behaviour (2026-07-12)
 
-| Capability | State |
+| Capability | Validated behaviour |
 |---|---|
-| `MediaProviderConfig` / `MediaProviderConfigService` | Persisted provider list (local paths, HTTPS catalogue URLs, access modes) |
-| `CatalogueProviderSelector` | Startup provider ordering and selection |
-| `CatalogService` | Local file load, HTTP catalogue load, provider iteration, fallback |
-| Automatic fallback | Failed provider attempts retain last-good catalogue; dismissible banner |
-| `MediaLocationResolver` | Local and HTTP serving providers wired into playback and artwork |
-| HTTPS enforcement | `localPreferred` warns on HTTP; `httpRequired` rejects plain HTTP |
-| Settings UI | `MediaProviderSettingsScreen` — add/edit/remove providers |
-| Readable errors | `remote_fetch_errors.dart` — TLS, timeout, network messages |
-| Artwork cache | Cleared on successful catalogue replacement (`onCatalogReplaced`) |
+| Session provider snapshot | `idle` / `loading` / `success` / `degraded` / `failed` / `skipped`; not persisted |
+| `localPreferred` chain | Legacy pref → configured providers; short-circuit leaves later providers `idle` |
+| Degraded fallback | Later configured provider succeeds after earlier `failed`; distinct from demo fallback (`isUsingFallback`) |
+| Demo fallback | All providers fail on cold start → bundled catalogue; failed records; no active configured provider |
+| `httpRequired` | Local providers `skipped`; HTTP-only attempts |
+| Catalogue refresh | `refreshCatalogue()` = full eligible provider chain reload (not filesystem scan) |
+| Failed refresh | Last-good catalogue, `lastCatalogueLoadAt`, and artwork cache preserved |
+| TLS errors | Readable handshake/certificate messages; no insecure bypass |
+| Dashboard panel | Provider Status replaces Storage Status; refresh / retry / settings actions |
+| Indexer integration | Library rescan rewrites `catalog.json`; subsequent refresh updates snapshot |
 
-## Phase 4.1 implementation (2026-07-12)
-
-| Component | Location | Notes |
-|---|---|---|
-| `CatalogueProviderHealth` | `lib/models/catalogue_provider_snapshot.dart` | Session-only; ADR-001 |
-| `CatalogueProviderLoadTracker` | same | Builds snapshot during provider-chain attempts |
-| `CatalogService.providerSnapshot` | `lib/services/catalog_service.dart` | Exposes active provider, timestamps, degraded/demo flags |
-| `CatalogService.refreshCatalogue()` | same | Alias for `rescan()` — catalogue reload, not filesystem scan |
-| Provider Status panel | `lib/features/dashboard/widgets/provider_status_section.dart` | Replaces legacy Storage Status (ADR-003) |
-| Degraded banner | `lib/features/dashboard/widgets/dashboard_banners.dart` | Optional warning when fallback provider active |
-
-**Removed:** `StorageStatusSection` (legacy Live NAS / Fallback NAS / Demo chip UI).
-
-**Unchanged:** `CatalogueProviderSelector` ordering; M3.5 demo fallback; artwork cache clear on success only; no provider health persistence.
+**Re-run validation:** `PHASE_41_RUNTIME=1 flutter test test/phase_41_windows_runtime_test.dart --tags phase41-runtime` from `client/ttsplayer`.
 
 ---
 
-## M4.1 target architecture (from ADRs)
+## Implementation map
 
-| Component | Role |
+| Component | Location |
 |---|---|
-| `CatalogueProviderHealth` + snapshot | Session-scoped health per provider (ADR-001) |
-| `CatalogService.providerSnapshot` | Read-only exposure of attempts and active provider |
-| Catalogue refresh | Full provider chain reload; distinct from indexer scan (ADR-002) |
-| Provider Status panel | Dashboard section replacing legacy Storage Status (ADR-003) |
-| `CatalogueProviderSelector` | **Unchanged** selection order |
+| `CatalogueProviderHealth` + snapshot | `client/ttsplayer/lib/models/catalogue_provider_snapshot.dart` |
+| `CatalogService` instrumentation | `client/ttsplayer/lib/services/catalog_service.dart` |
+| Skipped provider detection | `client/ttsplayer/lib/services/media_access/catalogue_provider_selector.dart` |
+| Provider Status panel | `client/ttsplayer/lib/features/dashboard/widgets/provider_status_section.dart` |
+| Degraded vs demo banners | `client/ttsplayer/lib/features/dashboard/widgets/dashboard_banners.dart` |
+| Runtime validation harness | `client/ttsplayer/test/phase_41_windows_runtime_test.dart` |
+
+**Removed:** `StorageStatusSection` (legacy Live NAS / Fallback NAS / Demo chip UI).
+
+**Unchanged:** `CatalogueProviderSelector` ordering; M3.5 demo fallback semantics; artwork cache clear on successful replacement only.
 
 ---
 
 ## Failure handling
 
 - Refresh failure: retain catalogue; show actionable error; offer retry (ADR-002)
-- All providers fail: demo or last-good per existing M3.5 rules — no blank catalogue screen
-- TLS/certificate errors: reuse M3.5 readable messages; link to diagnostics (Phase 4.6)
-
----
-
-## Testing considerations
-
-See validation scenarios V1–V10 in [Phase 4.1 spec](../roadmap/m4-phase-4.1-provider-management.md#validation-scenarios).
-
-- Extend `provider_selection_test.dart` for snapshot instrumentation
-- Widget tests for Provider Status panel
-- Regression: legacy `catalog_path` pref migration path
+- All providers fail on startup: demo or last-good per M3.5 rules — no blank catalogue screen
+- TLS/certificate errors: M3.5 readable messages; deep diagnostics deferred to Phase 4.6
 
 ---
 
@@ -95,16 +79,16 @@ See validation scenarios V1–V10 in [Phase 4.1 spec](../roadmap/m4-phase-4.1-pr
 
 ---
 
-## Out of scope
+## Out of scope (delivered in later M4 phases)
 
-- New provider types (S3, WebDAV, etc.)
-- Authentication
-- Multi-user provider profiles
+- Settings framework restructure (Phase 4.2)
+- Full diagnostics export (Phase 4.6)
+- New provider types, authentication, transcoding
 
 ---
 
 ## Related documents
 
 - [M4 Phase 4.1 implementation spec](../roadmap/m4-phase-4.1-provider-management.md)
-- [settings.md](./settings.md) — Phase 4.2 may host navigation entry
+- [settings.md](./settings.md) — Phase 4.2 follow-on
 - [diagnostics.md](./diagnostics.md) — Phase 4.6 deep detail

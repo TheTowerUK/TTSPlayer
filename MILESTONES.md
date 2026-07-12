@@ -7,7 +7,7 @@ Canonical milestone detail lives in [`docs/roadmap/`](docs/roadmap/).
 | M2 | [First Playable Release](docs/roadmap/roadmap.md#m2--first-playable-release) | ✅ v0.2.0 |
 | M3 | [Personal Media Experience](docs/roadmap/m3-personal-media-experience.md) | ✅ v0.3.0 |
 | M3.5 | [Network Client Foundation](docs/roadmap/network-client-foundation.md) | ✅ `m3.5-complete` |
-| M4 | [User Experience and Platform Integration](docs/roadmap/m4-plan.md) | 🔄 Planning (`v0.5.0-dev`) |
+| M4 | [User Experience and Platform Integration](docs/roadmap/m4-plan.md) | 🔄 Active — Phase 4.1 complete (`v0.5.0-dev`) |
 | M7 | [Multi-device Experience](docs/roadmap/mobile-delivery.md#m7--multi-device-experience) | Planned |
 
 → [Roadmap principles](docs/roadmap/principles.md)  
@@ -65,9 +65,16 @@ Sprint checkpoints: `m3-sprint-3`, `m3-complete`. Sprint 4 delivered Featured Fo
 
 ## M4 — User Experience and Platform Integration
 
-**Status:** Planning  
+**Status:** Active development — Phase 4.1 complete  
 **Branch:** `m4-development`  
 **Development version:** `v0.5.0-dev`
+
+### M4 progress
+
+| Sub-phase | Focus | Status |
+|---|---|---|
+| **4.1** | Provider Management | ✅ Complete (2026-07-12) |
+| **4.2** | Settings Framework | 📋 Next |
 
 ### Focus
 
