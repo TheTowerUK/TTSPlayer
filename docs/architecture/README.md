@@ -24,8 +24,8 @@ Planning documents for [M4 — User Experience and Platform Integration](../road
 | Document | Phase | Status |
 |---|---|---|
 | [Provider management](./provider-management.md) | 4.1 | **Implemented / Accepted** — [spec](../roadmap/m4-phase-4.1-provider-management.md) |
-| [Settings](./settings.md) | 4.2 | Spec accepted — [implementation spec](../roadmap/m4-phase-4.2-settings-framework.md) |
-| [Library experience](./library.md) | 4.3 | Planning |
+| [Settings](./settings.md) | 4.2 | **Implemented / Accepted** — [spec](../roadmap/m4-phase-4.2-settings-framework.md) |
+| [Library experience](./library.md) | 4.3 | Planning — next sub-phase |
 | [Playback](./playback.md) | 4.4 | Planning |
 | [Diagnostics](./diagnostics.md) | 4.6 | Planning |
 
@@ -44,7 +44,8 @@ Significant cross-layer decisions are recorded as ADRs:
 | Indexer | `backend/indexer.py` | Crawls media roots → `catalog.json` |
 | Catalogue model | `client/ttsplayer/lib/models/` | Parses folder tree, items, scan metadata |
 | CatalogService | `client/ttsplayer/lib/services/catalog_service.dart` | Loads catalogue; HTTP and local providers; fallback |
-| MediaProviderConfigService | `client/ttsplayer/lib/services/media_access/` | Persisted provider configuration (M3.5) |
+| MediaProviderConfigService | `client/ttsplayer/lib/services/media_access/` | Persisted provider configuration (M3.5; dual-write transition in 4.2) |
+| SettingsRepository | `client/ttsplayer/lib/services/settings/` | Versioned settings envelope (M4.2) |
 | MediaLocationResolver | `client/ttsplayer/lib/services/media_access/` | Resolves catalogue paths → playable URI |
 | Caddy config | `backend/caddy.config` | HTTPS static file server (M3.5 reference) |
 | ScannerService | `client/ttsplayer/lib/services/scanner_service.dart` | Runs indexer subprocess |

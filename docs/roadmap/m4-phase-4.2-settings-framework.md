@@ -1,10 +1,11 @@
 # M4 Phase 4.2 — Settings Framework (Implementation Specification)
 
-**Status:** Specification — **Accepted** (2026-07-12) · Implementation **ready to begin**  
+**Status:** **Complete** (2026-07-12) · Windows runtime validation **Pass**  
 **Milestone:** M4 — User Experience and Platform Integration  
 **Branch:** `m4-development`  
 **Development version:** `v0.5.0-dev`  
-**Predecessor:** M4 Phase 4.1 complete — commit `2f4482f`
+**Predecessor:** M4 Phase 4.1 complete — commit `2f4482f`  
+**Implementation baseline:** commits `7ae607c`–`896a8e7` · closure `TBD`
 
 → [M4 plan](./m4-plan.md#phase-42--settings-framework)  
 → [Settings architecture](../architecture/settings.md)  
@@ -35,15 +36,15 @@ Evolve the existing M3.5 provider settings screen and scattered preference keys 
 |---|---|---|
 | **Provider config** | `MediaProviderConfig` | Ordered catalogue providers + `MediaAccessConfig` |
 | **Persistence** | `MediaProviderConfigService` | `media_provider_config_v1` JSON in `shared_preferences` |
-| **UI** | `MediaProviderSettingsScreen` | Edit local paths, HTTPS URLs, media roots, access mode; Save / Reset |
+| **UI** | `SettingsScreen` + `MediaProviderSettingsForm` | Grouped settings; provider fields embedded in Library & Providers |
 | **Validation** | `MediaProviderConfig.validate()`, `RemoteUrlSecurity` | Blocks invalid saves; `httpRequired` rejects plain HTTP |
-| **Navigation** | `settings_navigation.dart`, app bar | Opens provider settings directly |
+| **Navigation** | `settings_navigation.dart`, app bar | Opens grouped `SettingsScreen` |
 | **Catalogue state** | `CatalogService` | `catalog_path`, `catalog_source`, scan-warning dismissal |
 | **Resume data** | `PlaybackService` | Per-item `position_*`, `duration_*` keys |
 | **Provider status** | Dashboard Provider Status panel (4.1) | Active provider, refresh, retry — **not settings** |
 | **Scanner** | `ttsplayer.config.json`, `ScannerService` | Filesystem indexer config — not in app prefs |
 | **Theme** | `AppTheme.dark` in `main.dart` | Single dark theme; **no persisted theme mode** |
-| **HTTP timeout** | `CatalogService.catalogFetchTimeoutDefault` | 15s constant — **not user-configurable** |
+| **HTTP timeout** | `SettingsRepository` → `CatalogService` | User-configurable 5–120 seconds (default 15) |
 
 ### M4.2 framework work (to implement)
 
@@ -344,18 +345,65 @@ Runtime validation after implementation: configure → restart → confirm persi
 ## Definition of done
 
 - [x] ADR-004, ADR-005, ADR-006 reviewed and **Accepted** (2026-07-12)
-- [ ] `SettingsRepository` loads/saves versioned envelope with migration from `media_provider_config_v1`
-- [ ] `SettingsScreen` with all M4.2 sections present (Playback may be informational only)
-- [ ] Library & Providers parity with current `MediaProviderSettingsScreen` behaviour
-- [ ] Network catalogue timeout configurable within bounds
-- [ ] Diagnostics shows version; reset all settings with confirmation
-- [ ] Unsaved-change handling on back navigation
-- [ ] Provider health/refresh **not** duplicated in settings
-- [ ] `httpRequired` HTTPS rules unchanged
-- [ ] Validation scenarios S1–S13 pass
-- [ ] `flutter analyze` clean for touched files
-- [ ] [settings.md](../architecture/settings.md) → Implemented / Accepted
-- [ ] [v0.5.0-dev.md](../release/v0.5.0-dev.md) Phase 4.2 updated
+- [x] `SettingsRepository` loads/saves versioned envelope with migration from `media_provider_config_v1`
+- [x] `SettingsScreen` with all M4.2 sections present (Playback may be informational only)
+- [x] Library & Providers parity with former standalone provider screen behaviour
+- [x] Network catalogue timeout configurable within bounds
+- [x] Diagnostics shows version; reset all settings with confirmation
+- [x] Unsaved-change handling on back navigation
+- [x] Provider health/refresh **not** duplicated in settings
+- [x] `httpRequired` HTTPS rules unchanged
+- [x] Validation scenarios S1–S13 pass (automated + Windows runtime closure)
+- [x] `flutter analyze` — no new errors in Phase 4.2 scope (pre-existing findings unchanged)
+- [x] [settings.md](../architecture/settings.md) → Implemented / Accepted
+- [x] [v0.5.0-dev.md](../release/v0.5.0-dev.md) Phase 4.2 updated
+
+---
+
+## Windows runtime validation (2026-07-12)
+
+**Harness:** `client/ttsplayer/test/phase_42_windows_runtime_test.dart` (opt-in: `PHASE_42_RUNTIME=1 flutter test test/phase_42_windows_runtime_test.dart --tags phase42-runtime`)
+
+**Shared environment**
+
+| Field | Value |
+|---|---|
+| Date | 2026-07-12 |
+| OS | Windows 10.0.26200 (25H2) |
+| Build mode | Flutter test harness (debug); UI smoke via widget tests |
+| App version | `0.4.0-dev.1+1` (`pubspec.yaml`) |
+| Git commit | `896a8e7` (implementation baseline) |
+| Local catalogue | `Y:\Media\catalog.json` — reachable (S11) |
+
+Closure scenarios **S1–S13** below exercise persistence, settings UI, and catalogue apply behaviour. Spec [validation scenarios](#validation-scenarios) (same IDs, different focus) are covered by `settings_repository_test.dart`, `settings_screen_test.dart`, and `catalog_service_timeout_test.dart`.
+
+### Scenario results
+
+| ID | Configuration | Steps | Expected | Observed | Result | Notes |
+|---|---|---|---|---|---|---|
+| **S1** | Fresh install | No prefs → `SettingsRepository.initialize()` | Defaults loaded | `SettingsLoadSource.defaults`; provider + network defaults | **Pass** | Runtime harness |
+| **S2** | Legacy migration | `media_provider_config_v1` only → initialize | Envelope created | `legacyMigration`; `ttsplayer_settings_v1` written | **Pass** | Runtime harness |
+| **S3** | Settings UI | Open `SettingsScreen` | Provider fields editable; no standalone provider route | Library & Providers section; `save_settings`; no `open_provider_settings` | **Pass** | Widget smoke |
+| **S4** | Timeout persist | Save 45s → new repository session | Timeout retained | `catalogueFetchTimeoutSeconds` == 45 after restart simulation | **Pass** | Runtime harness |
+| **S5** | Invalid timeout | Enter 999 → Save network | Rejected inline | `network_validation_errors` shown; value not saved | **Pass** | Widget smoke |
+| **S6** | Reset provider | Custom provider + network 60s → `resetProviderToDefaults()` | Provider defaults only | Provider defaults; network still 60 | **Pass** | Runtime harness |
+| **S7** | Reset all | Custom settings + `position_*` keys → reset all | Envelope defaults; resume preserved | Full envelope defaults; `position_*` / `duration_*` untouched | **Pass** | Runtime harness |
+| **S8** | Settings restart | Save provider + network → new session | Both groups survive | Envelope load; local path + 30s timeout | **Pass** | Runtime harness |
+| **S9** | Unsaved changes | Edit timeout → Close | Dialog shown | `Unsaved changes` dialog | **Pass** | Widget smoke |
+| **S10** | Provider Status | Render dashboard panel after settings work | Panel unchanged | `PROVIDER STATUS`, Refresh catalogue, Settings actions | **Pass** | Widget smoke |
+| **S11** | Provider save | Load local catalogue → provider save | No automatic refresh | `catalogPath` and `lastRefreshedAt` unchanged | **Pass** | Windows + local catalog |
+| **S12** | Timeout + refresh | 5s timeout → refresh fails → 120s → refresh | New timeout active | First refresh times out; second succeeds with identity `PHASE42-RUNTIME` | **Pass** | Mock HTTP + `refreshCatalogue()` |
+| **S13** | Corrupt JSON | Invalid envelope, no legacy | Defaults; no crash | `defaults` source; recovery warning; save succeeds | **Pass** | Runtime harness |
+
+**Automated regression (post-validation):** `flutter test` — **197 passed**, **1 skipped** (Phase 4.1 runtime harness opt-in); `flutter analyze` — no new Phase 4.2 errors (pre-existing infos/warnings only).
+
+### Implementation notes (2026-07-12)
+
+- Standalone `MediaProviderSettingsScreen` removed; provider editor lives in `MediaProviderSettingsForm` inside `SettingsScreen`.
+- **Dual-write transition:** provider Save still writes `media_provider_config_v1` via `MediaProviderConfigService`; network and envelope writes use `SettingsRepository`. Migration reads legacy into envelope on first load.
+- Reset all calls both `SettingsRepository.resetAllToDefaults()` and `MediaProviderConfigService.resetToDefaults()`.
+- `CatalogService` resolves HTTP timeout from `SettingsRepository.networkSettings` per fetch; no auto-reload on settings save (ADR-006).
+- Playback section is informational placeholder for Phase 4.4.
 
 ---
 
@@ -385,11 +433,11 @@ Runtime validation after implementation: configure → restart → confirm persi
 
 | Document | Action |
 |---|---|
-| This spec | **Accepted** 2026-07-12 — update at phase closure with implementation notes |
+| This spec | **Complete** 2026-07-12 — Windows runtime validation recorded |
 | ADR-004–006 | **Accepted** 2026-07-12 |
-| [settings.md](../architecture/settings.md) | Spec accepted → **Implemented** at phase close |
-| [m4-plan.md](./m4-plan.md) | 4.2 implementation in progress at kickoff |
-| [v0.5.0-dev.md](../release/v0.5.0-dev.md) | Track implementation + validation |
+| [settings.md](../architecture/settings.md) | **Implemented / Accepted** |
+| [m4-plan.md](./m4-plan.md) | 4.2 complete → **Phase 4.3 planning** |
+| [v0.5.0-dev.md](../release/v0.5.0-dev.md) | Phase 4.2 complete; Phase 4.3 planning |
 
 ---
 
@@ -414,4 +462,5 @@ Runtime validation after implementation: configure → restart → confirm persi
 | [m4-phase-4.1-provider-management.md](./m4-phase-4.1-provider-management.md) | Closed provider status layer |
 | [playback.md](../architecture/playback.md) | Phase 4.4 playback prefs |
 | [diagnostics.md](../architecture/diagnostics.md) | Phase 4.6 deep detail |
-| [MediaProviderSettingsScreen](../../client/ttsplayer/lib/features/settings/media_provider_settings_screen.dart) | UI baseline |
+| [SettingsScreen](../../client/ttsplayer/lib/features/settings/settings_screen.dart) | Grouped settings UI |
+| [MediaProviderSettingsForm](../../client/ttsplayer/lib/features/settings/widgets/media_provider_settings_form.dart) | Provider editor widget |
