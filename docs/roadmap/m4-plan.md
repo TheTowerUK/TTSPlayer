@@ -52,7 +52,7 @@ Implement in order unless a documented dependency allows parallel documentation 
 | Sub-phase | Focus | Status |
 |---|---|---|
 | **4.1** | Provider Management | ✅ Complete (2026-07-12) |
-| **4.2** | Settings Framework | Planned (next) |
+| **4.2** | Settings Framework | 📋 Spec in progress — [implementation spec](./m4-phase-4.2-settings-framework.md) |
 | **4.3** | Library Experience | Planned |
 | **4.4** | Playback Improvements | Planned |
 | **4.5** | Performance and Caching | Planned |
@@ -148,10 +148,12 @@ M3.5 implemented provider configuration, local/HTTP catalogue loading, startup s
 
 **Documentation outputs:**
 
-- Update [settings.md](../architecture/settings.md)
-- Settings schema section in release tracker
+- [Phase 4.2 implementation specification](./m4-phase-4.2-settings-framework.md)
+- Update [settings.md](../architecture/settings.md) from planning → accepted at phase close
+- [ADR-004](../architecture/decisions/ADR-004-settings-storage-and-versioning.md), [ADR-005](../architecture/decisions/ADR-005-settings-information-architecture.md), [ADR-006](../architecture/decisions/ADR-006-settings-validation-and-apply-behaviour.md)
 
-→ Architecture: [settings.md](../architecture/settings.md)
+→ Architecture: [settings.md](../architecture/settings.md)  
+→ Specification: [m4-phase-4.2-settings-framework.md](./m4-phase-4.2-settings-framework.md)
 
 ---
 

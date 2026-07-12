@@ -1,100 +1,119 @@
-# Settings Framework (M4 planning)
+# Settings Framework (M4 Phase 4.2)
 
-**Status:** Planning — M4 Phase 4.2  
+**Status:** Specification **Proposed** — [Phase 4.2 implementation spec](../roadmap/m4-phase-4.2-settings-framework.md) in progress  
 **Related roadmap phase:** [M4 Phase 4.2 — Settings Framework](../roadmap/m4-plan.md#phase-42--settings-framework)
 
-→ [Provider management](./provider-management.md)  
-→ [M3.5 provider settings UI](../../client/ttsplayer/lib/features/settings/media_provider_settings_screen.dart) *(implementation reference)*
+→ [Provider management](./provider-management.md) *(4.1 complete)*  
+→ [Playback](./playback.md) *(4.4 — deferred playback prefs)*  
+→ [Diagnostics](./diagnostics.md) *(4.6 — deferred deep detail)*
+
+**ADRs (Proposed):**
+
+- [ADR-004: Settings Storage and Versioning](./decisions/ADR-004-settings-storage-and-versioning.md)
+- [ADR-005: Settings Information Architecture](./decisions/ADR-005-settings-information-architecture.md)
+- [ADR-006: Settings Validation and Apply Behaviour](./decisions/ADR-006-settings-validation-and-apply-behaviour.md)
 
 ---
 
 ## Purpose
 
-Evolve fragmented settings entry points into a **structured, versioned preferences architecture** without rebuilding working M3.5 provider configuration.
+Evolve fragmented settings entry points into a **structured, versioned preferences architecture** without rebuilding working M3.5 provider configuration or duplicating Phase 4.1 provider operational status.
 
 ---
 
-## Current baseline (M3 + M3.5)
+## Current baseline (M3 + M3.5 + M4.1)
 
 | Area | State |
 |---|---|
 | Media provider settings | `MediaProviderSettingsScreen` — catalogue paths, HTTPS URLs, access mode, media base URL |
-| `MediaProviderConfigService` | Persists provider list via `shared_preferences` |
-| Settings navigation | `settings_navigation.dart` — limited entry routing |
-| Playback resume | `PlaybackService` + `shared_preferences` per item |
-| Library roots / scan | Library Manager and scanner integration from M3 |
-| General app preferences | Ad hoc keys in `shared_preferences`; no unified schema version |
+| `MediaProviderConfigService` | Persists `media_provider_config_v1` via `shared_preferences` |
+| Settings navigation | `settings_navigation.dart` — opens provider screen directly |
+| Provider operational status | Dashboard Provider Status panel (4.1) — refresh, retry, health |
+| Playback resume | Per-item `position_*` / `duration_*` keys — **progress data, not settings** |
+| Catalogue runtime state | `catalog_path`, `catalog_source` — **not user settings** |
+| Scanner config | `ttsplayer.config.json` on disk — indexer / Library Manager |
+| Theme | `AppTheme.dark` fixed — no persisted theme mode |
+| HTTP catalogue timeout | 15s constant in `CatalogService` — not user-configurable |
 
-**Not in baseline:** grouped settings sections, playback preference UI, library defaults UI, debug toggles, migration framework.
+**Not in baseline:** versioned settings envelope, grouped settings shell, unified reset, unsaved-change guard, network timeout preference UI.
 
 ---
 
-## M4 goals
+## M4.2 target architecture (from spec + ADRs)
 
-| Section | Intent |
+| Component | Role |
 |---|---|
-| **General** | Theme, startup behaviour, about/version link |
-| **Library** | Default sort, scan reminders, library visibility hints |
-| **Playback** | Resume behaviour, default speed (when Phase 4.4 ships controls) |
-| **Network** | Evolve existing provider settings; TLS hints |
-| **Debug** | Verbose logging toggle, diagnostics entry (Phase 4.6) |
+| `ttsplayer_settings_v1` envelope | Versioned JSON blob (ADR-004) |
+| `SettingsService` | Load, migrate, validate, save, reset |
+| `SettingsScreen` | Scrollable grouped sections (ADR-005) |
+| Library & Providers section | Evolved provider editor — same fields as today |
+| Network section | Catalogue fetch timeout |
+| Diagnostics section | Version display, reset all settings |
+| Provider status | Remains on dashboard only (ADR-003) |
 
-Plus: **versioned settings schema**, migration on upgrade, reset-to-defaults.
+### Settings vs non-settings persistence
+
+| Data | Storage | In envelope? |
+|---|---|---|
+| Provider configuration | `media_provider_config_v1` → envelope | Yes |
+| Network timeout | new | Yes |
+| Last catalogue path | `catalog_path` | No — runtime |
+| Resume positions | `position_*` | No — progress |
+| Scan warning dismiss | `scan_warnings_dismissed_*` | No — UI state |
+| Indexer paths | `ttsplayer.config.json` | No — filesystem |
 
 ---
 
-## Proposed responsibilities
+## M4.2 settings categories (summary)
 
-| Layer | Role |
+| Section | M4.2 deliverable |
 |---|---|
-| Settings schema | Documented key map + `settings_version` integer |
-| Settings service | Read/write groups; migrate legacy keys |
-| Settings shell | Navigable sections; TV-friendly targets where applicable |
-| Provider settings | Embedded or linked from Network section — not duplicated |
-
----
-
-## Data / state considerations
-
-- Continue `shared_preferences` for M4 — SQLite deferred unless ADR approves
-- Provider config keys from M3.5 must migrate transparently
-- Reset must not delete playback position history without confirmation
+| **General** | Destructive-reset confirmation only; theme/startup deferred |
+| **Library & Providers** | Full provider editor parity + dashboard status link |
+| **Playback** | Informational placeholder — controls deferred to 4.4 |
+| **Network** | Catalogue fetch timeout; read-only secure transport note |
+| **Diagnostics & Advanced** | Version, reset all settings |
 
 ---
 
 ## Failure handling
 
-- Corrupt or unknown settings version: fall back to defaults; log once; surface in diagnostics
-- Partial migration: preserve unmigrated keys; document in release notes
+- Corrupt envelope → safe defaults; log once; optional user notice
+- Invalid Save → retain last-good on disk (ADR-006)
+- Partial migration → preserve valid groups
+- Reset all → does not delete playback progress without separate confirm
 
 ---
 
 ## Testing considerations
 
-- Migration tests: simulate M3.5 prefs blob → M4 schema
-- Widget tests: each section renders; back navigation works
-- Regression: provider settings still save and load after restructure
+See validation scenarios S1–S12 in [Phase 4.2 spec](../roadmap/m4-phase-4.2-settings-framework.md#validation-scenarios).
+
+- Migration tests from `media_provider_config_v1`
+- Provider validation regression (`media_provider_settings_screen_test.dart`)
+- Widget tests for settings shell and unsaved dialog
 
 ---
 
-## Open decisions
+## Open decisions (for spec review)
 
-1. **Single `SettingsService` vs per-domain notifiers?**
-2. **Playback prefs** — stored with playback service or central settings?
-3. **Debug section** — hidden behind flag or always visible for personal app?
+1. **Single Save for entire screen vs per-section Save** — spec prefers one screen-level Save; confirm in ADR-006 review.
+2. **Post-save hint** — optional snackbar reminding user to refresh catalogue from dashboard?
+3. **Deep link to Library & Providers** — query param vs default scroll position when opened from dashboard.
 
 ---
 
 ## Out of scope
 
-- Cloud sync of preferences
-- Multi-profile settings
-- Remote settings API
+- Cloud sync, accounts, multi-profile
+- Phase 4.6 diagnostics detail
+- Non-functional playback controls
+- Weakening `httpRequired` HTTPS enforcement
 
 ---
 
 ## Related documents
 
+- [M4 Phase 4.2 implementation spec](../roadmap/m4-phase-4.2-settings-framework.md)
 - [provider-management.md](./provider-management.md)
-- [playback.md](./playback.md)
-- [diagnostics.md](./diagnostics.md)
+- [Existing settings UI](../../client/ttsplayer/lib/features/settings/media_provider_settings_screen.dart)

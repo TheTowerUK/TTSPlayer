@@ -74,7 +74,7 @@ Sprint checkpoints: `m3-sprint-3`, `m3-complete`. Sprint 4 delivered Featured Fo
 | Sub-phase | Focus | Status |
 |---|---|---|
 | **4.1** | Provider Management | ✅ Complete (2026-07-12) |
-| **4.2** | Settings Framework | 📋 Next |
+| **4.2** | Settings Framework | 📋 Spec in progress |
 
 ### Focus
 
@@ -82,4 +82,5 @@ Polish settings, provider visibility, library browsing, playback controls, perfo
 
 → [M4 plan](docs/roadmap/m4-plan.md)  
 → [Phase 4.1 specification](docs/roadmap/m4-phase-4.1-provider-management.md)  
+→ [Phase 4.2 specification](docs/roadmap/m4-phase-4.2-settings-framework.md)  
 → [v0.5.0-dev tracker](docs/release/v0.5.0-dev.md)
