@@ -5,7 +5,7 @@
 **Branch:** `m4-development`  
 **Development version:** `v0.5.0-dev`  
 **Predecessor:** M4 Phase 4.1 complete — commit `2f4482f`  
-**Implementation baseline:** commits `7ae607c`–`896a8e7` · closure `TBD`
+**Implementation baseline:** commits `7ae607c`–`896a8e7` · closure `dc303eb`
 
 → [M4 plan](./m4-plan.md#phase-42--settings-framework)  
 → [Settings architecture](../architecture/settings.md)  
