@@ -1,7 +1,8 @@
 # ADR-009: Library Navigation and Breadcrumbs
 
-**Status:** Proposed  
+**Status:** Accepted  
 **Date:** 2026-07-13  
+**Accepted:** 2026-07-13 (specification sign-off, pre-implementation)  
 **Milestone:** M4 Phase 4.3  
 **Authors:** M4 documentation pass
 

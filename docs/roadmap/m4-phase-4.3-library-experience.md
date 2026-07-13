@@ -1,6 +1,6 @@
 # M4 Phase 4.3 — Library Experience (Implementation Specification)
 
-**Status:** Specification — **Proposed** (2026-07-13) · Implementation **not started**  
+**Status:** Specification — **Accepted** (2026-07-13) · Implementation **not started**  
 **Milestone:** M4 — User Experience and Platform Integration  
 **Branch:** `m4-development`  
 **Development version:** `v0.5.0-dev`  
@@ -12,7 +12,7 @@
 → [Provider management (4.1 complete)](../architecture/provider-management.md)  
 → [v0.5.0-dev release tracker](../release/v0.5.0-dev.md)
 
-**ADRs (Proposed 2026-07-13):**
+**ADRs (Accepted 2026-07-13):**
 
 - [ADR-007: Library Metadata and Favourites](../architecture/decisions/ADR-007-library-metadata-and-favourites.md)
 - [ADR-008: Library Sorting and Filtering](../architecture/decisions/ADR-008-library-sorting-and-filtering.md)
@@ -421,7 +421,7 @@ Mirrors Phase 4.2: **persistence and tests before UI**. UI layers consume reposi
 
 ### Phase A — Acceptance
 
-1. **ADR acceptance** — ADR-007–009 → Accepted.
+1. ~~**ADR acceptance**~~ — ADR-007–009 **Accepted** (2026-07-13).
 
 ### Phase B — Persistence and domain (no UI)
 
@@ -504,7 +504,7 @@ Closure harness scenarios **L1–L18** (Windows + automated). Spec persistence s
 
 ## Definition of done
 
-- [ ] ADR-007, ADR-008, ADR-009 reviewed and **Accepted**
+- [x] ADR-007, ADR-008, ADR-009 reviewed and **Accepted** (2026-07-13)
 - [ ] `LibraryMetadataRepository` with versioned favourites persistence and prune-on-load
 - [ ] `SettingsRepository` stores global default sort mode only (no favourites)
 - [ ] `FolderScreen` breadcrumbs catalogue-driven per ADR-009
@@ -526,8 +526,8 @@ Closure harness scenarios **L1–L18** (Windows + automated). Spec persistence s
 
 | Document | Action |
 |---|---|
-| This spec | **Proposed** 2026-07-13 → **Accepted** at implementation kickoff |
-| ADR-007–009 | **Proposed** → **Accepted** before coding |
+| This spec | **Accepted** 2026-07-13 — implementation not started |
+| ADR-007–009 | **Accepted** 2026-07-13 |
 | [library.md](../architecture/library.md) | Updated for spec alignment — **Implemented** at closure only |
 | [m4-plan.md](./m4-plan.md) | 4.3 spec in progress → complete at closure |
 | [v0.5.0-dev.md](../release/v0.5.0-dev.md) | Track spec + implementation status |

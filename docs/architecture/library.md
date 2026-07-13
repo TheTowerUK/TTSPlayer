@@ -1,6 +1,6 @@
 # Library Experience (M4 Phase 4.3)
 
-**Status:** Specification **Proposed** (2026-07-13) — implementation not started  
+**Status:** Specification **Accepted** (2026-07-13) — implementation not started  
 **Related roadmap phase:** [M4 Phase 4.3 — Library Experience](../roadmap/m4-plan.md#phase-43--library-experience)
 
 → [Phase 4.3 implementation spec](../roadmap/m4-phase-4.3-library-experience.md)  
@@ -8,7 +8,7 @@
 → [Provider management (4.1 complete)](./provider-management.md)  
 → [Design system](../design/design-system.md)
 
-**ADRs (Proposed 2026-07-13):**
+**ADRs (Accepted 2026-07-13):**
 
 - [ADR-007: Library Metadata and Favourites](./decisions/ADR-007-library-metadata-and-favourites.md)
 - [ADR-008: Library Sorting and Filtering](./decisions/ADR-008-library-sorting-and-filtering.md)
