@@ -62,3 +62,5 @@ The `v0.4.0-dev` document is a **historical record** of the M3.5 cycle — not a
 2. Bump `client/ttsplayer/pubspec.yaml` version when appropriate
 3. Annotate git tag: `git tag -a mX-complete -m "..."` (or `vX.Y.Z` for semver releases)
 4. Update milestone status in [`../roadmap/roadmap.md`](../roadmap/roadmap.md) and [`../../MILESTONES.md`](../../MILESTONES.md)
+
+For active M4 sub-phases, add a **Phase retrospective** (what went well / lessons) to [v0.5.0-dev.md](./v0.5.0-dev.md) at closure — before starting the next phase.
