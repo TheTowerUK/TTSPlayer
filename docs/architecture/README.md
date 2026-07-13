@@ -25,7 +25,7 @@ Planning documents for [M4 — User Experience and Platform Integration](../road
 |---|---|---|
 | [Provider management](./provider-management.md) | 4.1 | **Implemented / Accepted** — [spec](../roadmap/m4-phase-4.1-provider-management.md) |
 | [Settings](./settings.md) | 4.2 | **Implemented / Accepted** — [spec](../roadmap/m4-phase-4.2-settings-framework.md) |
-| [Library experience](./library.md) | 4.3 | Planning — next sub-phase |
+| [Library experience](./library.md) | 4.3 | Spec proposed — [implementation spec](../roadmap/m4-phase-4.3-library-experience.md) |
 | [Playback](./playback.md) | 4.4 | Planning |
 | [Diagnostics](./diagnostics.md) | 4.6 | Planning |
 

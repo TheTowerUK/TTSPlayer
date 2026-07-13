@@ -1,107 +1,169 @@
-# Library Experience (M4 planning)
+# Library Experience (M4 Phase 4.3)
 
-**Status:** Planning — M4 Phase 4.3  
+**Status:** Specification **Proposed** (2026-07-13) — implementation not started  
 **Related roadmap phase:** [M4 Phase 4.3 — Library Experience](../roadmap/m4-plan.md#phase-43--library-experience)
 
-→ [Design system](../design/design-system.md)  
-→ [M3 library experience](../roadmap/m3-library-experience.md)
+→ [Phase 4.3 implementation spec](../roadmap/m4-phase-4.3-library-experience.md)  
+→ [Settings (4.2 complete)](./settings.md)  
+→ [Provider management (4.1 complete)](./provider-management.md)  
+→ [Design system](../design/design-system.md)
+
+**ADRs (Proposed 2026-07-13):**
+
+- [ADR-007: Library Metadata and Favourites](./decisions/ADR-007-library-metadata-and-favourites.md)
+- [ADR-008: Library Sorting and Filtering](./decisions/ADR-008-library-sorting-and-filtering.md)
+- [ADR-009: Library Navigation and Breadcrumbs](./decisions/ADR-009-library-navigation-and-breadcrumbs.md)
 
 ---
 
 ## Purpose
 
-Polish browsing, discovery, and navigation on the **existing folder-tree catalogue** — without inventing virtual libraries or hardcoded media categories.
+Polish browsing, discovery, and navigation on the **existing folder-tree catalogue** — without inventing virtual libraries, hardcoded media categories, or filesystem writes.
 
 ---
 
-## Current baseline (M3 complete)
+## Current baseline (M3 + M3.5 + M4.1 + M4.2)
+
+### Navigation and screens
 
 | Capability | State |
 |---|---|
-| Dashboard | `DashboardScreen` — libraries, Continue Watching, Recently Added, Featured Folders, storage status |
-| `DashboardService` | Catalogue-driven section data |
-| Folder browse | `FolderScreen` — grid of subfolders and items |
-| Library Manager | `LibraryManagerScreen` — library roots, scoped rescan |
-| Global search | `SearchScreen` — title/filename across catalogue |
-| Artwork | `ArtworkService`, `ArtworkImage`, sidecar rules, placeholders |
-| Cards | `LibraryCard`, `TtsMediaCard`, `TtsFolderCard` |
-| Item detail | `ItemDetailScreen` — metadata, Play gate via `MediaItemStatus.isPlayable` |
-| Continue Watching | `ContinueWatchingSection` — playback history driven |
-| Recently Added | `RecentlyAddedSection` — indexer `added_at` field |
-| Featured Folders | Catalogue-driven ranking |
-| Item status model | `available`, `unavailable`, `missing`, etc. |
+| Dashboard | `DashboardScreen` — root; `RouteAware` refresh |
+| Folder browse | `FolderScreen` — live `folderPath` resolution; subfolders + items grids |
+| Library Manager | `LibraryManagerScreen` — catalogue ops (not browsing) |
+| Global Search | `SearchScreen` — in-memory index, score-ranked results |
+| Item detail | `ItemDetailScreen` — Play via `MediaItemStatus.isPlayable` |
+| Navigation | Imperative `Navigator` pushes; `TtsAppBar` back + Home |
 
-**Not in baseline:** in-folder sort/filter controls, favourites, breadcrumbs, unified empty-state patterns across all browse surfaces.
+### Dashboard sections (catalogue-driven)
 
-**Runtime artwork cache (2026-07-12):** `ArtworkService` caches sidecar discovery per item. Successful catalogue replacement (scan, rescan, or reload) clears that cache via `CatalogService.onCatalogReplaced` so new poster files beside existing items appear without restarting the app. A broader cache and invalidation strategy remains planned for Phase 4.5.
+| Section | Data source | Notes |
+|---|---|---|
+| Libraries | `catalog.libraryFolders` | `LibraryCard` grid |
+| Continue Watching | `PlaybackService` + catalogue | Max 8; sort by saved position |
+| Recently Added | `MediaItem.addedAt` | Max 12; newest first |
+| Featured Folders | `catalog.featuredFolders()` | Max 8; by `totalItems` |
 
----
+### Folder browse today
 
-## M4 goals
+- **No** breadcrumbs, sort, or filter controls.
+- Subfolders and items in **indexer emission order**.
+- Empty folder and missing-folder states exist.
+- Hardcoded "Subfolders" section label (structural, not a media category).
 
-- **Sorting and filtering** within folder context (name, date added, etc.)
-- **Search refinement** — scope, type hints, clearer result actions
-- **Favourites** — user-curated list stored in app state (labelled as app state, not a folder)
-- **Continue Watching / Recently Added** UX polish
-- **Breadcrumbs** for deep folder navigation
-- **Empty and error states** with recovery actions everywhere in browse flow
-- **Consistent artwork** presentation across dashboard, folder, and search
+### Global Search today
 
----
+- `SearchService` — token match + scoring; max 100 results.
+- `SearchFilters` — library name + extension chips.
+- Flat result list; "Browse folder" and item open actions.
+- Recent queries — session memory only (max 5).
 
-## Proposed responsibilities
+### Artwork
 
-| Component | M4.3 role |
+`ArtworkService` — thumbnail → sidecar → folder art → placeholder. Cache cleared on catalogue replace. Consistent across dashboard, folder, search, detail.
+
+### Persistence (relevant to 4.3)
+
+| Data | Store |
 |---|---|
-| `FolderScreen` | Sort/filter controls; breadcrumbs |
-| `SearchScreen` | Refined filters and result presentation |
-| Favourites store | New app-state service (not filesystem) |
-| Dashboard sections | Polish layout; no new virtual sections |
-| `CatalogService` | Unchanged schema; client-side sort/filter only |
+| Configuration | `SettingsRepository` (`ttsplayer_settings_v1`) |
+| Playback progress | `PlaybackService` (`position_*`, `duration_*`) |
+| Catalogue runtime | `CatalogService` (`catalog_path`, etc.) |
+| Favourites | **Does not exist** |
+
+### Provider + settings (unchanged by 4.3)
+
+Phase 4.1 Provider Status and Phase 4.2 grouped settings remain separate from library browse polish.
 
 ---
 
-## Data / state considerations
+## M4.3 target architecture (from spec + ADRs)
 
-- Sort/filter preferences may link to [settings.md](./settings.md) defaults
-- Favourites: list of `MediaItem.id` + optional folder bookmarks — versioned prefs or small JSON blob
-- Filesystem order remains indexer default when user selects "default order"
+| Component | Role |
+|---|---|
+| `Catalog.ancestorChainForFolder` | Catalogue-driven breadcrumbs |
+| `LibraryMetadataRepository` | Favourites + future user metadata (ADR-007) |
+| `SettingsRepository.general.libraryBrowse` | Global default sort only (ADR-008) |
+| Folder sort/filter helpers | Client-side, non-destructive (ADR-008) |
+| `FolderScreen` | Breadcrumbs + sort/filter controls |
+| Dashboard Favourites section | Resolved favourites — app state, not a folder |
+| `SearchScreen` | Presentation polish — grouping, clear, keyboard |
+
+---
+
+## Sort and filter (proposed)
+
+See [ADR-008](./decisions/ADR-008-library-sorting-and-filtering.md).
+
+- **Sort:** default (indexer), name asc/desc, added newest/oldest, type — folder-first layout preserved.
+- **Filter:** all, folders only, video, images — session-scoped, current folder only.
+- **No** modified-date sort — field not in catalogue.
+- **No** audio/book filters — not indexed.
+
+---
+
+## Favourites (proposed)
+
+See [ADR-007](./decisions/ADR-007-library-metadata-and-favourites.md).
+
+- Stored at `ttsplayer_library_metadata_v1` — **not** in settings envelope or `catalog.json`.
+- Identity: catalogue `id` for items and folders.
+- Prune absent ids on **catalogue replacement** only (not mid-navigation); notify listeners once.
+- Dashboard section: first 10 + View all; toggles on item/folder surfaces.
+
+---
+
+## Navigation (proposed)
+
+See [ADR-009](./decisions/ADR-009-library-navigation-and-breadcrumbs.md).
+
+- Breadcrumbs from **catalogue hierarchy** — `MediaFolder.name` labels.
+- Consistent back/home from dashboard, search, favourites, and deep folders.
+- No persisted route stack in 4.3.
+
+---
+
+## Deferred to later phases
+
+| Item | Phase |
+|---|---|
+| Search index performance / pagination | 4.5 |
+| Artwork cache strategy (full) | 4.5 |
+| Diagnostics detail, log export | 4.6 |
+| Playback prefs UI | 4.4 |
+| Ratings, tags, hidden state UI | Post–4.3 |
+| Persisted search history, per-folder sort memory | Post–4.3 (open decision) |
 
 ---
 
 ## Failure handling
 
-- Empty folder: valid state with guidance (rescan, navigate up)
-- Missing artwork: placeholder — never hide item
-- Search with no results: suggest broader query or check catalogue source
+- Empty folder / empty filter / no search results — distinct copy and recovery actions.
+- Missing artwork — placeholder (never hide item).
+- Missing favourite after rescan — silent prune.
+- Catalogue/provider errors — direct to Provider Status (4.1), not 4.6 diagnostics.
 
 ---
 
 ## Testing considerations
 
-- Widget tests for sort order and breadcrumb trail
-- Favourites add/remove/list round-trip
-- Regression: folder names from data only — no hardcoded section headers
-
----
-
-## Open decisions
-
-1. **Favourites model** — items only vs folder bookmarks vs both?
-2. **Sort scope** — per-folder memory vs global default?
-3. **Filter dimensions** — status, extension, playable-only?
+- Validation L1–L18 in [Phase 4.3 spec](../roadmap/m4-phase-4.3-library-experience.md#validation-scenarios)
+- Regression: folder names from data only; no hardcoded category section headers beyond structural "Subfolders"
+- Opt-in Windows runtime harness at closure
 
 ---
 
 ## Out of scope
 
-- Virtual "All Movies" libraries
-- TMDB metadata enrichment
-- Image viewer / rich media libraries ([superseded draft](../roadmap/m4-rich-media-libraries.md))
+- Virtual libraries aggregating across folders
+- Filesystem modification
+- TMDB metadata
+- Image-library viewer ([superseded draft](../roadmap/m4-rich-media-libraries.md))
 
 ---
 
 ## Related documents
 
+- [M4 Phase 4.3 implementation spec](../roadmap/m4-phase-4.3-library-experience.md)
 - [settings.md](./settings.md)
-- [Catalogue principle](../../.cursor/rules/catalogue-principle.mdc)
+- [M3 library experience](../roadmap/m3-library-experience.md)

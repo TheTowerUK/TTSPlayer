@@ -1,6 +1,6 @@
 # M4 — User Experience and Platform Integration
 
-**Status:** Active development (`v0.5.0-dev`) — Phase 4.2 complete; **Phase 4.3 planning**  
+**Status:** Active development (`v0.5.0-dev`) — Phase 4.2 complete; **Phase 4.3 specification in progress**  
 **Branch:** `m4-development`  
 **Development version:** `v0.5.0-dev`  
 **Predecessor:** M3.5 Media Access Platform  
@@ -53,7 +53,7 @@ Implement in order unless a documented dependency allows parallel documentation 
 |---|---|---|
 | **4.1** | Provider Management | ✅ Complete (2026-07-12) |
 | **4.2** | Settings Framework | ✅ Complete (2026-07-12) |
-| **4.3** | Library Experience | 📋 Planning |
+| **4.3** | Library Experience | 📋 Spec proposed — [implementation spec](./m4-phase-4.3-library-experience.md) · ADR-007–009 Proposed |
 | **4.4** | Playback Improvements | Planned |
 | **4.5** | Performance and Caching | Planned |
 | **4.6** | Diagnostics and Supportability | Planned |
@@ -196,10 +196,12 @@ M3.5 implemented provider configuration, local/HTTP catalogue loading, startup s
 
 **Documentation outputs:**
 
-- Update [library.md](../architecture/library.md)
-- Note any ADR for favourites storage model
+- [Phase 4.3 implementation specification](./m4-phase-4.3-library-experience.md)
+- Update [library.md](../architecture/library.md) from planning → accepted at phase close
+- [ADR-007](../architecture/decisions/ADR-007-library-metadata-and-favourites.md), [ADR-008](../architecture/decisions/ADR-008-library-sorting-and-filtering.md), [ADR-009](../architecture/decisions/ADR-009-library-navigation-and-breadcrumbs.md)
 
-→ Architecture: [library.md](../architecture/library.md)
+→ Architecture: [library.md](../architecture/library.md)  
+→ Specification: [m4-phase-4.3-library-experience.md](./m4-phase-4.3-library-experience.md)
 
 ---
 

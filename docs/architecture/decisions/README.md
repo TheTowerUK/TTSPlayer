@@ -73,6 +73,9 @@ Every ADR must include these headings (use [ADR-template.md](./ADR-template.md))
 | [ADR-004](./ADR-004-settings-storage-and-versioning.md) | Settings Storage and Versioning | Accepted |
 | [ADR-005](./ADR-005-settings-information-architecture.md) | Settings Information Architecture | Accepted |
 | [ADR-006](./ADR-006-settings-validation-and-apply-behaviour.md) | Settings Validation and Apply Behaviour | Accepted |
+| [ADR-007](./ADR-007-library-metadata-and-favourites.md) | Library Metadata and Favourites | Proposed |
+| [ADR-008](./ADR-008-library-sorting-and-filtering.md) | Library Sorting and Filtering | Proposed |
+| [ADR-009](./ADR-009-library-navigation-and-breadcrumbs.md) | Library Navigation and Breadcrumbs | Proposed |
 
 ---
 
