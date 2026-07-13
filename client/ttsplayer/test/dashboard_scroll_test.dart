@@ -10,6 +10,7 @@ import 'package:ttsplayer/navigation/app_navigator.dart';
 import 'package:ttsplayer/services/artwork/artwork_service.dart';
 import 'package:ttsplayer/services/catalog_service.dart';
 import 'package:ttsplayer/services/media_access/media_provider_config.dart';
+import 'package:ttsplayer/services/library/library_metadata_repository.dart';
 import 'package:ttsplayer/services/media_access/media_provider_config_service.dart';
 import 'package:ttsplayer/services/media_access/media_location_resolver.dart';
 import 'package:ttsplayer/services/playback_service.dart';
@@ -77,6 +78,9 @@ Widget _dashboardHarness(Catalog catalog) {
   return MultiProvider(
     providers: [
       ChangeNotifierProvider(create: (_) => MediaProviderConfigService()),
+      ChangeNotifierProvider(
+        create: (_) => LibraryMetadataRepository()..initialize(),
+      ),
       Provider(
         create: (context) => MediaLocationResolver(
           config: context.read<MediaProviderConfigService>().mediaAccess,
@@ -116,12 +120,49 @@ void main() {
       'duration_item-videos': 3600,
     });
 
+    final metadataRepository = LibraryMetadataRepository();
+    await metadataRepository.initialize();
+
     tester.view.physicalSize = const Size(900, 420);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(_dashboardHarness(_tallDashboardCatalog()));
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => MediaProviderConfigService()),
+          ChangeNotifierProvider<LibraryMetadataRepository>.value(
+            value: metadataRepository,
+          ),
+          Provider(
+            create: (context) => MediaLocationResolver(
+              config: context.read<MediaProviderConfigService>().mediaAccess,
+              isWindowsDesktop: false,
+            ),
+          ),
+          Provider(create: (_) => ArtworkService(fileExists: (_) => false)),
+          ChangeNotifierProvider<CatalogService>.value(
+            value: _FakeCatalogService(_tallDashboardCatalog()),
+          ),
+          ChangeNotifierProvider(
+            create: (context) => PlaybackService(
+              mediaLocationResolver: context.read<MediaLocationResolver>(),
+            ),
+          ),
+          ChangeNotifierProvider(create: (_) => ScannerService()),
+          ChangeNotifierProvider<ScanHistoryService>.value(
+            value: _FakeScanHistoryService(),
+          ),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.dark,
+          navigatorKey: rootNavigatorKey,
+          navigatorObservers: [routeObserver],
+          home: const DashboardScreen(),
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);

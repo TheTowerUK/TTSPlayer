@@ -1,6 +1,6 @@
 # Library Experience (M4 Phase 4.3)
 
-**Status:** Specification **Accepted** (2026-07-13) — Steps 1–3 implemented; no browse UI yet  
+**Status:** Specification **Accepted** (2026-07-13) — Steps 1–4 implemented; browse controls (sort/filter/breadcrumbs) pending  
 **Related roadmap phase:** [M4 Phase 4.3 — Library Experience](../roadmap/m4-plan.md#phase-43--library-experience)
 
 → [Phase 4.3 implementation spec](../roadmap/m4-phase-4.3-library-experience.md)  
@@ -91,6 +91,8 @@ Phase 4.1 Provider Status and Phase 4.2 grouped settings remain separate from li
 | `Catalog.parentFolderOfItemId` | Containing-folder lookup without path parsing |
 | `SettingsRepository.general.libraryBrowse` | Global default sort only (ADR-008) — **Step 3 implemented** |
 | `buildLibraryFolderView` | Pure folder-first sort/filter derived views (ADR-008) — **Step 3 implemented** |
+| Dashboard Favourites section | First 10 resolved + View all — **Step 4 implemented** |
+| `FavouritesScreen` | Full favourites list — **Step 4 implemented** |
 | `LibraryMetadataRepository` | Favourites persistence — **Step 1 implemented** (ADR-007) |
 | `FolderScreen` | Breadcrumbs + sort/filter controls |
 | Dashboard Favourites section | Resolved favourites — app state, not a folder |

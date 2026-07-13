@@ -1,6 +1,6 @@
 # M4 Phase 4.3 — Library Experience (Implementation Specification)
 
-**Status:** Specification — **Accepted** (2026-07-13) · Steps 1–3 **implemented** · Phase **not complete**  
+**Status:** Specification — **Accepted** (2026-07-13) · Steps 1–4 **implemented** · Phase **not complete**  
 **Milestone:** M4 — User Experience and Platform Integration  
 **Branch:** `m4-development`  
 **Development version:** `v0.5.0-dev`  
@@ -438,7 +438,7 @@ Mirrors Phase 4.2: **persistence and tests before UI**. UI layers consume reposi
 
 ### Phase C — UI consumers
 
-6. **Favourites UI** — dashboard section (first 10 + View all), item/folder toggles; consumes `LibraryMetadataRepository`.
+6. ~~**Favourites UI**~~ *(implemented 2026-07-13)* — dashboard section (first 10 + View all), item/folder toggles; consumes `LibraryMetadataRepository`.
 
 7. **Breadcrumbs** — widget + `FolderScreen` integration (ADR-009).
 
@@ -484,6 +484,17 @@ Mirrors Phase 4.2: **persistence and tests before UI**. UI layers consume reposi
 - Video/image filters retain subfolders (ADR-008).
 - Tests: `settings_repository_test.dart` (library browse group), `library_sort_filter_test.dart`.
 - No FolderScreen UI, sort/filter controls, or favourites UI in this step.
+
+### Implementation notes — Step 4 (2026-07-13)
+
+- `FavouriteToggleButton`, `FavouriteItemToggle`, `FavouriteFolderToggle` — reusable controls with semantics/tooltips.
+- Item detail: star in `TtsAppBar.extraActions`.
+- Folder screen: favourite toggle in overflow menu; subfolder/item cards use compact overlay toggles.
+- `FavouritesSection` — dashboard carousel, max 10, omitted when empty; **View all** → `FavouritesScreen`.
+- `resolveFavourites` merges folder + item records by `favouritedAt` desc (ADR-007).
+- Navigation via `findFolderById` / `findItemById`; no catalogue mutation.
+- Tests: `favourites_ui_test.dart` (25 scenarios).
+- No breadcrumbs, sort/filter UI, or search changes.
 
 ---
 
@@ -536,7 +547,7 @@ Closure harness scenarios **L1–L18** (Windows + automated). Spec persistence s
 - [x] `SettingsRepository` stores global default sort mode only (no favourites)
 - [ ] `FolderScreen` breadcrumbs catalogue-driven per ADR-009
 - [ ] Sort and filter controls per ADR-008; folder-first preserved
-- [ ] Dashboard Favourites section; toggle on item and folder
+- [x] Dashboard Favourites section; toggle on item and folder
 - [ ] Search presentation improvements without engine rewrite
 - [ ] Empty/loading/error states per table above
 - [ ] Continue Watching, Recently Added, Featured Folders, Provider Status **unchanged in behaviour**

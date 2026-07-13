@@ -24,6 +24,7 @@ import 'widgets/libraries_section.dart';
 import 'widgets/recent_activity_section.dart';
 import 'widgets/dashboard_overview_panel.dart';
 import 'widgets/featured_folders_section.dart';
+import 'widgets/favourites_section.dart';
 import 'widgets/recently_added_section.dart';
 import 'widgets/provider_status_section.dart';
 
@@ -328,6 +329,8 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
                           ContinueWatchingSection(
                             entries: data.continueWatching,
                           ),
+                          const SizedBox(height: AppSpacing.section),
+                          FavouritesSection(catalog: data.catalog),
                           const SizedBox(height: AppSpacing.section),
                           RecentlyAddedSection(entries: data.recentlyAdded),
                           const SizedBox(height: AppSpacing.section),
