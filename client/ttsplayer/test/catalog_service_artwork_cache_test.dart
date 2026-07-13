@@ -57,7 +57,7 @@ void main() {
     );
 
     final service = CatalogService(
-      onCatalogReplaced: () => replaced++,
+      onCatalogReplaced: (_) => replaced++,
     );
 
     await service.loadFromFile(catalogFile.path);
@@ -69,7 +69,7 @@ void main() {
   test('onCatalogReplaced does not run when catalogue load fails', () async {
     var replaced = 0;
     final service = CatalogService(
-      onCatalogReplaced: () => replaced++,
+      onCatalogReplaced: (_) => replaced++,
     );
 
     await service.loadFromFile('${tempDir.path}/missing.json');
@@ -91,7 +91,7 @@ void main() {
 
     final service = CatalogService(
       httpClient: client,
-      onCatalogReplaced: () => replaced++,
+      onCatalogReplaced: (_) => replaced++,
     )..includeLegacyCataloguePaths = false;
 
     await service.loadOnStartup(
@@ -117,7 +117,7 @@ void main() {
     );
 
     final service = CatalogService(
-      onCatalogReplaced: () => replaced++,
+      onCatalogReplaced: (_) => replaced++,
     )..includeLegacyCataloguePaths = false;
 
     await service.loadOnStartup(

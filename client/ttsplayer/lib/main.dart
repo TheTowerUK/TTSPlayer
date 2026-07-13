@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -11,6 +12,7 @@ import 'services/artwork/artwork_service.dart';
 import 'services/catalog_service.dart';
 import 'services/media_access/media_provider_config_service.dart';
 import 'services/media_access/media_location_resolver.dart';
+import 'services/library/library_metadata_repository.dart';
 import 'services/settings/settings_repository.dart';
 import 'services/playback_service.dart';
 import 'services/scan_history_service.dart';
@@ -37,6 +39,17 @@ Future<void> main() async {
     isWindowsDesktop: isWindowsDesktop,
   );
 
+  final libraryMetadataRepository = LibraryMetadataRepository();
+  await libraryMetadataRepository.initialize();
+
+  final catalogService = CatalogService(
+    settingsRepository: settingsRepository,
+    onCatalogReplaced: (catalog) {
+      artworkService.clearCache();
+      unawaited(libraryMetadataRepository.validateAgainstCatalog(catalog));
+    },
+  );
+
   runApp(
     MultiProvider(
       providers: [
@@ -46,13 +59,13 @@ Future<void> main() async {
         ChangeNotifierProvider<SettingsRepository>.value(
           value: settingsRepository,
         ),
+        ChangeNotifierProvider<LibraryMetadataRepository>.value(
+          value: libraryMetadataRepository,
+        ),
         Provider<MediaLocationResolver>.value(value: mediaLocationResolver),
         Provider<ArtworkService>.value(value: artworkService),
-        ChangeNotifierProvider(
-          create: (context) => CatalogService(
-            settingsRepository: settingsRepository,
-            onCatalogReplaced: artworkService.clearCache,
-          ),
+        ChangeNotifierProvider<CatalogService>.value(
+          value: catalogService,
         ),
         ChangeNotifierProvider(
           create: (_) => PlaybackService(

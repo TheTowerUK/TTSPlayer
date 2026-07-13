@@ -1,6 +1,6 @@
 # M4 Phase 4.3 — Library Experience (Implementation Specification)
 
-**Status:** Specification — **Accepted** (2026-07-13) · Implementation **not started**  
+**Status:** Specification — **Accepted** (2026-07-13) · Step 1 **implemented** · Phase **not complete**  
 **Milestone:** M4 — User Experience and Platform Integration  
 **Branch:** `m4-development`  
 **Development version:** `v0.5.0-dev`  
@@ -425,9 +425,9 @@ Mirrors Phase 4.2: **persistence and tests before UI**. UI layers consume reposi
 
 ### Phase B — Persistence and domain (no UI)
 
-2. **Step 1 — `LibraryMetadataRepository`** *(first implementation commit)*  
+2. ~~**Step 1 — `LibraryMetadataRepository`**~~ *(implemented 2026-07-13)*  
    Metadata model, favourite load/save, `validateAgainstCatalog` on catalogue replacement, corrupt JSON recovery, repository unit tests.  
-   **Deliverables:** `LibraryMetadataRepository`, `library_metadata` model, `library_metadata_repository_test.dart`.  
+   **Deliverables:** `library_metadata.dart`, `library_metadata_repository.dart`, `library_metadata_repository_test.dart`; `CatalogService` `onCatalogReplaced(Catalog)` wiring in `main.dart`.  
    **Excluded:** UI, breadcrumbs, sort, filter, search, catalog navigation helpers.
 
 3. **Catalog helper extensions** — `ancestorChainForFolder`, `findFolderById` (pure Dart; read-only over `Catalog`).
@@ -458,7 +458,15 @@ Mirrors Phase 4.2: **persistence and tests before UI**. UI layers consume reposi
 
 **Commit cadence (suggested):** Step 1 repository → catalog helpers → sort/filter pure functions → favourites UI → breadcrumbs → sort UI → filter UI → search polish → closure docs.
 
-### Step 1 scope boundary (strict)
+### Implementation notes — Step 1 (2026-07-13)
+
+- `LibraryMetadataRepository` at `lib/services/library/library_metadata_repository.dart`; model at `lib/models/library_metadata.dart`.
+- Storage key `ttsplayer_library_metadata_v1`; separate item and folder favourite lists (ADR-007).
+- `CatalogService.onCatalogReplaced` now receives the replaced `Catalog`; `main.dart` composes artwork cache clear + `validateAgainstCatalog`.
+- Prune runs only via explicit `validateAgainstCatalog` after successful replacement — not on navigation.
+- No UI, sort, filter, or breadcrumb work in this step.
+
+---
 
 The first implementation prompt must deliver **only**:
 
@@ -505,7 +513,7 @@ Closure harness scenarios **L1–L18** (Windows + automated). Spec persistence s
 ## Definition of done
 
 - [x] ADR-007, ADR-008, ADR-009 reviewed and **Accepted** (2026-07-13)
-- [ ] `LibraryMetadataRepository` with versioned favourites persistence and prune-on-load
+- [x] `LibraryMetadataRepository` with versioned favourites persistence and prune-on-replacement
 - [ ] `SettingsRepository` stores global default sort mode only (no favourites)
 - [ ] `FolderScreen` breadcrumbs catalogue-driven per ADR-009
 - [ ] Sort and filter controls per ADR-008; folder-first preserved

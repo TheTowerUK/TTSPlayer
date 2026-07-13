@@ -53,7 +53,7 @@ Implement in order unless a documented dependency allows parallel documentation 
 |---|---|---|
 | **4.1** | Provider Management | ✅ Complete (2026-07-12) |
 | **4.2** | Settings Framework | ✅ Complete (2026-07-12) |
-| **4.3** | Library Experience | 📋 Spec accepted — [implementation spec](./m4-phase-4.3-library-experience.md) · ADR-007–009 Accepted |
+| **4.3** | Library Experience | 🔄 Step 1 — metadata repository implemented |
 | **4.4** | Playback Improvements | Planned |
 | **4.5** | Performance and Caching | Planned |
 | **4.6** | Diagnostics and Supportability | Planned |

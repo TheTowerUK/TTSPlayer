@@ -154,7 +154,7 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       var cacheClears = 0;
       final service = CatalogService(
-        onCatalogReplaced: () => cacheClears++,
+        onCatalogReplaced: (_) => cacheClears++,
       )..includeLegacyCataloguePaths = false;
 
       await service.loadOnStartup(
@@ -306,7 +306,7 @@ void main() {
       var cacheClears = 0;
       final artwork = ArtworkService(fileExists: (path) => File(path).existsSync());
       final service = CatalogService(
-        onCatalogReplaced: () {
+        onCatalogReplaced: (_) {
           cacheClears++;
           artwork.clearCache();
         },

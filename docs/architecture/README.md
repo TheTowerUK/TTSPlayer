@@ -46,6 +46,7 @@ Significant cross-layer decisions are recorded as ADRs:
 | CatalogService | `client/ttsplayer/lib/services/catalog_service.dart` | Loads catalogue; HTTP and local providers; fallback |
 | MediaProviderConfigService | `client/ttsplayer/lib/services/media_access/` | Persisted provider configuration (M3.5; dual-write transition in 4.2) |
 | SettingsRepository | `client/ttsplayer/lib/services/settings/` | Versioned settings envelope (M4.2) |
+| LibraryMetadataRepository | `client/ttsplayer/lib/services/library/` | Versioned user library metadata (M4.3 Step 1) |
 | MediaLocationResolver | `client/ttsplayer/lib/services/media_access/` | Resolves catalogue paths → playable URI |
 | Caddy config | `backend/caddy.config` | HTTPS static file server (M3.5 reference) |
 | ScannerService | `client/ttsplayer/lib/services/scanner_service.dart` | Runs indexer subprocess |

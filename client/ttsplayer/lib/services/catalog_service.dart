@@ -21,12 +21,15 @@ import 'settings/settings_repository.dart';
 /// Source from which the catalog is loaded.
 enum CatalogSource { bundled, localFile, remoteUrl }
 
+/// Invoked after a catalogue is successfully replaced in memory.
+typedef CatalogReplacedCallback = void Function(Catalog catalog);
+
 class CatalogService extends ChangeNotifier {
   CatalogService({
     http.Client? httpClient,
     SettingsRepository? settingsRepository,
     Duration? catalogFetchTimeout,
-    VoidCallback? onCatalogReplaced,
+    CatalogReplacedCallback? onCatalogReplaced,
   })  : _httpClient = httpClient ?? http.Client(),
         _settingsRepository = settingsRepository,
         _catalogFetchTimeoutOverride = catalogFetchTimeout,
@@ -37,7 +40,7 @@ class CatalogService extends ChangeNotifier {
 
   /// Test-only override; production uses [SettingsRepository.networkSettings].
   final Duration? _catalogFetchTimeoutOverride;
-  final VoidCallback? _onCatalogReplaced;
+  final CatalogReplacedCallback? _onCatalogReplaced;
 
   /// Default bounded timeout when no [SettingsRepository] is attached.
   static Duration get catalogFetchTimeoutDefault => const Duration(
@@ -468,7 +471,11 @@ class CatalogService extends ChangeNotifier {
   /// Sidecar artwork is resolved at runtime and cached in [ArtworkService].
   /// Clear that cache whenever a new catalogue revision is loaded so rescans
   /// and reloads can pick up new poster files beside existing items.
-  void _notifyCatalogReplaced() => _onCatalogReplaced?.call();
+  void _notifyCatalogReplaced() {
+    final catalog = _catalog;
+    if (catalog == null) return;
+    _onCatalogReplaced?.call(catalog);
+  }
 
   /// Tries configured catalogue providers in priority order.
   Future<_ProviderCatalogueAttempt> _tryProviderCatalogue(

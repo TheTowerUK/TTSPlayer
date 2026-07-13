@@ -75,7 +75,7 @@ Sprint checkpoints: `m3-sprint-3`, `m3-complete`. Sprint 4 delivered Featured Fo
 |---|---|---|
 | **4.1** | Provider Management | ✅ Complete (2026-07-12) |
 | **4.2** | Settings Framework | ✅ Complete (2026-07-12) |
-| **4.3** | Library Experience | 📋 Spec accepted — implementation not started |
+| **4.3** | Library Experience | 🔄 Step 1 implemented |
 
 ### Focus
 
