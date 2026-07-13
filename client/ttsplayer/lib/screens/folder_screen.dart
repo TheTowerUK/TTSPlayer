@@ -6,6 +6,8 @@ import '../models/media_item.dart';
 import '../services/catalog_service.dart';
 import '../services/scanner_service.dart';
 import '../theme/app_theme.dart';
+import '../services/library/library_metadata_repository.dart';
+import '../widgets/favourite_toggle_button.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/loading_card.dart';
 import '../widgets/scan_progress_dialog.dart';
@@ -52,7 +54,7 @@ class FolderScreen extends StatelessWidget {
         return Scaffold(
           appBar: TtsAppBar(
             title: folder.name,
-            extraActions: [_FolderActionsMenu(folderPath: folder.path)],
+            extraActions: [_FolderActionsMenu(folder: folder)],
           ),
           body: folder.isEmpty
               ? const EmptyState(
@@ -114,32 +116,60 @@ class _FolderMissingBody extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _FolderActionsMenu extends StatelessWidget {
-  final String folderPath;
+  final MediaFolder folder;
 
-  const _FolderActionsMenu({required this.folderPath});
+  const _FolderActionsMenu({required this.folder});
 
   @override
   Widget build(BuildContext context) {
-    return PopupMenuButton<String>(
-      icon: const Icon(Icons.more_vert),
-      tooltip: 'Folder actions',
-      onSelected: (value) {
-        if (value == 'rescan') _startLibraryScan(context);
+    return Consumer<LibraryMetadataRepository>(
+      builder: (context, repository, _) {
+        final favourited = repository.isFolderFavourited(folder.id);
+        return PopupMenuButton<String>(
+          icon: const Icon(Icons.more_vert),
+          tooltip: 'Folder actions',
+          onSelected: (value) {
+            if (value == 'favourite') {
+              repository.toggleFolderFavourite(folder.id);
+            } else if (value == 'rescan') {
+              _startLibraryScan(context);
+            }
+          },
+          itemBuilder: (_) => [
+            PopupMenuItem(
+              value: 'favourite',
+              child: Row(
+                children: [
+                  Icon(
+                    favourited ? Icons.star : Icons.star_border,
+                    size: AppIcons.md,
+                    color: favourited ? AppColors.primary : AppColors.textHigh,
+                  ),
+                  const SizedBox(width: AppSpacing.iconGap),
+                  Text(
+                    favourited
+                        ? 'Remove from favourites'
+                        : 'Add to favourites',
+                    style: const TextStyle(color: AppColors.textHigh),
+                  ),
+                ],
+              ),
+            ),
+            const PopupMenuItem(
+              value: 'rescan',
+              child: Row(
+                children: [
+                  Icon(Icons.refresh_outlined,
+                      size: AppIcons.md, color: AppColors.textHigh),
+                  SizedBox(width: AppSpacing.iconGap),
+                  Text('Rescan this folder',
+                      style: TextStyle(color: AppColors.textHigh)),
+                ],
+              ),
+            ),
+          ],
+        );
       },
-      itemBuilder: (_) => [
-        const PopupMenuItem(
-          value: 'rescan',
-          child: Row(
-            children: [
-              Icon(Icons.refresh_outlined,
-                  size: AppIcons.md, color: AppColors.textHigh),
-              SizedBox(width: AppSpacing.iconGap),
-              Text('Rescan this folder',
-                  style: TextStyle(color: AppColors.textHigh)),
-            ],
-          ),
-        ),
-      ],
     );
   }
 
@@ -156,7 +186,7 @@ class _FolderActionsMenu extends StatelessWidget {
       ),
     );
 
-    scannerService.runLibraryScan(folderPath, catalogService);
+    scannerService.runLibraryScan(folder.path, catalogService);
   }
 }
 
@@ -184,6 +214,10 @@ class _FolderContent extends StatelessWidget {
                   final sub = folder.subfolders[index];
                   return TtsFolderCard(
                     folder: sub,
+                    topLeftOverlay: FavouriteFolderToggle(
+                      folderId: sub.id,
+                      compact: true,
+                    ),
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -219,6 +253,10 @@ class _FolderContent extends StatelessWidget {
                   return TtsMediaCard(
                     item: item,
                     parentFolder: folder,
+                    topLeftOverlay: FavouriteItemToggle(
+                      itemId: item.id,
+                      compact: true,
+                    ),
                     onTap: () => _openDetail(context, item),
                   );
                 },

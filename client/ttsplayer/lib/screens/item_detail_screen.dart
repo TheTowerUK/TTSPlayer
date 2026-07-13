@@ -6,6 +6,7 @@ import '../services/artwork/artwork_service.dart';
 import '../services/playback_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/artwork/artwork_image.dart';
+import '../widgets/favourite_toggle_button.dart';
 import '../widgets/tts_app_bar.dart';
 import 'player_screen.dart';
 
@@ -18,7 +19,12 @@ class ItemDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: TtsAppBar(title: item.title),
+      appBar: TtsAppBar(
+        title: item.title,
+        extraActions: [
+          FavouriteItemToggle(itemId: item.id),
+        ],
+      ),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

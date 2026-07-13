@@ -5,6 +5,7 @@ import 'package:ttsplayer/models/catalog.dart';
 import 'package:ttsplayer/models/media_folder.dart';
 import 'package:ttsplayer/screens/folder_screen.dart';
 import 'package:ttsplayer/services/catalog_service.dart';
+import 'package:ttsplayer/services/library/library_metadata_repository.dart';
 import 'package:ttsplayer/theme/app_theme.dart';
 
 class _FakeCatalogService extends CatalogService {
@@ -25,14 +26,21 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.dark,
-        home: ChangeNotifierProvider<CatalogService>.value(
-          value: _FakeCatalogService(
-            Catalog.fromJson({
-              'generated_at': '2026-07-03T00:00:00+00:00',
-              'total_items': 0,
-              'folders': const [],
-            }),
-          ),
+        home: MultiProvider(
+          providers: [
+            ChangeNotifierProvider(
+              create: (_) => LibraryMetadataRepository()..initialize(),
+            ),
+            ChangeNotifierProvider<CatalogService>.value(
+              value: _FakeCatalogService(
+                Catalog.fromJson({
+                  'generated_at': '2026-07-03T00:00:00+00:00',
+                  'total_items': 0,
+                  'folders': const [],
+                }),
+              ),
+            ),
+          ],
           child: const FolderScreen(
             folderPath: r'Y:\Media\Videos\Removed',
             folderName: 'Removed',
@@ -66,8 +74,15 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.dark,
-        home: ChangeNotifierProvider<CatalogService>.value(
-          value: _FakeCatalogService(catalog),
+        home: MultiProvider(
+          providers: [
+            ChangeNotifierProvider(
+              create: (_) => LibraryMetadataRepository()..initialize(),
+            ),
+            ChangeNotifierProvider<CatalogService>.value(
+              value: _FakeCatalogService(catalog),
+            ),
+          ],
           child: const FolderScreen(
             folderPath: r'Y:\Media\Videos',
             folderName: 'Videos',

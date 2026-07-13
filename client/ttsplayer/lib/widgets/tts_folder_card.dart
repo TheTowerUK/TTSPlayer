@@ -12,10 +12,14 @@ class TtsFolderCard extends StatefulWidget {
   final MediaFolder folder;
   final VoidCallback onTap;
 
+  /// Optional overlay placed top-left on artwork (e.g. favourite toggle).
+  final Widget? topLeftOverlay;
+
   const TtsFolderCard({
     super.key,
     required this.folder,
     required this.onTap,
+    this.topLeftOverlay,
   });
 
   @override
@@ -67,9 +71,20 @@ class _TtsFolderCardState extends State<TtsFolderCard> {
                         width: constraints.maxWidth,
                         maxHeight: constraints.maxHeight,
                       ),
-                      child: CardArtworkBand(
-                        candidate: candidate,
-                        iconSize: AppIcons.folder,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          CardArtworkBand(
+                            candidate: candidate,
+                            iconSize: AppIcons.folder,
+                          ),
+                          if (widget.topLeftOverlay != null)
+                            Positioned(
+                              top: AppSpacing.xs,
+                              left: AppSpacing.xs,
+                              child: widget.topLeftOverlay!,
+                            ),
+                        ],
                       ),
                     ),
                     Expanded(

@@ -16,11 +16,15 @@ class TtsMediaCard extends StatefulWidget {
   final VoidCallback onTap;
   final MediaFolder? parentFolder;
 
+  /// Optional overlay placed top-left on artwork (e.g. favourite toggle).
+  final Widget? topLeftOverlay;
+
   const TtsMediaCard({
     super.key,
     required this.item,
     required this.onTap,
     this.parentFolder,
+    this.topLeftOverlay,
   });
 
   @override
@@ -81,6 +85,12 @@ class _TtsMediaCardState extends State<TtsMediaCard> {
                           top: AppSpacing.sm,
                           right: AppSpacing.sm,
                           child: _StatusBadge(status: widget.item.status),
+                        ),
+                      if (widget.topLeftOverlay != null)
+                        Positioned(
+                          top: AppSpacing.xs,
+                          left: AppSpacing.xs,
+                          child: widget.topLeftOverlay!,
                         ),
                     ],
                   ),
