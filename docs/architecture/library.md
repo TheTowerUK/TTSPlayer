@@ -1,6 +1,6 @@
 # Library Experience (M4 Phase 4.3)
 
-**Status:** Specification **Accepted** (2026-07-13) — Steps 1–5 implemented; sort/filter controls pending  
+**Status:** Specification **Accepted** (2026-07-13) — Steps 1–6 implemented; search polish and closure pending  
 **Related roadmap phase:** [M4 Phase 4.3 — Library Experience](../roadmap/m4-plan.md#phase-43--library-experience)
 
 → [Phase 4.3 implementation spec](../roadmap/m4-phase-4.3-library-experience.md)  
@@ -52,8 +52,8 @@ Polish browsing, discovery, and navigation on the **existing folder-tree catalog
 ### Folder browse today
 
 - **Breadcrumbs** — catalogue ancestor chain via `FolderBreadcrumb` (Step 5).
-- **No** sort or filter controls.
-- Subfolders and items in **indexer emission order**.
+- **Sort/filter** — `FolderBrowseControls` + `buildLibraryFolderView` derived grid (Step 6).
+- Subfolders and items in **folder-first** layout; sort applies within each group.
 - Empty folder and missing-folder states exist.
 - Hardcoded "Subfolders" section label (structural, not a media category).
 
@@ -95,18 +95,19 @@ Phase 4.1 Provider Status and Phase 4.2 grouped settings remain separate from li
 | Dashboard Favourites section | First 10 resolved + View all — **Step 4 implemented** |
 | `FavouritesScreen` | Full favourites list — **Step 4 implemented** |
 | `LibraryMetadataRepository` | Favourites persistence — **Step 1 implemented** (ADR-007) |
-| `FolderScreen` | Breadcrumbs implemented (Step 5); sort/filter controls pending |
+| `FolderScreen` | Breadcrumbs + sort/filter controls implemented (Steps 5–6) |
 | Dashboard Favourites section | Resolved favourites — app state, not a folder |
 | `SearchScreen` | Presentation polish — grouping, clear, keyboard |
 
 ---
 
-## Sort and filter (proposed)
+## Sort and filter (implemented — Step 6)
 
 See [ADR-008](./decisions/ADR-008-library-sorting-and-filtering.md).
 
-- **Sort:** default (indexer), name asc/desc, added newest/oldest, type — folder-first layout preserved.
-- **Filter:** all, folders only, video, images — session-scoped, current folder only.
+- **Sort:** six modes via popup menu; session selection; **Set as default** persists global default only.
+- **Filter:** all / folders only / video / images — session chips; video/images retain subfolders.
+- **Empty states:** true empty folder vs filter-empty with **Show all** recovery.
 - **No** modified-date sort — field not in catalogue.
 - **No** audio/book filters — not indexed.
 

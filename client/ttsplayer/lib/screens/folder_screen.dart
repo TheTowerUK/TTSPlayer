@@ -1,17 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../library/library_folder_view.dart';
 import '../models/catalog.dart';
+import '../models/library_filter.dart';
+import '../models/library_sort_mode.dart';
 import '../models/media_folder.dart';
 import '../models/media_item.dart';
 import '../navigation/folder_navigation.dart';
 import '../services/catalog_service.dart';
 import '../services/library/library_metadata_repository.dart';
 import '../services/scanner_service.dart';
+import '../services/settings/settings_repository.dart';
 import '../theme/app_theme.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/favourite_toggle_button.dart';
 import '../widgets/folder_breadcrumb.dart';
+import '../widgets/folder_browse_controls.dart';
 import '../widgets/loading_card.dart';
 import '../widgets/scan_progress_dialog.dart';
 import '../widgets/tts_app_bar.dart';
@@ -94,31 +99,172 @@ class FolderScreen extends StatelessWidget {
             title: folder.name,
             extraActions: [_FolderActionsMenu(folder: folder)],
           ),
-          body: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              FolderBreadcrumb(
-                ancestors: ancestors,
-                currentFolderId: folder.id,
-                onAncestorSelected: (target) => navigateBreadcrumbSelection(
-                  context,
-                  target: target,
-                  currentFolderId: folder.id,
-                ),
-              ),
-              Expanded(
-                child: folder.isEmpty
-                    ? const EmptyState(
-                        icon: Icons.folder_open_outlined,
-                        title: 'This folder is empty.',
-                        subtitle: 'Run a rescan if you expect content here.',
-                      )
-                    : _FolderContent(folder: folder),
-              ),
-            ],
+          body: _FolderBrowseBody(
+            folder: folder,
+            ancestors: ancestors,
+            catalogSupportedExtensions: catalog.supportedExtensions,
           ),
         );
       },
+    );
+  }
+}
+
+/// Session-scoped sort/filter state for one [FolderScreen] route (ADR-008).
+///
+/// New routes initialize sort from [SettingsRepository.defaultLibrarySortMode]
+/// and filter to [LibraryFilter.all]. Back navigation preserves mounted route
+/// state; subfolder pushes start fresh.
+class _FolderBrowseBody extends StatefulWidget {
+  final MediaFolder folder;
+  final List<MediaFolder> ancestors;
+  final Iterable<String> catalogSupportedExtensions;
+
+  const _FolderBrowseBody({
+    required this.folder,
+    required this.ancestors,
+    required this.catalogSupportedExtensions,
+  });
+
+  @override
+  State<_FolderBrowseBody> createState() => _FolderBrowseBodyState();
+}
+
+class _FolderBrowseBodyState extends State<_FolderBrowseBody> {
+  late LibrarySortMode _sortMode;
+  LibraryFilter _filter = LibraryFilter.all;
+
+  @override
+  void initState() {
+    super.initState();
+    _sortMode = context.read<SettingsRepository>().defaultLibrarySortMode;
+  }
+
+  LibraryFolderView _buildView() {
+    return buildLibraryFolderView(
+      folder: widget.folder,
+      sortMode: _sortMode,
+      filter: _filter,
+      catalogSupportedExtensions: widget.catalogSupportedExtensions,
+    );
+  }
+
+  Future<void> _setAsDefaultSort() async {
+    final settings = context.read<SettingsRepository>();
+    final messenger = ScaffoldMessenger.of(context);
+    final result = await settings.saveDefaultLibrarySortMode(_sortMode);
+
+    if (!mounted) return;
+
+    if (result.success) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Default sort order saved.'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } else {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            result.validationErrors.isNotEmpty
+                ? result.validationErrors.first
+                : 'Could not save default sort order.',
+          ),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final view = _buildView();
+    final trulyEmpty = widget.folder.isEmpty;
+    final filterEmpty = !trulyEmpty && view.isEmpty;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        FolderBreadcrumb(
+          ancestors: widget.ancestors,
+          currentFolderId: widget.folder.id,
+          onAncestorSelected: (target) => navigateBreadcrumbSelection(
+            context,
+            target: target,
+            currentFolderId: widget.folder.id,
+          ),
+        ),
+        FolderBrowseControls(
+          activeSortMode: _sortMode,
+          activeFilter: _filter,
+          persistedDefaultSort:
+              context.watch<SettingsRepository>().defaultLibrarySortMode,
+          onSortModeChanged: (mode) => setState(() => _sortMode = mode),
+          onFilterChanged: (filter) => setState(() => _filter = filter),
+          onSetAsDefault: _setAsDefaultSort,
+        ),
+        Expanded(
+          child: trulyEmpty
+              ? const EmptyState(
+                  icon: Icons.folder_open_outlined,
+                  title: 'This folder is empty.',
+                  subtitle: 'Run a rescan if you expect content here.',
+                )
+              : filterEmpty
+                  ? _FilterEmptyBody(
+                      onShowAll: () =>
+                          setState(() => _filter = LibraryFilter.all),
+                    )
+                  : _FolderContent(
+                      folder: widget.folder,
+                      view: view,
+                    ),
+        ),
+      ],
+    );
+  }
+}
+
+class _FilterEmptyBody extends StatelessWidget {
+  final VoidCallback onShowAll;
+
+  const _FilterEmptyBody({required this.onShowAll});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: AppSpacing.errorView,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.filter_alt_off_outlined,
+              size: AppIcons.hero,
+              color: AppColors.textLow,
+            ),
+            const SizedBox(height: AppSpacing.base),
+            const Text(
+              'No items match this filter',
+              style: AppTypography.bodyMuted,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            const Text(
+              'Try another filter to see more content.',
+              style: AppTypography.caption,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            FilledButton(
+              key: const Key('folder_show_all_filter'),
+              onPressed: onShowAll,
+              child: const Text('Show all'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -250,14 +396,18 @@ class _FolderActionsMenu extends StatelessWidget {
 
 class _FolderContent extends StatelessWidget {
   final MediaFolder folder;
+  final LibraryFolderView view;
 
-  const _FolderContent({required this.folder});
+  const _FolderContent({
+    required this.folder,
+    required this.view,
+  });
 
   @override
   Widget build(BuildContext context) {
     return CustomScrollView(
       slivers: [
-        if (folder.subfolders.isNotEmpty) ...[
+        if (view.subfolders.isNotEmpty) ...[
           const _SectionSliver(title: 'Subfolders'),
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(
@@ -265,7 +415,7 @@ class _FolderContent extends StatelessWidget {
             sliver: SliverGrid(
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
-                  final sub = folder.subfolders[index];
+                  final sub = view.subfolders[index];
                   return TtsFolderCard(
                     folder: sub,
                     topLeftOverlay: FavouriteFolderToggle(
@@ -275,7 +425,7 @@ class _FolderContent extends StatelessWidget {
                     onTap: () => openFolderScreen(context, sub),
                   );
                 },
-                childCount: folder.subfolders.length,
+                childCount: view.subfolders.length,
               ),
               gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                 maxCrossAxisExtent: AppSpacing.gridSubfolder,
@@ -287,14 +437,14 @@ class _FolderContent extends StatelessWidget {
           ),
           const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.section)),
         ],
-        if (folder.items.isNotEmpty) ...[
+        if (view.items.isNotEmpty) ...[
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(
                 AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.section),
             sliver: SliverGrid(
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
-                  final item = folder.items[index];
+                  final item = view.items[index];
                   return TtsMediaCard(
                     item: item,
                     parentFolder: folder,
@@ -305,7 +455,7 @@ class _FolderContent extends StatelessWidget {
                     onTap: () => _openDetail(context, item),
                   );
                 },
-                childCount: folder.items.length,
+                childCount: view.items.length,
               ),
               gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                 maxCrossAxisExtent: AppSpacing.gridMedia,

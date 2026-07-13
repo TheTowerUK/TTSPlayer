@@ -6,6 +6,8 @@ import 'package:ttsplayer/models/media_folder.dart';
 import 'package:ttsplayer/screens/folder_screen.dart';
 import 'package:ttsplayer/services/catalog_service.dart';
 import 'package:ttsplayer/services/library/library_metadata_repository.dart';
+import 'package:ttsplayer/services/scanner_service.dart';
+import 'package:ttsplayer/services/settings/settings_repository.dart';
 import 'package:ttsplayer/theme/app_theme.dart';
 
 class _FakeCatalogService extends CatalogService {
@@ -29,8 +31,12 @@ void main() {
         home: MultiProvider(
           providers: [
             ChangeNotifierProvider(
+              create: (_) => SettingsRepository()..initialize(),
+            ),
+            ChangeNotifierProvider(
               create: (_) => LibraryMetadataRepository()..initialize(),
             ),
+            ChangeNotifierProvider(create: (_) => ScannerService()),
             ChangeNotifierProvider<CatalogService>.value(
               value: _FakeCatalogService(
                 Catalog.fromJson({
@@ -77,8 +83,12 @@ void main() {
         home: MultiProvider(
           providers: [
             ChangeNotifierProvider(
+              create: (_) => SettingsRepository()..initialize(),
+            ),
+            ChangeNotifierProvider(
               create: (_) => LibraryMetadataRepository()..initialize(),
             ),
+            ChangeNotifierProvider(create: (_) => ScannerService()),
             ChangeNotifierProvider<CatalogService>.value(
               value: _FakeCatalogService(catalog),
             ),

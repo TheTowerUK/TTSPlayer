@@ -1,6 +1,6 @@
 # M4 Phase 4.3 — Library Experience (Implementation Specification)
 
-**Status:** Specification — **Accepted** (2026-07-13) · Steps 1–5 **implemented** · Phase **not complete**  
+**Status:** Specification — **Accepted** (2026-07-13) · Steps 1–6 **implemented** · Phase **not complete**  
 **Milestone:** M4 — User Experience and Platform Integration  
 **Branch:** `m4-development`  
 **Development version:** `v0.5.0-dev`  
@@ -83,7 +83,7 @@ Sort answers *in what order*; filter answers *which items appear*. They compose 
 | Dashboard discovery sections | `DashboardService` + M3 widgets | M3 | Libraries, CW, Recently Added, Featured |
 | Global Search (in-memory index) | `SearchService` | M3 | Score-ranked flat list |
 | Artwork resolution | `ArtworkService` | M3 / hotfix | Cache cleared on catalogue replace |
-| **Folder sort/filter** | — | **4.3 new** | Derived views over immutable catalogue |
+| **Folder sort/filter** | — | **4.3 Step 6 ✅** | Derived views over immutable catalogue |
 | **Breadcrumbs** | — | **4.3 Step 5 ✅** | Catalogue ancestor chain |
 | **Favourites** | — | **4.3 new** | `LibraryMetadataRepository` |
 | **Search presentation polish** | — | **4.3 new** | Grouping, actions — not engine rewrite |
@@ -126,7 +126,7 @@ Also on dashboard (out of 4.3 scope unless empty-state copy alignment): Overview
 #### Folder browsing
 
 - **Breadcrumb:** catalogue ancestor chain below app bar (`FolderBreadcrumb`).
-- **Sort:** none — indexer emission order within each section.
+- **Sort/filter:** session filter + sort from persisted default; `buildLibraryFolderView` derived grid.
 - **Filter:** none.
 - **Layout:** hardcoded "Subfolders" section label + item grid (`TtsFolderCard`, `TtsMediaCard`).
 - **Empty folder:** `EmptyState` — "This folder is empty." + rescan hint.
@@ -194,7 +194,7 @@ No audio or document extensions indexed today.
 ## Identified UX gaps (4.3 targets)
 
 1. ~~No breadcrumb or ancestor context in deep folders.~~ **Resolved Step 5** — catalogue-driven breadcrumbs on `FolderScreen`.
-2. No folder-level sort or filter controls.
+2. ~~No folder-level sort or filter controls.~~ **Resolved Step 6** — `FolderBrowseControls` on `FolderScreen`.
 3. No favourites or user-curated lists.
 4. Search results are flat — library/folder context is per-row subtitle only.
 5. Empty states vary by surface — not all offer a clear next action.
@@ -443,9 +443,9 @@ Mirrors Phase 4.2: **persistence and tests before UI**. UI layers consume reposi
 
 7. ~~**Breadcrumbs**~~ *(implemented 2026-07-13)* — `FolderBreadcrumb` + `folder_navigation.dart`; `FolderScreen.fromFolder` canonical identity (ADR-009).
 
-8. **Sorting** — controls + persisted default wiring.
+8. ~~**Sorting**~~ *(implemented 2026-07-13)* — FolderScreen sort menu + explicit **Set as default**.
 
-9. **Filtering** — session-scoped controls.
+9. ~~**Filtering**~~ *(implemented 2026-07-13)* — session-scoped filter chips + filter-empty state.
 
 10. **Search presentation polish** — grouping, clear query, keyboard.
 
@@ -509,6 +509,18 @@ Mirrors Phase 4.2: **persistence and tests before UI**. UI layers consume reposi
 - Tests: `folder_breadcrumb_test.dart` (20 scenarios); `favourites_ui_test.dart` regression pass.
 - No sort/filter UI or search presentation changes.
 
+### Implementation notes — Step 6 (2026-07-13)
+
+- `FolderBrowseControls` — sort popup (six modes) + filter chips; horizontal scroll at 900×420.
+- `library_browse_labels.dart` — user-facing labels (no storage keys in UI).
+- `_FolderBrowseBody` — session sort/filter state; initializes sort from `SettingsRepository.defaultLibrarySortMode`, filter `all`.
+- Sort changes are **session-only**; **Set as default** persists via `saveDefaultLibrarySortMode` with SnackBar feedback.
+- New subfolder routes reset to persisted default sort + `all` filter; Back preserves mounted route state.
+- `_FilterEmptyBody` — "No items match this filter" + **Show all** recovery.
+- Grid renders `buildLibraryFolderView` output; catalogue source lists unchanged.
+- Tests: `folder_sort_filter_test.dart` (32 scenarios); `folder_screen_rescan_test.dart` harness updated.
+- No search, dashboard, or catalogue schema changes.
+
 ---
 
 The first implementation prompt must deliver **only**:
@@ -559,7 +571,7 @@ Closure harness scenarios **L1–L18** (Windows + automated). Spec persistence s
 - [x] `LibraryMetadataRepository` with versioned favourites persistence and prune-on-replacement
 - [x] `SettingsRepository` stores global default sort mode only (no favourites)
 - [x] `FolderScreen` breadcrumbs catalogue-driven per ADR-009
-- [ ] Sort and filter controls per ADR-008; folder-first preserved
+- [x] Sort and filter controls per ADR-008; folder-first preserved
 - [x] Dashboard Favourites section; toggle on item and folder
 - [ ] Search presentation improvements without engine rewrite
 - [ ] Empty/loading/error states per table above

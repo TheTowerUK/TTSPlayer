@@ -72,7 +72,15 @@ Supported extensions today (indexer + client): **video** (`.mp4`, `.mkv`, `.mov`
 ### Sort persistence
 
 - **Global default sort mode** persisted in `SettingsRepository` under an expanded `general.libraryBrowse.defaultSortMode` field (additive envelope v1 change).
-- **Active sort** in `FolderScreen` initializes from the global default each visit; optional in-session override allowed but resets on next folder open (no per-folder persistence in 4.3).
+- **Active sort** in `FolderScreen` initializes from the global default; in-session override does **not** auto-persist.
+- **Set as default** action (bookmark icon) explicitly saves the current sort via `SettingsRepository.saveDefaultLibrarySortMode`.
+- New subfolder `FolderScreen` routes reset to persisted default sort and `all` filter; Back preserves mounted route session state.
+
+### Implementation (Step 6, 2026-07-13)
+
+- `FolderBrowseControls` — sort popup + filter chips below breadcrumbs.
+- `_FilterEmptyBody` — filter-specific empty state with **Show all** (distinct from true empty folder).
+- Filter-empty copy per ADR-008 updated in UI to match spec: "No items match this filter".
 
 ### Sort vs filter independence
 
