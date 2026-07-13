@@ -1,6 +1,6 @@
 # Library Experience (M4 Phase 4.3)
 
-**Status:** Specification **Accepted** (2026-07-13) — Steps 1–6 implemented; search polish and closure pending  
+**Status:** Specification **Accepted** (2026-07-13) — Steps 1–7 implemented; **ready for Windows runtime validation**  
 **Related roadmap phase:** [M4 Phase 4.3 — Library Experience](../roadmap/m4-plan.md#phase-43--library-experience)
 
 → [Phase 4.3 implementation spec](../roadmap/m4-phase-4.3-library-experience.md)  
@@ -36,7 +36,7 @@ Polish browsing, discovery, and navigation on the **existing folder-tree catalog
 | Dashboard | `DashboardScreen` — root; `RouteAware` refresh |
 | Folder browse | `FolderScreen` — catalogue `id` resolution (path fallback); breadcrumbs; subfolders + items grids |
 | Library Manager | `LibraryManagerScreen` — catalogue ops (not browsing) |
-| Global Search | `SearchScreen` — in-memory index, score-ranked results |
+| Global Search | `SearchScreen` — in-memory index, score-ranked results; library grouping + hierarchy context (Step 7) |
 | Item detail | `ItemDetailScreen` — Play via `MediaItemStatus.isPlayable` |
 | Navigation | Imperative `Navigator` pushes; `TtsAppBar` back + Home |
 
@@ -57,12 +57,17 @@ Polish browsing, discovery, and navigation on the **existing folder-tree catalog
 - Empty folder and missing-folder states exist.
 - Hardcoded "Subfolders" section label (structural, not a media category).
 
-### Global Search today
+### Global Search (Step 7)
 
-- `SearchService` — token match + scoring; max 100 results.
+- `SearchService` — token match + scoring; max 100 results (**engine unchanged**).
 - `SearchFilters` — library name + extension chips.
-- Flat result list; "Browse folder" and item open actions.
+- `groupSearchResultsByLibrary` — lightweight grouping by top-level library; headers only when multiple libraries match; group order follows first appearance in score-sorted list.
+- `catalogueFolderContext` — containing-folder labels from catalogue hierarchy (`Videos · Action`); no raw local, UNC, or HTTP paths in UI.
+- `SearchResultRow` — **Media** kind chip; explicit **Open** and **Browse folder** actions; `ArtworkImage` consistent with folder cards.
+- Clear query — suffix clear button + Escape; Enter submits search.
+- Navigation — media → `ItemDetailScreen`; browse folder → `openFolderScreen` via `parentFolderOfItemId` (path fallback); stale results → SnackBar.
 - Recent queries — session memory only (max 5).
+- Empty states — before typing / no results / catalogue unavailable (Provider Status hint) / no media indexed.
 
 ### Artwork
 
@@ -97,7 +102,7 @@ Phase 4.1 Provider Status and Phase 4.2 grouped settings remain separate from li
 | `LibraryMetadataRepository` | Favourites persistence — **Step 1 implemented** (ADR-007) |
 | `FolderScreen` | Breadcrumbs + sort/filter controls implemented (Steps 5–6) |
 | Dashboard Favourites section | Resolved favourites — app state, not a folder |
-| `SearchScreen` | Presentation polish — grouping, clear, keyboard |
+| `SearchScreen` | Presentation polish implemented (Step 7) — grouping, clear, keyboard, catalogue navigation |
 
 ---
 
@@ -107,7 +112,7 @@ See [ADR-008](./decisions/ADR-008-library-sorting-and-filtering.md).
 
 - **Sort:** six modes via popup menu; session selection; **Set as default** persists global default only.
 - **Filter:** all / folders only / video / images — session chips; video/images retain subfolders.
-- **Empty states:** true empty folder vs filter-empty with **Show all** recovery.
+- **Empty states:** true empty folder vs filter-empty with **Show all** recovery; search no-results vs catalogue unavailable distinct; shared `EmptyState` scroll-safe layout.
 - **No** modified-date sort — field not in catalogue.
 - **No** audio/book filters — not indexed.
 
@@ -153,10 +158,18 @@ See [ADR-009](./decisions/ADR-009-library-navigation-and-breadcrumbs.md).
 
 ## Failure handling
 
-- Empty folder / empty filter / no search results — distinct copy and recovery actions.
-- Missing artwork — placeholder (never hide item).
-- Missing favourite after rescan — silent prune.
-- Catalogue/provider errors — direct to Provider Status (4.1), not 4.6 diagnostics.
+| State | Copy / behaviour |
+|---|---|
+| Empty folder | "This folder is empty." |
+| No filter matches | "No items match this filter" + **Show all** |
+| Search — before typing | "Search your library" |
+| Search — no results | "No results found" + clear search/filters |
+| Search — catalogue unavailable | "Catalogue unavailable" + Provider Status hint (not no-results) |
+| No favourites | "No favourites yet" |
+| Missing folder | "no longer in the catalogue" + Back to Dashboard |
+| Missing artwork | placeholder (never hide item) |
+| Missing favourite after rescan | silent prune |
+| Catalogue/provider errors | Provider Status (4.1), not 4.6 diagnostics |
 
 ---
 

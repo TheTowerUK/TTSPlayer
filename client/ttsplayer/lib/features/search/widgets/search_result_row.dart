@@ -6,14 +6,17 @@ import '../../../theme/app_theme.dart';
 import '../../../widgets/artwork/artwork_image.dart';
 import '../models/search_result.dart';
 
+/// One ranked media hit in Global Search (Phase 4.3 presentation).
 class SearchResultRow extends StatelessWidget {
   final SearchResult result;
+  final String displayContext;
   final VoidCallback onOpen;
   final VoidCallback? onBrowseFolder;
 
   const SearchResultRow({
     super.key,
     required this.result,
+    required this.displayContext,
     required this.onOpen,
     this.onBrowseFolder,
   });
@@ -24,94 +27,133 @@ class SearchResultRow extends StatelessWidget {
     final playable = item.status.isPlayable;
     final artworkService = context.read<ArtworkService>();
     final candidate = artworkService.forMediaItem(item);
+    final contextLabel =
+        displayContext.isNotEmpty ? displayContext : result.folderContext;
 
-    return Material(
-      color: AppColors.card,
-      borderRadius: AppRadius.cardRadius,
-      child: InkWell(
+    return Semantics(
+      container: true,
+      label: 'Media: ${item.title}${contextLabel.isNotEmpty ? ', in $contextLabel' : ''}',
+      child: Material(
+        key: Key('search_result_${item.id}'),
+        color: AppColors.card,
         borderRadius: AppRadius.cardRadius,
-        onTap: onOpen,
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: AppRadius.cardRadius,
-            border: Border.all(color: AppColors.border),
-          ),
-          padding: AppSpacing.cardPremium,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                width: AppSpacing.searchThumbWidth,
-                child: AspectRatio(
-                  aspectRatio: 2 / 3,
-                  child: ClipRRect(
-                    borderRadius: AppRadius.chipRadius,
-                    child: ArtworkImage(
-                      candidate: candidate,
-                      iconSize: AppIcons.md,
+        child: InkWell(
+          borderRadius: AppRadius.cardRadius,
+          onTap: playable ? onOpen : null,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: AppRadius.cardRadius,
+              border: Border.all(color: AppColors.border),
+            ),
+            padding: AppSpacing.cardPremium,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: AppSpacing.searchThumbWidth,
+                  child: AspectRatio(
+                    aspectRatio: 2 / 3,
+                    child: ClipRRect(
+                      borderRadius: AppRadius.chipRadius,
+                      child: ArtworkImage(
+                        candidate: candidate,
+                        iconSize: AppIcons.md,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(width: AppSpacing.base),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.title,
-                      style: AppTypography.cardTitle,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (result.folderContext.isNotEmpty) ...[
-                      const SizedBox(height: AppSpacing.xs),
+                const SizedBox(width: AppSpacing.base),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       Text(
-                        result.folderContext,
-                        style: AppTypography.cardSubtitle,
-                        maxLines: 1,
+                        item.title,
+                        style: AppTypography.cardTitle,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                    ],
-                    const SizedBox(height: AppSpacing.xs),
-                    Row(
-                      children: [
-                        _ExtensionChip(label: item.extension.toUpperCase()),
-                        if (!playable) ...[
-                          const SizedBox(width: AppSpacing.sm),
-                          Text(
-                            item.status.name,
-                            style: const TextStyle(
-                              color: AppColors.warning,
-                              fontSize: AppTypography.size11,
-                            ),
-                          ),
-                        ],
+                      if (contextLabel.isNotEmpty) ...[
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(
+                          contextLabel,
+                          style: AppTypography.cardSubtitle,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ],
+                      const SizedBox(height: AppSpacing.xs),
+                      Row(
+                        children: [
+                          const _KindChip(label: 'Media'),
+                          const SizedBox(width: AppSpacing.sm),
+                          _ExtensionChip(label: item.extension.toUpperCase()),
+                          if (!playable) ...[
+                            const SizedBox(width: AppSpacing.sm),
+                            Text(
+                              item.status.name,
+                              style: const TextStyle(
+                                color: AppColors.warning,
+                                fontSize: AppTypography.size11,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Column(
+                  children: [
+                    IconButton(
+                      key: Key('search_open_${item.id}'),
+                      tooltip: 'Open details',
+                      icon: const Icon(Icons.open_in_new_outlined),
+                      color: AppColors.primary,
+                      onPressed: onOpen,
                     ),
+                    if (onBrowseFolder != null)
+                      IconButton(
+                        key: Key('search_browse_folder_${item.id}'),
+                        tooltip: 'Browse folder',
+                        icon: const Icon(Icons.folder_outlined),
+                        color: AppColors.textMedium,
+                        onPressed: onBrowseFolder,
+                      ),
                   ],
                 ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Column(
-                children: [
-                  IconButton(
-                    tooltip: 'Open details',
-                    icon: const Icon(Icons.open_in_new_outlined),
-                    color: AppColors.primary,
-                    onPressed: onOpen,
-                  ),
-                  if (onBrowseFolder != null)
-                    IconButton(
-                      tooltip: 'Browse folder',
-                      icon: const Icon(Icons.folder_outlined),
-                      color: AppColors.textMedium,
-                      onPressed: onBrowseFolder,
-                    ),
-                ],
-              ),
-            ],
+              ],
+            ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _KindChip extends StatelessWidget {
+  const _KindChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xs,
+      ),
+      decoration: const BoxDecoration(
+        color: AppColors.chip,
+        borderRadius: AppRadius.chipRadius,
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: AppColors.textHigh,
+          fontSize: AppTypography.size11,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );

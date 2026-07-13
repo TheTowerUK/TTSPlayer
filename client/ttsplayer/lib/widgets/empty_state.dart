@@ -23,18 +23,24 @@ class EmptyState extends StatelessWidget {
   final IconData icon;
   final String title;
   final String? subtitle;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+  final Key? actionKey;
 
   const EmptyState({
     super.key,
     required this.icon,
     required this.title,
     this.subtitle,
+    this.actionLabel,
+    this.onAction,
+    this.actionKey,
   });
 
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: AppSpacing.errorView,
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -52,6 +58,14 @@ class EmptyState extends StatelessWidget {
                 subtitle!,
                 style: AppTypography.caption,
                 textAlign: TextAlign.center,
+              ),
+            ],
+            if (actionLabel != null && onAction != null) ...[
+              const SizedBox(height: AppSpacing.xl),
+              FilledButton(
+                key: actionKey,
+                onPressed: onAction,
+                child: Text(actionLabel!),
               ),
             ],
           ],

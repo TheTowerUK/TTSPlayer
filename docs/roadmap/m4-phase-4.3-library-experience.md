@@ -1,6 +1,6 @@
 # M4 Phase 4.3 — Library Experience (Implementation Specification)
 
-**Status:** Specification — **Accepted** (2026-07-13) · Steps 1–6 **implemented** · Phase **not complete**  
+**Status:** Specification — **Accepted** (2026-07-13) · Steps 1–7 **implemented** · **Ready for Windows runtime validation** · Phase **not complete**  
 **Milestone:** M4 — User Experience and Platform Integration  
 **Branch:** `m4-development`  
 **Development version:** `v0.5.0-dev`  
@@ -86,8 +86,8 @@ Sort answers *in what order*; filter answers *which items appear*. They compose 
 | **Folder sort/filter** | — | **4.3 Step 6 ✅** | Derived views over immutable catalogue |
 | **Breadcrumbs** | — | **4.3 Step 5 ✅** | Catalogue ancestor chain |
 | **Favourites** | — | **4.3 new** | `LibraryMetadataRepository` |
-| **Search presentation polish** | — | **4.3 new** | Grouping, actions — not engine rewrite |
-| **Unified empty/error polish** | — | **4.3 new** | Browse surfaces |
+| **Search presentation polish** | — | **4.3 Step 7 ✅** | Grouping, context, clear query — not engine rewrite |
+| **Unified empty/error polish** | — | **4.3 Step 7 ✅** | Browse surfaces |
 | Pagination / index performance | — | **4.5 deferred** | |
 | Diagnostics export / deep detail | — | **4.6 deferred** | Link to Provider Status |
 
@@ -143,7 +143,9 @@ Also on dashboard (out of 4.3 scope unless empty-state copy alignment): Overview
 | Result order | Score desc, title asc; max 100 |
 | Filters | `SearchFilters` — optional `libraryName`, `extension` (mutually combinable) |
 | Recent queries | In-memory only, max 5, **session not persisted** |
-| Navigation | Row tap → `ItemDetailScreen`; "Browse folder" → `FolderScreen` |
+| Navigation | Open → `ItemDetailScreen`; Browse folder → `openFolderScreen` via `parentFolderOfItemId` (path fallback) |
+| Grouping | `groupSearchResultsByLibrary` — library headers when results span multiple libraries |
+| Context labels | `catalogueFolderContext` — ancestor chain ` · ` joined; no raw paths |
 | Empty states | `search_empty_state.dart` — beforeTyping / noResults / catalogueUnavailable / catalogueEmpty |
 
 #### Artwork
@@ -195,10 +197,10 @@ No audio or document extensions indexed today.
 
 1. ~~No breadcrumb or ancestor context in deep folders.~~ **Resolved Step 5** — catalogue-driven breadcrumbs on `FolderScreen`.
 2. ~~No folder-level sort or filter controls.~~ **Resolved Step 6** — `FolderBrowseControls` on `FolderScreen`.
-3. No favourites or user-curated lists.
-4. Search results are flat — library/folder context is per-row subtitle only.
-5. Empty states vary by surface — not all offer a clear next action.
-6. Filtered-empty vs folder-empty not distinguished.
+3. ~~No favourites or user-curated lists.~~ **Resolved Step 4** — `LibraryMetadataRepository` + dashboard/Favourites UI.
+4. ~~Search results are flat — library/folder context is per-row subtitle only.~~ **Resolved Step 7** — library grouping + catalogue hierarchy context labels.
+5. ~~Empty states vary by surface — not all offer a clear next action.~~ **Resolved Step 7** — aligned copy + recovery actions via shared `EmptyState`.
+6. ~~Filtered-empty vs folder-empty not distinguished.~~ **Resolved Step 6** — distinct copy + **Show all** recovery.
 7. Long folder paths rely on app bar title ellipsis only.
 8. Keyboard navigation outside dashboard is limited.
 9. ~~No `findFolderById` helper for favourite resolution (path lookup exists).~~ **Resolved Step 2** — `findFolderById`, `ancestorChainForFolder`.
@@ -447,9 +449,9 @@ Mirrors Phase 4.2: **persistence and tests before UI**. UI layers consume reposi
 
 9. ~~**Filtering**~~ *(implemented 2026-07-13)* — session-scoped filter chips + filter-empty state.
 
-10. **Search presentation polish** — grouping, clear query, keyboard.
+10. ~~**Search presentation polish**~~ *(implemented 2026-07-13)* — grouping, clear query, keyboard, catalogue-driven navigation.
 
-11. **Empty/loading/error copy alignment** across browse surfaces.
+11. ~~**Empty/loading/error copy alignment**~~ *(implemented 2026-07-13)* — browse surfaces; shared `EmptyState` with scroll-safe layout.
 
 ### Phase D — Closure
 
@@ -521,6 +523,18 @@ Mirrors Phase 4.2: **persistence and tests before UI**. UI layers consume reposi
 - Tests: `folder_sort_filter_test.dart` (32 scenarios); `folder_screen_rescan_test.dart` harness updated.
 - No search, dashboard, or catalogue schema changes.
 
+### Implementation notes — Step 7 (2026-07-13)
+
+- `catalogueFolderContext` — `lib/library/folder_display_context.dart`; ancestor names via `parentFolderOfItemId` + `ancestorChainForFolder`; never raw paths/URLs.
+- `groupSearchResultsByLibrary` — `lib/features/search/search_result_grouper.dart`; group order = first appearance in score-sorted list; within-group order unchanged; headers only when `groups.length > 1`.
+- `SearchResultsList` — grouped `ListView` with optional library section headers; `SearchResultRow` shows **Media** kind chip, hierarchy context, explicit Open / Browse folder actions.
+- `SearchScreen` — clear button + Escape clears query; stale item → SnackBar; browse via `openFolderScreen` + catalogue id; catalogue unavailable distinct from no-results (Provider Status hint).
+- `EmptyState` — optional primary action; `SingleChildScrollView` for 900×420 overflow safety; adopted by `SearchEmptyState` (beforeTyping/catalogue) and `_FilterEmptyBody` on `FolderScreen`.
+- Search does not touch `SettingsRepository` or persist query/filter state across screen reopen.
+- Continue Watching / Recently Added — presentation review only; no functional changes.
+- Tests: `search_presentation_test.dart` (26 scenarios); regression pass for `folder_sort_filter_test.dart`, `favourites_ui_test.dart`.
+- **Grouping decision:** lightweight library grouping when multiple libraries match; single-library results remain a flat list with per-row context labels.
+
 ---
 
 The first implementation prompt must deliver **only**:
@@ -573,9 +587,9 @@ Closure harness scenarios **L1–L18** (Windows + automated). Spec persistence s
 - [x] `FolderScreen` breadcrumbs catalogue-driven per ADR-009
 - [x] Sort and filter controls per ADR-008; folder-first preserved
 - [x] Dashboard Favourites section; toggle on item and folder
-- [ ] Search presentation improvements without engine rewrite
-- [ ] Empty/loading/error states per table above
-- [ ] Continue Watching, Recently Added, Featured Folders, Provider Status **unchanged in behaviour**
+- [x] Search presentation improvements without engine rewrite
+- [x] Empty/loading/error states per table above
+- [x] Continue Watching, Recently Added, Featured Folders, Provider Status **unchanged in behaviour** (Step 7 review; automated regression)
 - [ ] No virtual libraries; no hardcoded category labels
 - [ ] Validation L1–L18 pass (automated + Windows runtime)
 - [ ] `flutter analyze` — no new errors in Phase 4.3 scope

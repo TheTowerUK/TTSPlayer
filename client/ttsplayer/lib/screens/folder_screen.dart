@@ -233,38 +233,13 @@ class _FilterEmptyBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: AppSpacing.errorView,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.filter_alt_off_outlined,
-              size: AppIcons.hero,
-              color: AppColors.textLow,
-            ),
-            const SizedBox(height: AppSpacing.base),
-            const Text(
-              'No items match this filter',
-              style: AppTypography.bodyMuted,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            const Text(
-              'Try another filter to see more content.',
-              style: AppTypography.caption,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            FilledButton(
-              key: const Key('folder_show_all_filter'),
-              onPressed: onShowAll,
-              child: const Text('Show all'),
-            ),
-          ],
-        ),
-      ),
+    return EmptyState(
+      icon: Icons.filter_alt_off_outlined,
+      title: 'No items match this filter',
+      subtitle: 'Try another filter to see more content.',
+      actionLabel: 'Show all',
+      actionKey: const Key('folder_show_all_filter'),
+      onAction: onShowAll,
     );
   }
 }
