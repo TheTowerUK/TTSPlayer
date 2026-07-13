@@ -1,6 +1,6 @@
 # M4 — User Experience and Platform Integration
 
-**Status:** Active development (`v0.5.0-dev`) — Phase 4.3 complete; **Phase 4.4 planning (Gate 0 — Capability Audit)**  
+**Status:** Active development (`v0.5.0-dev`) — Phase 4.3 complete; **Phase 4.4 Gate 0 complete — Specification next**  
 **Branch:** `m4-development`  
 **Development version:** `v0.5.0-dev`  
 **Predecessor:** M3.5 Media Access Platform  
@@ -207,7 +207,7 @@ M3.5 implemented provider configuration, local/HTTP catalogue loading, startup s
 
 ### Phase 4.4 — Playback Improvements
 
-**Status:** Planning — **Gate 0 (Capability Audit)** before ADRs and final specification.
+**Status:** Gate 0 **complete** (2026-07-13) — [audit](./m4-phase-4.4-gate0-capability-audit.md); Specification + ADRs next.
 
 **Objective:** Refine playback UX and multi-track handling on top of existing resume and resolver integration.
 
@@ -219,7 +219,7 @@ Inventory → Capability Audit → ADRs → Specification → Implementation
 
 **Steps:**
 
-0. Capability Audit (`media_kit` / `video_player` API + Windows runtime)
+0. Capability Audit — **complete** ([audit](./m4-phase-4.4-gate0-capability-audit.md))
 1. Specification (acceptance criteria, validation matrix)
 2. ADRs (accepted only for audited capabilities)
 3. PlaybackService extensions
@@ -228,12 +228,12 @@ Inventory → Capability Audit → ADRs → Specification → Implementation
 6. Windows runtime validation
 7. Closure
 
-**Scope (provisional until audit completes):**
+**Scope (Gate 0 confirmed):**
 
 - Resume experience refinement
-- Playback speed (if `media_kit` audit confirms)
-- Subtitle / audio track selection (if audit confirms)
-- Chapter navigation — **audit first**; defer if API unsupported
+- Playback speed — Windows only; `setRate` verified
+- Subtitle / audio track selection — embedded, Windows only; API verified
+- Chapter navigation — **deferred beyond M4**
 - Clearer resolver-aware playback errors
 - Improved player controls and desktop keyboard shortcuts
 
@@ -244,7 +244,7 @@ Inventory → Capability Audit → ADRs → Specification → Implementation
 - Transcoding or server-side stream manipulation
 - DRM
 - Cast / DLNA unless separately approved
-- Chapters if capability audit fails
+- Chapters (no `media_kit` Dart API)
 
 **Dependencies:** Phase 4.2 (optional default speed in settings); [playback architecture](../architecture/playback.md).
 
@@ -264,10 +264,12 @@ Inventory → Capability Audit → ADRs → Specification → Implementation
 
 **Documentation outputs:**
 
-- [Phase 4.4 implementation specification](./m4-phase-4.4-playback-improvements.md) (draft — audit in progress)
+- [Phase 4.4 Gate 0 audit](./m4-phase-4.4-gate0-capability-audit.md) (complete)
+- [Phase 4.4 implementation specification](./m4-phase-4.4-playback-improvements.md) (draft — spec next)
 - Update [playback.md](../architecture/playback.md) at closure
 
 → Architecture: [playback.md](../architecture/playback.md)  
+→ Gate 0: [m4-phase-4.4-gate0-capability-audit.md](./m4-phase-4.4-gate0-capability-audit.md)  
 → Specification: [m4-phase-4.4-playback-improvements.md](./m4-phase-4.4-playback-improvements.md)
 
 ---

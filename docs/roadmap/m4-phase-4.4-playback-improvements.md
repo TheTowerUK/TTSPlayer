@@ -1,6 +1,7 @@
 # M4 Phase 4.4 — Playback Improvements (Implementation Specification — Draft)
 
-**Status:** **Planning** — Gate 0 (Capability Audit) **not complete**  
+**Status:** **Planning** — Gate 0 **complete** (2026-07-13); Specification + ADRs next  
+**Gate 0 audit:** [m4-phase-4.4-gate0-capability-audit.md](./m4-phase-4.4-gate0-capability-audit.md)
 **Milestone:** M4 — User Experience and Platform Integration  
 **Branch:** `m4-development`  
 **Development version:** `v0.5.0-dev`  
@@ -13,7 +14,7 @@
 → [M4 foundation snapshot](../release/m4-foundation-complete.md)  
 → [v0.5.0-dev release tracker](../release/v0.5.0-dev.md)
 
-**ADRs:** *Pending Gate 0* — no playback ADRs accepted until capability audit is complete.
+**ADRs:** *Ready to draft* — ADR-010–013 per [Gate 0 outcomes](./m4-phase-4.4-gate0-capability-audit.md#revised-adr-list-ready-to-draft). No chapter ADR.
 
 Follow the M4 cadence extended for playback:
 
@@ -101,9 +102,9 @@ Provider and resolver messages stay on browse/settings surfaces unless the user 
 
 | Step | Name | Status | Output |
 |---|---|---|---|
-| **0** | **Capability Audit** | **Gate 0 — in progress (this doc)** | Verified API matrix; design decisions for in/out of 4.4 |
-| **1** | Specification | Blocked on Step 0 | Final acceptance criteria, validation matrix, step breakdown |
-| **2** | ADRs | Blocked on Step 0 | Accepted decisions only for audited capabilities |
+| **0** | **Capability Audit** | **Complete** (2026-07-13) | [Gate 0 audit](./m4-phase-4.4-gate0-capability-audit.md) |
+| **1** | Specification | **Next** | Final acceptance criteria, validation matrix, step breakdown |
+| **2** | ADRs | Blocked on Step 1 draft | ADR-010–013 per Gate 0 |
 | **3** | PlaybackService extensions | Not started | Speed, tracks, enriched errors, buffering hooks — per audit |
 | **4** | Player UI | Not started | Controls, pickers, keyboard shortcuts — reflects service state |
 | **5** | Tests | Not started | Unit + widget tests; mock resolver failures |
@@ -114,48 +115,23 @@ Provider and resolver messages stay on browse/settings surfaces unless the user 
 
 ## Gate 0 — Capability Audit
 
-**Purpose:** Ground Phase 4.4 in verified player capabilities before ADRs or the final specification commit to features.
+**Status: Complete** — see [m4-phase-4.4-gate0-capability-audit.md](./m4-phase-4.4-gate0-capability-audit.md).
 
-**Audit chain:**
+**Harness:** `client/ttsplayer/test/gate0_media_kit_capability_test.dart` (`GATE0_MEDIA_KIT=1`)
 
-```
-PlaybackService (required surface)
-        ↓
-media_kit ^1.2.6 (Windows primary)
-video_player (non-Windows fallback — note gaps)
-        ↓
-Supported API / Unsupported API / Unknown
-        ↓
-Design decisions (in 4.4 vs defer)
-```
+### Outcomes (summary)
 
-### Pre-audit matrix (package inspection + prior analysis)
+| Capability | Windows outcome | 4.4 decision |
+|---|---|---|
+| Playback speed | **Verified** (`setRate` on local MP4) | In scope — Windows only |
+| Track enumeration | **Verified** (`state.tracks`) | In scope — Windows only |
+| Audio / subtitle switch | **API verified**; multi-track MKV at closure | In scope — embedded, Windows only |
+| Chapters | **Unsupported** Dart API | **Defer beyond M4** |
+| External VTT | API exists; runtime not audited | Defer 4.4 |
 
-*Statuses: **Verified** (runtime or API confirmed), **Probably** (API exists; runtime not yet validated on TNAS fixtures), **Unknown** (no stable Dart API or behaviour unconfirmed), **N/A** (non-Windows `video_player` path).*
+### Pre-audit matrix (superseded by Gate 0 doc)
 
-| Capability | Windows (`media_kit` 1.2.6) | Non-Windows (`video_player`) | Audit action |
-|---|---|---|---|
-| Play / pause / seek | **Verified** — shipped M3 | **Verified** — shipped M3 | No audit needed |
-| Buffering state | **Verified** — `state.buffering` wired | **Verified** — `value.isBuffering` | No audit needed |
-| Resume / position persist | **Verified** — `shared_preferences` | Same | No audit needed |
-| HTTPS seek (Range) | **Verified** — M3.5 TNAS validation | Platform-dependent | No audit needed for 4.4 |
-| **Playback speed** | **Probably** — `Player.setRate(double)` in public API | **N/A / limited** — no first-class speed API in `video_player` | Runtime: local MP4 + HTTPS MKV; confirm rate persists across pause/seek |
-| **Audio tracks** | **Probably** — `setAudioTrack`, `state.tracks.audio`, `stream.tracks.audio` | **Unknown / likely unsupported** | Runtime: multi-audio MKV; list tracks after `open`; switch and confirm output |
-| **Subtitle tracks** | **Probably** — `setSubtitleTrack`, embedded + `SubtitleTrack.uri` | **Unknown / likely unsupported** | Runtime: embedded subs + optional external VTT; confirm disable (null track) |
-| **Chapters** | **Unknown** — no chapter types/methods in `media_kit` public `Player` API; only low-level libmpv `MPV_EVENT_CHAPTER_CHANGE` in generated bindings | **N/A** | Spike: ffprobe chapter metadata vs any mpv property workaround; **do not ADR chapter UI until resolved** |
-| External subtitle sidecars | **Probably** — `SubtitleTrack.uri` | **Defer** | Confirm NAS HTTPS path + local file; out of scope if audit shows fragility |
-| Screenshot / frame grab | API exists (`screenshot`) | N/A | Out of 4.4 scope |
-| Keyboard shortcuts | Application concern | Application concern | Design in Step 1; no player API audit |
-
-### Audit completion criteria (Gate 0 exit)
-
-- [ ] Each **Probably** row has a Windows runtime note (pass/fail/limitation) on at least one fixture file.
-- [ ] **Chapters** row resolved to **Supported**, **Unsupported**, or **Defer beyond M4** with written rationale.
-- [ ] Platform matrix documented: which 4.4 features are **Windows-only** vs gracefully hidden on `video_player` platforms.
-- [ ] `PlaybackService` extension surface drafted (method names, state fields, error enums) — still no UI work.
-- [ ] Proposed ADR list revised to match audit outcomes only.
-
-Until exit criteria are met, sections below labelled *provisional* are inventory and intent only.
+*Retained for history — see [verified matrix](./m4-phase-4.4-gate0-capability-audit.md#verified-capability-matrix) for authoritative statuses.*
 
 ---
 
@@ -244,19 +220,15 @@ shared_preferences: ...
 
 ---
 
-## Provisional scope (pending Gate 0)
-
-*Do not treat this as committed scope until Capability Audit exit criteria are met.*
-
-### Likely in Phase 4.4
+## Provisional scope (Gate 0 confirmed)
 
 | Area | Intent |
 |---|---|
 | Resume UX polish | Clearer copy; preserve existing keys |
-| Playback speed | If audit confirms `setRate` on Windows fixtures |
-| Embedded audio/subtitle pickers | If audit confirms track enumeration and switching |
+| Playback speed | **In 4.4** — Windows only; `setRate` verified |
+| Embedded audio/subtitle pickers | **In 4.4** — Windows only; API verified |
 | Resolver-aware playback errors | Playback-layer messages mapped from resolver/HTTP/TLS context |
-| Player controls | Layout polish, desktop keyboard shortcuts (space, arrows, etc.) |
+| Player controls | Layout polish, desktop keyboard shortcuts |
 | Buffering presentation | Optional refinement using existing `isBuffering` |
 | Default speed in settings | Optional — only if speed ships; via `SettingsRepository` |
 
@@ -264,7 +236,7 @@ shared_preferences: ...
 
 | Item | Reason |
 |---|---|
-| **Chapter navigation** | **Unknown** `media_kit` Dart API — audit first; likely defer if unsupported |
+| **Chapter navigation** | **Defer beyond M4** — no `media_kit` Dart API ([Gate 0](./m4-phase-4.4-gate0-capability-audit.md#chapters--decision)) |
 | External subtitle sidecars | Depends on audit; secondary to embedded tracks |
 | HLS / adaptive streaming | Out of MVP / M4 scope |
 | Transcoding, DRM, cast | Out of scope per `m4-plan.md` |
@@ -275,23 +247,24 @@ shared_preferences: ...
 
 ---
 
-## Provisional ADRs (blocked)
+## ADRs (ready to draft)
 
-*Titles are placeholders. Accept only after Gate 0.*
+Per [Gate 0 revised list](./m4-phase-4.4-gate0-capability-audit.md#revised-adr-list-ready-to-draft):
 
-| ID | Topic | Depends on audit |
-|---|---|---|
-| ADR-010 (proposed) | Playback authority and UI boundary | Always — principle already established; formalise |
-| ADR-011 (proposed) | Playback error taxonomy (provider / resolver / playback) | Resolver status matrix |
-| ADR-012 (proposed) | Playback speed | `setRate` runtime pass |
-| ADR-013 (proposed) | Audio and subtitle track selection | Track enumeration runtime pass |
-| ADR-014 (proposed) | Chapter navigation | **Do not draft until chapters row resolved** |
+| ID | Topic |
+|---|---|
+| ADR-010 | Playback authority and UI boundary |
+| ADR-011 | Playback error taxonomy |
+| ADR-012 | Playback speed (Windows) |
+| ADR-013 | Audio and subtitle track selection (embedded, Windows) |
+
+**No ADR for chapters** — deferred beyond M4.
 
 ---
 
-## Specification outline (Step 1 — blocked)
+## Specification outline (Step 1 — next)
 
-Final specification will add, per audited feature:
+Final specification will add, per [Gate 0](./m4-phase-4.4-gate0-capability-audit.md):
 
 - `PlaybackService` public API additions (speed, tracks, error types)
 - State fields exposed to UI (`ChangeNotifier` contract)
@@ -344,4 +317,4 @@ Pattern: follow Phase 4.3 harness conventions (`PHASE_43_RUNTIME=1`) for Phase 4
 
 | Date | Change |
 |---|---|
-| 2026-07-13 | Initial draft: inventory, Gate 0 audit, principles, provisional scope. ADRs and final spec blocked on audit. |
+| 2026-07-13 | Gate 0 complete — [audit doc](./m4-phase-4.4-gate0-capability-audit.md), harness `gate0_media_kit_capability_test.dart` |

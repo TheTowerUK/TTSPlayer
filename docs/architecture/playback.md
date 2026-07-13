@@ -1,7 +1,8 @@
 # Playback (M4 planning)
 
-**Status:** Planning — M4 Phase 4.4 · **Gate 0 (Capability Audit) in progress**  
-**Related roadmap phase:** [M4 Phase 4.4 — Playback Improvements](../roadmap/m4-phase-4.4-playback-improvements.md)
+**Status:** Planning — M4 Phase 4.4 · **Gate 0 complete** (2026-07-13)  
+**Related roadmap phase:** [M4 Phase 4.4 — Playback Improvements](../roadmap/m4-phase-4.4-playback-improvements.md)  
+**Gate 0 audit:** [m4-phase-4.4-gate0-capability-audit.md](../roadmap/m4-phase-4.4-gate0-capability-audit.md)
 
 → [Media access abstraction](./media-access-abstraction.md)  
 → [Path mapping](./path-mapping.md)  
@@ -65,20 +66,20 @@ Full inventory: [Phase 4.4 spec — Current baseline inventory](../roadmap/m4-ph
 
 ---
 
-## Gate 0 — Capability Audit (in progress)
+## Gate 0 — Capability Audit (complete)
 
-| Feature | Pre-audit status |
+| Feature | Outcome |
 |---|---|
-| Playback speed | **Probably** — `Player.setRate` in `media_kit` 1.2.6 API |
-| Audio tracks | **Probably** — `setAudioTrack` / `tracks.audio` |
-| Subtitle tracks | **Probably** — `setSubtitleTrack` / `tracks.subtitle` |
-| Chapters | **Unknown** — no public Dart chapter API in `media_kit` |
+| Playback speed | **Verified** — `setRate` on Windows local MP4 |
+| Audio tracks | **API verified** — switch validated at 4.4 closure with NAS MKV |
+| Subtitle tracks | **API verified** — embedded subs; `SubtitleTrack.no()` |
+| Chapters | **Defer beyond M4** — no public Dart API |
 
-Audit exit criteria and runtime checklist: [Gate 0 section](../roadmap/m4-phase-4.4-playback-improvements.md#gate-0--capability-audit).
+Full matrix and harness: [Gate 0 audit](../roadmap/m4-phase-4.4-gate0-capability-audit.md).
 
 ---
 
-## M4.4 goals (provisional — pending audit)
+## M4.4 goals (Gate 0 confirmed)
 
 | Area | Intent |
 |---|---|
@@ -86,7 +87,7 @@ Audit exit criteria and runtime checklist: [Gate 0 section](../roadmap/m4-phase-
 | Speed | Variable playback speed where audit confirms `media_kit` support |
 | Subtitles | Embedded track selection when audit confirms |
 | Audio tracks | Multi-audio selection when audit confirms |
-| Chapters | **Audit first** — defer if API unsupported |
+| Chapters | **Deferred beyond M4** |
 | Errors | Resolver-aware playback-layer messages |
 | Controls | Improved layout, keyboard shortcuts on desktop |
 
@@ -128,11 +129,11 @@ Audit exit criteria and runtime checklist: [Gate 0 section](../roadmap/m4-phase-
 
 ---
 
-## Open decisions (blocked on Gate 0)
+## Open decisions (Step 1 specification)
 
-1. **Chapter support** — capability audit before any ADR or UI promise
-2. **Subtitle discovery** — embedded only for 4.4 vs external sidecars
-3. **Windows-only features** — how `video_player` platforms hide speed/tracks without crash
+1. **External subtitle sidecars** — defer 4.4 unless NAS VTT audit passes at closure
+2. **Default playback speed in settings** — optional if speed ships
+3. **HTTPS `setRate`** — re-validate on TNAS before 4.4 closure
 
 ---
 
@@ -149,5 +150,6 @@ Audit exit criteria and runtime checklist: [Gate 0 section](../roadmap/m4-phase-
 ## Related documents
 
 - [M4 Phase 4.4 implementation spec](../roadmap/m4-phase-4.4-playback-improvements.md)
+- [M4 Phase 4.4 Gate 0 audit](../roadmap/m4-phase-4.4-gate0-capability-audit.md)
 - [settings.md](./settings.md)
 - [diagnostics.md](./diagnostics.md)

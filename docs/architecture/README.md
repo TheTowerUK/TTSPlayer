@@ -26,7 +26,7 @@ Planning documents for [M4 — User Experience and Platform Integration](../road
 | [Provider management](./provider-management.md) | 4.1 | **Implemented / Accepted** — [spec](../roadmap/m4-phase-4.1-provider-management.md) |
 | [Settings](./settings.md) | 4.2 | **Implemented / Accepted** — [spec](../roadmap/m4-phase-4.2-settings-framework.md) |
 | [Library experience](./library.md) | 4.3 | **Implemented / Accepted** — [spec](../roadmap/m4-phase-4.3-library-experience.md) |
-| [Playback](./playback.md) | 4.4 | Planning — Gate 0 audit — [spec](../roadmap/m4-phase-4.4-playback-improvements.md) |
+| [Playback](./playback.md) | 4.4 | Gate 0 complete — [audit](../roadmap/m4-phase-4.4-gate0-capability-audit.md) · [spec](../roadmap/m4-phase-4.4-playback-improvements.md) |
 | [Diagnostics](./diagnostics.md) | 4.6 | Planning |
 
 Performance and caching (Phase 4.5) will be documented at sub-phase kickoff.
