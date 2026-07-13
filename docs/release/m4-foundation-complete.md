@@ -272,11 +272,11 @@ Synthesized from phase retrospectives in [v0.5.0-dev.md](./v0.5.0-dev.md).
 
 ## Remaining roadmap (4.4–4.7)
 
-Foundation complete. Next work begins at **Phase 4.4 — Playback Improvements**.
+Foundation complete. Next work begins at **Phase 4.4 — Playback Improvements** ([spec](../roadmap/m4-phase-4.4-playback-improvements.md)).
 
 | Phase | Focus | Depends on | Status |
 |---|---|---|---|
-| **4.4** | Playback Improvements | 4.2 ✅ | Planned — resume UX, speed, subtitles, audio tracks |
+| **4.4** | Playback Improvements | 4.2 ✅ | Planned — Gate 0 `media_kit` capability audit before ADRs |
 | **4.5** | Performance and Caching | 4.1–4.3 | Planned — search index, artwork cache strategy, pagination |
 | **4.6** | Diagnostics and Supportability | 4.1, 4.2, 4.5 | Planned — detail panels, log export (not duplicating Provider Status) |
 | **4.7** | Release and Documentation | 4.1–4.6 | Planned — milestone closure, `m4-complete` / `v0.5.0` |
@@ -329,4 +329,5 @@ When M4 ships, this document remains the historical record of **foundation work*
 | [provider-management.md](../architecture/provider-management.md) | 4.1 implemented architecture |
 | [settings.md](../architecture/settings.md) | 4.2 implemented architecture |
 | [library.md](../architecture/library.md) | 4.3 implemented architecture |
+| [m4-phase-4.4-playback-improvements.md](../roadmap/m4-phase-4.4-playback-improvements.md) | 4.4 implementation spec (draft) |
 | [playback.md](../architecture/playback.md) | 4.4 planning (next) |

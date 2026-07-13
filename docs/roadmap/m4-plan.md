@@ -1,6 +1,6 @@
 # M4 — User Experience and Platform Integration
 
-**Status:** Active development (`v0.5.0-dev`) — Phase 4.3 complete; **Phase 4.4 planning**  
+**Status:** Active development (`v0.5.0-dev`) — Phase 4.3 complete; **Phase 4.4 planning (Gate 0 — Capability Audit)**  
 **Branch:** `m4-development`  
 **Development version:** `v0.5.0-dev`  
 **Predecessor:** M3.5 Media Access Platform  
@@ -207,46 +207,68 @@ M3.5 implemented provider configuration, local/HTTP catalogue loading, startup s
 
 ### Phase 4.4 — Playback Improvements
 
+**Status:** Planning — **Gate 0 (Capability Audit)** before ADRs and final specification.
+
 **Objective:** Refine playback UX and multi-track handling on top of existing resume and resolver integration.
 
-**Scope:**
+**Cadence (playback-specific):**
+
+```
+Inventory → Capability Audit → ADRs → Specification → Implementation
+```
+
+**Steps:**
+
+0. Capability Audit (`media_kit` / `video_player` API + Windows runtime)
+1. Specification (acceptance criteria, validation matrix)
+2. ADRs (accepted only for audited capabilities)
+3. PlaybackService extensions
+4. Player UI
+5. Tests
+6. Windows runtime validation
+7. Closure
+
+**Scope (provisional until audit completes):**
 
 - Resume experience refinement
-- Playback speed
-- Subtitle track selection
-- Audio track selection
-- Chapter navigation where supported by the player stack
-- Playback history refinement
-- Clearer playback errors
-- Improved player controls
+- Playback speed (if `media_kit` audit confirms)
+- Subtitle / audio track selection (if audit confirms)
+- Chapter navigation — **audit first**; defer if API unsupported
+- Clearer resolver-aware playback errors
+- Improved player controls and desktop keyboard shortcuts
 
-**Note:** Resume-position persistence already exists (`PlaybackService` + `shared_preferences`). M4.4 **refines** — do not reimplement.
+**Note:** Resume-position persistence already exists (`PlaybackService` + `shared_preferences`). M4.4 **refines** — do not reimplement. `PlaybackService` remains the single playback authority; `PlayerScreen` reflects service state only.
 
 **Out of scope:**
 
 - Transcoding or server-side stream manipulation
 - DRM
 - Cast / DLNA unless separately approved
+- Chapters if capability audit fails
 
-**Dependencies:** Phase 4.2 (playback preferences); [playback architecture](../architecture/playback.md).
+**Dependencies:** Phase 4.2 (optional default speed in settings); [playback architecture](../architecture/playback.md).
 
 **Definition of done:**
 
+- Gate 0 capability audit complete
 - Resume behaviour preserved or improved without data loss
-- Track selection works for supported containers on Windows (`media_kit`)
-- Playback errors surface resolver and network context where relevant
-- Player controls meet design-system touch targets
+- Track/speed features (if in scope) work on Windows test fixtures
+- Playback errors use provider / resolver / playback layer taxonomy
+- `PlayerScreen` never bypasses `PlaybackService` to reach `media_kit` / `video_player`
 
 **Validation expectations:**
 
 - Playback service tests for resume read/write
-- Manual validation: local file and HTTPS stream with seek
+- Phase 4.4 Windows runtime harness (opt-in)
+- Manual validation: local file and HTTPS stream with seek; multi-audio MKV per audit
 
 **Documentation outputs:**
 
-- Update [playback.md](../architecture/playback.md)
+- [Phase 4.4 implementation specification](./m4-phase-4.4-playback-improvements.md) (draft — audit in progress)
+- Update [playback.md](../architecture/playback.md) at closure
 
-→ Architecture: [playback.md](../architecture/playback.md)
+→ Architecture: [playback.md](../architecture/playback.md)  
+→ Specification: [m4-phase-4.4-playback-improvements.md](./m4-phase-4.4-playback-improvements.md)
 
 ---
 
