@@ -1,6 +1,6 @@
 # Library Experience (M4 Phase 4.3)
 
-**Status:** Specification **Accepted** (2026-07-13) — Step 1 persistence + Step 2 catalog helpers implemented; no UI yet  
+**Status:** Specification **Accepted** (2026-07-13) — Steps 1–3 implemented; no browse UI yet  
 **Related roadmap phase:** [M4 Phase 4.3 — Library Experience](../roadmap/m4-plan.md#phase-43--library-experience)
 
 → [Phase 4.3 implementation spec](../roadmap/m4-phase-4.3-library-experience.md)  
@@ -89,9 +89,9 @@ Phase 4.1 Provider Status and Phase 4.2 grouped settings remain separate from li
 | `Catalog.findFolderById` / `findItemById` | Stable id resolution for favourites and navigation |
 | `Catalog.ancestorChainForFolder` | Catalogue-driven breadcrumbs (root-to-target inclusive) |
 | `Catalog.parentFolderOfItemId` | Containing-folder lookup without path parsing |
+| `SettingsRepository.general.libraryBrowse` | Global default sort only (ADR-008) — **Step 3 implemented** |
+| `buildLibraryFolderView` | Pure folder-first sort/filter derived views (ADR-008) — **Step 3 implemented** |
 | `LibraryMetadataRepository` | Favourites persistence — **Step 1 implemented** (ADR-007) |
-| `SettingsRepository.general.libraryBrowse` | Global default sort only (ADR-008) |
-| Folder sort/filter helpers | Client-side, non-destructive (ADR-008) |
 | `FolderScreen` | Breadcrumbs + sort/filter controls |
 | Dashboard Favourites section | Resolved favourites — app state, not a folder |
 | `SearchScreen` | Presentation polish — grouping, clear, keyboard |

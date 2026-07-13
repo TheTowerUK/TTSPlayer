@@ -1,6 +1,6 @@
 # M4 Phase 4.3 — Library Experience (Implementation Specification)
 
-**Status:** Specification — **Accepted** (2026-07-13) · Step 1 **implemented** · Step 2 **implemented** · Phase **not complete**  
+**Status:** Specification — **Accepted** (2026-07-13) · Steps 1–3 **implemented** · Phase **not complete**  
 **Milestone:** M4 — User Experience and Platform Integration  
 **Branch:** `m4-development`  
 **Development version:** `v0.5.0-dev`  
@@ -432,9 +432,9 @@ Mirrors Phase 4.2: **persistence and tests before UI**. UI layers consume reposi
 
 3. ~~**Catalog helper extensions**~~ *(implemented 2026-07-13)* — `ancestorChainForFolder`, `findFolderById`, `parentFolderOfItemId` (pure Dart; read-only over `Catalog`).
 
-4. **Settings envelope extension** — `general.libraryBrowse.defaultSortMode` when sort work begins (ADR-008).
+4. ~~**Settings envelope extension**~~ *(implemented 2026-07-13)* — `general.libraryBrowse.defaultSortMode` (ADR-008).
 
-5. **Sort/filter domain** — `FolderBrowseSorter` / `FolderBrowseFilter` (or equivalent); pure functions + unit tests; derived views only.
+5. ~~**Sort/filter domain**~~ *(implemented 2026-07-13)* — `buildLibraryFolderView` + `LibrarySortMode` / `LibraryFilter`; pure functions + unit tests; derived views only.
 
 ### Phase C — UI consumers
 
@@ -474,6 +474,16 @@ Mirrors Phase 4.2: **persistence and tests before UI**. UI layers consume reposi
 - Tests in `test/catalog_lookup_test.dart` (scenarios 1–17).
 - `validateAgainstCatalog` hardened: try/catch, `persistenceFailed` result, safe `main.dart` wrapper.
 - ADR-007 rationale corrected: prune-on-replacement, not prune-on-load.
+
+### Implementation notes — Step 3 (2026-07-13)
+
+- `general.libraryBrowse.defaultSortMode` in `ApplicationSettings` / `SettingsRepository` (`ttsplayer_settings_v1` unchanged).
+- Six sort modes per ADR-008: `default`, `nameAsc`, `nameDesc`, `addedNewest`, `addedOldest`, `type`.
+- Session filters: `all`, `foldersOnly`, `video`, `images` — not persisted.
+- `buildLibraryFolderView` in `lib/library/library_folder_view.dart` — filter then sort; folder-first; immutable catalogue input.
+- Video/image filters retain subfolders (ADR-008).
+- Tests: `settings_repository_test.dart` (library browse group), `library_sort_filter_test.dart`.
+- No FolderScreen UI, sort/filter controls, or favourites UI in this step.
 
 ---
 
@@ -523,7 +533,7 @@ Closure harness scenarios **L1–L18** (Windows + automated). Spec persistence s
 
 - [x] ADR-007, ADR-008, ADR-009 reviewed and **Accepted** (2026-07-13)
 - [x] `LibraryMetadataRepository` with versioned favourites persistence and prune-on-replacement
-- [ ] `SettingsRepository` stores global default sort mode only (no favourites)
+- [x] `SettingsRepository` stores global default sort mode only (no favourites)
 - [ ] `FolderScreen` breadcrumbs catalogue-driven per ADR-009
 - [ ] Sort and filter controls per ADR-008; folder-first preserved
 - [ ] Dashboard Favourites section; toggle on item and folder
