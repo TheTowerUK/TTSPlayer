@@ -326,26 +326,117 @@ class Catalog {
     return List.unmodifiable(items);
   }
 
-  /// Find a media item by catalogue id across the full tree.
-  MediaItem? findItemById(String itemId) {
-    for (final item in allItems) {
-      if (item.id == itemId) return item;
+  // ---------------------------------------------------------------------------
+  // Hierarchy lookup helpers (M4.3) — read-only tree traversal, no mutation.
+  //
+  // Each call walks the catalogue depth-first in emission order (folders list,
+  // then subfolders, then items). Time complexity is O(F + I) per lookup where
+  // F = folder nodes and I = indexed items. No lookup index is built here;
+  // Phase 4.5 may add immutable maps if profiling warrants optimisation.
+  //
+  // Duplicate catalogue ids: the first node encountered in DFS preorder wins.
+  // Folder ids and item ids are separate identity spaces — the same raw string
+  // may appear in both lists without collision in id-based lookups.
+  // ---------------------------------------------------------------------------
+
+  /// Finds a folder node by catalogue [folderId] across the full tree.
+  ///
+  /// Returns `null` when [folderId] is empty or unknown. Does not mutate the
+  /// catalogue. On duplicate folder ids, returns the first match in DFS order.
+  MediaFolder? findFolderById(String folderId) {
+    if (folderId.isEmpty) return null;
+    for (final folder in folders) {
+      final found = _findFolderByIdInTree(folder, folderId);
+      if (found != null) return found;
     }
     return null;
   }
 
-  /// Folder node that directly contains [item], if any.
-  MediaFolder? parentFolderOf(MediaItem item) {
-    MediaFolder? search(MediaFolder folder) {
-      if (folder.items.any((i) => i.id == item.id)) return folder;
-      for (final sub in folder.subfolders) {
-        final found = search(sub);
-        if (found != null) return found;
-      }
-      return null;
-    }
+  /// Finds a media item by catalogue [itemId] across the full tree.
+  ///
+  /// Returns `null` when [itemId] is empty or unknown. On duplicate item ids,
+  /// returns the first match in DFS preorder.
+  MediaItem? findItemById(String itemId) {
+    if (itemId.isEmpty) return null;
     for (final folder in folders) {
-      final found = search(folder);
+      final found = _findItemByIdInTree(folder, itemId);
+      if (found != null) return found;
+    }
+    return null;
+  }
+
+  /// Root-to-target ancestor chain for catalogue-driven breadcrumbs.
+  ///
+  /// Returns an ordered list from the top-level catalogue folder down to and
+  /// including the target folder. The target appears exactly once (as the last
+  /// element). Returns an empty list when [folderId] is unknown.
+  ///
+  /// Application-level "Home" / dashboard context is outside this helper — UI
+  /// prepends that segment separately (ADR-009).
+  List<MediaFolder> ancestorChainForFolder(String folderId) {
+    if (folderId.isEmpty) return const [];
+    for (final root in folders) {
+      final chain = _ancestorChainInSubtree(root, folderId);
+      if (chain != null) return List.unmodifiable(chain);
+    }
+    return const [];
+  }
+
+  /// Folder node that directly contains [item], if any.
+  MediaFolder? parentFolderOf(MediaItem item) =>
+      parentFolderOfItemId(item.id);
+
+  /// Folder that directly contains the item with [itemId], if any.
+  ///
+  /// Uses catalogue hierarchy only — does not parse [MediaItem.filePath].
+  /// On duplicate item ids, returns the parent of the first DFS match.
+  MediaFolder? parentFolderOfItemId(String itemId) {
+    if (itemId.isEmpty) return null;
+    for (final folder in folders) {
+      final found = _parentFolderOfItemIdInTree(folder, itemId);
+      if (found != null) return found;
+    }
+    return null;
+  }
+
+  MediaFolder? _findFolderByIdInTree(MediaFolder folder, String folderId) {
+    if (folder.id == folderId) return folder;
+    for (final sub in folder.subfolders) {
+      final found = _findFolderByIdInTree(sub, folderId);
+      if (found != null) return found;
+    }
+    return null;
+  }
+
+  MediaItem? _findItemByIdInTree(MediaFolder folder, String itemId) {
+    for (final item in folder.items) {
+      if (item.id == itemId) return item;
+    }
+    for (final sub in folder.subfolders) {
+      final found = _findItemByIdInTree(sub, itemId);
+      if (found != null) return found;
+    }
+    return null;
+  }
+
+  List<MediaFolder>? _ancestorChainInSubtree(
+    MediaFolder folder,
+    String folderId,
+  ) {
+    if (folder.id == folderId) return [folder];
+    for (final sub in folder.subfolders) {
+      final subChain = _ancestorChainInSubtree(sub, folderId);
+      if (subChain != null) {
+        return [folder, ...subChain];
+      }
+    }
+    return null;
+  }
+
+  MediaFolder? _parentFolderOfItemIdInTree(MediaFolder folder, String itemId) {
+    if (folder.items.any((i) => i.id == itemId)) return folder;
+    for (final sub in folder.subfolders) {
+      final found = _parentFolderOfItemIdInTree(sub, itemId);
       if (found != null) return found;
     }
     return null;

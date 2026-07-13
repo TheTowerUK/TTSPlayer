@@ -76,7 +76,7 @@ Constraints:
 
 - Separating configuration (`SettingsRepository`) from user metadata (`LibraryMetadataRepository`) matches ADR-004's category split and keeps reset semantics clear — "reset all settings" must not wipe favourites unless a separate destructive action is added later.
 - Catalogue `id` keys work across local paths and HTTP-served catalogues because both are produced by the same indexer schema.
-- Prune-on-load avoids unbounded stale lists without requiring filesystem watchers or move detection.
+- Prune-on-replacement avoids unbounded stale lists without requiring filesystem watchers or move detection. Repository `initialize()` / `load()` must not independently prune against the catalogue — only `validateAgainstCatalog` after a successful catalogue replacement does.
 
 ---
 

@@ -43,11 +43,19 @@ class CatalogueMetadataValidationResult {
     required this.changed,
     required this.prunedItemCount,
     required this.prunedFolderCount,
+    this.persistenceFailed = false,
+    this.warning,
   });
 
   final bool changed;
   final int prunedItemCount;
   final int prunedFolderCount;
+
+  /// True when pruning was needed but persistence could not complete.
+  final bool persistenceFailed;
+
+  /// Optional diagnostic when validation or persistence did not fully succeed.
+  final String? warning;
 }
 
 /// Loads, validates, and persists user-owned library metadata (ADR-007).
@@ -224,57 +232,73 @@ class LibraryMetadataRepository extends ChangeNotifier {
   Future<CatalogueMetadataValidationResult> validateAgainstCatalog(
     Catalog catalog,
   ) async {
-    final itemIds = catalog.allItems.map((i) => i.id).toSet();
-    final folderIds = _collectFolderIds(catalog);
+    try {
+      final itemIds = catalog.allItems.map((i) => i.id).toSet();
+      final folderIds = _collectFolderIds(catalog);
 
-    final keptItems =
-        favourites.items.where((r) => itemIds.contains(r.id)).toList();
-    final keptFolders =
-        favourites.folders.where((r) => folderIds.contains(r.id)).toList();
+      final keptItems =
+          favourites.items.where((r) => itemIds.contains(r.id)).toList();
+      final keptFolders =
+          favourites.folders.where((r) => folderIds.contains(r.id)).toList();
 
-    final prunedItems = favourites.items.length - keptItems.length;
-    final prunedFolders = favourites.folders.length - keptFolders.length;
-    final changed = prunedItems > 0 || prunedFolders > 0;
+      final prunedItems = favourites.items.length - keptItems.length;
+      final prunedFolders = favourites.folders.length - keptFolders.length;
+      final changed = prunedItems > 0 || prunedFolders > 0;
 
-    if (!changed) {
+      if (!changed) {
+        return const CatalogueMetadataValidationResult(
+          changed: false,
+          prunedItemCount: 0,
+          prunedFolderCount: 0,
+        );
+      }
+
+      final nextMetadata = _metadata.copyWith(
+        favourites: FavouritesMetadata(
+          items: keptItems,
+          folders: keptFolders,
+        ),
+      );
+
+      final persisted = await _persist(nextMetadata);
+      if (!persisted) {
+        return const CatalogueMetadataValidationResult(
+          changed: false,
+          prunedItemCount: 0,
+          prunedFolderCount: 0,
+          persistenceFailed: true,
+          warning: 'Could not persist pruned favourites after catalogue replacement.',
+        );
+      }
+
+      _metadata = nextMetadata;
+
+      notifyListeners();
+      if (kDebugMode && (prunedItems > 0 || prunedFolders > 0)) {
+        debugPrint(
+          '[LibraryMetadataRepository] pruned $prunedItems item and '
+          '$prunedFolders folder favourites after catalogue replacement.',
+        );
+      }
+
+      return CatalogueMetadataValidationResult(
+        changed: true,
+        prunedItemCount: prunedItems,
+        prunedFolderCount: prunedFolders,
+      );
+    } catch (e, stackTrace) {
+      debugPrint(
+        '[LibraryMetadataRepository] validateAgainstCatalog failed: $e\n'
+        '$stackTrace',
+      );
       return CatalogueMetadataValidationResult(
         changed: false,
         prunedItemCount: 0,
         prunedFolderCount: 0,
+        persistenceFailed: true,
+        warning: 'Catalogue favourite validation failed unexpectedly.',
       );
     }
-
-    final nextMetadata = _metadata.copyWith(
-      favourites: FavouritesMetadata(
-        items: keptItems,
-        folders: keptFolders,
-      ),
-    );
-
-    final persisted = await _persist(nextMetadata);
-    if (!persisted) {
-      return const CatalogueMetadataValidationResult(
-        changed: false,
-        prunedItemCount: 0,
-        prunedFolderCount: 0,
-      );
-    }
-
-    _metadata = nextMetadata;
-
-    notifyListeners();
-    if (kDebugMode && (prunedItems > 0 || prunedFolders > 0)) {
-      debugPrint(
-        '[LibraryMetadataRepository] pruned $prunedItems item and '
-        '$prunedFolders folder favourites after catalogue replacement.',
-      );
-    }
-
-    return CatalogueMetadataValidationResult(
-      changed: true,
-      prunedItemCount: prunedItems,
-      prunedFolderCount: prunedFolders,
-    );
   }
 
   Future<bool> _addFavourite({
@@ -350,12 +374,18 @@ class LibraryMetadataRepository extends ChangeNotifier {
     if (simulatePersistFailure) {
       return false;
     }
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-      storageKey,
-      jsonEncode(metadata.toPersistenceJson()),
-    );
-    return true;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return await prefs.setString(
+        storageKey,
+        jsonEncode(metadata.toPersistenceJson()),
+      );
+    } catch (e, stackTrace) {
+      debugPrint(
+        '[LibraryMetadataRepository] persist failed: $e\n$stackTrace',
+      );
+      return false;
+    }
   }
 
   static Set<String> _collectFolderIds(Catalog catalog) {

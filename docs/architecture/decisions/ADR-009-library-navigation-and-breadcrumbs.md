@@ -29,7 +29,7 @@ Phase 4.3 must improve deep-folder navigation without breaking catalogue-driven 
 
 Breadcrumb segments are derived from the **current catalogue tree**, not raw filesystem path string splitting alone.
 
-1. Add `Catalog.ancestorChainForFolder(String folderPath)` returning `List<MediaFolder>` root → parent → current, using `findFolderByPath` and tree parent links (or path walk validated against catalogue nodes).
+1. Add `Catalog.ancestorChainForFolder(String folderId)` returning `List<MediaFolder>` root → parent → current (inclusive), using catalogue tree parent links. Callers with a filesystem path resolve the folder via `findFolderByPath` first, then pass `folder.id`.
 
 2. Each segment displays `MediaFolder.name` — the real directory name from `catalog.json`.
 

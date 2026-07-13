@@ -1,6 +1,6 @@
 # M4 Phase 4.3 — Library Experience (Implementation Specification)
 
-**Status:** Specification — **Accepted** (2026-07-13) · Step 1 **implemented** · Phase **not complete**  
+**Status:** Specification — **Accepted** (2026-07-13) · Step 1 **implemented** · Step 2 **implemented** · Phase **not complete**  
 **Milestone:** M4 — User Experience and Platform Integration  
 **Branch:** `m4-development`  
 **Development version:** `v0.5.0-dev`  
@@ -155,7 +155,7 @@ Also on dashboard (out of 4.3 scope unless empty-state copy alignment): Overview
 
 **`MediaFolder`:** `id`, `name`, `path`, `itemCount`, `items`, `subfolders`, `totalItems`, `isEmpty`.
 
-**`Catalog` helpers:** `libraryFolders`, `allItems`, `findItemById`, `findFolderByPath`, `parentFolderOf`, `featuredFolders`, `catalogueIdentity`, `supportedExtensions`.
+**`Catalog` helpers:** `libraryFolders`, `allItems`, `findItemById`, `findFolderById`, `findFolderByPath`, `parentFolderOf`, `parentFolderOfItemId`, `ancestorChainForFolder`, `featuredFolders`, `catalogueIdentity`, `supportedExtensions`.
 
 **Not in catalogue:** `modified_at`, favourites, user sort prefs, last-played timestamp (Continue Watching uses position keys only).
 
@@ -200,7 +200,7 @@ No audio or document extensions indexed today.
 6. Filtered-empty vs folder-empty not distinguished.
 7. Long folder paths rely on app bar title ellipsis only.
 8. Keyboard navigation outside dashboard is limited.
-9. No `findFolderById` helper for favourite resolution (path lookup exists).
+9. ~~No `findFolderById` helper for favourite resolution (path lookup exists).~~ **Resolved Step 2** — `findFolderById`, `ancestorChainForFolder`.
 
 ---
 
@@ -210,7 +210,7 @@ See [ADR-009](../architecture/decisions/ADR-009-library-navigation-and-breadcrum
 
 ### Breadcrumbs
 
-- **Source:** catalogue hierarchy via `Catalog.ancestorChainForFolder(folderPath)`.
+- **Source:** catalogue hierarchy via `Catalog.ancestorChainForFolder(folderId)` (resolve `folderPath` → `MediaFolder.id` when needed).
 - **Display:** horizontal scrollable segment row below app bar (or integrated in `TtsAppBar` lower row).
 - **Labels:** `MediaFolder.name` only — never invented category names.
 - **Tap:** navigate to ancestor folder.
@@ -324,7 +324,7 @@ Repository notifies listeners once
 
 ### Identity helpers (implementation)
 
-Add `Catalog.findFolderById(String id)` mirroring `findItemById`.
+`Catalog.findFolderById(String id)` mirrors `findItemById`. `ancestorChainForFolder(String folderId)` returns root-to-target inclusive chain. `parentFolderOfItemId` resolves containing folder without parsing `file_path`. Duplicate ids: first DFS preorder match wins. Lookup complexity O(F + I) per call; indexing deferred to Phase 4.5.
 
 ---
 
@@ -403,7 +403,7 @@ Operational provider errors continue to direct users to dashboard **Provider Sta
 
 | Layer | Tests |
 |---|---|
-| **Catalog helpers** | `ancestorChainForFolder`, `findFolderById` |
+| **Catalog helpers** | `ancestorChainForFolder`, `findFolderById`, `parentFolderOfItemId` |
 | **Sort** | Each mode + tie-break + null `addedAt` + folder-first |
 | **Filter** | Each mode + empty-filtered state + extension edge cases |
 | **LibraryMetadataRepository** | Save/load, prune on catalogue replace, corrupt JSON recovery |
@@ -430,7 +430,7 @@ Mirrors Phase 4.2: **persistence and tests before UI**. UI layers consume reposi
    **Deliverables:** `library_metadata.dart`, `library_metadata_repository.dart`, `library_metadata_repository_test.dart`; `CatalogService` `onCatalogReplaced(Catalog)` wiring in `main.dart`.  
    **Excluded:** UI, breadcrumbs, sort, filter, search, catalog navigation helpers.
 
-3. **Catalog helper extensions** — `ancestorChainForFolder`, `findFolderById` (pure Dart; read-only over `Catalog`).
+3. ~~**Catalog helper extensions**~~ *(implemented 2026-07-13)* — `ancestorChainForFolder`, `findFolderById`, `parentFolderOfItemId` (pure Dart; read-only over `Catalog`).
 
 4. **Settings envelope extension** — `general.libraryBrowse.defaultSortMode` when sort work begins (ADR-008).
 
@@ -465,6 +465,15 @@ Mirrors Phase 4.2: **persistence and tests before UI**. UI layers consume reposi
 - `CatalogService.onCatalogReplaced` now receives the replaced `Catalog`; `main.dart` composes artwork cache clear + `validateAgainstCatalog`.
 - Prune runs only via explicit `validateAgainstCatalog` after successful replacement — not on navigation.
 - No UI, sort, filter, or breadcrumb work in this step.
+
+### Implementation notes — Step 2 (2026-07-13)
+
+- `Catalog.findFolderById`, `ancestorChainForFolder`, `parentFolderOfItemId` in `lib/models/catalog.dart`.
+- Ancestor chain is root-to-target **inclusive**; dashboard "Home" is outside the helper (ADR-009).
+- DFS preorder for duplicate-id resolution; no path parsing for hierarchy.
+- Tests in `test/catalog_lookup_test.dart` (scenarios 1–17).
+- `validateAgainstCatalog` hardened: try/catch, `persistenceFailed` result, safe `main.dart` wrapper.
+- ADR-007 rationale corrected: prune-on-replacement, not prune-on-load.
 
 ---
 

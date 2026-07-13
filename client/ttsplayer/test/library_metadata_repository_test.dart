@@ -451,6 +451,29 @@ void main() {
       expect(prefs.getString(LibraryMetadataRepository.storageKey), before);
     });
 
+    test('validation persistence failure preserves in-memory favourites',
+        () async {
+      final repository = await seededRepository();
+      repository.simulatePersistFailure = true;
+
+      final slimCatalog = testCatalog(
+        folders: [
+          testFolder(
+            id: folderA,
+            items: [testItem(id: itemA)],
+          ),
+        ],
+      );
+
+      final result = await repository.validateAgainstCatalog(slimCatalog);
+
+      expect(result.changed, isFalse);
+      expect(result.persistenceFailed, isTrue);
+      expect(result.warning, isNotNull);
+      expect(repository.isItemFavourited(itemB), isTrue);
+      expect(repository.isFolderFavourited(folderB), isTrue);
+    });
+
     test('20 catalogue objects remain unchanged after validation', () async {
       final repository = await seededRepository();
       final itemIdsBefore = catalog.allItems.map((i) => i.id).toList();

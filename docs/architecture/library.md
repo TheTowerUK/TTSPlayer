@@ -1,6 +1,6 @@
 # Library Experience (M4 Phase 4.3)
 
-**Status:** Specification **Accepted** (2026-07-13) — Step 1 persistence implemented; no UI yet  
+**Status:** Specification **Accepted** (2026-07-13) — Step 1 persistence + Step 2 catalog helpers implemented; no UI yet  
 **Related roadmap phase:** [M4 Phase 4.3 — Library Experience](../roadmap/m4-plan.md#phase-43--library-experience)
 
 → [Phase 4.3 implementation spec](../roadmap/m4-phase-4.3-library-experience.md)  
@@ -74,7 +74,7 @@ Polish browsing, discovery, and navigation on the **existing folder-tree catalog
 | Configuration | `SettingsRepository` (`ttsplayer_settings_v1`) |
 | Playback progress | `PlaybackService` (`position_*`, `duration_*`) |
 | Catalogue runtime | `CatalogService` (`catalog_path`, etc.) |
-| Favourites | **Does not exist** |
+| Favourites | **Step 1 implemented** — `LibraryMetadataRepository` (`ttsplayer_library_metadata_v1`) |
 
 ### Provider + settings (unchanged by 4.3)
 
@@ -86,7 +86,9 @@ Phase 4.1 Provider Status and Phase 4.2 grouped settings remain separate from li
 
 | Component | Role |
 |---|---|
-| `Catalog.ancestorChainForFolder` | Catalogue-driven breadcrumbs |
+| `Catalog.findFolderById` / `findItemById` | Stable id resolution for favourites and navigation |
+| `Catalog.ancestorChainForFolder` | Catalogue-driven breadcrumbs (root-to-target inclusive) |
+| `Catalog.parentFolderOfItemId` | Containing-folder lookup without path parsing |
 | `LibraryMetadataRepository` | Favourites persistence — **Step 1 implemented** (ADR-007) |
 | `SettingsRepository.general.libraryBrowse` | Global default sort only (ADR-008) |
 | Folder sort/filter helpers | Client-side, non-destructive (ADR-008) |
@@ -113,7 +115,7 @@ See [ADR-007](./decisions/ADR-007-library-metadata-and-favourites.md).
 
 - Stored at `ttsplayer_library_metadata_v1` — **not** in settings envelope or `catalog.json`.
 - Identity: catalogue `id` for items and folders.
-- Prune absent ids on **catalogue replacement** only (not mid-navigation); notify listeners once.
+- Prune absent ids on **catalogue replacement** only (not on `initialize()` / `load()`); notify listeners once.
 - Dashboard section: first 10 + View all; toggles on item/folder surfaces.
 
 ---

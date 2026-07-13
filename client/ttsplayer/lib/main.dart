@@ -7,6 +7,7 @@ import 'package:media_kit/media_kit.dart';
 import 'package:provider/provider.dart';
 
 import 'features/dashboard/dashboard_screen.dart';
+import 'models/catalog.dart';
 import 'navigation/app_navigator.dart';
 import 'services/artwork/artwork_service.dart';
 import 'services/catalog_service.dart';
@@ -46,7 +47,10 @@ Future<void> main() async {
     settingsRepository: settingsRepository,
     onCatalogReplaced: (catalog) {
       artworkService.clearCache();
-      unawaited(libraryMetadataRepository.validateAgainstCatalog(catalog));
+      unawaited(_validateLibraryMetadataAfterCatalogReplace(
+        libraryMetadataRepository,
+        catalog,
+      ));
     },
   );
 
@@ -78,6 +82,21 @@ Future<void> main() async {
       child: const TTSPlayerApp(),
     ),
   );
+}
+
+/// Failure-safe favourite validation after catalogue replacement (ADR-007).
+/// Errors must not propagate to catalogue load or artwork invalidation.
+Future<void> _validateLibraryMetadataAfterCatalogReplace(
+  LibraryMetadataRepository repository,
+  Catalog catalog,
+) async {
+  try {
+    await repository.validateAgainstCatalog(catalog);
+  } catch (e, stackTrace) {
+    debugPrint(
+      '[main] validateAgainstCatalog failed: $e\n$stackTrace',
+    );
+  }
 }
 
 class TTSPlayerApp extends StatelessWidget {
