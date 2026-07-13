@@ -76,6 +76,10 @@ Every ADR must include these headings (use [ADR-template.md](./ADR-template.md))
 | [ADR-007](./ADR-007-library-metadata-and-favourites.md) | Library Metadata and Favourites | Accepted |
 | [ADR-008](./ADR-008-library-sorting-and-filtering.md) | Library Sorting and Filtering | Accepted |
 | [ADR-009](./ADR-009-library-navigation-and-breadcrumbs.md) | Library Navigation and Breadcrumbs | Accepted |
+| [ADR-010](./ADR-010-playback-state-extensions.md) | Playback State Extensions | Accepted |
+| [ADR-011](./ADR-011-playback-preferences.md) | Playback Preferences | Accepted |
+| [ADR-012](./ADR-012-track-selection.md) | Track Selection | Accepted |
+| [ADR-013](./ADR-013-playback-error-taxonomy.md) | Playback Error Taxonomy | Accepted |
 
 ---
 

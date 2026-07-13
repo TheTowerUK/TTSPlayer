@@ -7,7 +7,7 @@ Canonical milestone detail lives in [`docs/roadmap/`](docs/roadmap/).
 | M2 | [First Playable Release](docs/roadmap/roadmap.md#m2--first-playable-release) | ✅ v0.2.0 |
 | M3 | [Personal Media Experience](docs/roadmap/m3-personal-media-experience.md) | ✅ v0.3.0 |
 | M3.5 | [Network Client Foundation](docs/roadmap/network-client-foundation.md) | ✅ `m3.5-complete` |
-| M4 | [User Experience and Platform Integration](docs/roadmap/m4-plan.md) | 🔄 Active — Phase 4.3 complete (`v0.5.0-dev`) |
+| M4 | [User Experience and Platform Integration](docs/roadmap/m4-plan.md) | 🔄 Active — Phase 4.4 spec accepted (`v0.5.0-dev`) |
 | M7 | [Multi-device Experience](docs/roadmap/mobile-delivery.md#m7--multi-device-experience) | Planned |
 
 → [Roadmap principles](docs/roadmap/principles.md)  
@@ -65,7 +65,7 @@ Sprint checkpoints: `m3-sprint-3`, `m3-complete`. Sprint 4 delivered Featured Fo
 
 ## M4 — User Experience and Platform Integration
 
-**Status:** Active development — Phase 4.3 complete; Phase 4.4 planning  
+**Status:** Active development — Phase 4.4 specification accepted; implementation not started  
 **Branch:** `m4-development`  
 **Development version:** `v0.5.0-dev`
 
@@ -76,7 +76,11 @@ Sprint checkpoints: `m3-sprint-3`, `m3-complete`. Sprint 4 delivered Featured Fo
 | **4.1** | Provider Management | ✅ Complete (2026-07-12) |
 | **4.2** | Settings Framework | ✅ Complete (2026-07-12) |
 | **4.3** | Library Experience | ✅ Complete (2026-07-13) |
-| **4.4** | Playback Improvements | Planned |
+| **4.4** | Playback Improvements | Specification accepted — Gate 0 complete — implementation next |
+
+→ [Phase 4.4 specification](docs/roadmap/m4-phase-4.4-playback-improvements.md)  
+→ [Gate 0 audit](docs/roadmap/m4-phase-4.4-gate0-capability-audit.md)  
+→ [ADR-010–013](docs/architecture/decisions/README.md#index)
 
 ### Focus
 
@@ -86,4 +90,5 @@ Polish settings, provider visibility, library browsing, playback controls, perfo
 → [Phase 4.1 specification](docs/roadmap/m4-phase-4.1-provider-management.md)  
 → [Phase 4.2 specification](docs/roadmap/m4-phase-4.2-settings-framework.md) *(complete)*  
 → [Phase 4.3 specification](docs/roadmap/m4-phase-4.3-library-experience.md) *(complete)*  
+→ [Phase 4.4 specification](docs/roadmap/m4-phase-4.4-playback-improvements.md) *(accepted)*  
 → [v0.5.0-dev tracker](docs/release/v0.5.0-dev.md)

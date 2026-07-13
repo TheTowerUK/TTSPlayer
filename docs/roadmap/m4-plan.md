@@ -1,6 +1,6 @@
 # M4 — User Experience and Platform Integration
 
-**Status:** Active development (`v0.5.0-dev`) — Phase 4.3 complete; **Phase 4.4 Gate 0 complete — Specification next**  
+**Status:** Active development (`v0.5.0-dev`) — **Phase 4.4 specification accepted; implementation not started**  
 **Branch:** `m4-development`  
 **Development version:** `v0.5.0-dev`  
 **Predecessor:** M3.5 Media Access Platform  
@@ -54,7 +54,7 @@ Implement in order unless a documented dependency allows parallel documentation 
 | **4.1** | Provider Management | ✅ Complete (2026-07-12) |
 | **4.2** | Settings Framework | ✅ Complete (2026-07-12) |
 | **4.3** | Library Experience | ✅ Complete (2026-07-13) |
-| **4.4** | Playback Improvements | Planned |
+| **4.4** | Playback Improvements | Spec accepted — implementation next | [spec](./m4-phase-4.4-playback-improvements.md) |
 | **4.5** | Performance and Caching | Planned |
 | **4.6** | Diagnostics and Supportability | Planned |
 | **4.7** | Release and Documentation | Planned |
@@ -207,7 +207,7 @@ M3.5 implemented provider configuration, local/HTTP catalogue loading, startup s
 
 ### Phase 4.4 — Playback Improvements
 
-**Status:** Gate 0 **complete** (2026-07-13) — [audit](./m4-phase-4.4-gate0-capability-audit.md); Specification + ADRs next.
+**Status:** Gate 0 **complete** · Specification **accepted** · ADR-010–013 **accepted** — implementation not started.
 
 **Objective:** Refine playback UX and multi-track handling on top of existing resume and resolver integration.
 
@@ -220,9 +220,9 @@ Inventory → Capability Audit → ADRs → Specification → Implementation
 **Steps:**
 
 0. Capability Audit — **complete** ([audit](./m4-phase-4.4-gate0-capability-audit.md))
-1. Specification (acceptance criteria, validation matrix)
-2. ADRs (accepted only for audited capabilities)
-3. PlaybackService extensions
+1. Specification + ADRs — **complete** ([spec](./m4-phase-4.4-playback-improvements.md), ADR-010–013)
+2. PlaybackService extensions
+3. Settings integration
 4. Player UI
 5. Tests
 6. Windows runtime validation
@@ -265,7 +265,8 @@ Inventory → Capability Audit → ADRs → Specification → Implementation
 **Documentation outputs:**
 
 - [Phase 4.4 Gate 0 audit](./m4-phase-4.4-gate0-capability-audit.md) (complete)
-- [Phase 4.4 implementation specification](./m4-phase-4.4-playback-improvements.md) (draft — spec next)
+- [Phase 4.4 implementation specification](./m4-phase-4.4-playback-improvements.md) (accepted — pre-implementation)
+- ADR-010–013 ([index](../architecture/decisions/README.md#index))
 - Update [playback.md](../architecture/playback.md) at closure
 
 → Architecture: [playback.md](../architecture/playback.md)  

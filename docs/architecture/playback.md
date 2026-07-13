@@ -1,32 +1,40 @@
-# Playback (M4 planning)
+# Playback (M4 Phase 4.4)
 
-**Status:** Planning — M4 Phase 4.4 · **Gate 0 complete** (2026-07-13)  
+**Status:** **Specification accepted (pre-implementation)** — Gate 0 complete · ADRs accepted · implementation not started  
 **Related roadmap phase:** [M4 Phase 4.4 — Playback Improvements](../roadmap/m4-phase-4.4-playback-improvements.md)  
 **Gate 0 audit:** [m4-phase-4.4-gate0-capability-audit.md](../roadmap/m4-phase-4.4-gate0-capability-audit.md)
 
 → [Media access abstraction](./media-access-abstraction.md)  
 → [Path mapping](./path-mapping.md)  
+→ [Settings](./settings.md)  
 → [M4 foundation snapshot](../release/m4-foundation-complete.md)
+
+**ADRs (Accepted 2026-07-13):**
+
+- [ADR-010: Playback State Extensions](./decisions/ADR-010-playback-state-extensions.md)
+- [ADR-011: Playback Preferences](./decisions/ADR-011-playback-preferences.md)
+- [ADR-012: Track Selection](./decisions/ADR-012-track-selection.md)
+- [ADR-013: Playback Error Taxonomy](./decisions/ADR-013-playback-error-taxonomy.md)
 
 ---
 
 ## Purpose
 
-Refine playback UX, multi-track handling, and error presentation on top of M3 playback and M3.5 resolver integration — without reimplementing resume or provider-neutral URI resolution.
+Refine playback UX on top of M3 playback and M3.5 resolver integration — speed, embedded track selection, keyboard shortcuts, resume polish, and playback-layer errors — without reimplementing resume persistence or provider/settings behaviour.
 
-Phase 4.4 follows an extended cadence (see [implementation spec](../roadmap/m4-phase-4.4-playback-improvements.md)):
+**Cadence:**
 
 ```
-Inventory → Capability Audit (Gate 0) → ADRs → Specification → Implementation
+Inventory → Gate 0 ✅ → ADRs ✅ → Specification ✅ → Implementation (next)
 ```
 
-Playback depends on **`media_kit`** on Windows. ADRs must not commit to features (e.g. chapters) until the audit confirms the underlying API.
+Capabilities are limited to [Gate 0 verified outcomes](../roadmap/m4-phase-4.4-gate0-capability-audit.md#phase-44-scope-hand-off). Chapters and external subtitle sidecars are deferred.
 
 ---
 
 ## Architectural principles
 
-### PlaybackService is the single authority (since M3)
+### PlaybackService is the single authority ([ADR-010](./decisions/ADR-010-playback-state-extensions.md))
 
 ```
 PlayerScreen  →  PlaybackService  →  media_kit | video_player
@@ -34,17 +42,54 @@ PlayerScreen  →  PlaybackService  →  media_kit | video_player
 
 **Player UI reflects `PlaybackService` state; it does not own playback state.**
 
-`PlayerScreen` must not call `media_kit` or `video_player` directly for control operations. Presentation-only UI state (overlay visibility) stays in the widget.
+### Three-layer error taxonomy ([ADR-013](./decisions/ADR-013-playback-error-taxonomy.md))
 
-### Three-layer error taxonomy
+| Layer | Example message | Surface |
+|---|---|---|
+| Provider | "HTTPS catalogue unavailable" | Dashboard / Provider Status |
+| Resolver | (mapped to playback copy in player) | Pre-play boundary |
+| Playback | "This video could not be played." | Player error view |
 
-| Layer | Example message |
+Playback must not duplicate Provider Status diagnostics.
+
+---
+
+## Gate 0 outcomes (complete)
+
+| Capability | Verified | Phase 4.4 |
+|---|---|---|
+| Playback speed | ✅ | In scope — Windows |
+| Audio tracks | ✅ | In scope — Windows |
+| Subtitle tracks | ✅ | In scope — embedded, Windows |
+| Chapters | ❌ | Post-M4 |
+
+→ [Full audit](../roadmap/m4-phase-4.4-gate0-capability-audit.md)
+
+---
+
+## M4.4 scope (specification)
+
+| In scope | Out of scope |
 |---|---|
-| Provider | "HTTPS catalogue unavailable" |
-| Resolver | "Media location could not be resolved" |
-| Playback | "This video could not be played." |
+| Playback speed + settings default | Chapters |
+| Embedded audio/subtitle pickers | External subtitle discovery |
+| Keyboard shortcuts (desktop) | Streaming architecture |
+| Resume UX polish | Codec expansion |
+| Playback error presentation | Performance (4.5) |
+| Desktop control polish | Diagnostics (4.6) |
 
-Each layer describes only its own responsibility. See [Phase 4.4 spec — Error handling](../roadmap/m4-phase-4.4-playback-improvements.md#error-handling--three-layers).
+---
+
+## PlaybackService extensions (planned — Step 2)
+
+| Area | Detail |
+|---|---|
+| State | `playbackRate`, track DTO lists, selected ids, `PlaybackErrorKind` |
+| Methods | `setPlaybackRate`, `selectAudioTrack`, `selectSubtitleTrack` |
+| Settings | Default speed from `SettingsRepository` ([ADR-011](./decisions/ADR-011-playback-preferences.md)) |
+| Tracks | Embedded only; Windows-first ([ADR-012](./decisions/ADR-012-track-selection.md)) |
+
+→ [Implementation spec](../roadmap/m4-phase-4.4-playback-improvements.md#playbackservice-extensions-step-2)
 
 ---
 
@@ -52,104 +97,25 @@ Each layer describes only its own responsibility. See [Phase 4.4 spec — Error 
 
 | Capability | State |
 |---|---|
-| `PlaybackService` | Windows: `media_kit`; other platforms: `video_player` |
-| `MediaLocationResolver` | Resolves catalogue `file_path` → `file://` or HTTPS media URL |
-| Resume position | Saved per item in `shared_preferences`; restored on play |
-| Preflight / timeout | Playback start guards and error recovery from M2/M3 |
-| HTTP Range | Seeking over HTTPS validated on TNAS (M3.5) |
-| Player screen | Full-screen playback with basic controls |
-| Item status gate | `MediaItemStatus.isPlayable` — single Play button authority |
-
-**Not in baseline:** playback speed UI, subtitle/audio track picker, chapter navigation, player keyboard shortcuts, resolver-aware playback error copy.
-
-Full inventory: [Phase 4.4 spec — Current baseline inventory](../roadmap/m4-phase-4.4-playback-improvements.md#current-baseline-inventory).
+| `PlaybackService` | Windows: `media_kit`; other: `video_player` |
+| Resume | `position_*` / `duration_*` in `shared_preferences` |
+| Resolver | `MediaLocationResolver` in `play()` |
+| Player controls | Play/pause, seek, −10/+30, retry, buffering |
+| **Not wired** | Speed, tracks, shortcuts, structured errors, settings default |
 
 ---
 
-## Gate 0 — Capability Audit (complete)
+## Validation (planned — Step 6)
 
-| Feature | Outcome |
-|---|---|
-| Playback speed | **Verified** — `setRate` on Windows local MP4 |
-| Audio tracks | **API verified** — switch validated at 4.4 closure with NAS MKV |
-| Subtitle tracks | **API verified** — embedded subs; `SubtitleTrack.no()` |
-| Chapters | **Defer beyond M4** — no public Dart API |
+Draft matrix **P1–P24** in [Phase 4.4 spec](../roadmap/m4-phase-4.4-playback-improvements.md#windows-runtime-validation-step-6--draft-not-executed). Harness: `PHASE_44_RUNTIME=1` (to be created at implementation).
 
-Full matrix and harness: [Gate 0 audit](../roadmap/m4-phase-4.4-gate0-capability-audit.md).
-
----
-
-## M4.4 goals (Gate 0 confirmed)
-
-| Area | Intent |
-|---|---|
-| Resume UX | Clearer resume prompt; preserve existing prefs keys |
-| Speed | Variable playback speed where audit confirms `media_kit` support |
-| Subtitles | Embedded track selection when audit confirms |
-| Audio tracks | Multi-audio selection when audit confirms |
-| Chapters | **Deferred beyond M4** |
-| Errors | Resolver-aware playback-layer messages |
-| Controls | Improved layout, keyboard shortcuts on desktop |
-
----
-
-## Proposed responsibilities
-
-| Component | M4.4 role |
-|---|---|
-| `PlaybackService` | Track APIs, speed, enriched error types — **single authority** |
-| Player UI | Controls overlay, track menus — **reflects service state only** |
-| Resume store | Evolve existing prefs — same keys where possible |
-| `MediaLocationResolver` | Unchanged contract; playback layer consumes `ResolvedMediaLocation` |
-
----
-
-## Data / state considerations
-
-- Resume keys remain per `MediaItem.id`
-- Speed preference may default from [settings.md](./settings.md) if speed ships
-- Continue Watching continues to use existing resume store
-
----
-
-## Failure handling
-
-- Unresolved URI: playback layer shows resolver-derived message — not provider dashboard copy
-- Unsupported track type: disable control; do not crash player
-- Seek failure on stream: user-visible message; retain last position
-
----
-
-## Testing considerations
-
-- Resume read/write unit tests (existing patterns)
-- Mock resolver failures for playback-layer message copy
-- Windows runtime harness (Phase 4.4) — pattern from Phase 4.3
-- Manual: local MP4 + HTTPS MKV with multiple audio tracks (audit fixtures)
-
----
-
-## Open decisions (Step 1 specification)
-
-1. **External subtitle sidecars** — defer 4.4 unless NAS VTT audit passes at closure
-2. **Default playback speed in settings** — optional if speed ships
-3. **HTTPS `setRate`** — re-validate on TNAS before 4.4 closure
-
----
-
-## Out of scope
-
-- Transcoding
-- DRM
-- Live TV / HLS adaptive streaming (unless already supported incidentally)
-- Cast / DLNA
-- Diagnostics export (Phase 4.6)
+Gate 0 harness (third-party only): `GATE0_MEDIA_KIT=1` → `gate0_media_kit_capability_test.dart`.
 
 ---
 
 ## Related documents
 
 - [M4 Phase 4.4 implementation spec](../roadmap/m4-phase-4.4-playback-improvements.md)
-- [M4 Phase 4.4 Gate 0 audit](../roadmap/m4-phase-4.4-gate0-capability-audit.md)
+- [Gate 0 audit](../roadmap/m4-phase-4.4-gate0-capability-audit.md)
 - [settings.md](./settings.md)
 - [diagnostics.md](./diagnostics.md)

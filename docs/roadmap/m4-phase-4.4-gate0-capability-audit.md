@@ -210,10 +210,10 @@ enum PlaybackErrorKind {
 
 | ID | Topic | Gate 0 basis |
 |---|---|---|
-| **ADR-010** | Playback authority and UI boundary | Principle established M3; formalise |
-| **ADR-011** | Playback error taxonomy (provider / resolver / playback) | Layer model in parent spec |
-| **ADR-012** | Playback speed | **Verified** `setRate` on Windows |
-| **ADR-013** | Audio and subtitle track selection | **API verified**; embedded only for 4.4 |
+| **ADR-010** | Playback State Extensions | Principle + Gate 0 |
+| **ADR-011** | Playback Preferences | Speed default verified |
+| **ADR-012** | Track Selection | Embedded tracks API verified |
+| **ADR-013** | Playback Error Taxonomy | Layer model |
 | ~~ADR-014~~ | ~~Chapter navigation~~ | **Removed** — deferred beyond M4 |
 
 ---

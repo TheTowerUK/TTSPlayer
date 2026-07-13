@@ -6,7 +6,7 @@
 → [Provider management](./provider-management.md) *(4.1 complete)*  
 → [Phase 4.2 specification](../roadmap/m4-phase-4.2-settings-framework.md)  
 → [Runtime validation results](../roadmap/m4-phase-4.2-settings-framework.md#windows-runtime-validation-2026-07-12)  
-→ [Playback](./playback.md) *(4.4 — deferred playback prefs)*  
+→ [Playback](./playback.md) *(4.4 — spec accepted)*  
 → [Diagnostics](./diagnostics.md) *(4.6 — deferred deep detail)*
 
 **ADRs (Accepted):**
@@ -97,7 +97,7 @@ Provider health, retry, and refresh remain on the dashboard (ADR-003).
 ## Transition notes
 
 1. **Provider Save** still writes the legacy `media_provider_config_v1` key via `MediaProviderConfigService` while the envelope is also populated on migration and for network/reset operations. Full envelope-only provider writes are a follow-on cleanup.
-2. **Playback** section is informational until Phase 4.4.
+2. **Playback** section implements default speed per [ADR-011](./decisions/ADR-011-playback-preferences.md) in Phase 4.4.
 3. **Theme / startup route** remain deferred — only dark theme exists today.
 
 ---
