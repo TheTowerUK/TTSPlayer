@@ -18,15 +18,58 @@
 - [ADR-008: Library Sorting and Filtering](../architecture/decisions/ADR-008-library-sorting-and-filtering.md)
 - [ADR-009: Library Navigation and Breadcrumbs](../architecture/decisions/ADR-009-library-navigation-and-breadcrumbs.md)
 
-Follow the established M4 cadence: baseline inventory → ADR acceptance → incremental implementation → automated tests → Windows runtime validation → documentation → retrospective → closure.
+Follow the established M4 cadence: baseline inventory → ADR acceptance → persistence layer → tests → UI consumers → Windows validation → closure.
 
-**This document is a documentation-only pass.** No application code changes until ADRs are accepted and implementation is scheduled.
+**Implementation has not started.** First code step mirrors Phase 4.2: `LibraryMetadataRepository` only — no UI.
 
 ---
 
 ## Objective
 
-Improve **day-to-day library browsing, discovery, navigation, and user-managed metadata** on top of the existing folder-tree catalogue — without changing the filesystem layout, `catalog.json` schema (unless a minimal client-side helper is required), or provider/settings behaviour from Phases 4.1–4.2.
+Improve **day-to-day library browsing, discovery, navigation, and user-managed metadata** on top of the existing folder-tree catalogue — without changing the filesystem layout, `catalog.json` schema (unless a minimal client-side read helper is required), or provider/settings behaviour from Phases 4.1–4.2.
+
+---
+
+## Architectural principles
+
+### Immutable catalogue (read-only in 4.3)
+
+Phase 4.3 must treat the **loaded catalogue as immutable**. The client reads `catalog.json` (via `CatalogService`); nothing in 4.3 mutates the in-memory `Catalog` / `MediaFolder` / `MediaItem` model or writes back to the catalogue file.
+
+```
+catalog.json  →  read-only snapshot in memory
+        │
+        ├── Sorting   →  produces a sorted *view* (derived list)
+        ├── Filtering →  produces a filtered *view* (derived list)
+        └── Favourites →  external metadata (LibraryMetadataRepository)
+```
+
+- Sort and filter operate on **copies or derived iterables** — never reorder catalogue source lists in place.
+- Favourites store **ids only** — resolution against the current catalogue on read.
+- Indexer and scanner output remain the sole writers of `catalog.json`.
+
+This reinforces filesystem-is-truth: the app reflects the catalogue; it does not edit it.
+
+### Three persistence domains (M4)
+
+```
+SettingsRepository          →  application configuration
+LibraryMetadataRepository   →  user metadata (favourites, future ratings/tags)
+CatalogService              →  runtime catalogue (load, replace, last-good path)
+```
+
+Playback progress (`PlaybackService`) remains a fourth, separate concern — not settings, not library metadata.
+
+Each layer has a single responsibility. Phase 4.3 adds `LibraryMetadataRepository` only; it does not extend `SettingsRepository` with favourites or catalogue content.
+
+### Sort vs filter (independent operations)
+
+| Operation | Meaning | Persistence (4.3) |
+|---|---|---|
+| **Sort** | Presentation order of the visible set | Global **default** in `SettingsRepository`; in-session override ephemeral |
+| **Filter** | Which subset is visible | **Session only** — never persisted |
+
+Sort answers *in what order*; filter answers *which items appear*. They compose (filter then sort within groups) but neither writes the other’s state.
 
 ---
 
@@ -40,7 +83,7 @@ Improve **day-to-day library browsing, discovery, navigation, and user-managed m
 | Dashboard discovery sections | `DashboardService` + M3 widgets | M3 | Libraries, CW, Recently Added, Featured |
 | Global Search (in-memory index) | `SearchService` | M3 | Score-ranked flat list |
 | Artwork resolution | `ArtworkService` | M3 / hotfix | Cache cleared on catalogue replace |
-| **Folder sort/filter** | — | **4.3 new** | Client-side on catalogue fields |
+| **Folder sort/filter** | — | **4.3 new** | Derived views over immutable catalogue |
 | **Breadcrumbs** | — | **4.3 new** | Catalogue ancestor chain |
 | **Favourites** | — | **4.3 new** | `LibraryMetadataRepository` |
 | **Search presentation polish** | — | **4.3 new** | Grouping, actions — not engine rewrite |
@@ -210,6 +253,8 @@ See [ADR-008](../architecture/decisions/ADR-008-library-sorting-and-filtering.md
 
 **Folder-first:** subfolders section always above items section.
 
+**Derived views:** sort produces a new ordered iterable; it does not mutate `MediaFolder.items` or `subfolders` on the catalogue model.
+
 **Persistence:** global default in `SettingsRepository.general.libraryBrowse.defaultSortMode`; in-session override resets on next cold open.
 
 **Controls:** compact dropdown or segmented control in `FolderScreen` header — not in dashboard sections.
@@ -232,7 +277,8 @@ See [ADR-008](../architecture/decisions/ADR-008-library-sorting-and-filtering.md
 - Single active filter; **session-only** (not persisted).
 - Scoped to **current folder** non-recursively.
 - Subfolders remain visible for Video/Images filters (navigate down to find matches).
-- Combined with sort within each visible group.
+- Filter produces a **derived visible subset**; then sort applies within each group.
+- **Independent of sort** — changing filter does not alter persisted default sort (ADR-008).
 
 ---
 
@@ -338,7 +384,7 @@ Operational provider errors continue to direct users to dashboard **Provider Sta
 | Scroll positions | — | Optional session `PageStorageKey` only |
 | Navigation stack | `Navigator` | Ephemeral |
 
-**Forbidden:** favourites in settings envelope; catalogue writes for user metadata; mixing progress keys with favourite ids.
+**Forbidden:** favourites in settings envelope; catalogue model mutation in place; catalogue file writes for user metadata; mixing progress keys with favourite ids.
 
 ---
 
@@ -371,21 +417,59 @@ Operational provider errors continue to direct users to dashboard **Provider Sta
 
 ## Implementation order
 
-1. **Baseline inventory + ADR acceptance** — this spec; ADR-007–009 → Accepted.
-2. **Catalog navigation helpers** — `ancestorChainForFolder`, `findFolderById` (pure Dart tests first).
-3. **`LibraryMetadataRepository`** — model, load/save, prune (ADR-007).
-4. **Settings envelope extension** — `general.libraryBrowse.defaultSortMode` (ADR-008).
-5. **Sort/filter domain** — `FolderBrowseSorter` / `FolderBrowseFilter` (or equivalent pure functions).
-6. **Breadcrumb widget + `FolderScreen` integration** (ADR-009).
-7. **Sort/filter controls on `FolderScreen`**.
-8. **Favourites toggles + dashboard section**.
-9. **Search presentation polish** (grouping, clear, keyboard).
-10. **Empty/loading/error copy alignment** across browse surfaces.
-11. **Automated tests** — unit, widget, repository.
-12. **Windows runtime validation** — L1–L18 harness.
+Mirrors Phase 4.2: **persistence and tests before UI**. UI layers consume repositories and pure functions — they do not define storage shape.
+
+### Phase A — Acceptance
+
+1. **ADR acceptance** — ADR-007–009 → Accepted.
+
+### Phase B — Persistence and domain (no UI)
+
+2. **Step 1 — `LibraryMetadataRepository`** *(first implementation commit)*  
+   Metadata model, favourite load/save, `validateAgainstCatalog` on catalogue replacement, corrupt JSON recovery, repository unit tests.  
+   **Deliverables:** `LibraryMetadataRepository`, `library_metadata` model, `library_metadata_repository_test.dart`.  
+   **Excluded:** UI, breadcrumbs, sort, filter, search, catalog navigation helpers.
+
+3. **Catalog helper extensions** — `ancestorChainForFolder`, `findFolderById` (pure Dart; read-only over `Catalog`).
+
+4. **Settings envelope extension** — `general.libraryBrowse.defaultSortMode` when sort work begins (ADR-008).
+
+5. **Sort/filter domain** — `FolderBrowseSorter` / `FolderBrowseFilter` (or equivalent); pure functions + unit tests; derived views only.
+
+### Phase C — UI consumers
+
+6. **Favourites UI** — dashboard section (first 10 + View all), item/folder toggles; consumes `LibraryMetadataRepository`.
+
+7. **Breadcrumbs** — widget + `FolderScreen` integration (ADR-009).
+
+8. **Sorting** — controls + persisted default wiring.
+
+9. **Filtering** — session-scoped controls.
+
+10. **Search presentation polish** — grouping, clear query, keyboard.
+
+11. **Empty/loading/error copy alignment** across browse surfaces.
+
+### Phase D — Closure
+
+12. **Windows runtime validation** — L1–L18 harness (`PHASE_43_RUNTIME=1`).
+
 13. **Documentation + phase retrospective + closure**.
 
-Separate commits where practical: helpers → repository → folder UI → favourites → search polish → closure docs.
+**Commit cadence (suggested):** Step 1 repository → catalog helpers → sort/filter pure functions → favourites UI → breadcrumbs → sort UI → filter UI → search polish → closure docs.
+
+### Step 1 scope boundary (strict)
+
+The first implementation prompt must deliver **only**:
+
+| In scope | Out of scope |
+|---|---|
+| `LibraryMetadataRepository` | `FolderScreen` changes |
+| Versioned metadata model (`ttsplayer_library_metadata_v1`) | Breadcrumbs |
+| Favourite add/remove/list persistence | Sort / filter UI or logic |
+| `validateAgainstCatalog` on catalogue replacement | Search changes |
+| Repository unit tests (incl. prune, corrupt recovery) | Dashboard widgets |
+| `ChangeNotifier` + `initialize()` lifecycle (mirror `SettingsRepository`) | Catalog helper extensions |
 
 ---
 

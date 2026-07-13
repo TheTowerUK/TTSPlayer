@@ -20,6 +20,11 @@
 
 Polish browsing, discovery, and navigation on the **existing folder-tree catalogue** — without inventing virtual libraries, hardcoded media categories, or filesystem writes.
 
+### Architectural principles (4.3)
+
+- **Immutable catalogue** — loaded `Catalog` is read-only; sort/filter produce derived views; favourites are external metadata ([spec](../roadmap/m4-phase-4.3-library-experience.md#architectural-principles)).
+- **Three persistence domains** — `SettingsRepository` (configuration), `LibraryMetadataRepository` (user metadata), `CatalogService` (runtime catalogue).
+
 ---
 
 ## Current baseline (M3 + M3.5 + M4.1 + M4.2)
