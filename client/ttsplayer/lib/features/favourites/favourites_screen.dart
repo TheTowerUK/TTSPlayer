@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../library/favourites_resolver.dart';
 import '../../models/catalog.dart';
-import '../../screens/folder_screen.dart';
+import '../../navigation/folder_navigation.dart';
 import '../../screens/item_detail_screen.dart';
 import '../../services/artwork/artwork_service.dart';
 import '../../services/library/library_metadata_repository.dart';
@@ -71,15 +71,7 @@ class FavouritesScreen extends StatelessWidget {
   void _openEntry(BuildContext context, ResolvedFavouriteEntry entry) {
     switch (entry.kind) {
       case FavouriteEntryKind.folder:
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => FolderScreen(
-              folderPath: entry.folder!.path,
-              folderName: entry.folder!.name,
-            ),
-          ),
-        );
+        openFolderScreen(context, entry.folder!);
       case FavouriteEntryKind.item:
         Navigator.push(
           context,

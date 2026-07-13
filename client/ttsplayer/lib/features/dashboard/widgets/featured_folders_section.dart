@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../models/media_folder.dart';
-import '../../../screens/folder_screen.dart';
+import '../../../navigation/folder_navigation.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/card_layout.dart';
 import '../../../widgets/empty_state.dart';
@@ -85,15 +85,7 @@ class _FeaturedFoldersCarouselState extends State<_FeaturedFoldersCarousel> {
                 height: CardLayout.featuredFolderCardHeight,
                 child: TtsFolderCard(
                   folder: folder,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => FolderScreen(
-                        folderPath: folder.path,
-                        folderName: folder.name,
-                      ),
-                    ),
-                  ),
+                  onTap: () => openFolderScreen(context, folder),
                 ),
               ),
             );

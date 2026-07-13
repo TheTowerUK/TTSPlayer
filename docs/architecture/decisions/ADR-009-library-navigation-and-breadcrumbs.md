@@ -33,11 +33,18 @@ Breadcrumb segments are derived from the **current catalogue tree**, not raw fil
 
 2. Each segment displays `MediaFolder.name` — the real directory name from `catalog.json`.
 
-3. Tapping a segment navigates to that folder by pushing or popping to an existing `FolderScreen` with the target `folderPath`.
+3. Tapping a segment navigates to that folder by `folderId` via `openFolderScreen` / `navigateToBreadcrumbFolder` (route name `folder:$folderId`).
 
 4. **HTTP and local catalogues** use the same logic because both expose identical `MediaFolder.path` / `name` / `id` from the indexer.
 
-Navigation state (which segment is "current") comes from the **active `FolderScreen.folderPath`**, not a parallel route table.
+Navigation state comes from the **active `FolderScreen` resolved folder id**, with optional `folderPath` fallback for legacy callers.
+
+### Implementation (Step 5, 2026-07-13)
+
+- `FolderScreen.fromFolder(MediaFolder)` is the canonical entry; path-only constructor resolves via `findFolderByPath` when id absent.
+- Breadcrumb ancestor: `Navigator.popUntil` when `RouteSettings.name == folder:$targetId`; otherwise pop to `isFirst` then push target.
+- Dashboard/Home is **not** a breadcrumb segment — use existing `TtsAppBar` Home (`popUntil isFirst`).
+- Session scroll restoration via `PageStorageKey` — **deferred** (not required for Step 5).
 
 ### Back-stack behaviour
 

@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../screens/folder_screen.dart';
+import '../../navigation/folder_navigation.dart';
 import '../../screens/item_detail_screen.dart';
 import '../../services/catalog_service.dart';
 import '../../theme/app_theme.dart';
@@ -106,19 +106,13 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   void _browseFolder(SearchResult result) {
-    if (result.parentFolderPath.isEmpty) return;
-    final name = result.parentFolderName.isNotEmpty
-        ? result.parentFolderName
-        : result.libraryName;
-    Navigator.push<void>(
-      context,
-      MaterialPageRoute<void>(
-        builder: (_) => FolderScreen(
-          folderPath: result.parentFolderPath,
-          folderName: name,
-        ),
-      ),
-    );
+    final catalog = context.read<CatalogService>().catalog;
+    if (catalog == null || result.parentFolderPath.isEmpty) return;
+
+    final folder = catalog.findFolderByPath(result.parentFolderPath);
+    if (folder == null) return;
+
+    openFolderScreen(context, folder);
   }
 
   @override

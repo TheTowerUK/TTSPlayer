@@ -1,6 +1,6 @@
 # M4 Phase 4.3 — Library Experience (Implementation Specification)
 
-**Status:** Specification — **Accepted** (2026-07-13) · Steps 1–4 **implemented** · Phase **not complete**  
+**Status:** Specification — **Accepted** (2026-07-13) · Steps 1–5 **implemented** · Phase **not complete**  
 **Milestone:** M4 — User Experience and Platform Integration  
 **Branch:** `m4-development`  
 **Development version:** `v0.5.0-dev`  
@@ -84,7 +84,7 @@ Sort answers *in what order*; filter answers *which items appear*. They compose 
 | Global Search (in-memory index) | `SearchService` | M3 | Score-ranked flat list |
 | Artwork resolution | `ArtworkService` | M3 / hotfix | Cache cleared on catalogue replace |
 | **Folder sort/filter** | — | **4.3 new** | Derived views over immutable catalogue |
-| **Breadcrumbs** | — | **4.3 new** | Catalogue ancestor chain |
+| **Breadcrumbs** | — | **4.3 Step 5 ✅** | Catalogue ancestor chain |
 | **Favourites** | — | **4.3 new** | `LibraryMetadataRepository` |
 | **Search presentation polish** | — | **4.3 new** | Grouping, actions — not engine rewrite |
 | **Unified empty/error polish** | — | **4.3 new** | Browse surfaces |
@@ -102,7 +102,7 @@ Sort answers *in what order*; filter answers *which items appear*. They compose 
 | Surface | Location | Behaviour today |
 |---|---|---|
 | **Dashboard** | `features/dashboard/dashboard_screen.dart` | Root screen; `RouteAware` refreshes on `didPopNext`; `Ctrl+F` → Search; `Escape` → pop |
-| **Folder browse** | `screens/folder_screen.dart` | Resolves `folderPath` from live catalogue; subfolder grid + item grid; per-folder rescan menu |
+| **Folder browse** | `screens/folder_screen.dart` | Resolves folder by catalogue `id` (path fallback); catalogue breadcrumbs; subfolder grid + item grid; per-folder rescan menu |
 | **Item detail** | `screens/item_detail_screen.dart` | Metadata + Play (`isPlayable` gate) |
 | **Global Search** | `features/search/search_screen.dart` | Debounced query; library + extension filter chips |
 | **Library Manager** | `features/library_manager/library_manager_screen.dart` | Catalogue ops — refresh, validate, diagnostics — **not** content browsing |
@@ -125,6 +125,7 @@ Also on dashboard (out of 4.3 scope unless empty-state copy alignment): Overview
 
 #### Folder browsing
 
+- **Breadcrumb:** catalogue ancestor chain below app bar (`FolderBreadcrumb`).
 - **Sort:** none — indexer emission order within each section.
 - **Filter:** none.
 - **Layout:** hardcoded "Subfolders" section label + item grid (`TtsFolderCard`, `TtsMediaCard`).
@@ -192,7 +193,7 @@ No audio or document extensions indexed today.
 
 ## Identified UX gaps (4.3 targets)
 
-1. No breadcrumb or ancestor context in deep folders.
+1. ~~No breadcrumb or ancestor context in deep folders.~~ **Resolved Step 5** — catalogue-driven breadcrumbs on `FolderScreen`.
 2. No folder-level sort or filter controls.
 3. No favourites or user-curated lists.
 4. Search results are flat — library/folder context is per-row subtitle only.
@@ -440,7 +441,7 @@ Mirrors Phase 4.2: **persistence and tests before UI**. UI layers consume reposi
 
 6. ~~**Favourites UI**~~ *(implemented 2026-07-13)* — dashboard section (first 10 + View all), item/folder toggles; consumes `LibraryMetadataRepository`.
 
-7. **Breadcrumbs** — widget + `FolderScreen` integration (ADR-009).
+7. ~~**Breadcrumbs**~~ *(implemented 2026-07-13)* — `FolderBreadcrumb` + `folder_navigation.dart`; `FolderScreen.fromFolder` canonical identity (ADR-009).
 
 8. **Sorting** — controls + persisted default wiring.
 
@@ -496,6 +497,18 @@ Mirrors Phase 4.2: **persistence and tests before UI**. UI layers consume reposi
 - Tests: `favourites_ui_test.dart` (25 scenarios).
 - No breadcrumbs, sort/filter UI, or search changes.
 
+### Implementation notes — Step 5 (2026-07-13)
+
+- `FolderBreadcrumb` widget — horizontal scroll, `MediaFolder.name` labels, keyboard-focusable ancestor `TextButton`s.
+- `folder_navigation.dart` — `openFolderScreen`, `navigateToBreadcrumbFolder`; route names `folder:$folderId`.
+- `FolderScreen.fromFolder(MediaFolder)` preferred; path-based constructor retained for compatibility.
+- Breadcrumb ancestor tap: `popUntil` matching route when on stack; otherwise pop to first route then push target.
+- Entry points aligned: Libraries, Featured Folders, Favourites, Search browse-folder, subfolder cards.
+- Missing folder: no fabricated breadcrumb; existing `_FolderMissingBody`.
+- Scroll restoration: **deferred** (ADR-009 optional; not implemented).
+- Tests: `folder_breadcrumb_test.dart` (20 scenarios); `favourites_ui_test.dart` regression pass.
+- No sort/filter UI or search presentation changes.
+
 ---
 
 The first implementation prompt must deliver **only**:
@@ -545,7 +558,7 @@ Closure harness scenarios **L1–L18** (Windows + automated). Spec persistence s
 - [x] ADR-007, ADR-008, ADR-009 reviewed and **Accepted** (2026-07-13)
 - [x] `LibraryMetadataRepository` with versioned favourites persistence and prune-on-replacement
 - [x] `SettingsRepository` stores global default sort mode only (no favourites)
-- [ ] `FolderScreen` breadcrumbs catalogue-driven per ADR-009
+- [x] `FolderScreen` breadcrumbs catalogue-driven per ADR-009
 - [ ] Sort and filter controls per ADR-008; folder-first preserved
 - [x] Dashboard Favourites section; toggle on item and folder
 - [ ] Search presentation improvements without engine rewrite

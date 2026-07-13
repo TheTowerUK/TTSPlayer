@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../models/media_folder.dart';
-import '../../../screens/folder_screen.dart';
+import '../../../navigation/folder_navigation.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/empty_state.dart';
 import '../../../widgets/library_card.dart';
@@ -45,15 +45,7 @@ class LibrariesSection extends StatelessWidget {
                 final folder = libraries[index];
                 return LibraryCard(
                   folder: folder,
-                  onBrowse: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => FolderScreen(
-                        folderPath: folder.path,
-                        folderName: folder.name,
-                      ),
-                    ),
-                  ),
+                  onBrowse: () => openFolderScreen(context, folder),
                 );
               },
             ),

@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../models/catalog.dart';
 import '../models/media_folder.dart';
 import '../models/media_item.dart';
+import '../navigation/folder_navigation.dart';
 import '../services/catalog_service.dart';
+import '../services/library/library_metadata_repository.dart';
 import '../services/scanner_service.dart';
 import '../theme/app_theme.dart';
-import '../services/library/library_metadata_repository.dart';
-import '../widgets/favourite_toggle_button.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/favourite_toggle_button.dart';
+import '../widgets/folder_breadcrumb.dart';
 import '../widgets/loading_card.dart';
 import '../widgets/scan_progress_dialog.dart';
 import '../widgets/tts_app_bar.dart';
@@ -16,20 +19,52 @@ import '../widgets/tts_folder_card.dart';
 import '../widgets/tts_media_card.dart';
 import 'item_detail_screen.dart';
 
-/// Browses a folder by [folderPath] — always resolved from the live catalogue
-/// so rescans remove deleted items without stale navigation state.
+/// Browses a folder by catalogue identity — resolved from live [CatalogService].
 class FolderScreen extends StatelessWidget {
-  final String folderPath;
+  /// Canonical catalogue folder id (preferred).
+  final String folderId;
 
-  /// Shown in the app bar while the catalogue is loading or if the folder
-  /// disappears after a rescan.
+  /// Optional path fallback for legacy callers and rescan recovery.
+  final String? folderPath;
+
+  /// Shown in the app bar while loading or when the folder disappears.
   final String folderName;
 
-  const FolderScreen({
+  const FolderScreen._({
     super.key,
-    required this.folderPath,
+    required this.folderId,
+    this.folderPath,
     required this.folderName,
   });
+
+  /// Preferred constructor — stable catalogue identity (ADR-009).
+  factory FolderScreen.fromFolder(MediaFolder folder) {
+    return FolderScreen._(
+      folderId: folder.id,
+      folderPath: folder.path,
+      folderName: folder.name,
+    );
+  }
+
+  /// Path-based compatibility constructor — id resolved from live catalogue.
+  const FolderScreen({
+    super.key,
+    required String folderPath,
+    required this.folderName,
+  })  : folderId = '',
+        folderPath = folderPath;
+
+  MediaFolder? _resolveFolder(Catalog catalog) {
+    if (folderId.isNotEmpty) {
+      final byId = catalog.findFolderById(folderId);
+      if (byId != null) return byId;
+    }
+    final path = folderPath;
+    if (path != null && path.isNotEmpty) {
+      return catalog.findFolderByPath(path);
+    }
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +77,8 @@ class FolderScreen extends StatelessWidget {
           );
         }
 
-        final folder = catalogService.catalog?.findFolderByPath(folderPath);
+        final catalog = catalogService.catalog;
+        final folder = catalog == null ? null : _resolveFolder(catalog);
 
         if (folder == null) {
           return Scaffold(
@@ -51,25 +87,43 @@ class FolderScreen extends StatelessWidget {
           );
         }
 
+        final ancestors = catalog!.ancestorChainForFolder(folder.id);
+
         return Scaffold(
           appBar: TtsAppBar(
             title: folder.name,
             extraActions: [_FolderActionsMenu(folder: folder)],
           ),
-          body: folder.isEmpty
-              ? const EmptyState(
-                  icon: Icons.folder_open_outlined,
-                  title: 'This folder is empty.',
-                  subtitle: 'Run a rescan if you expect content here.',
-                )
-              : _FolderContent(folder: folder),
+          body: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              FolderBreadcrumb(
+                ancestors: ancestors,
+                currentFolderId: folder.id,
+                onAncestorSelected: (target) => navigateBreadcrumbSelection(
+                  context,
+                  target: target,
+                  currentFolderId: folder.id,
+                ),
+              ),
+              Expanded(
+                child: folder.isEmpty
+                    ? const EmptyState(
+                        icon: Icons.folder_open_outlined,
+                        title: 'This folder is empty.',
+                        subtitle: 'Run a rescan if you expect content here.',
+                      )
+                    : _FolderContent(folder: folder),
+              ),
+            ],
+          ),
         );
       },
     );
   }
 }
 
-/// Shown when a folder path is no longer in the catalogue after a rescan.
+/// Shown when a folder is no longer in the catalogue after a rescan.
 class _FolderMissingBody extends StatelessWidget {
   final String folderName;
 
@@ -111,10 +165,6 @@ class _FolderMissingBody extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Folder actions menu (⋮)
-// ---------------------------------------------------------------------------
-
 class _FolderActionsMenu extends StatelessWidget {
   final MediaFolder folder;
 
@@ -146,24 +196,32 @@ class _FolderActionsMenu extends StatelessWidget {
                     color: favourited ? AppColors.primary : AppColors.textHigh,
                   ),
                   const SizedBox(width: AppSpacing.iconGap),
-                  Text(
-                    favourited
-                        ? 'Remove from favourites'
-                        : 'Add to favourites',
-                    style: const TextStyle(color: AppColors.textHigh),
+                  Expanded(
+                    child: Text(
+                      favourited
+                          ? 'Remove from favourites'
+                          : 'Add to favourites',
+                      style: const TextStyle(color: AppColors.textHigh),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ],
               ),
             ),
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'rescan',
               child: Row(
                 children: [
                   Icon(Icons.refresh_outlined,
                       size: AppIcons.md, color: AppColors.textHigh),
                   SizedBox(width: AppSpacing.iconGap),
-                  Text('Rescan this folder',
-                      style: TextStyle(color: AppColors.textHigh)),
+                  Expanded(
+                    child: Text(
+                      'Rescan this folder',
+                      style: TextStyle(color: AppColors.textHigh),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -190,10 +248,6 @@ class _FolderActionsMenu extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Scrollable folder content — subfolders + items
-// ---------------------------------------------------------------------------
-
 class _FolderContent extends StatelessWidget {
   final MediaFolder folder;
 
@@ -218,15 +272,7 @@ class _FolderContent extends StatelessWidget {
                       folderId: sub.id,
                       compact: true,
                     ),
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => FolderScreen(
-                          folderPath: sub.path,
-                          folderName: sub.name,
-                        ),
-                      ),
-                    ),
+                    onTap: () => openFolderScreen(context, sub),
                   );
                 },
                 childCount: folder.subfolders.length,
@@ -241,7 +287,6 @@ class _FolderContent extends StatelessWidget {
           ),
           const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.section)),
         ],
-
         if (folder.items.isNotEmpty) ...[
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(
@@ -282,10 +327,6 @@ class _FolderContent extends StatelessWidget {
     );
   }
 }
-
-// ---------------------------------------------------------------------------
-// Section sliver header
-// ---------------------------------------------------------------------------
 
 class _SectionSliver extends StatelessWidget {
   final String title;

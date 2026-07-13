@@ -1,6 +1,6 @@
 # Library Experience (M4 Phase 4.3)
 
-**Status:** Specification **Accepted** (2026-07-13) — Steps 1–4 implemented; browse controls (sort/filter/breadcrumbs) pending  
+**Status:** Specification **Accepted** (2026-07-13) — Steps 1–5 implemented; sort/filter controls pending  
 **Related roadmap phase:** [M4 Phase 4.3 — Library Experience](../roadmap/m4-plan.md#phase-43--library-experience)
 
 → [Phase 4.3 implementation spec](../roadmap/m4-phase-4.3-library-experience.md)  
@@ -34,7 +34,7 @@ Polish browsing, discovery, and navigation on the **existing folder-tree catalog
 | Capability | State |
 |---|---|
 | Dashboard | `DashboardScreen` — root; `RouteAware` refresh |
-| Folder browse | `FolderScreen` — live `folderPath` resolution; subfolders + items grids |
+| Folder browse | `FolderScreen` — catalogue `id` resolution (path fallback); breadcrumbs; subfolders + items grids |
 | Library Manager | `LibraryManagerScreen` — catalogue ops (not browsing) |
 | Global Search | `SearchScreen` — in-memory index, score-ranked results |
 | Item detail | `ItemDetailScreen` — Play via `MediaItemStatus.isPlayable` |
@@ -51,7 +51,8 @@ Polish browsing, discovery, and navigation on the **existing folder-tree catalog
 
 ### Folder browse today
 
-- **No** breadcrumbs, sort, or filter controls.
+- **Breadcrumbs** — catalogue ancestor chain via `FolderBreadcrumb` (Step 5).
+- **No** sort or filter controls.
 - Subfolders and items in **indexer emission order**.
 - Empty folder and missing-folder states exist.
 - Hardcoded "Subfolders" section label (structural, not a media category).
@@ -94,7 +95,7 @@ Phase 4.1 Provider Status and Phase 4.2 grouped settings remain separate from li
 | Dashboard Favourites section | First 10 resolved + View all — **Step 4 implemented** |
 | `FavouritesScreen` | Full favourites list — **Step 4 implemented** |
 | `LibraryMetadataRepository` | Favourites persistence — **Step 1 implemented** (ADR-007) |
-| `FolderScreen` | Breadcrumbs + sort/filter controls |
+| `FolderScreen` | Breadcrumbs implemented (Step 5); sort/filter controls pending |
 | Dashboard Favourites section | Resolved favourites — app state, not a folder |
 | `SearchScreen` | Presentation polish — grouping, clear, keyboard |
 
@@ -122,13 +123,17 @@ See [ADR-007](./decisions/ADR-007-library-metadata-and-favourites.md).
 
 ---
 
-## Navigation (proposed)
+## Navigation (implemented — Step 5)
 
 See [ADR-009](./decisions/ADR-009-library-navigation-and-breadcrumbs.md).
 
-- Breadcrumbs from **catalogue hierarchy** — `MediaFolder.name` labels.
-- Consistent back/home from dashboard, search, favourites, and deep folders.
-- No persisted route stack in 4.3.
+- Breadcrumbs from **catalogue hierarchy** — `Catalog.ancestorChainForFolder`; `MediaFolder.name` labels.
+- `FolderScreen.fromFolder` + `openFolderScreen`; route identity `folder:$folderId`.
+- Ancestor tap: `popUntil` matching route when present; else pop to dashboard then push.
+- Dashboard/Home outside breadcrumb chain (`TtsAppBar` Home button).
+- Entry points: Libraries, Featured Folders, Favourites, Search browse-folder, subfolder cards.
+- Scroll restoration: deferred (session `PageStorageKey` not implemented).
+- No persisted route stack.
 
 ---
 
