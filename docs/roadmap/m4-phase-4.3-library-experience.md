@@ -1,10 +1,11 @@
 # M4 Phase 4.3 — Library Experience (Implementation Specification)
 
-**Status:** Specification — **Accepted** (2026-07-13) · Steps 1–7 **implemented** · **Ready for Windows runtime validation** · Phase **not complete**  
+**Status:** **Complete** (2026-07-13) · Windows runtime validation **Pass**  
 **Milestone:** M4 — User Experience and Platform Integration  
 **Branch:** `m4-development`  
 **Development version:** `v0.5.0-dev`  
-**Predecessor:** M4 Phase 4.2 complete — closure `dc303eb`
+**Predecessor:** M4 Phase 4.2 complete — closure `dc303eb`  
+**Implementation baseline:** commits `3815946`–`db1be9a` · closure pending harness + docs commit
 
 → [M4 plan](./m4-plan.md#phase-43--library-experience)  
 → [Library architecture](../architecture/library.md)  
@@ -19,8 +20,6 @@
 - [ADR-009: Library Navigation and Breadcrumbs](../architecture/decisions/ADR-009-library-navigation-and-breadcrumbs.md)
 
 Follow the established M4 cadence: baseline inventory → ADR acceptance → persistence layer → tests → UI consumers → Windows validation → closure.
-
-**Implementation has not started.** First code step mirrors Phase 4.2: `LibraryMetadataRepository` only — no UI.
 
 ---
 
@@ -455,9 +454,9 @@ Mirrors Phase 4.2: **persistence and tests before UI**. UI layers consume reposi
 
 ### Phase D — Closure
 
-12. **Windows runtime validation** — L1–L18 harness (`PHASE_43_RUNTIME=1`).
+12. ~~**Windows runtime validation**~~ *(2026-07-13)* — L1–L25 harness (`PHASE_43_RUNTIME=1`).
 
-13. **Documentation + phase retrospective + closure**.
+13. ~~**Documentation + phase retrospective + closure**~~ *(2026-07-13)*.
 
 **Commit cadence (suggested):** Step 1 repository → catalog helpers → sort/filter pure functions → favourites UI → breadcrumbs → sort UI → filter UI → search polish → closure docs.
 
@@ -537,6 +536,60 @@ Mirrors Phase 4.2: **persistence and tests before UI**. UI layers consume reposi
 
 ---
 
+## Windows runtime validation (2026-07-13)
+
+**Harness:** `client/ttsplayer/test/phase_43_windows_runtime_test.dart` (opt-in: `PHASE_43_RUNTIME=1 flutter test test/phase_43_windows_runtime_test.dart --tags phase43-runtime`)
+
+### Environment
+
+| Field | Value |
+|---|---|
+| **OS** | Windows 10.0.26200 |
+| **Flutter** | 3.x widget/integration test mode (`LiveTestWidgetsFlutterBinding` for HTTPS) |
+| **App version** | `0.4.0-dev.1+1` (`pubspec.yaml`) |
+| **Git commit** | `db1be9a` (implementation baseline) + runtime harness commit |
+| **Local catalogue** | `Y:\Media\catalog.json` — 81 326 items |
+| **HTTPS catalogue** | `https://ttsplayer.local:8443/catalog.json` — HTTP 200, trusted TLS |
+| **Provider mode** | `localPreferred` (defaults) |
+| **Media roots** | `Y:\Media`, UNC/TNAS paths per configured provider |
+| **Unavailable alternatives** | None required — local and HTTPS both reachable |
+
+### Results (L1–L25)
+
+| ID | Scenario | Expected | Observed | Result | Evidence |
+|---|---|---|---|---|---|
+| **L1** | Deep-folder breadcrumb | Catalogue root-to-current chain; no raw paths | Fixture + production local deep folder | **Pass** | Runtime harness |
+| **L2** | Breadcrumb ancestor tap | Correct ancestor by folder ID; no duplicate route | Ancestor segment opens parent folder | **Pass** | Runtime harness |
+| **L3** | Back navigation | Parent sort/filter preserved after Back | Name Z–A + video filter retained on parent | **Pass** | Runtime harness |
+| **L4** | Home from deep folder | Dashboard clean; re-entry works | `HomeButton` pops to dashboard | **Pass** | Runtime harness |
+| **L5** | Search → Browse folder | Containing folder + breadcrumb | `Videos · Action` hierarchy via `openFolderScreen` | **Pass** | Runtime harness |
+| **L6** | Search → Open item | `ItemDetailScreen` for correct item | Item detail opens; status unchanged | **Pass** | Runtime harness |
+| **L7** | Default/indexer sort | Indexer order; folder-first | `buildLibraryFolderView` default mode | **Pass** | Runtime harness |
+| **L8** | Name A–Z / Z–A | ci-sort; folder-first | Asc/desc item order verified | **Pass** | Runtime harness |
+| **L9** | Added-date sort | Timestamps ordered; nulls last | Newest/oldest modes; null last | **Pass** | Runtime harness |
+| **L10** | Folder-first all modes | Subfolders before items | All six `LibrarySortMode` values | **Pass** | Runtime harness |
+| **L11** | Video/images/folders-only filters | Matching items; subfolders retained | Filter chips on `FolderScreen` | **Pass** | Runtime harness |
+| **L12** | Filter-empty recovery | Filter-empty copy + Show all | Leaf folder images filter → Show all | **Pass** | Runtime harness |
+| **L13** | Favourite media item | Toggle + dashboard section | Star toggle; `FavouritesSection` lists item | **Pass** | Runtime harness |
+| **L14** | Favourite folder | Dashboard + full view + breadcrumb | Folder favourite opens with breadcrumb | **Pass** | Runtime harness |
+| **L15** | Favourites survive restart | `ttsplayer_library_metadata_v1` persists | Reload + `resetAllToDefaults` preserves favourites | **Pass** | Runtime harness |
+| **L16** | Stale favourite pruning | Prune on replacement only | `validateAgainstCatalog` removes absent ids | **Pass** | Runtime harness |
+| **L17** | CW + Recently Added regression | Unchanged video/progress rules | `DashboardService` snapshot unchanged | **Pass** | Runtime harness |
+| **L18** | Local + HTTPS consistency | Same hierarchy logic; no path labels | Production local + HTTPS ancestor chains | **Pass** | Runtime harness |
+| **L19** | Search empty query | “Search your library” prompt | Before-typing state | **Pass** | Runtime harness |
+| **L20** | Search no-match | “No results found” + clear actions | No-results state with clear button | **Pass** | Runtime harness |
+| **L21** | Multi-library grouping | Library headers; score order preserved | `groupSearchResultsByLibrary` | **Pass** | Runtime harness |
+| **L22** | Single-library context | Flat list + hierarchy labels | `catalogueFolderContext` | **Pass** | Runtime harness |
+| **L23** | Keyboard search actions | Enter submits; clear returns to prompt | Enter + clear button (Escape bound in `SearchScreen`) | **Pass** | Runtime harness |
+| **L24** | Catalogue unavailable | Distinct from no-results; Provider Status hint | Unavailable empty state | **Pass** | Runtime harness |
+| **L25** | Stale search result | SnackBar; no crash | Stale open shows recovery SnackBar | **Pass** | Runtime harness |
+
+**Automated regression (closure):** `flutter test` — 360 passed, 3 skipped (Phase 4.1/4.2/4.3 runtime harnesses opt-in). `flutter analyze` — no new Phase 4.3 errors.
+
+**Note (L23):** `SearchScreen` registers Escape via `Shortcuts`; the harness validates Enter submission and clear-button reset. Manual Windows smoke confirms Escape clears a non-empty query.
+
+---
+
 The first implementation prompt must deliver **only**:
 
 | In scope | Out of scope |
@@ -590,12 +643,12 @@ Closure harness scenarios **L1–L18** (Windows + automated). Spec persistence s
 - [x] Search presentation improvements without engine rewrite
 - [x] Empty/loading/error states per table above
 - [x] Continue Watching, Recently Added, Featured Folders, Provider Status **unchanged in behaviour** (Step 7 review; automated regression)
-- [ ] No virtual libraries; no hardcoded category labels
-- [ ] Validation L1–L18 pass (automated + Windows runtime)
-- [ ] `flutter analyze` — no new errors in Phase 4.3 scope
-- [ ] [library.md](../architecture/library.md) → Implemented / Accepted at closure
-- [ ] [v0.5.0-dev.md](../release/v0.5.0-dev.md) updated; phase retrospective added
-- [ ] Phase 4.3 **not** marked complete until runtime validation recorded
+- [x] No virtual libraries; no hardcoded category labels
+- [x] Validation L1–L25 pass (automated + Windows runtime)
+- [x] `flutter analyze` — no new errors in Phase 4.3 scope
+- [x] [library.md](../architecture/library.md) → Implemented / Accepted at closure
+- [x] [v0.5.0-dev.md](../release/v0.5.0-dev.md) updated; phase retrospective added
+- [x] Phase 4.3 marked **complete** — Windows runtime validation recorded 2026-07-13
 
 ---
 
@@ -603,7 +656,7 @@ Closure harness scenarios **L1–L18** (Windows + automated). Spec persistence s
 
 | Document | Action |
 |---|---|
-| This spec | **Accepted** 2026-07-13 — implementation not started |
+| This spec | **Complete** 2026-07-13 — Windows runtime validation recorded |
 | ADR-007–009 | **Accepted** 2026-07-13 |
 | [library.md](../architecture/library.md) | Updated for spec alignment — **Implemented** at closure only |
 | [m4-plan.md](./m4-plan.md) | 4.3 spec in progress → complete at closure |

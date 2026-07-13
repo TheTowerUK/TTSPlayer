@@ -1,6 +1,6 @@
 # Library Experience (M4 Phase 4.3)
 
-**Status:** Specification **Accepted** (2026-07-13) — Steps 1–7 implemented; **ready for Windows runtime validation**  
+**Status:** Specification **Implemented / Accepted** (2026-07-13) — Phase 4.3 complete  
 **Related roadmap phase:** [M4 Phase 4.3 — Library Experience](../roadmap/m4-plan.md#phase-43--library-experience)
 
 → [Phase 4.3 implementation spec](../roadmap/m4-phase-4.3-library-experience.md)  
