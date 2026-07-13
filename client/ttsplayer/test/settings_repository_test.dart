@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ttsplayer/models/application_settings.dart';
+import 'package:ttsplayer/models/library_filter.dart';
+import 'package:ttsplayer/models/library_sort_mode.dart';
 import 'package:ttsplayer/services/catalog_service.dart';
 import 'package:ttsplayer/services/media_access/media_access_config.dart';
 import 'package:ttsplayer/services/media_access/media_catalogue_provider.dart';
@@ -52,6 +54,10 @@ void main() {
       expect(
         settings.network.catalogueFetchTimeoutSeconds,
         NetworkSettings.defaultCatalogueFetchTimeoutSeconds,
+      );
+      expect(
+        settings.general.libraryBrowse.defaultSortMode,
+        LibrarySortMode.defaultMode,
       );
       expect(settings.validate(), isEmpty);
     });
@@ -435,6 +441,181 @@ void main() {
         repository.providerConfig.toJson(),
         legacy.toJson(),
       );
+    });
+  });
+
+  group('SettingsRepository — library browse (M4.3 Step 3)', () {
+    test('1 existing Phase 4.2 envelope without libraryBrowse loads default sort',
+        () async {
+      final provider = validHttpsConfig();
+      SharedPreferences.setMockInitialValues({
+        SettingsRepository.storageKey: jsonEncode({
+          'settingsVersion': 1,
+          'general': {},
+          'libraryProviders': {'providerConfig': provider.toJson()},
+          'network': {'catalogueFetchTimeoutSeconds': 30},
+          'playback': {},
+          'diagnostics': {},
+        }),
+      });
+
+      final repository = SettingsRepository();
+      final result = await repository.load();
+
+      expect(result.settings.general.libraryBrowse.defaultSortMode,
+          LibrarySortMode.defaultMode);
+      expect(result.settings.providerConfig.toJson(), provider.toJson());
+      expect(result.settings.network.catalogueFetchTimeoutSeconds, 30);
+    });
+
+    test('2 valid sort mode persists and survives reload', () async {
+      SharedPreferences.setMockInitialValues({});
+      final repository = SettingsRepository();
+      await repository.load();
+
+      final saveResult = await repository.saveDefaultLibrarySortMode(
+        LibrarySortMode.nameAsc,
+      );
+      expect(saveResult.success, isTrue);
+      expect(repository.defaultLibrarySortMode, LibrarySortMode.nameAsc);
+
+      final reloaded = SettingsRepository();
+      await reloaded.load();
+      expect(reloaded.defaultLibrarySortMode, LibrarySortMode.nameAsc);
+    });
+
+    test('3 unknown stored sort value recovers to default with warning', () async {
+      SharedPreferences.setMockInitialValues({
+        SettingsRepository.storageKey: jsonEncode({
+          'settingsVersion': 1,
+          'general': {
+            'libraryBrowse': {'defaultSortMode': 'not-a-mode'},
+          },
+          'libraryProviders': {
+            'providerConfig': validLocalConfig().toJson(),
+          },
+          'network': {'catalogueFetchTimeoutSeconds': 30},
+          'playback': {},
+          'diagnostics': {},
+        }),
+      });
+
+      final repository = SettingsRepository();
+      final result = await repository.load();
+
+      expect(
+        result.settings.general.libraryBrowse.defaultSortMode,
+        LibrarySortMode.defaultMode,
+      );
+      expect(result.recoveryWarnings, isNotEmpty);
+    });
+
+    test('4 saving sort preserves provider configuration', () async {
+      SharedPreferences.setMockInitialValues({});
+      final repository = SettingsRepository();
+      await repository.load();
+      final provider = validHttpsConfig();
+      await repository.saveProviderConfig(provider);
+
+      await repository.saveDefaultLibrarySortMode(LibrarySortMode.type);
+
+      expect(repository.providerConfig.toJson(), provider.toJson());
+    });
+
+    test('5 saving sort preserves network timeout', () async {
+      SharedPreferences.setMockInitialValues({});
+      final repository = SettingsRepository();
+      await repository.load();
+      await repository.saveNetworkSettings(
+        const NetworkSettings(catalogueFetchTimeoutSeconds: 45),
+      );
+
+      await repository.saveDefaultLibrarySortMode(LibrarySortMode.addedNewest);
+
+      expect(repository.catalogueFetchTimeoutSeconds, 45);
+    });
+
+    test('6 provider reset does not alter sort preference', () async {
+      SharedPreferences.setMockInitialValues({});
+      final repository = SettingsRepository();
+      await repository.load();
+      await repository.saveDefaultLibrarySortMode(LibrarySortMode.nameDesc);
+
+      await repository.resetProviderToDefaults();
+
+      expect(repository.defaultLibrarySortMode, LibrarySortMode.nameDesc);
+    });
+
+    test('7 reset all restores default sort', () async {
+      SharedPreferences.setMockInitialValues({});
+      final repository = SettingsRepository();
+      await repository.load();
+      await repository.saveDefaultLibrarySortMode(LibrarySortMode.nameDesc);
+
+      await repository.resetAllToDefaults();
+
+      expect(repository.defaultLibrarySortMode, LibrarySortMode.defaultMode);
+    });
+
+    test('8 legacy provider migration creates envelope with default sort', () async {
+      final legacy = validHttpsConfig();
+      SharedPreferences.setMockInitialValues({
+        MediaProviderConfigService.prefKey: jsonEncode(legacy.toJson()),
+      });
+
+      final repository = SettingsRepository();
+      final result = await repository.load();
+
+      expect(result.source, SettingsLoadSource.legacyMigration);
+      expect(
+        result.settings.general.libraryBrowse.defaultSortMode,
+        LibrarySortMode.defaultMode,
+      );
+    });
+
+    test('9 corrupt general group does not discard valid provider/network groups',
+        () async {
+      final provider = validHttpsConfig();
+      SharedPreferences.setMockInitialValues({
+        SettingsRepository.storageKey: jsonEncode({
+          'settingsVersion': 1,
+          'general': 'invalid',
+          'libraryProviders': {'providerConfig': provider.toJson()},
+          'network': {'catalogueFetchTimeoutSeconds': 40},
+          'playback': {},
+          'diagnostics': {},
+        }),
+      });
+
+      final repository = SettingsRepository();
+      final result = await repository.load();
+
+      expect(result.settings.providerConfig.toJson(), provider.toJson());
+      expect(result.settings.network.catalogueFetchTimeoutSeconds, 40);
+      expect(
+        result.settings.general.libraryBrowse.defaultSortMode,
+        LibrarySortMode.defaultMode,
+      );
+      expect(result.recoveryWarnings, isNotEmpty);
+    });
+
+    test('10 active filter is never persisted', () async {
+      SharedPreferences.setMockInitialValues({});
+      final repository = SettingsRepository();
+      await repository.load();
+      await repository.saveDefaultLibrarySortMode(LibrarySortMode.nameAsc);
+
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(SettingsRepository.storageKey)!;
+      expect(raw.contains('foldersOnly'), isFalse);
+      expect(raw.contains('video'), isFalse);
+      expect(raw.contains(LibraryFilter.video.storageKey), isFalse);
+
+      final envelope = ApplicationSettings.fromJson(
+        jsonDecode(raw) as Map<String, dynamic>,
+      );
+      expect(envelope.toJson().containsKey('libraryFilter'), isFalse);
+      expect(envelope.general.toJson().containsKey('activeFilter'), isFalse);
     });
   });
 }

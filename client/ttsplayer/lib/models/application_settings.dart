@@ -1,4 +1,5 @@
 import '../services/media_access/media_provider_config.dart';
+import 'library_sort_mode.dart';
 
 /// Versioned user settings envelope stored at `ttsplayer_settings_v1`.
 ///
@@ -119,10 +120,11 @@ class ApplicationSettings {
     List<String>? warnings,
   ) {
     if (raw is! Map<String, dynamic>) {
+      warnings?.add('Invalid general settings; using defaults.');
       return GeneralSettings.defaults();
     }
     try {
-      final parsed = GeneralSettings.fromJson(raw);
+      final parsed = GeneralSettings.fromJsonWithRecovery(raw, warnings: warnings);
       final errors = parsed.validate();
       if (errors.isNotEmpty) {
         warnings?.add('Invalid general settings; using defaults.');
@@ -221,18 +223,88 @@ class ApplicationSettings {
   }
 }
 
-/// General app preferences (M4.2: mostly deferred; group reserved in envelope).
+/// General app preferences.
 class GeneralSettings {
-  const GeneralSettings();
+  const GeneralSettings({required this.libraryBrowse});
 
-  factory GeneralSettings.defaults() => const GeneralSettings();
+  final LibraryBrowseSettings libraryBrowse;
 
-  factory GeneralSettings.fromJson(Map<String, dynamic> json) =>
-      const GeneralSettings();
+  factory GeneralSettings.defaults() {
+    return GeneralSettings(libraryBrowse: LibraryBrowseSettings.defaults());
+  }
 
-  Map<String, dynamic> toJson() => const {};
+  factory GeneralSettings.fromJson(Map<String, dynamic> json) {
+    return GeneralSettings.fromJsonWithRecovery(json);
+  }
+
+  factory GeneralSettings.fromJsonWithRecovery(
+    Map<String, dynamic> json, {
+    List<String>? warnings,
+  }) {
+    final browseRaw = json['libraryBrowse'];
+    if (browseRaw is Map<String, dynamic>) {
+      return GeneralSettings(
+        libraryBrowse: LibraryBrowseSettings.fromJsonWithRecovery(
+          browseRaw,
+          warnings: warnings,
+        ),
+      );
+    }
+    return GeneralSettings(libraryBrowse: LibraryBrowseSettings.defaults());
+  }
+
+  Map<String, dynamic> toJson() => {
+        'libraryBrowse': libraryBrowse.toJson(),
+      };
+
+  List<String> validate() => libraryBrowse.validate();
+
+  GeneralSettings copyWith({LibraryBrowseSettings? libraryBrowse}) {
+    return GeneralSettings(
+      libraryBrowse: libraryBrowse ?? this.libraryBrowse,
+    );
+  }
+}
+
+/// Library browsing preferences persisted in the settings envelope (ADR-008).
+class LibraryBrowseSettings {
+  const LibraryBrowseSettings({required this.defaultSortMode});
+
+  final LibrarySortMode defaultSortMode;
+
+  factory LibraryBrowseSettings.defaults() {
+    return const LibraryBrowseSettings(
+      defaultSortMode: LibrarySortMode.defaultMode,
+    );
+  }
+
+  factory LibraryBrowseSettings.fromJson(Map<String, dynamic> json) {
+    return LibraryBrowseSettings.fromJsonWithRecovery(json);
+  }
+
+  factory LibraryBrowseSettings.fromJsonWithRecovery(
+    Map<String, dynamic> json, {
+    List<String>? warnings,
+  }) {
+    return LibraryBrowseSettings(
+      defaultSortMode: LibrarySortMode.fromStorageKey(
+        json['defaultSortMode'] as String?,
+        warnings: warnings,
+      ),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'defaultSortMode': defaultSortMode.storageKey,
+      };
 
   List<String> validate() => const [];
+
+  LibraryBrowseSettings copyWith({LibrarySortMode? defaultSortMode}) {
+    return LibraryBrowseSettings(
+      defaultSortMode: defaultSortMode ?? this.defaultSortMode,
+    );
+  }
 }
 
 /// Library and provider configuration group.

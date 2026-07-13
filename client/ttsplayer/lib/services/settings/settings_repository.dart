@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../models/application_settings.dart';
+import '../../models/library_sort_mode.dart';
 import '../media_access/media_provider_config.dart';
 import '../media_access/media_provider_config_service.dart';
 
@@ -64,6 +65,12 @@ class SettingsRepository extends ChangeNotifier {
 
   MediaProviderConfig get providerConfig =>
       _settings.libraryProviders.providerConfig;
+
+  LibraryBrowseSettings get libraryBrowseSettings =>
+      _settings.general.libraryBrowse;
+
+  LibrarySortMode get defaultLibrarySortMode =>
+      libraryBrowseSettings.defaultSortMode;
 
   int get catalogueFetchTimeoutSeconds =>
       networkSettings.catalogueFetchTimeoutSeconds;
@@ -162,6 +169,26 @@ class SettingsRepository extends ChangeNotifier {
   /// Updates only the network slice and saves the full envelope.
   Future<SettingsSaveResult> saveNetworkSettings(NetworkSettings network) async {
     return save(_settings.copyWith(network: network));
+  }
+
+  /// Updates library browse preferences (global default sort only).
+  Future<SettingsSaveResult> saveLibraryBrowseSettings(
+    LibraryBrowseSettings libraryBrowse,
+  ) async {
+    return save(
+      _settings.copyWith(
+        general: _settings.general.copyWith(libraryBrowse: libraryBrowse),
+      ),
+    );
+  }
+
+  /// Updates the persisted global default sort mode (ADR-008).
+  Future<SettingsSaveResult> saveDefaultLibrarySortMode(
+    LibrarySortMode sortMode,
+  ) async {
+    return saveLibraryBrowseSettings(
+      _settings.general.libraryBrowse.copyWith(defaultSortMode: sortMode),
+    );
   }
 
   /// Resets provider configuration to defaults and clears the legacy key.
