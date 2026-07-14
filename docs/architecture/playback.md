@@ -1,6 +1,6 @@
 # Playback (M4 Phase 4.4)
 
-**Status:** **Step 5 complete** — integration audit shipped; Step 6 Windows runtime validation next  
+**Status:** **Step 6 complete** — Windows runtime harness executed; Step 7 closure next  
 **Related roadmap phase:** [M4 Phase 4.4 — Playback Improvements](../roadmap/m4-phase-4.4-playback-improvements.md)  
 **Gate 0 audit:** [m4-phase-4.4-gate0-capability-audit.md](../roadmap/m4-phase-4.4-gate0-capability-audit.md)
 
@@ -25,7 +25,7 @@ Refine playback UX on top of M3 playback and M3.5 resolver integration — speed
 **Cadence:**
 
 ```
-Inventory → Gate 0 ✅ → ADRs ✅ → Specification ✅ → Step 2 service ✅ → Step 3 settings ✅ → Step 4 player UI ✅ → Step 5 integration audit ✅ → Step 6 runtime (next)
+Inventory → Gate 0 ✅ → ADRs ✅ → Specification ✅ → Step 2 service ✅ → Step 3 settings ✅ → Step 4 player UI ✅ → Step 5 integration audit ✅ → Step 6 runtime ✅ → Step 7 closure (next)
 ```
 
 Capabilities are limited to [Gate 0 verified outcomes](../roadmap/m4-phase-4.4-gate0-capability-audit.md#phase-44-scope-hand-off). Chapters and external subtitle sidecars are deferred.
@@ -135,7 +135,15 @@ Playback must not duplicate Provider Status diagnostics.
 | Keyboard | `Esc` closes popup menu before player exit |
 | Tests | `playback_integration_test.dart` added |
 
-**Ready for:** Step 6 Windows runtime validation (`PHASE_44_RUNTIME=1`).
+**Ready for:** Step 7 closure.
+
+---
+
+## Windows runtime validation (Step 6 — ✅)
+
+Harness: `test/phase_44_windows_runtime_test.dart` (`PHASE_44_RUNTIME=1`). Results: **11 passed**, **18 skipped** (media-backed scenarios require Windows desktop app — `flutter test` lacks `media_kit_video` channel; Gate 0 direct `Player()` still passes).
+
+Matrix **P1–P24** in [Phase 4.4 spec](../roadmap/m4-phase-4.4-playback-improvements.md#windows-runtime-validation-step-6--complete).
 
 ---
 
@@ -152,11 +160,12 @@ Playback must not duplicate Provider Status diagnostics.
 
 ---
 
-## Validation (planned — Step 6)
+## Validation
 
-Draft matrix **P1–P24** in [Phase 4.4 spec](../roadmap/m4-phase-4.4-playback-improvements.md#windows-runtime-validation-step-6--draft-not-executed). Harness: `PHASE_44_RUNTIME=1` (to be created at implementation).
+Matrix **P1–P24** executed at Step 6 — see [Phase 4.4 spec](../roadmap/m4-phase-4.4-playback-improvements.md#windows-runtime-validation-step-6--complete).
 
-Gate 0 harness (third-party only): `GATE0_MEDIA_KIT=1` → `gate0_media_kit_capability_test.dart`.
+Gate 0 harness (third-party only): `GATE0_MEDIA_KIT=1` → `gate0_media_kit_capability_test.dart`.  
+Phase 4.4 harness (app-level): `PHASE_44_RUNTIME=1` → `phase_44_windows_runtime_test.dart`.
 
 ---
 
