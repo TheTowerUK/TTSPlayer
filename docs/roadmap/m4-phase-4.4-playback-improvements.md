@@ -109,7 +109,7 @@ PlayerScreen  →  PlaybackService  →  media_kit | video_player
 | **1** | Specification + ADRs | ✅ This document + ADR-010–013 |
 | **2** | PlaybackService extensions | ✅ Complete — service layer + `playback_service_extensions_test.dart` (30 scenarios) |
 | **3** | Settings integration | ✅ Complete — default speed in envelope, Settings UI, PlaybackService wiring |
-| **4** | Player UI | Not started |
+| **4** | Player UI | ✅ Complete — speed/track menus, keyboard shortcuts, error copy, 42 widget tests |
 | **5** | Tests | Not started |
 | **6** | Windows runtime validation | Not started — matrix below (draft) |
 | **7** | Closure | Not started |
@@ -129,9 +129,11 @@ PlayerScreen  →  PlaybackService  →  media_kit | video_player
 | Resolver gate | `play()` → `MediaLocationResolver` | Unresolved → error before init |
 | Settings playback group | `PlaybackSettings.defaultPlaybackSpeed` | Persisted in `ttsplayer_settings_v1` (Step 3) |
 
-**Not wired:** track/speed player UI, keyboard shortcuts.
+**Wired (Step 4):** in-player speed, audio/subtitle menus, keyboard shortcuts, ADR-013 error copy.
 
-**Tests today:** `playback_preflight_test.dart`, `continue_watching_test.dart`, `playback_service_extensions_test.dart`, `playback_settings_integration_test.dart`, `settings_repository_test.dart`, `settings_screen_test.dart`, `gate0_media_kit_capability_test.dart` (Gate 0 only).
+**Closure item:** Settings playback-speed dropdown remains visible on all platforms (Step 3); in-player speed/track controls hide when `PlaybackService` capability flags are false per ADR-011/012.
+
+**Tests today:** `playback_preflight_test.dart`, `continue_watching_test.dart`, `playback_service_extensions_test.dart`, `playback_settings_integration_test.dart`, `player_screen_test.dart`, `settings_repository_test.dart`, `settings_screen_test.dart`, `gate0_media_kit_capability_test.dart` (Gate 0 only).
 
 ---
 
@@ -253,37 +255,39 @@ Implemented per [ADR-011](../architecture/decisions/ADR-011-playback-preferences
 
 ---
 
-## Player UI (Step 4)
+## Player UI (Step 4) — ✅ complete
 
 All controls call `PlaybackService` only ([ADR-010](../architecture/decisions/ADR-010-playback-state-extensions.md), [ADR-012](../architecture/decisions/ADR-012-track-selection.md)).
 
-### New / updated chrome
+### Implemented chrome
 
 | Control | Visibility | Action |
 |---|---|---|
-| Speed selector | Windows only | `setPlaybackRate` — presets match settings |
-| Audio track menu | Windows + ≥ 2 tracks | `selectAudioTrack` |
-| Subtitle menu | Windows + ≥ 1 embedded sub | `selectSubtitleTrack` + Off |
-| Error view | Always | Primary message from service; no provider diagnostics |
-| Resume detail copy | Polish only | Preserve existing `ResumeInfo` logic |
+| Speed selector | `canChangePlaybackRate` | `setPlaybackRate` — session only; presets from `PlaybackRatePresets` |
+| Audio track menu | `canSelectAudioTracks` (≥ 2 tracks) | `selectAudioTrack` |
+| Subtitle menu | `canSelectSubtitleTracks` (≥ 1 embedded sub) | `selectSubtitleTrack` + **Off** (`disableSubtitles`) |
+| Error view | Fatal playback errors | `PlaybackErrorMessages.forKind`; resolver hint toward Provider Status |
+| Resume detail copy | Unchanged | Existing `ResumeInfo` logic on `ItemDetailScreen` |
 
-### Keyboard shortcuts (Windows desktop, player focused)
+**Layout:** seek bar + time → transport (−10 / play-pause / +30) → Speed · Audio · Subtitles row. Controls pin while paused, buffering, menu open, or error/completed.
+
+### Keyboard shortcuts (player focused)
 
 | Key | Action |
 |---|---|
 | `Space` | Toggle play/pause |
 | `←` / `→` | Seek −10 s / +30 s (match buttons) |
 | `Esc` | Stop + pop (match back) |
-| `,` / `.` | Decrease / increase speed preset (Windows only) |
-| `a` | Open audio track menu when available |
-| `s` | Open subtitle menu when available |
+| `,` / `.` | Decrease / increase speed preset when `canChangePlaybackRate` |
+| `a` | Open audio track menu when `canSelectAudioTracks` |
+| `s` | Open subtitle menu when `canSelectSubtitleTracks` |
 
-Use `Shortcuts` / `Actions` or `Focus` with `KeyboardListener` — consistent with dashboard `Ctrl+F` pattern.
+Shortcuts ignored while a popup menu or text field owns focus. Shortcut actions reveal/reset the auto-hide timer.
 
 ### Deliverables
 
-- Updated `player_screen.dart` (+ small private widgets if needed)
-- Widget smoke tests with mocked `PlaybackService`
+- Updated `player_screen.dart` (speed/audio/subtitle menus, keyboard `Focus`, error copy, auto-hide polish)
+- `test/player_screen_test.dart` — 42 scenarios with `FakePlaybackSessionControls`
 
 ---
 
@@ -346,7 +350,7 @@ Mirrors Phases 4.2–4.3: **service and settings before UI**.
 
 1. ~~**Step 2 — PlaybackService extensions**~~ — ✅ DTOs, rate, tracks, error kinds, tests
 2. ~~**Step 3 — Settings integration**~~ — ✅ envelope, repository, playback section UI, runtime wiring
-3. **Step 4 — Player UI** — speed, track menus, shortcuts, error copy, resume polish
+3. **Step 4 — Player UI** — ✅ speed, track menus, shortcuts, error copy, resume polish
 4. **Step 5 — Tests** — fill gaps in matrix unit/widget coverage
 5. **Step 6 — Runtime validation** — implement harness; run P1–P24
 6. **Step 7 — Closure** — `playback.md` → accepted; release tracker; phase retrospective

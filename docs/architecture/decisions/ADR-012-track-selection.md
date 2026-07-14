@@ -50,7 +50,7 @@ Phase 4.4 must expose embedded track selection in the player without mutating th
 
 5. **Resolver independence.** Track selection operates on an already-open player session. `MediaLocationResolver` is unchanged. Resolver failures occur before track APIs are relevant.
 
-6. **No catalogue mutation.** Track metadata is not written to `catalog.json`, favourites, or settings (except speed per ADR-011). Display labels use track `title` / `language` from the player when present; fallback to track id or "Track N".
+6. **No catalogue mutation.** Track metadata is not written to `catalog.json`, favourites, or settings (except speed per ADR-011). Display labels use track `title` / `language` from the player when present; **PlayerScreen** falls back to `Audio N` / `Subtitle N` (1-based index) — not raw backend ids.
 
 7. **External subtitle discovery is outside M4.** Any future sidecar support requires a new Gate audit and ADR — not Phase 4.4.
 

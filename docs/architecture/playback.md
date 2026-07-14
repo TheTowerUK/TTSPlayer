@@ -1,6 +1,6 @@
 # Playback (M4 Phase 4.4)
 
-**Status:** **Step 3 complete** — service extensions + default speed settings shipped; Player UI next  
+**Status:** **Step 4 complete** — service extensions, default speed settings, and Player UI shipped; Step 5 tests / Step 6 runtime validation next  
 **Related roadmap phase:** [M4 Phase 4.4 — Playback Improvements](../roadmap/m4-phase-4.4-playback-improvements.md)  
 **Gate 0 audit:** [m4-phase-4.4-gate0-capability-audit.md](../roadmap/m4-phase-4.4-gate0-capability-audit.md)
 
@@ -25,7 +25,7 @@ Refine playback UX on top of M3 playback and M3.5 resolver integration — speed
 **Cadence:**
 
 ```
-Inventory → Gate 0 ✅ → ADRs ✅ → Specification ✅ → Step 2 service ✅ → Step 3 settings ✅ → Player UI (next)
+Inventory → Gate 0 ✅ → ADRs ✅ → Specification ✅ → Step 2 service ✅ → Step 3 settings ✅ → Step 4 player UI ✅ → Step 5 tests (next)
 ```
 
 Capabilities are limited to [Gate 0 verified outcomes](../roadmap/m4-phase-4.4-gate0-capability-audit.md#phase-44-scope-hand-off). Chapters and external subtitle sidecars are deferred.
@@ -106,9 +106,23 @@ Playback must not duplicate Provider Status diagnostics.
 | Non-Windows | Stored preference ignored at backend; rate stays `1.0` |
 | Tests | Repository (14), Settings UI (11), integration (10) |
 
-**Not in Step 3:** PlayerScreen speed control, keyboard shortcuts.
+**Not in Step 3:** PlayerScreen speed control, keyboard shortcuts (delivered in Step 4).
 
-→ [Implementation spec](../roadmap/m4-phase-4.4-playback-improvements.md#settings-integration-step-3--complete)
+## Player UI (Step 4) — ✅ complete
+
+| Area | Detail |
+|---|---|
+| Speed | Popup preset menu when `canChangePlaybackRate`; session-only via `setPlaybackRate` |
+| Audio | Popup menu when `canSelectAudioTracks`; index fallback labels (`Audio 1`, …) |
+| Subtitles | Popup menu + **Off** when `canSelectSubtitleTracks`; `disableSubtitles` for Off |
+| Errors | `PlaybackErrorMessages.forKind(playbackErrorKind)`; resolver hint to Provider Status |
+| Keyboard | `Space`, arrows, `Esc`, `,`/`.`, `a`/`s` via player `Focus`; capability-gated |
+| Auto-hide | Pins while paused, buffering, menu open; menus reset hide timer |
+| Tests | `player_screen_test.dart` (42 scenarios) |
+
+**Closure item:** Settings playback-speed dropdown still visible on all platforms (Step 3); PlayerScreen hides unsupported controls per capability flags.
+
+→ [Implementation spec](../roadmap/m4-phase-4.4-playback-improvements.md#player-ui-step-4--complete)
 
 ---
 
@@ -119,10 +133,9 @@ Playback must not duplicate Provider Status diagnostics.
 | `PlaybackService` | Windows: `media_kit` + session controls; other: `video_player` + unsupported controls |
 | Resume | `position_*` / `duration_*` in `shared_preferences` |
 | Resolver | `MediaLocationResolver` in `play()` |
-| Rate / tracks / errors | Service-owned (Step 2) — player UI not wired |
+| Rate / tracks / errors | Service-owned (Step 2); Player UI wired (Step 4) |
 | Default speed | Persisted in settings envelope (Step 3) |
-| Player controls | Play/pause, seek, −10/+30, retry, buffering |
-| **Not wired** | Speed/track player UI, keyboard shortcuts |
+| Player controls | Play/pause, seek, −10/+30, speed/audio/subtitle menus, keyboard shortcuts, ADR-013 errors |
 
 ---
 

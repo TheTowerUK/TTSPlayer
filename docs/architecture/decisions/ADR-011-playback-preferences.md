@@ -85,6 +85,7 @@ Constraints:
 ### Neutral
 
 - Future phases may add "remember last speed" — requires new ADR.
+- **Implementation note (Step 4):** `PlayerScreen` hides speed when `canChangePlaybackRate` is false. Settings playback dropdown remains visible on all platforms (Step 3); record alignment at Phase 4.4 closure.
 
 ---
 

@@ -99,6 +99,7 @@ M3 already maps some failures in `_friendlyError` and resolver gates. Phase 4.4 
 ### Neutral
 
 - Phase 4.6 diagnostics may expose deeper detail — must link to Provider Status, not replace layer boundaries.
+- **Implementation note (Step 4):** `_ErrorView` uses `PlaybackErrorMessages.forKind(playbackErrorKind)`; `resolverFailed` adds a one-line hint toward Provider Status without duplicating provider diagnostics.
 
 ---
 
