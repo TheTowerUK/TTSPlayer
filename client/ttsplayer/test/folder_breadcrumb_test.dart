@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ttsplayer/features/dashboard/widgets/libraries_section.dart';
 import 'package:ttsplayer/features/favourites/favourites_screen.dart';
 import 'package:ttsplayer/features/search/search_screen.dart';
+import 'package:ttsplayer/features/search/search_service.dart';
 import 'package:ttsplayer/models/catalog.dart';
 import 'package:ttsplayer/models/library_metadata.dart';
 import 'package:ttsplayer/models/media_folder.dart';
@@ -240,6 +241,7 @@ Widget _harness({
         ),
       ),
       Provider(create: (_) => ArtworkService(fileExists: (_) => false)),
+      Provider(create: (_) => SearchService()),
       ChangeNotifierProvider<CatalogService>.value(value: catalogService),
       ChangeNotifierProvider(
         create: (context) => PlaybackService(

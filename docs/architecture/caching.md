@@ -1,6 +1,6 @@
 # Caching and Performance (M4 Phase 4.5 — planning)
 
-**Status:** Specification **accepted** — implementation not started (2026-07-14)  
+**Status:** **In progress** — Step 2 orchestration implemented (2026-07-14)
 **Related roadmap phase:** [M4 Phase 4.5 — Performance and Caching](../roadmap/m4-phase-4.5-performance-caching.md)
 
 → [Provider refresh lifecycle](./decisions/ADR-002-provider-refresh-lifecycle.md)  
@@ -36,7 +36,7 @@ All catalogue-derived caches key off `Catalog.catalogueIdentity` ([`CatalogueInf
 |---|---|---|---|
 | **Catalogue runtime** | `CatalogService` | Session; last-good on failure | Replace on successful load only |
 | **Artwork candidates** | `ArtworkService` | Session; bounded LRU | Clear on catalogue revision |
-| **Search index** | `SearchService` (elevated) | Session; per revision | Rebuild on catalogue revision |
+| **Search index** | `SearchService` (app-scoped) | Session; per revision | Invalidate + rebuild on catalogue revision (Step 2) |
 | **Image decode** | Flutter `ImageCache` + widget sizing | Session; bounded bytes | Flutter eviction + revision clears candidate paths |
 
 Playback progress, settings, and library metadata are **not** catalogue-derived caches and follow their existing lifecycles.
@@ -59,8 +59,8 @@ Playback progress, settings, and library metadata are **not** catalogue-derived 
 |---|---|---|
 | `ArtworkService._cache` | Unbounded `Map`; sync `existsSync` on miss | Memory growth; UI jank on cold grid scroll |
 | `ArtworkImage` | `Image.file` / `Image.network` at full resolution | Decode memory spikes |
-| `SearchService` | Per-`SearchScreen` instance; full index on first open | Repeated builds; search open blocks on large catalogues |
-| `onCatalogReplaced` | Artwork clear + favourites validate | Search index not wired |
+| `SearchService` | App-scoped `Provider`; shared across screens | Step 2 ✅ |
+| `onCatalogReplaced` | `CatalogCacheCoordinator` — artwork, search, favourites | Step 2 ✅ |
 | Folder grids | Lazy sliver delegates | Derived `view.items` list materialized per folder (acceptable) |
 | Catalogue load | Full in-memory tree | Expected; document parse time |
 | Disk persistence | None for catalogue or thumbnails | In scope for 4.5 only as **documented non-goal** |
@@ -69,18 +69,19 @@ Playback progress, settings, and library metadata are **not** catalogue-derived 
 
 ## Target architecture (4.5)
 
-### Invalidation orchestration
+### Invalidation orchestration (Step 2 — implemented)
 
-`main.dart` (or a thin coordinator) composes catalogue-replacement side effects:
+`CatalogCacheCoordinator` at the app composition root (`main.dart`):
 
 ```
-CatalogService.replace success
-    → ArtworkService.clearCache()
-    → SearchService.scheduleRebuild(catalog)   // new
-    → LibraryMetadataRepository.validateAgainstCatalog()  // existing
+CatalogService successful replacement
+    → CatalogCacheCoordinator.onCatalogReplaced(catalog)
+        → ArtworkService.clearCache()
+        → SearchService.onCatalogReplaced(catalog)  // invalidate + rebuild
+        → LibraryMetadataRepository.validateAgainstCatalog()  // async
 ```
 
-Failed loads do not invoke this chain.
+Failed loads do not invoke this chain ([ADR-002](./decisions/ADR-002-provider-refresh-lifecycle.md), [ADR-014](./decisions/ADR-014-catalogue-revision-cache-invalidation.md)).
 
 ### Artwork ([ADR-015](./decisions/ADR-015-artwork-and-image-decode-caching.md))
 
@@ -91,8 +92,8 @@ Failed loads do not invoke this chain.
 
 ### Search ([ADR-016](./decisions/ADR-016-search-index-and-large-library-browsing.md))
 
-- `SearchService` registered at app root via `Provider`.
-- Index rebuild scheduled after catalogue replacement; dashboard not blocked.
+- Shared `SearchService` registered at app root via `Provider`.
+- Index rebuild on catalogue replacement is **immediate** in Step 2; dashboard deferral is Step 4.
 - `SearchScreen` consumes shared service; shows indexing state when rebuild in flight.
 - Search **engine** (scoring, filters, max 100 results) unchanged.
 

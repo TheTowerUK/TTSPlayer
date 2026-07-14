@@ -1031,6 +1031,7 @@ Widget _harness({
         ),
       ),
       Provider(create: (_) => ArtworkService(fileExists: (_) => false)),
+      Provider(create: (_) => SearchService()),
       ChangeNotifierProvider<CatalogService>.value(value: service),
       ChangeNotifierProvider(
         create: (context) => PlaybackService(

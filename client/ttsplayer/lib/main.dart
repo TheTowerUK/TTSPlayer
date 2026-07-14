@@ -7,9 +7,10 @@ import 'package:media_kit/media_kit.dart';
 import 'package:provider/provider.dart';
 
 import 'features/dashboard/dashboard_screen.dart';
-import 'models/catalog.dart';
+import 'features/search/search_service.dart';
 import 'navigation/app_navigator.dart';
 import 'services/artwork/artwork_service.dart';
+import 'services/catalog_cache_coordinator.dart';
 import 'services/catalog_service.dart';
 import 'services/media_access/media_provider_config_service.dart';
 import 'services/media_access/media_location_resolver.dart';
@@ -33,6 +34,7 @@ Future<void> main() async {
   await settingsRepository.initialize();
 
   final artworkService = ArtworkService();
+  final searchService = SearchService();
 
   final isWindowsDesktop = !kIsWeb && Platform.isWindows;
   final mediaLocationResolver = MediaLocationResolver(
@@ -43,15 +45,15 @@ Future<void> main() async {
   final libraryMetadataRepository = LibraryMetadataRepository();
   await libraryMetadataRepository.initialize();
 
+  final catalogCacheCoordinator = CatalogCacheCoordinator(
+    artworkService: artworkService,
+    searchService: searchService,
+    libraryMetadataRepository: libraryMetadataRepository,
+  );
+
   final catalogService = CatalogService(
     settingsRepository: settingsRepository,
-    onCatalogReplaced: (catalog) {
-      artworkService.clearCache();
-      unawaited(_validateLibraryMetadataAfterCatalogReplace(
-        libraryMetadataRepository,
-        catalog,
-      ));
-    },
+    onCatalogReplaced: catalogCacheCoordinator.onCatalogReplaced,
   );
 
   runApp(
@@ -68,6 +70,7 @@ Future<void> main() async {
         ),
         Provider<MediaLocationResolver>.value(value: mediaLocationResolver),
         Provider<ArtworkService>.value(value: artworkService),
+        Provider<SearchService>.value(value: searchService),
         ChangeNotifierProvider<CatalogService>.value(
           value: catalogService,
         ),
@@ -84,21 +87,6 @@ Future<void> main() async {
       child: const TTSPlayerApp(),
     ),
   );
-}
-
-/// Failure-safe favourite validation after catalogue replacement (ADR-007).
-/// Errors must not propagate to catalogue load or artwork invalidation.
-Future<void> _validateLibraryMetadataAfterCatalogReplace(
-  LibraryMetadataRepository repository,
-  Catalog catalog,
-) async {
-  try {
-    await repository.validateAgainstCatalog(catalog);
-  } catch (e, stackTrace) {
-    debugPrint(
-      '[main] validateAgainstCatalog failed: $e\n$stackTrace',
-    );
-  }
 }
 
 class TTSPlayerApp extends StatelessWidget {

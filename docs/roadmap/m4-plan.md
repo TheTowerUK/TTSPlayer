@@ -55,7 +55,7 @@ Implement in order unless a documented dependency allows parallel documentation 
 | **4.2** | Settings Framework | ✅ Complete (2026-07-12) |
 | **4.3** | Library Experience | ✅ Complete (2026-07-13) |
 | **4.4** | Playback Improvements | ✅ Complete (2026-07-14) | [spec](./m4-phase-4.4-playback-improvements.md) |
-| **4.5** | Performance and Caching | Spec accepted — implementation next | [spec](./m4-phase-4.5-performance-caching.md) |
+| **4.5** | Performance and Caching | Step 2 ✅ — Step 3 next | [spec](./m4-phase-4.5-performance-caching.md) |
 | **4.6** | Diagnostics and Supportability | Planned |
 | **4.7** | Release and Documentation | Planned |
 
@@ -277,7 +277,7 @@ Inventory → Capability Audit → ADRs → Specification → Implementation
 
 ### Phase 4.5 — Performance and Caching
 
-**Status:** Baseline audit ✅ · Specification **accepted** · ADR-014–016 **accepted** — implementation not started.
+**Status:** Baseline audit ✅ · Specification **accepted** · ADR-014–016 **accepted** · Step 2 **complete** — Step 3 next.
 
 **Objective:** Keep large libraries responsive through deliberate caching and lazy rendering.
 
@@ -291,7 +291,7 @@ Baseline Audit → ADRs → Invalidation → Artwork → Search → Scroll tunin
 
 0. Performance baseline audit — **complete** ([audit](./m4-phase-4.5-baseline-audit.md))
 1. Specification + ADRs — **complete** ([spec](./m4-phase-4.5-performance-caching.md), ADR-014–016)
-2. Cache invalidation orchestration
+2. Cache invalidation orchestration — **complete**
 3. Artwork candidate bounds + image decode
 4. Search index lifecycle + startup deferral
 5. Large-folder scroll tuning + memory hooks

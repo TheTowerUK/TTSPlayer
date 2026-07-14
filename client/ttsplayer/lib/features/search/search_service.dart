@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import '../../models/catalog.dart';
 import '../../models/media_folder.dart';
 import '../../models/media_item.dart';
@@ -32,6 +34,21 @@ class SearchService {
     _index = catalog.allItems
         .map((item) => _entryForItem(item, libraries))
         .toList(growable: false);
+  }
+
+  /// Clears the in-memory search index without rebuilding (ADR-014).
+  @visibleForTesting
+  void invalidateIndex() {
+    _index = const [];
+    _catalogueIdentity = null;
+    _libraryNames = const [];
+    _extensions = const [];
+  }
+
+  /// Called from [CatalogCacheCoordinator] on successful catalogue replacement.
+  void onCatalogReplaced(Catalog catalog) {
+    invalidateIndex();
+    buildIndex(catalog);
   }
 
   /// Returns ranked results for [query] with optional [filters].

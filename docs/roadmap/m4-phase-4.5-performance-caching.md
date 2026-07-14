@@ -1,6 +1,6 @@
 # M4 Phase 4.5 — Performance and Caching (Implementation Specification)
 
-**Status:** **Specification accepted** — implementation not started (2026-07-14)  
+**Status:** **In progress** — Step 2 complete (2026-07-14); Step 3 next
 **Milestone:** M4 — User Experience and Platform Integration  
 **Branch:** `m4-development`  
 **Development version:** `v0.5.0-dev`  
@@ -54,8 +54,8 @@ Step 0 captures inventory; Steps 6–7 record numbers. Targets below are **accep
 |---|---|---|
 | **0** | Performance baseline audit | ✅ Complete — [audit](./m4-phase-4.5-baseline-audit.md) |
 | **1** | Specification + ADRs | ✅ This document + ADR-014–016 |
-| **2** | Cache invalidation orchestration | Planned |
-| **3** | Artwork candidate bounds + image decode | Planned |
+| **2** | Cache invalidation orchestration | ✅ Complete — `CatalogCacheCoordinator`, app-scoped `SearchService` |
+| **3** | Artwork candidate bounds + image decode | **Next** |
 | **4** | Search index lifecycle + startup deferral | Planned |
 | **5** | Large-folder scroll tuning + memory hooks | Planned |
 | **6** | Integration tests + micro-benchmarks | Planned |
@@ -74,9 +74,9 @@ Step 0 captures inventory; Steps 6–7 record numbers. Targets below are **accep
 |---|---|---|
 | Catalogue load | `CatalogService` | Bundled / local / HTTP; last-good on failure |
 | Artwork resolution | `ArtworkService` | Thumbnail → sidecar → folder art → placeholder |
-| Artwork invalidation | `main.dart` `onCatalogReplaced` | `clearCache()` only |
-| Search engine | `SearchService` | In-memory index; scoring unchanged |
-| Search UI | `SearchScreen` | Owns private `SearchService` instance |
+| Artwork invalidation | `CatalogCacheCoordinator` | `clearCache()` on successful replace |
+| Search engine | `SearchService` (app-scoped) | In-memory index; scoring unchanged |
+| Search UI | `SearchScreen` | Shared `SearchService` via `Provider` |
 | Folder grids | `FolderScreen` | `SliverChildBuilderDelegate` — lazy children |
 | Provider refresh | Phase 4.1 | ADR-002 lifecycle |
 | Library metadata | `LibraryMetadataRepository` | Validates on catalogue replace |
@@ -111,24 +111,32 @@ Step 0 captures inventory; Steps 6–7 record numbers. Targets below are **accep
 
 ---
 
-## Step 2 — Cache invalidation orchestration
+## Step 2 — Cache invalidation orchestration — ✅ complete
 
 **ADR:** [ADR-014](../architecture/decisions/ADR-014-catalogue-revision-cache-invalidation.md)
 
-### Deliverables
+### Delivered
 
-| Item | Description |
+| Item | Location |
 |---|---|
-| Composition | Extend `onCatalogReplaced` in `main.dart` (or `CatalogCacheCoordinator`) to invoke artwork clear, search rebuild schedule, favourites validate |
-| `SearchService` registration | Add to `MultiProvider` at app root |
-| Tests | Failed refresh does not rebuild index; successful replace does |
-| Debug hooks (optional) | `SearchService.indexState`, last identity — for 4.6 diagnostics |
+| `CatalogCacheCoordinator` | `lib/services/catalog_cache_coordinator.dart` |
+| App-scoped `SearchService` | `main.dart` `Provider<SearchService>` |
+| Orchestration wiring | `CatalogService.onCatalogReplaced` → coordinator |
+| Search invalidation API | `SearchService.invalidateIndex()`, `onCatalogReplaced()` |
+| `SearchScreen` | Resolves shared `SearchService` via `Provider` |
+| Tests | `test/catalog_cache_invalidation_test.dart` |
 
-### Forbidden
+### Behaviour
 
-- Invalidation on failed `loadOnStartup` or refresh
-- Search index rebuild inside `SearchScreen` only
-- Cross-service imports from `ArtworkService` → `SearchService`
+- Successful replacement: artwork clear → search invalidate + rebuild → favourites validate (async).
+- Failed refresh/rescan: last-good catalogue; no coordinator invocation.
+- Immediate index rebuild on replace (deferred build deferred to Step 4).
+
+### Tests
+
+- Coordinator unit smoke
+- Search identity invalidation
+- CatalogService integration: success, failed load, failed rescan, favourites prune
 
 ---
 
@@ -299,3 +307,4 @@ Mirror 4.1–4.4: opt-in `PHASE_45_RUNTIME=1`, file `test/phase_45_windows_runti
 | Date | Change |
 |---|---|
 | 2026-07-14 | Initial specification; Step 0 audit; ADR-014–016 accepted |
+| 2026-07-14 | Step 2 cache invalidation orchestration complete |

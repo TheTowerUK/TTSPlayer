@@ -32,7 +32,6 @@ class _ClearSearchIntent extends Intent {
 }
 
 class _SearchScreenState extends State<SearchScreen> {
-  final _searchService = SearchService();
   final _controller = TextEditingController();
   final _focusNode = FocusNode();
 
@@ -74,9 +73,10 @@ class _SearchScreenState extends State<SearchScreen> {
     final catalog = context.read<CatalogService>().catalog;
     if (catalog == null) return;
 
-    _searchService.buildIndex(catalog);
+    final searchService = context.read<SearchService>();
+    searchService.buildIndex(catalog);
     final query = _controller.text;
-    final results = _searchService.search(query, _filters);
+    final results = searchService.search(query, _filters);
 
     if (query.trim().length >= 2 && results.isNotEmpty) {
       _rememberQuery(query.trim());
@@ -197,9 +197,10 @@ class _SearchScreenState extends State<SearchScreen> {
                   );
                 }
 
-                _searchService.buildIndex(catalog);
+                final searchService = context.read<SearchService>();
+                searchService.buildIndex(catalog);
 
-                if (_searchService.indexedItemCount == 0) {
+                if (searchService.indexedItemCount == 0) {
                   return const SearchEmptyState(
                     kind: SearchEmptyKind.catalogueEmpty,
                   );
@@ -262,8 +263,8 @@ class _SearchScreenState extends State<SearchScreen> {
                         horizontal: AppSpacing.lg,
                       ),
                       child: SearchFilterChips(
-                        libraryNames: _searchService.libraryNames,
-                        extensions: _searchService.extensions,
+                        libraryNames: searchService.libraryNames,
+                        extensions: searchService.extensions,
                         filters: _filters,
                         resultCount: _results.length,
                         queryActive: queryActive,
