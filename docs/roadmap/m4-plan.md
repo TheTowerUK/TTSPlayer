@@ -1,6 +1,6 @@
 # M4 — User Experience and Platform Integration
 
-**Status:** Active development (`v0.5.0-dev`) — **Phase 4.4 complete; Phase 4.5 next**
+**Status:** Active development (`v0.5.0-dev`) — **Phase 4.5 specification accepted; implementation next**
 **Branch:** `m4-development`
 **Development version:** `v0.5.0-dev`
 **Predecessor:** M3.5 Media Access Platform
@@ -55,7 +55,7 @@ Implement in order unless a documented dependency allows parallel documentation 
 | **4.2** | Settings Framework | ✅ Complete (2026-07-12) |
 | **4.3** | Library Experience | ✅ Complete (2026-07-13) |
 | **4.4** | Playback Improvements | ✅ Complete (2026-07-14) | [spec](./m4-phase-4.4-playback-improvements.md) |
-| **4.5** | Performance and Caching | **Next** — planned |
+| **4.5** | Performance and Caching | Spec accepted — implementation next | [spec](./m4-phase-4.5-performance-caching.md) |
 | **4.6** | Diagnostics and Supportability | Planned |
 | **4.7** | Release and Documentation | Planned |
 
@@ -277,42 +277,70 @@ Inventory → Capability Audit → ADRs → Specification → Implementation
 
 ### Phase 4.5 — Performance and Caching
 
+**Status:** Baseline audit ✅ · Specification **accepted** · ADR-014–016 **accepted** — implementation not started.
+
 **Objective:** Keep large libraries responsive through deliberate caching and lazy rendering.
+
+**Cadence:**
+
+```
+Baseline Audit → ADRs → Invalidation → Artwork → Search → Scroll tuning → Benchmarks → Runtime → Closure
+```
+
+**Steps:**
+
+0. Performance baseline audit — **complete** ([audit](./m4-phase-4.5-baseline-audit.md))
+1. Specification + ADRs — **complete** ([spec](./m4-phase-4.5-performance-caching.md), ADR-014–016)
+2. Cache invalidation orchestration
+3. Artwork candidate bounds + image decode
+4. Search index lifecycle + startup deferral
+5. Large-folder scroll tuning + memory hooks
+6. Integration tests + micro-benchmarks
+7. Windows runtime validation
+8. Closure
 
 **Scope:**
 
-- Catalogue cache strategy
-- Artwork and thumbnail caching
-- Lazy rendering in grids and lists
-- Background refresh where safe
-- Large-library responsiveness
-- Cache invalidation rules
-- Memory and startup performance
+- Catalogue-derived cache invalidation on successful replace
+- Bounded artwork candidate LRU + image decode sizing
+- Shared deferred `SearchService` index rebuild
+- Large-folder scroll verification and tuning
+- Memory and startup performance baselines
 
 **Out of scope:**
 
 - SQLite catalogue store (unless ADR-approved — out of scope for M4 v1)
 - Background indexer daemon
 - CDN or edge caching
+- Disk thumbnail cache
+- Search pagination UI
 
-**Dependencies:** Phases 4.1–4.3 (know what to cache and when to invalidate); architecture note TBD if cache layer is new.
+**Dependencies:** Phases 4.1–4.4; [caching architecture](../architecture/caching.md).
 
 **Definition of done:**
 
-- Measurable improvement or documented baseline for large-folder scroll
-- Artwork cache does not block UI thread on cold start
-- Cache invalidation tied to rescan and provider refresh events
-- Memory bounds documented
+- Measurable targets met or documented (see [spec](./m4-phase-4.5-performance-caching.md#measurable-success-criteria))
+- Artwork cache bounded; ImageCache budget configured
+- Search index deferred off dashboard critical path
+- Cache invalidation tied to successful rescan/provider refresh only
+- No regression on bundled catalogue startup
 
 **Validation expectations:**
 
-- Performance smoke on large mock catalogue
-- No regression in catalogue load time for demo catalogue
+- Micro-benchmarks on synthetic 5k-item fixture
+- Opt-in Phase 4.5 Windows runtime harness (`PHASE_45_RUNTIME`)
+- Manual scroll QA on large real folder (release follow-up)
 
 **Documentation outputs:**
 
-- Cache strategy section in relevant architecture docs
-- ADR if cache storage format or invalidation contract is significant
+- [Phase 4.5 baseline audit](./m4-phase-4.5-baseline-audit.md) (complete)
+- [Phase 4.5 implementation specification](./m4-phase-4.5-performance-caching.md) (accepted)
+- [caching.md](../architecture/caching.md) — update to implemented at closure
+- ADR-014–016 ([index](../architecture/decisions/README.md#index))
+
+→ Architecture: [caching.md](../architecture/caching.md)
+→ Baseline: [m4-phase-4.5-baseline-audit.md](./m4-phase-4.5-baseline-audit.md)
+→ Specification: [m4-phase-4.5-performance-caching.md](./m4-phase-4.5-performance-caching.md)
 
 ---
 

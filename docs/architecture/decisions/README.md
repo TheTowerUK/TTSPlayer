@@ -80,6 +80,9 @@ Every ADR must include these headings (use [ADR-template.md](./ADR-template.md))
 | [ADR-011](./ADR-011-playback-preferences.md) | Playback Preferences | Accepted |
 | [ADR-012](./ADR-012-track-selection.md) | Track Selection | Accepted |
 | [ADR-013](./ADR-013-playback-error-taxonomy.md) | Playback Error Taxonomy | Accepted |
+| [ADR-014](./ADR-014-catalogue-revision-cache-invalidation.md) | Catalogue Revision Cache Invalidation | Accepted |
+| [ADR-015](./ADR-015-artwork-and-image-decode-caching.md) | Artwork and Image Decode Caching | Accepted |
+| [ADR-016](./ADR-016-search-index-and-large-library-browsing.md) | Search Index and Large-Library Browsing | Accepted |
 
 ---
 

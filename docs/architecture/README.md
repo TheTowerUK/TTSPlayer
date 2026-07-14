@@ -26,10 +26,9 @@ Planning documents for [M4 — User Experience and Platform Integration](../road
 | [Provider management](./provider-management.md) | 4.1 | **Implemented / Accepted** — [spec](../roadmap/m4-phase-4.1-provider-management.md) |
 | [Settings](./settings.md) | 4.2 | **Implemented / Accepted** — [spec](../roadmap/m4-phase-4.2-settings-framework.md) |
 | [Library experience](./library.md) | 4.3 | **Implemented / Accepted** — [spec](../roadmap/m4-phase-4.3-library-experience.md) |
-| [Playback](./playback.md) | 4.4 | Spec accepted — [spec](../roadmap/m4-phase-4.4-playback-improvements.md) · [Gate 0](../roadmap/m4-phase-4.4-gate0-capability-audit.md) · ADR-010–013 |
+| [Playback](./playback.md) | 4.4 | **Implemented / Accepted** — [spec](../roadmap/m4-phase-4.4-playback-improvements.md) · ADR-010–013 |
+| [Caching](./caching.md) | 4.5 | Spec accepted — [spec](../roadmap/m4-phase-4.5-performance-caching.md) · [baseline](../roadmap/m4-phase-4.5-baseline-audit.md) · ADR-014–016 |
 | [Diagnostics](./diagnostics.md) | 4.6 | Planning |
-
-Performance and caching (Phase 4.5) will be documented at sub-phase kickoff.
 
 ## Architecture Decision Records
 
@@ -51,4 +50,5 @@ Significant cross-layer decisions are recorded as ADRs:
 | Caddy config | `backend/caddy.config` | HTTPS static file server (M3.5 reference) |
 | ScannerService | `client/ttsplayer/lib/services/scanner_service.dart` | Runs indexer subprocess |
 | PlaybackService | `client/ttsplayer/lib/services/playback_service.dart` | Windows: media_kit; other: video_player; uses resolver |
-| ArtworkService | `client/ttsplayer/lib/services/artwork/` | Sidecar and placeholder artwork |
+| ArtworkService | `client/ttsplayer/lib/services/artwork/` | Sidecar and placeholder artwork; bounded cache (4.5) |
+| SearchService | `client/ttsplayer/lib/features/search/` | In-memory search index (4.5 lifecycle) |
