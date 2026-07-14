@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ttsplayer/features/settings/settings_screen.dart';
 import 'package:ttsplayer/models/application_settings.dart';
 import 'package:ttsplayer/models/playback/playback_rate_presets.dart';
+import 'package:ttsplayer/services/playback_platform.dart';
 import 'package:ttsplayer/services/library/library_metadata_repository.dart';
 import 'package:ttsplayer/services/media_access/media_provider_config_service.dart';
 import 'package:ttsplayer/services/settings/settings_repository.dart';
@@ -61,7 +62,11 @@ Future<void> _pumpSettingsScreen(
   for (var i = 0; i < 10; i++) {
     await tester.pump(const Duration(milliseconds: 100));
     if (find.byKey(const Key('save_network_settings')).evaluate().isNotEmpty &&
-        find.byKey(const Key('default_playback_speed')).evaluate().isNotEmpty) {
+        (find.byKey(const Key('default_playback_speed')).evaluate().isNotEmpty ||
+            find
+                .byKey(const Key('playback_speed_readonly'))
+                .evaluate()
+                .isNotEmpty)) {
       break;
     }
   }
@@ -80,6 +85,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() {
+    playbackSpeedSettingsSupportedOverride = () => true;
     PackageInfo.setMockInitialValues(
       appName: 'TTSPlayer',
       packageName: 'ttsplayer',
@@ -87,6 +93,10 @@ void main() {
       buildNumber: '1',
       buildSignature: '',
     );
+  });
+
+  tearDown(() {
+    playbackSpeedSettingsSupportedOverride = null;
   });
 
   group('SettingsScreen', () {
@@ -411,6 +421,37 @@ void main() {
 
       final saveButton = find.byKey(const Key('save_playback_settings'));
       expect(tester.widget<FilledButton>(saveButton).onPressed, isNotNull);
+    });
+
+    testWidgets('26 unsupported platform hides editable speed dropdown',
+        (tester) async {
+      playbackSpeedSettingsSupportedOverride = () => false;
+      SharedPreferences.setMockInitialValues({});
+      final repository = SettingsRepository();
+      await repository.initialize();
+      await repository.saveDefaultPlaybackRate(1.5);
+      await _pumpSettingsScreen(tester, repository);
+
+      expect(find.byKey(const Key('default_playback_speed')), findsNothing);
+      expect(find.byKey(const Key('playback_speed_readonly')), findsOneWidget);
+      expect(find.textContaining('Normal (1×)'), findsNothing);
+      expect(find.textContaining('1.5×'), findsOneWidget);
+
+      final saveButton = find.byKey(const Key('save_playback_settings'));
+      expect(tester.widget<FilledButton>(saveButton).onPressed, isNull);
+    });
+
+    testWidgets('27 unsupported platform preserves stored speed on reload',
+        (tester) async {
+      playbackSpeedSettingsSupportedOverride = () => false;
+      SharedPreferences.setMockInitialValues({});
+      final repository = SettingsRepository();
+      await repository.initialize();
+      await repository.saveDefaultPlaybackRate(1.25);
+      await _pumpSettingsScreen(tester, repository);
+
+      expect(find.textContaining('1.25×'), findsOneWidget);
+      expect(repository.defaultPlaybackRate, 1.25);
     });
   });
 }

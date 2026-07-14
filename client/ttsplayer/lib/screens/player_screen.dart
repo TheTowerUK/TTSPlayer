@@ -135,14 +135,19 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   KeyEventResult _handleKeyEvent(KeyEvent event) {
     if (event is! KeyDownEvent) return KeyEventResult.ignored;
-    if (_shouldIgnoreShortcuts()) return KeyEventResult.ignored;
-
-    final service = _service;
 
     if (event.logicalKey == LogicalKeyboardKey.escape) {
+      if (_menuOpen) {
+        Navigator.of(context, rootNavigator: true).pop();
+        return KeyEventResult.handled;
+      }
       _goBack();
       return KeyEventResult.handled;
     }
+
+    if (_shouldIgnoreShortcuts()) return KeyEventResult.ignored;
+
+    final service = _service;
 
     if (service.errorMessage != null ||
         service.isInitializing ||

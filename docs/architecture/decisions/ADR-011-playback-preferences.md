@@ -36,9 +36,9 @@ Constraints:
 3. **Storage:** `ttsplayer_settings_v1` → `playback.defaultPlaybackSpeed`. Not stored in resume keys or per-item prefs.
 
 4. **Settings UI:** Populate the existing **Playback** section on `SettingsScreen`:
-   - Dropdown or segmented control for default speed
-   - Helper text: Windows-only; other platforms always play at normal speed
-   - **Save** commits envelope; **Discard** reverts draft
+   - **Windows / supported backend** (`playbackSpeedSettingsSupported`): dropdown for default speed; **Save** commits envelope
+   - **Unsupported platforms:** read-only display of stored preference; Save playback disabled; preference preserved for future Windows use
+   - **Discard** reverts draft on supported platforms only
    - No auto-reload of catalogue (same apply model as ADR-006)
 
 5. **Runtime application:**
@@ -48,7 +48,7 @@ Constraints:
    | `play()` succeeds on Windows | Apply `defaultPlaybackSpeed` from `SettingsRepository` unless a **session override** is active |
    | User changes speed in player | Updates session rate via `setPlaybackRate`; does **not** write settings until user explicitly saves a new default (optional in-player "Set as default" is **out of 4.4** unless added in spec Step 4 — spec says settings only for default) |
    | Session override | In-player speed changes persist for the **current playback session** (until `stop()` or successful `play()` of a different item) without mutating saved settings |
-   | Non-Windows | Ignore stored default for player API; UI hides speed control |
+   | Non-Windows | Ignore stored default for player API; Settings shows read-only stored value; PlayerScreen hides speed control |
 
 6. **Reset behaviour:**
 
@@ -85,7 +85,7 @@ Constraints:
 ### Neutral
 
 - Future phases may add "remember last speed" — requires new ADR.
-- **Implementation note (Step 4):** `PlayerScreen` hides speed when `canChangePlaybackRate` is false. Settings playback dropdown remains visible on all platforms (Step 3); record alignment at Phase 4.4 closure.
+- **Implementation (Step 5):** `playbackSpeedSettingsSupported` in `playback_platform.dart` with `@visibleForTesting` override; Settings and PlayerScreen both gate on capability.
 
 ---
 

@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../../models/application_settings.dart';
 import '../../models/playback/playback_rate_presets.dart';
+import '../../services/playback_platform.dart';
 import '../../services/media_access/media_provider_config_service.dart';
 import '../../services/settings/settings_repository.dart';
 import '../../theme/app_theme.dart';
@@ -41,7 +40,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool get _networkDirty =>
       int.tryParse(_timeoutController.text.trim()) != _savedTimeoutSeconds;
 
-  bool get _playbackDirty => _draftPlaybackRate != _savedPlaybackRate;
+  bool get _playbackSpeedEditable => playbackSpeedSettingsSupported;
+
+  bool get _playbackDirty =>
+      _playbackSpeedEditable && _draftPlaybackRate != _savedPlaybackRate;
 
   bool get _hasUnsavedChanges =>
       _networkDirty || _providerDirty || _playbackDirty;
@@ -137,6 +139,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _savePlayback() async {
+    if (!_playbackSpeedEditable) return;
+
     if (!PlaybackRatePresets.isSupported(_draftPlaybackRate)) {
       setState(() {
         _playbackValidationErrors = ['Select a supported playback speed.'];
@@ -407,7 +411,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                if (!kIsWeb && !Platform.isWindows)
+                                if (!_playbackSpeedEditable) ...[
                                   const Padding(
                                     padding: EdgeInsets.only(
                                       bottom: AppSpacing.sm,
@@ -418,34 +422,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       style: AppTypography.bodyMuted,
                                     ),
                                   ),
-                                DropdownButtonFormField<double>(
-                                  key: const Key('default_playback_speed'),
-                                  value: _draftPlaybackRate,
-                                  decoration: InputDecoration(
-                                    labelText: 'Default playback speed',
-                                    helperText:
-                                        'Saved: ${PlaybackRatePresets.displayLabel(_savedPlaybackRate)}',
-                                    border: const OutlineInputBorder(),
+                                  Text(
+                                    key: const Key('playback_speed_readonly'),
+                                    'Stored preference: '
+                                    '${PlaybackRatePresets.displayLabel(_savedPlaybackRate)}',
+                                    style: AppTypography.body,
                                   ),
-                                  items: [
-                                    for (final rate in PlaybackRatePresets.supported)
-                                      DropdownMenuItem<double>(
-                                        value: rate,
-                                        child: Text(
-                                          PlaybackRatePresets.displayLabel(rate),
+                                  const SizedBox(height: AppSpacing.xs),
+                                  const Text(
+                                    'This setting applies when you play media on Windows. '
+                                    'It is preserved here but cannot be changed on this platform.',
+                                    style: AppTypography.bodyMuted,
+                                  ),
+                                ] else
+                                  DropdownButtonFormField<double>(
+                                    key: const Key('default_playback_speed'),
+                                    value: _draftPlaybackRate,
+                                    decoration: InputDecoration(
+                                      labelText: 'Default playback speed',
+                                      helperText:
+                                          'Saved: ${PlaybackRatePresets.displayLabel(_savedPlaybackRate)}',
+                                      border: const OutlineInputBorder(),
+                                    ),
+                                    items: [
+                                      for (final rate
+                                          in PlaybackRatePresets.supported)
+                                        DropdownMenuItem<double>(
+                                          value: rate,
+                                          child: Text(
+                                            PlaybackRatePresets.displayLabel(
+                                              rate,
+                                            ),
+                                          ),
                                         ),
-                                      ),
-                                  ],
-                                  onChanged: (_savingNetwork || _savingPlayback)
-                                      ? null
-                                      : (value) {
-                                          if (value == null) return;
-                                          setState(() {
-                                            _draftPlaybackRate = value;
-                                            _playbackValidationErrors = [];
-                                          });
-                                        },
-                                ),
+                                    ],
+                                    onChanged: (_savingNetwork || _savingPlayback)
+                                        ? null
+                                        : (value) {
+                                            if (value == null) return;
+                                            setState(() {
+                                              _draftPlaybackRate = value;
+                                              _playbackValidationErrors = [];
+                                            });
+                                          },
+                                  ),
                               ],
                             ),
                           ),
@@ -510,7 +530,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             children: [
                               FilledButton.icon(
                                 key: const Key('save_playback_settings'),
-                                onPressed: _savingPlayback || !_playbackDirty
+                                onPressed: _savingPlayback ||
+                                        !_playbackDirty ||
+                                        !_playbackSpeedEditable
                                     ? null
                                     : _savePlayback,
                                 icon: _savingPlayback

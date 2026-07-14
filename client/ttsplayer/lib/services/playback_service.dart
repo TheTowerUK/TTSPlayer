@@ -520,6 +520,8 @@ class PlaybackService extends ChangeNotifier {
 
   Future<void> retry({Duration? startPosition}) async {
     if (_currentItem == null) return;
+    _clearPlaybackError();
+    notifyListeners();
     await play(_currentItem!, startPosition: startPosition);
   }
 
@@ -699,6 +701,7 @@ class PlaybackService extends ChangeNotifier {
   void setPlaybackErrorForTest(PlaybackErrorKind kind, String message) {
     _playbackErrorKind = kind;
     _errorMessage = message;
+    notifyListeners();
   }
 
   /// Test helper — persists resume state without starting playback.
@@ -1085,8 +1088,27 @@ class PlaybackService extends ChangeNotifier {
       _playbackRate = snapshot.playbackRate;
       _availableAudioTracks = snapshot.audioTracks;
       _availableSubtitleTracks = snapshot.subtitleTracks;
-      _selectedAudioTrackId = snapshot.selectedAudioTrackId;
-      _selectedSubtitleTrackId = snapshot.selectedSubtitleTrackId;
+
+      var selectedAudio = snapshot.selectedAudioTrackId;
+      if (selectedAudio != null &&
+          !_availableAudioTracks.any((track) => track.id == selectedAudio)) {
+        debugPrint(
+          '[PlaybackService] stale audio track id ignored: $selectedAudio',
+        );
+        selectedAudio = null;
+      }
+      _selectedAudioTrackId = selectedAudio;
+
+      var selectedSubtitle = snapshot.selectedSubtitleTrackId;
+      if (selectedSubtitle != null &&
+          !_availableSubtitleTracks
+              .any((track) => track.id == selectedSubtitle)) {
+        debugPrint(
+          '[PlaybackService] stale subtitle track id ignored: $selectedSubtitle',
+        );
+        selectedSubtitle = null;
+      }
+      _selectedSubtitleTrackId = selectedSubtitle;
     } catch (e, stack) {
       debugPrint(
         '[PlaybackService] track/rate sync failed: $e\n$stack',

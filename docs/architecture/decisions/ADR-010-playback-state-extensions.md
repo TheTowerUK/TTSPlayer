@@ -65,6 +65,7 @@ Constraints:
    | `retry()` | Same as `play` for current item; preserve explicit `startPosition` when provided |
    | Item completes | Existing position clear unchanged; track/rate state disposed with controller |
    | New item while playing | Full controller dispose + re-init; track selection does not carry over |
+   | **Watch Again** (completed state) | Seek to zero and resume play within the same session; retains session `playbackRate` and track selections — does not call `play()` |
    | Platform without track APIs | Empty track lists; rate locked at `1.0`; controls hidden in UI ([ADR-012](./ADR-012-track-selection.md)) |
 
 7. **`notifyListeners()`** fires on rate changes, track list updates, track selection changes, and existing position/buffering/error transitions — same `ChangeNotifier` contract as M3.

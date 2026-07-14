@@ -1,6 +1,6 @@
 # Playback (M4 Phase 4.4)
 
-**Status:** **Step 4 complete** — service extensions, default speed settings, and Player UI shipped; Step 5 tests / Step 6 runtime validation next  
+**Status:** **Step 5 complete** — integration audit shipped; Step 6 Windows runtime validation next  
 **Related roadmap phase:** [M4 Phase 4.4 — Playback Improvements](../roadmap/m4-phase-4.4-playback-improvements.md)  
 **Gate 0 audit:** [m4-phase-4.4-gate0-capability-audit.md](../roadmap/m4-phase-4.4-gate0-capability-audit.md)
 
@@ -25,7 +25,7 @@ Refine playback UX on top of M3 playback and M3.5 resolver integration — speed
 **Cadence:**
 
 ```
-Inventory → Gate 0 ✅ → ADRs ✅ → Specification ✅ → Step 2 service ✅ → Step 3 settings ✅ → Step 4 player UI ✅ → Step 5 tests (next)
+Inventory → Gate 0 ✅ → ADRs ✅ → Specification ✅ → Step 2 service ✅ → Step 3 settings ✅ → Step 4 player UI ✅ → Step 5 integration audit ✅ → Step 6 runtime (next)
 ```
 
 Capabilities are limited to [Gate 0 verified outcomes](../roadmap/m4-phase-4.4-gate0-capability-audit.md#phase-44-scope-hand-off). Chapters and external subtitle sidecars are deferred.
@@ -120,9 +120,22 @@ Playback must not duplicate Provider Status diagnostics.
 | Auto-hide | Pins while paused, buffering, menu open; menus reset hide timer |
 | Tests | `player_screen_test.dart` (42 scenarios) |
 
-**Closure item:** Settings playback-speed dropdown still visible on all platforms (Step 3); PlayerScreen hides unsupported controls per capability flags.
+**Closure item (resolved Step 5):** Settings shows read-only stored preference on unsupported platforms via `playbackSpeedSettingsSupported`.
 
-→ [Implementation spec](../roadmap/m4-phase-4.4-playback-improvements.md#player-ui-step-4--complete)
+→ [Implementation spec](../roadmap/m4-phase-4.4-playback-improvements.md#integration-audit-step-5--complete)
+
+## Integration audit (Step 5) — ✅ complete
+
+| Area | Detail |
+|---|---|
+| Platform settings | `playbackSpeedSettingsSupported` + test override; read-only vs editable dropdown |
+| State sync | Stale track IDs cleared in `_syncCapabilityStateFromControls` |
+| Retry UX | `retry()` clears fatal error before `play()` re-prepare |
+| Watch Again | Retains session playback rate (seek-to-zero + resume play; no new `play()`) |
+| Keyboard | `Esc` closes popup menu before player exit |
+| Tests | `playback_integration_test.dart` added |
+
+**Ready for:** Step 6 Windows runtime validation (`PHASE_44_RUNTIME=1`).
 
 ---
 

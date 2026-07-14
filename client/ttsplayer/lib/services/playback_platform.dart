@@ -7,6 +7,14 @@ import 'media_access/media_location_resolver.dart';
 /// Windows MVP uses media_kit — video_player has no Windows implementation.
 bool get useMediaKitPlayback => !kIsWeb && Platform.isWindows;
 
+/// Injectable override for tests — when null, uses [useMediaKitPlayback].
+@visibleForTesting
+bool Function()? playbackSpeedSettingsSupportedOverride;
+
+/// Whether default playback speed can be edited and applied on this platform.
+bool get playbackSpeedSettingsSupported =>
+    playbackSpeedSettingsSupportedOverride?.call() ?? useMediaKitPlayback;
+
 /// Normalises a resolved URI (or legacy filesystem path) for the playback engine.
 ///
 /// Catalogue paths must be resolved via [MediaLocationResolver] in

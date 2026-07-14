@@ -46,7 +46,7 @@ Phase 4.4 must expose embedded track selection in the player without mutating th
    - New `play()` clears prior track lists and selections.
    - After `open`, subscribe to `stream.tracks` until stable lists are emitted; update DTOs and `notifyListeners()`.
    - User selection calls `selectAudioTrack` / `selectSubtitleTrack` on the service only.
-   - Invalid or stale track id after re-open → no-op with debug log; UI re-syncs from service state.
+   - Invalid or stale track id after re-open → cleared on service sync with debug log; UI re-syncs from service state.
 
 5. **Resolver independence.** Track selection operates on an already-open player session. `MediaLocationResolver` is unchanged. Resolver failures occur before track APIs are relevant.
 

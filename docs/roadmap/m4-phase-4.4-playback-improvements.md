@@ -110,7 +110,7 @@ PlayerScreen  →  PlaybackService  →  media_kit | video_player
 | **2** | PlaybackService extensions | ✅ Complete — service layer + `playback_service_extensions_test.dart` (30 scenarios) |
 | **3** | Settings integration | ✅ Complete — default speed in envelope, Settings UI, PlaybackService wiring |
 | **4** | Player UI | ✅ Complete — speed/track menus, keyboard shortcuts, error copy, 42 widget tests |
-| **5** | Tests | Not started |
+| **5** | Integration audit | ✅ Complete — settings/platform alignment, state coherence, coverage |
 | **6** | Windows runtime validation | Not started — matrix below (draft) |
 | **7** | Closure | Not started |
 
@@ -131,9 +131,9 @@ PlayerScreen  →  PlaybackService  →  media_kit | video_player
 
 **Wired (Step 4):** in-player speed, audio/subtitle menus, keyboard shortcuts, ADR-013 error copy.
 
-**Closure item:** Settings playback-speed dropdown remains visible on all platforms (Step 3); in-player speed/track controls hide when `PlaybackService` capability flags are false per ADR-011/012.
+**Closure item (resolved Step 5):** Settings shows read-only stored preference on unsupported platforms; editable dropdown only when `playbackSpeedSettingsSupported` is true.
 
-**Tests today:** `playback_preflight_test.dart`, `continue_watching_test.dart`, `playback_service_extensions_test.dart`, `playback_settings_integration_test.dart`, `player_screen_test.dart`, `settings_repository_test.dart`, `settings_screen_test.dart`, `gate0_media_kit_capability_test.dart` (Gate 0 only).
+**Tests today:** `playback_preflight_test.dart`, `continue_watching_test.dart`, `playback_service_extensions_test.dart`, `playback_settings_integration_test.dart`, `playback_integration_test.dart`, `player_screen_test.dart`, `settings_repository_test.dart`, `settings_screen_test.dart`, `gate0_media_kit_capability_test.dart` (Gate 0 only).
 
 ---
 
@@ -291,17 +291,46 @@ Shortcuts ignored while a popup menu or text field owns focus. Shortcut actions 
 
 ---
 
-## Testing (Step 5)
+## Integration audit (Step 5) — ✅ complete
+
+Cross-cutting audit of Steps 2–4 against ADR-010–013. No new playback capabilities.
+
+### Resolved
+
+| Area | Outcome |
+|---|---|
+| **Settings / platform** | `playbackSpeedSettingsSupported` in `playback_platform.dart`; unsupported platforms show read-only stored preference; Save disabled |
+| **State coherence** | Stale track IDs cleared on sync; `retry()` clears fatal error before re-prepare |
+| **Keyboard / menus** | `Esc` closes open popup before exiting player |
+| **Watch Again rate** | Retains current session rate (same media session; no `play()` reset) — ADR-010/011 |
+| **Coverage** | `playback_integration_test.dart` — rate lifecycle, tracks, errors, resume regression |
+| **Gate 0** | Harness unchanged; Step 6 runtime matrix still required for app-level validation |
+
+### Cross-platform settings rule (final)
+
+| Platform | Settings Playback section | Player speed control |
+|---|---|---|
+| Windows (`playbackSpeedSettingsSupported`) | Editable dropdown + Save | Shown when `canChangePlaybackRate` |
+| Other platforms | Read-only stored preference text | Hidden |
+
+Stored Windows preference is never erased when opening Settings on an unsupported platform.
+
+---
+
+## Testing (Step 5) — ✅ complete
 
 | Layer | File(s) | Focus |
 |---|---|---|
-| Service | `playback_service_*_test.dart` | Rate, tracks, error kinds, reset lifecycle |
-| Settings | `settings_repository_test.dart` | `defaultPlaybackSpeed` round-trip |
+| Service | `playback_service_extensions_test.dart` | Rate, tracks, error kinds, reset lifecycle |
+| Integration | `playback_integration_test.dart` | Rate lifecycle, retry, tracks, errors, resume |
+| Settings | `settings_repository_test.dart`, `settings_screen_test.dart` | Platform-aware playback settings |
 | Resume regression | `continue_watching_test.dart`, `playback_preflight_test.dart` | Unchanged keys/eligibility |
-| Widget | `player_screen_test.dart` (new or extended) | Error view, shortcuts invoke service mocks |
-| Gate 0 | `gate0_media_kit_capability_test.dart` | Unchanged — third-party verification only |
+| Widget | `player_screen_test.dart` | Error view, shortcuts, menus |
+| Gate 0 | `gate0_media_kit_capability_test.dart` | Third-party capability audit only (not PlaybackService) |
 
-**Regression:** Phases 4.1–4.3 tests remain green; no changes to catalogue/library/search behaviour.
+**Regression:** Phases 4.1–4.3 tests remain green; **486 passed**, 4 skipped (opt-in runtime harnesses).
+
+**Ready for:** Step 6 Windows runtime validation (`PHASE_44_RUNTIME=1`).
 
 ---
 
@@ -350,7 +379,8 @@ Mirrors Phases 4.2–4.3: **service and settings before UI**.
 
 1. ~~**Step 2 — PlaybackService extensions**~~ — ✅ DTOs, rate, tracks, error kinds, tests
 2. ~~**Step 3 — Settings integration**~~ — ✅ envelope, repository, playback section UI, runtime wiring
-3. **Step 4 — Player UI** — ✅ speed, track menus, shortcuts, error copy, resume polish
+4. **Step 4 — Player UI** — ✅ speed, track menus, shortcuts, error copy, resume polish
+5. **Step 5 — Integration audit** — ✅ settings/platform alignment, state coherence, coverage
 4. **Step 5 — Tests** — fill gaps in matrix unit/widget coverage
 5. **Step 6 — Runtime validation** — implement harness; run P1–P24
 6. **Step 7 — Closure** — `playback.md` → accepted; release tracker; phase retrospective
