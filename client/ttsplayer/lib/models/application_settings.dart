@@ -1,5 +1,6 @@
 import '../services/media_access/media_provider_config.dart';
 import 'library_sort_mode.dart';
+import 'playback/playback_rate_presets.dart';
 
 /// Versioned user settings envelope stored at `ttsplayer_settings_v1`.
 ///
@@ -188,7 +189,7 @@ class ApplicationSettings {
       return PlaybackSettings.defaults();
     }
     try {
-      final parsed = PlaybackSettings.fromJson(raw);
+      final parsed = PlaybackSettings.fromJsonWithRecovery(raw, warnings: warnings);
       final errors = parsed.validate();
       if (errors.isNotEmpty) {
         warnings?.add('Invalid playback settings; using defaults.');
@@ -390,18 +391,57 @@ class NetworkSettings {
   }
 }
 
-/// Playback preferences (M4.2: deferred; group reserved in envelope).
+/// Playback preferences (M4.4: default speed per ADR-011).
 class PlaybackSettings {
-  const PlaybackSettings();
+  const PlaybackSettings({required this.defaultPlaybackSpeed});
 
-  factory PlaybackSettings.defaults() => const PlaybackSettings();
+  final double defaultPlaybackSpeed;
 
-  factory PlaybackSettings.fromJson(Map<String, dynamic> json) =>
-      const PlaybackSettings();
+  factory PlaybackSettings.defaults() {
+    return const PlaybackSettings(
+      defaultPlaybackSpeed: PlaybackRatePresets.defaultRate,
+    );
+  }
 
-  Map<String, dynamic> toJson() => const {};
+  factory PlaybackSettings.fromJson(Map<String, dynamic> json) {
+    return PlaybackSettings.fromJsonWithRecovery(json);
+  }
 
-  List<String> validate() => const [];
+  factory PlaybackSettings.fromJsonWithRecovery(
+    Map<String, dynamic> json, {
+    List<String>? warnings,
+  }) {
+    final raw = json['defaultPlaybackSpeed'];
+    if (raw is num && raw.isFinite) {
+      final rate = raw.toDouble();
+      if (PlaybackRatePresets.isSupported(rate)) {
+        return PlaybackSettings(defaultPlaybackSpeed: rate);
+      }
+      warnings?.add('Invalid defaultPlaybackSpeed; using default.');
+      return PlaybackSettings.defaults();
+    }
+    if (raw != null) {
+      warnings?.add('Invalid defaultPlaybackSpeed; using default.');
+    }
+    return PlaybackSettings.defaults();
+  }
+
+  Map<String, dynamic> toJson() => {
+        'defaultPlaybackSpeed': defaultPlaybackSpeed,
+      };
+
+  List<String> validate() {
+    if (!PlaybackRatePresets.isSupported(defaultPlaybackSpeed)) {
+      return ['defaultPlaybackSpeed must be a supported preset.'];
+    }
+    return const [];
+  }
+
+  PlaybackSettings copyWith({double? defaultPlaybackSpeed}) {
+    return PlaybackSettings(
+      defaultPlaybackSpeed: defaultPlaybackSpeed ?? this.defaultPlaybackSpeed,
+    );
+  }
 }
 
 /// Diagnostics and advanced preferences (M4.2: version display deferred to UI).

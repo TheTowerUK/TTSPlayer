@@ -1,6 +1,6 @@
 # Playback (M4 Phase 4.4)
 
-**Status:** **Step 2 complete** — Gate 0 complete · ADRs accepted · service extensions shipped; UI/settings next  
+**Status:** **Step 3 complete** — service extensions + default speed settings shipped; Player UI next  
 **Related roadmap phase:** [M4 Phase 4.4 — Playback Improvements](../roadmap/m4-phase-4.4-playback-improvements.md)  
 **Gate 0 audit:** [m4-phase-4.4-gate0-capability-audit.md](../roadmap/m4-phase-4.4-gate0-capability-audit.md)
 
@@ -25,7 +25,7 @@ Refine playback UX on top of M3 playback and M3.5 resolver integration — speed
 **Cadence:**
 
 ```
-Inventory → Gate 0 ✅ → ADRs ✅ → Specification ✅ → Step 2 service ✅ → Settings + UI (next)
+Inventory → Gate 0 ✅ → ADRs ✅ → Specification ✅ → Step 2 service ✅ → Step 3 settings ✅ → Player UI (next)
 ```
 
 Capabilities are limited to [Gate 0 verified outcomes](../roadmap/m4-phase-4.4-gate0-capability-audit.md#phase-44-scope-hand-off). Chapters and external subtitle sidecars are deferred.
@@ -94,7 +94,21 @@ Playback must not duplicate Provider Status diagnostics.
 
 **Not in Step 2:** settings default speed persistence, player UI, keyboard shortcuts.
 
-→ [Implementation spec](../roadmap/m4-phase-4.4-playback-improvements.md#playbackservice-extensions-step-2--complete)
+## Default playback speed settings (Step 3) — ✅ complete
+
+| Area | Detail |
+|---|---|
+| Storage | `ttsplayer_settings_v1` → `playback.defaultPlaybackSpeed` (ADR-011 field name) |
+| Presets | `0.5`, `0.75`, `1.0`, `1.25`, `1.5`, `2.0` via `PlaybackRatePresets` |
+| Settings UI | Dropdown + explicit Save / Reset playback defaults on `SettingsScreen` |
+| Runtime | `defaultPlaybackRateProvider: () => settingsRepository.defaultPlaybackRate` in `main.dart` |
+| Session vs default | Saved default applies on `play()` / `retry()`; session override unchanged until new media |
+| Non-Windows | Stored preference ignored at backend; rate stays `1.0` |
+| Tests | Repository (14), Settings UI (11), integration (10) |
+
+**Not in Step 3:** PlayerScreen speed control, keyboard shortcuts.
+
+→ [Implementation spec](../roadmap/m4-phase-4.4-playback-improvements.md#settings-integration-step-3--complete)
 
 ---
 
@@ -105,9 +119,10 @@ Playback must not duplicate Provider Status diagnostics.
 | `PlaybackService` | Windows: `media_kit` + session controls; other: `video_player` + unsupported controls |
 | Resume | `position_*` / `duration_*` in `shared_preferences` |
 | Resolver | `MediaLocationResolver` in `play()` |
-| Rate / tracks / errors | Service-owned (Step 2) — UI not wired |
+| Rate / tracks / errors | Service-owned (Step 2) — player UI not wired |
+| Default speed | Persisted in settings envelope (Step 3) |
 | Player controls | Play/pause, seek, −10/+30, retry, buffering |
-| **Not wired** | Speed/track player UI, shortcuts, settings default speed |
+| **Not wired** | Speed/track player UI, keyboard shortcuts |
 
 ---
 

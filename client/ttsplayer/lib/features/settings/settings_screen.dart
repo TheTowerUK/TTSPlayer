@@ -1,9 +1,13 @@
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/application_settings.dart';
+import '../../models/playback/playback_rate_presets.dart';
 import '../../services/media_access/media_provider_config_service.dart';
 import '../../services/settings/settings_repository.dart';
 import '../../theme/app_theme.dart';
@@ -25,15 +29,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   bool _ready = false;
   bool _savingNetwork = false;
+  bool _savingPlayback = false;
   bool _providerDirty = false;
   int _savedTimeoutSeconds = NetworkSettings.defaultCatalogueFetchTimeoutSeconds;
+  double _savedPlaybackRate = PlaybackRatePresets.defaultRate;
+  double _draftPlaybackRate = PlaybackRatePresets.defaultRate;
   List<String> _networkValidationErrors = [];
+  List<String> _playbackValidationErrors = [];
   String? _appVersion;
 
   bool get _networkDirty =>
       int.tryParse(_timeoutController.text.trim()) != _savedTimeoutSeconds;
 
-  bool get _hasUnsavedChanges => _networkDirty || _providerDirty;
+  bool get _playbackDirty => _draftPlaybackRate != _savedPlaybackRate;
+
+  bool get _hasUnsavedChanges =>
+      _networkDirty || _providerDirty || _playbackDirty;
 
   @override
   void initState() {
@@ -59,9 +70,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (!mounted) return;
     setState(() {
       _populateNetworkFromRepository(repository);
+      _populatePlaybackFromRepository(repository);
       _appVersion = '${packageInfo.version}+${packageInfo.buildNumber}';
       _ready = true;
     });
+  }
+
+  void _populatePlaybackFromRepository(SettingsRepository repository) {
+    _savedPlaybackRate = repository.defaultPlaybackRate;
+    _draftPlaybackRate = _savedPlaybackRate;
+    _playbackValidationErrors = [];
   }
 
   void _populateNetworkFromRepository(SettingsRepository repository) {
@@ -115,6 +133,72 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Network settings saved.')),
+    );
+  }
+
+  Future<void> _savePlayback() async {
+    if (!PlaybackRatePresets.isSupported(_draftPlaybackRate)) {
+      setState(() {
+        _playbackValidationErrors = ['Select a supported playback speed.'];
+      });
+      return;
+    }
+
+    setState(() {
+      _savingPlayback = true;
+      _playbackValidationErrors = [];
+    });
+
+    final repository = context.read<SettingsRepository>();
+    final result = await repository.saveDefaultPlaybackRate(_draftPlaybackRate);
+
+    if (!mounted) return;
+    setState(() => _savingPlayback = false);
+
+    if (!result.success) {
+      setState(() => _playbackValidationErrors = result.validationErrors);
+      return;
+    }
+
+    setState(() {
+      _savedPlaybackRate = _draftPlaybackRate;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Playback settings saved.')),
+    );
+  }
+
+  Future<void> _confirmResetPlayback() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reset playback settings?'),
+        content: const Text(
+          'Restore the default playback speed to normal (1×)?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            key: const Key('confirm_reset_playback'),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Reset'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final repository = context.read<SettingsRepository>();
+    await repository.resetPlaybackToDefaults();
+    if (!mounted) return;
+
+    setState(() => _populatePlaybackFromRepository(repository));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Playback settings reset to defaults.')),
     );
   }
 
@@ -187,6 +271,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (!mounted) return;
 
     setState(() => _populateNetworkFromRepository(repository));
+    setState(() => _populatePlaybackFromRepository(repository));
     _providerFormKey.currentState?.reloadFromService();
     setState(() => _providerDirty = false);
 
@@ -228,14 +313,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (action == _UnsavedAction.save) {
       if (_networkDirty) await _saveNetwork();
       if (!mounted || _networkValidationErrors.isNotEmpty) return;
+      if (_playbackDirty) await _savePlayback();
+      if (!mounted || _playbackValidationErrors.isNotEmpty) return;
       if (_providerDirty) {
         await _providerFormKey.currentState?.save();
       }
       if (!mounted || _hasUnsavedChanges) return;
     } else {
-      setState(
-        () => _populateNetworkFromRepository(context.read<SettingsRepository>()),
-      );
+      setState(() {
+        _populateNetworkFromRepository(context.read<SettingsRepository>());
+        _populatePlaybackFromRepository(context.read<SettingsRepository>());
+      });
       _providerFormKey.currentState?.reloadFromService();
       setState(() => _providerDirty = false);
     }
@@ -280,6 +368,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                             const SizedBox(height: AppSpacing.base),
                           ],
+                          if (_playbackValidationErrors.isNotEmpty) ...[
+                            _PlaybackValidationErrorsBanner(
+                              errors: _playbackValidationErrors,
+                            ),
+                            const SizedBox(height: AppSpacing.base),
+                          ],
                           const SettingsSection(
                             title: 'General',
                             description:
@@ -305,13 +399,54 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                           ),
                           const SizedBox(height: AppSpacing.section),
-                          const SettingsSection(
+                          SettingsSection(
                             title: 'Playback',
                             description:
-                                'Playback preferences will be added in Phase 4.4.',
-                            child: Text(
-                              'No configurable options yet.',
-                              style: AppTypography.bodyMuted,
+                                'Default speed applied when newly opened media starts '
+                                'playing. Does not change speed for media already playing.',
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (!kIsWeb && !Platform.isWindows)
+                                  const Padding(
+                                    padding: EdgeInsets.only(
+                                      bottom: AppSpacing.sm,
+                                    ),
+                                    child: Text(
+                                      'Playback speed control is available on Windows only. '
+                                      'Other platforms always play at normal speed.',
+                                      style: AppTypography.bodyMuted,
+                                    ),
+                                  ),
+                                DropdownButtonFormField<double>(
+                                  key: const Key('default_playback_speed'),
+                                  value: _draftPlaybackRate,
+                                  decoration: InputDecoration(
+                                    labelText: 'Default playback speed',
+                                    helperText:
+                                        'Saved: ${PlaybackRatePresets.displayLabel(_savedPlaybackRate)}',
+                                    border: const OutlineInputBorder(),
+                                  ),
+                                  items: [
+                                    for (final rate in PlaybackRatePresets.supported)
+                                      DropdownMenuItem<double>(
+                                        value: rate,
+                                        child: Text(
+                                          PlaybackRatePresets.displayLabel(rate),
+                                        ),
+                                      ),
+                                  ],
+                                  onChanged: (_savingNetwork || _savingPlayback)
+                                      ? null
+                                      : (value) {
+                                          if (value == null) return;
+                                          setState(() {
+                                            _draftPlaybackRate = value;
+                                            _playbackValidationErrors = [];
+                                          });
+                                        },
+                                ),
+                              ],
                             ),
                           ),
                           const SizedBox(height: AppSpacing.section),
@@ -374,6 +509,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           Row(
                             children: [
                               FilledButton.icon(
+                                key: const Key('save_playback_settings'),
+                                onPressed: _savingPlayback || !_playbackDirty
+                                    ? null
+                                    : _savePlayback,
+                                icon: _savingPlayback
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Icon(Icons.save_outlined),
+                                label: const Text('Save playback settings'),
+                              ),
+                              const SizedBox(width: AppSpacing.sm),
+                              OutlinedButton.icon(
+                                key: const Key('reset_playback_settings'),
+                                onPressed: _savingPlayback
+                                    ? null
+                                    : _confirmResetPlayback,
+                                icon: const Icon(Icons.restore_outlined),
+                                label: const Text('Reset playback defaults'),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: AppSpacing.section),
+                          Row(
+                            children: [
+                              FilledButton.icon(
                                 key: const Key('save_network_settings'),
                                 onPressed: _savingNetwork || !_networkDirty
                                     ? null
@@ -411,6 +576,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
 }
 
 enum _UnsavedAction { save, discard, cancel }
+
+class _PlaybackValidationErrorsBanner extends StatelessWidget {
+  const _PlaybackValidationErrorsBanner({required this.errors});
+
+  final List<String> errors;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      key: const Key('playback_validation_errors'),
+      color: Theme.of(context).colorScheme.errorContainer,
+      borderRadius: BorderRadius.circular(AppSpacing.sm),
+      child: Padding(
+        padding: AppSpacing.cardPremium,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Fix the following before saving playback settings:',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            for (final error in errors)
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                child: Text('• $error'),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class _NetworkValidationErrorsBanner extends StatelessWidget {
   const _NetworkValidationErrorsBanner({required this.errors});

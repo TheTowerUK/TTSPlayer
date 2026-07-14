@@ -108,7 +108,7 @@ PlayerScreen  →  PlaybackService  →  media_kit | video_player
 | **0** | Capability Audit | ✅ Complete — [audit](./m4-phase-4.4-gate0-capability-audit.md) (`f044187`) |
 | **1** | Specification + ADRs | ✅ This document + ADR-010–013 |
 | **2** | PlaybackService extensions | ✅ Complete — service layer + `playback_service_extensions_test.dart` (30 scenarios) |
-| **3** | Settings integration | Not started |
+| **3** | Settings integration | ✅ Complete — default speed in envelope, Settings UI, PlaybackService wiring |
 | **4** | Player UI | Not started |
 | **5** | Tests | Not started |
 | **6** | Windows runtime validation | Not started — matrix below (draft) |
@@ -127,11 +127,11 @@ PlayerScreen  →  PlaybackService  →  media_kit | video_player
 | Player UI | `player_screen.dart` | Play/pause, seek, −10/+30, retry, auto-hide overlay |
 | Resume | `shared_preferences` `position_*` / `duration_*` | Detail resume + Continue Watching |
 | Resolver gate | `play()` → `MediaLocationResolver` | Unresolved → error before init |
-| Settings playback group | `PlaybackSettings` placeholder | Empty until Step 3 |
+| Settings playback group | `PlaybackSettings.defaultPlaybackSpeed` | Persisted in `ttsplayer_settings_v1` (Step 3) |
 
-**Not wired:** track/speed player UI, keyboard shortcuts, settings default speed (Step 3).
+**Not wired:** track/speed player UI, keyboard shortcuts.
 
-**Tests today:** `playback_preflight_test.dart`, `continue_watching_test.dart`, `playback_service_extensions_test.dart`, `gate0_media_kit_capability_test.dart` (Gate 0 only).
+**Tests today:** `playback_preflight_test.dart`, `continue_watching_test.dart`, `playback_service_extensions_test.dart`, `playback_settings_integration_test.dart`, `settings_repository_test.dart`, `settings_screen_test.dart`, `gate0_media_kit_capability_test.dart` (Gate 0 only).
 
 ---
 
@@ -207,9 +207,20 @@ enum PlaybackErrorKind {
 
 ---
 
-## Settings integration (Step 3)
+## Settings integration (Step 3) — ✅ complete
 
-Implement per [ADR-011](../architecture/decisions/ADR-011-playback-preferences.md).
+Implemented per [ADR-011](../architecture/decisions/ADR-011-playback-preferences.md).
+
+### Delivered
+
+| Area | Location |
+|---|---|
+| Envelope | `playback.defaultPlaybackSpeed` in `ttsplayer_settings_v1` |
+| Model | `PlaybackSettings` in `application_settings.dart` |
+| Repository | `playbackSettings`, `defaultPlaybackRate`, `savePlaybackSettings`, `saveDefaultPlaybackRate`, `resetPlaybackToDefaults` |
+| Settings UI | Playback section dropdown + Save / Reset playback defaults |
+| Runtime | `main.dart` wires `defaultPlaybackRateProvider` to `SettingsRepository` |
+| Tests | `settings_repository_test.dart` (14 scenarios), `settings_screen_test.dart` (11), `playback_settings_integration_test.dart` (10) |
 
 ### Envelope change
 
@@ -334,7 +345,7 @@ Use `Shortcuts` / `Actions` or `Focus` with `KeyboardListener` — consistent wi
 Mirrors Phases 4.2–4.3: **service and settings before UI**.
 
 1. ~~**Step 2 — PlaybackService extensions**~~ — ✅ DTOs, rate, tracks, error kinds, tests
-2. **Step 3 — Settings integration** — envelope, repository, playback section UI
+2. ~~**Step 3 — Settings integration**~~ — ✅ envelope, repository, playback section UI, runtime wiring
 3. **Step 4 — Player UI** — speed, track menus, shortcuts, error copy, resume polish
 4. **Step 5 — Tests** — fill gaps in matrix unit/widget coverage
 5. **Step 6 — Runtime validation** — implement harness; run P1–P24

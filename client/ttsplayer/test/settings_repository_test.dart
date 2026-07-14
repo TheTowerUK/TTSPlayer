@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ttsplayer/models/application_settings.dart';
 import 'package:ttsplayer/models/library_filter.dart';
 import 'package:ttsplayer/models/library_sort_mode.dart';
+import 'package:ttsplayer/models/playback/playback_rate_presets.dart';
 import 'package:ttsplayer/services/catalog_service.dart';
 import 'package:ttsplayer/services/media_access/media_access_config.dart';
 import 'package:ttsplayer/services/media_access/media_catalogue_provider.dart';
@@ -59,12 +60,17 @@ void main() {
         settings.general.libraryBrowse.defaultSortMode,
         LibrarySortMode.defaultMode,
       );
+      expect(
+        settings.playback.defaultPlaybackSpeed,
+        PlaybackRatePresets.defaultRate,
+      );
       expect(settings.validate(), isEmpty);
     });
 
     test('round-trips through JSON', () {
       final original = ApplicationSettings.defaults().copyWith(
         network: const NetworkSettings(catalogueFetchTimeoutSeconds: 30),
+        playback: const PlaybackSettings(defaultPlaybackSpeed: 1.5),
       );
 
       final restored = ApplicationSettings.fromJson(original.toJson());
@@ -616,6 +622,238 @@ void main() {
       );
       expect(envelope.toJson().containsKey('libraryFilter'), isFalse);
       expect(envelope.general.toJson().containsKey('activeFilter'), isFalse);
+    });
+  });
+
+  group('SettingsRepository — playback (M4.4 Step 3)', () {
+    test('1 existing Phase 4.2 envelope without playback settings loads 1.0',
+        () async {
+      final provider = validHttpsConfig();
+      SharedPreferences.setMockInitialValues({
+        SettingsRepository.storageKey: jsonEncode({
+          'settingsVersion': 1,
+          'general': {},
+          'libraryProviders': {'providerConfig': provider.toJson()},
+          'network': {'catalogueFetchTimeoutSeconds': 30},
+          'playback': {},
+          'diagnostics': {},
+        }),
+      });
+
+      final repository = SettingsRepository();
+      final result = await repository.load();
+
+      expect(
+        result.settings.playback.defaultPlaybackSpeed,
+        PlaybackRatePresets.defaultRate,
+      );
+      expect(result.settings.providerConfig.toJson(), provider.toJson());
+    });
+
+    test('2 missing Playback group loads 1.0', () async {
+      SharedPreferences.setMockInitialValues({
+        SettingsRepository.storageKey: jsonEncode({
+          'settingsVersion': 1,
+          'general': {},
+          'libraryProviders': {
+            'providerConfig': validLocalConfig().toJson(),
+          },
+          'network': {'catalogueFetchTimeoutSeconds': 30},
+          'diagnostics': {},
+        }),
+      });
+
+      final repository = SettingsRepository();
+      final result = await repository.load();
+
+      expect(
+        result.settings.playback.defaultPlaybackSpeed,
+        PlaybackRatePresets.defaultRate,
+      );
+    });
+
+    test('3 valid preset persists and survives reload', () async {
+      SharedPreferences.setMockInitialValues({});
+      final repository = SettingsRepository();
+      await repository.load();
+
+      final saveResult = await repository.saveDefaultPlaybackRate(1.5);
+      expect(saveResult.success, isTrue);
+      expect(repository.defaultPlaybackRate, 1.5);
+
+      final reloaded = SettingsRepository();
+      await reloaded.load();
+      expect(reloaded.defaultPlaybackRate, 1.5);
+    });
+
+    test('4 unsupported value is rejected', () async {
+      SharedPreferences.setMockInitialValues({});
+      final repository = SettingsRepository();
+      await repository.load();
+      await repository.saveDefaultPlaybackRate(1.25);
+
+      final saveResult = await repository.saveDefaultPlaybackRate(1.1);
+      expect(saveResult.success, isFalse);
+
+      expect(repository.defaultPlaybackRate, 1.25);
+    });
+
+    test('5 corrupt playback value recovers to 1.0 with warning', () async {
+      SharedPreferences.setMockInitialValues({
+        SettingsRepository.storageKey: jsonEncode({
+          'settingsVersion': 1,
+          'general': {},
+          'libraryProviders': {
+            'providerConfig': validLocalConfig().toJson(),
+          },
+          'network': {'catalogueFetchTimeoutSeconds': 30},
+          'playback': {'defaultPlaybackSpeed': 'fast'},
+          'diagnostics': {},
+        }),
+      });
+
+      final repository = SettingsRepository();
+      final result = await repository.load();
+
+      expect(
+        result.settings.playback.defaultPlaybackSpeed,
+        PlaybackRatePresets.defaultRate,
+      );
+      expect(result.recoveryWarnings, isNotEmpty);
+    });
+
+    test('6 saving playback speed preserves provider config', () async {
+      SharedPreferences.setMockInitialValues({});
+      final repository = SettingsRepository();
+      await repository.load();
+      final provider = validHttpsConfig();
+      await repository.saveProviderConfig(provider);
+
+      await repository.saveDefaultPlaybackRate(2.0);
+
+      expect(repository.providerConfig.toJson(), provider.toJson());
+    });
+
+    test('7 saving playback speed preserves network timeout', () async {
+      SharedPreferences.setMockInitialValues({});
+      final repository = SettingsRepository();
+      await repository.load();
+      await repository.saveNetworkSettings(
+        const NetworkSettings(catalogueFetchTimeoutSeconds: 45),
+      );
+
+      await repository.saveDefaultPlaybackRate(1.5);
+
+      expect(repository.catalogueFetchTimeoutSeconds, 45);
+    });
+
+    test('8 saving playback speed preserves library default sort', () async {
+      SharedPreferences.setMockInitialValues({});
+      final repository = SettingsRepository();
+      await repository.load();
+      await repository.saveDefaultLibrarySortMode(LibrarySortMode.nameAsc);
+
+      await repository.saveDefaultPlaybackRate(1.5);
+
+      expect(repository.defaultLibrarySortMode, LibrarySortMode.nameAsc);
+    });
+
+    test('9 provider reset does not alter playback speed', () async {
+      SharedPreferences.setMockInitialValues({});
+      final repository = SettingsRepository();
+      await repository.load();
+      await repository.saveDefaultPlaybackRate(1.5);
+
+      await repository.resetProviderToDefaults();
+
+      expect(repository.defaultPlaybackRate, 1.5);
+    });
+
+    test('10 network reset does not alter playback speed', () async {
+      SharedPreferences.setMockInitialValues({});
+      final repository = SettingsRepository();
+      await repository.load();
+      await repository.saveDefaultPlaybackRate(1.5);
+
+      await repository.saveNetworkSettings(NetworkSettings.defaults());
+
+      expect(repository.defaultPlaybackRate, 1.5);
+    });
+
+    test('11 reset all restores 1.0', () async {
+      SharedPreferences.setMockInitialValues({});
+      final repository = SettingsRepository();
+      await repository.load();
+      await repository.saveDefaultPlaybackRate(2.0);
+
+      await repository.resetAllToDefaults();
+
+      expect(repository.defaultPlaybackRate, PlaybackRatePresets.defaultRate);
+    });
+
+    test('12 legacy provider migration creates playback defaults', () async {
+      final legacy = validHttpsConfig();
+      SharedPreferences.setMockInitialValues({
+        MediaProviderConfigService.prefKey: jsonEncode(legacy.toJson()),
+      });
+
+      final repository = SettingsRepository();
+      final result = await repository.load();
+
+      expect(result.source, SettingsLoadSource.legacyMigration);
+      expect(
+        result.settings.playback.defaultPlaybackSpeed,
+        PlaybackRatePresets.defaultRate,
+      );
+    });
+
+    test('13 partial Playback-group recovery preserves valid sibling settings',
+        () async {
+      final provider = validHttpsConfig();
+      SharedPreferences.setMockInitialValues({
+        SettingsRepository.storageKey: jsonEncode({
+          'settingsVersion': 1,
+          'general': {
+            'libraryBrowse': {'defaultSortMode': 'nameAsc'},
+          },
+          'libraryProviders': {'providerConfig': provider.toJson()},
+          'network': {'catalogueFetchTimeoutSeconds': 40},
+          'playback': {'defaultPlaybackSpeed': 99},
+          'diagnostics': {},
+        }),
+      });
+
+      final repository = SettingsRepository();
+      final result = await repository.load();
+
+      expect(result.settings.providerConfig.toJson(), provider.toJson());
+      expect(result.settings.network.catalogueFetchTimeoutSeconds, 40);
+      expect(
+        result.settings.general.libraryBrowse.defaultSortMode,
+        LibrarySortMode.nameAsc,
+      );
+      expect(
+        result.settings.playback.defaultPlaybackSpeed,
+        PlaybackRatePresets.defaultRate,
+      );
+      expect(result.recoveryWarnings, isNotEmpty);
+    });
+
+    test('14 session override is never persisted', () async {
+      SharedPreferences.setMockInitialValues({});
+      final repository = SettingsRepository();
+      await repository.load();
+      await repository.saveDefaultPlaybackRate(1.5);
+
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(SettingsRepository.storageKey)!;
+      expect(raw.contains('sessionRate'), isFalse);
+      expect(raw.contains('hasSessionRateOverride'), isFalse);
+
+      final envelope = ApplicationSettings.fromJson(
+        jsonDecode(raw) as Map<String, dynamic>,
+      );
+      expect(envelope.playback.toJson().keys, ['defaultPlaybackSpeed']);
     });
   });
 }

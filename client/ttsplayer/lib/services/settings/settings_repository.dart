@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../models/application_settings.dart';
 import '../../models/library_sort_mode.dart';
+import '../../models/playback/playback_rate_presets.dart';
 import '../media_access/media_provider_config.dart';
 import '../media_access/media_provider_config_service.dart';
 
@@ -74,6 +75,11 @@ class SettingsRepository extends ChangeNotifier {
 
   int get catalogueFetchTimeoutSeconds =>
       networkSettings.catalogueFetchTimeoutSeconds;
+
+  PlaybackSettings get playbackSettings => _settings.playback;
+
+  /// Persisted default playback rate (ADR-011).
+  double get defaultPlaybackRate => playbackSettings.defaultPlaybackSpeed;
 
   /// Loads persisted settings once at startup. Safe to call multiple times.
   Future<SettingsLoadResult> initialize() async {
@@ -189,6 +195,34 @@ class SettingsRepository extends ChangeNotifier {
     return saveLibraryBrowseSettings(
       _settings.general.libraryBrowse.copyWith(defaultSortMode: sortMode),
     );
+  }
+
+  /// Updates only the playback slice and saves the full envelope.
+  Future<SettingsSaveResult> savePlaybackSettings(
+    PlaybackSettings playback,
+  ) async {
+    return save(_settings.copyWith(playback: playback));
+  }
+
+  /// Updates the persisted default playback rate.
+  Future<SettingsSaveResult> saveDefaultPlaybackRate(double rate) async {
+    if (!PlaybackRatePresets.isSupported(rate)) {
+      return const SettingsSaveResult(
+        success: false,
+        validationErrors: ['Unsupported playback rate.'],
+      );
+    }
+    return savePlaybackSettings(
+      _settings.playback.copyWith(defaultPlaybackSpeed: rate),
+    );
+  }
+
+  /// Resets playback preferences to defaults.
+  Future<void> resetPlaybackToDefaults() async {
+    _settings = _settings.copyWith(playback: PlaybackSettings.defaults());
+    await _writeEnvelope(_settings);
+    _isLoaded = true;
+    notifyListeners();
   }
 
   /// Resets provider configuration to defaults and clears the legacy key.

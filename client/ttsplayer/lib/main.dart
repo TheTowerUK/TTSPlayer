@@ -74,6 +74,8 @@ Future<void> main() async {
         ChangeNotifierProvider(
           create: (_) => PlaybackService(
             mediaLocationResolver: mediaLocationResolver,
+            defaultPlaybackRateProvider: () =>
+                settingsRepository.defaultPlaybackRate,
           ),
         ),
         ChangeNotifierProvider(create: (_) => ScannerService()),

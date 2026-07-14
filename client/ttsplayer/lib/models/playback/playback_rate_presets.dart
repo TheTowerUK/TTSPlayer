@@ -23,4 +23,16 @@ class PlaybackRatePresets {
     }
     return defaultRate;
   }
+
+  /// User-facing label for settings and player UI (storage uses [supported] values).
+  static String displayLabel(double rate) {
+    final normalized = normalize(rate);
+    if ((normalized - 1.0).abs() < 0.001) {
+      return 'Normal (1×)';
+    }
+    if (normalized == normalized.roundToDouble()) {
+      return '${normalized.toInt()}×';
+    }
+    return '${normalized}×';
+  }
 }
