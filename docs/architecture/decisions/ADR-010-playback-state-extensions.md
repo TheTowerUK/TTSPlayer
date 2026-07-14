@@ -1,9 +1,10 @@
 # ADR-010: Playback State Extensions
 
-**Status:** Accepted  
-**Date:** 2026-07-13  
-**Accepted:** 2026-07-13 (specification sign-off, pre-implementation)  
-**Milestone:** M4 Phase 4.4  
+**Status:** Accepted
+**Date:** 2026-07-13
+**Accepted:** 2026-07-13 (specification sign-off, pre-implementation)
+**Implemented:** 2026-07-14 (M4 Phase 4.4 Steps 2–5; closure Step 7)
+**Milestone:** M4 Phase 4.4
 **Authors:** M4 documentation pass
 
 ---
@@ -33,7 +34,7 @@ Constraints:
 
    Widgets must not import or call `media_kit` / `video_player` for control.
 
-2. **Player UI reflects service state; it does not own playback state.**  
+2. **Player UI reflects service state; it does not own playback state.**
    `PlayerScreen` may hold presentation-only state (overlay visibility, hide timer). It must not cache playback rate, selected track ids, or error kinds locally.
 
 3. **New service-owned session state** (Windows `media_kit` path only unless noted):
@@ -97,6 +98,13 @@ Constraints:
 ### Neutral
 
 - Session rate override vs settings default is specified in ADR-011.
+- **Closure (2026-07-14):** `PlaybackService` exposes rate, track DTOs, and fatal `playbackErrorKind`; `stop()` clears session rate; new `play()` and retry load latest saved default per [playback.md](../playback.md).
+
+---
+
+## Implementation
+
+Implemented in M4 Phase 4.4 Steps 2–5. Integration and service tests in `playback_service_extensions_test.dart` and `playback_integration_test.dart`. Windows runtime harness exercises non-media scenarios under `PHASE_44_RUNTIME=1`; media-backed playback validated as release/device QA follow-up.
 
 ---
 

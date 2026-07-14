@@ -1,9 +1,10 @@
 # ADR-012: Track Selection
 
-**Status:** Accepted  
-**Date:** 2026-07-13  
-**Accepted:** 2026-07-13 (specification sign-off, pre-implementation)  
-**Milestone:** M4 Phase 4.4  
+**Status:** Accepted
+**Date:** 2026-07-13
+**Accepted:** 2026-07-13 (specification sign-off, pre-implementation)
+**Implemented:** 2026-07-14 (M4 Phase 4.4 Steps 2–4; closure Step 7)
+**Milestone:** M4 Phase 4.4
 **Authors:** M4 documentation pass
 
 ---
@@ -77,7 +78,13 @@ Phase 4.4 must expose embedded track selection in the player without mutating th
 
 ### Neutral
 
-- Multi-audio switch runtime validation deferred to Phase 4.4 closure harness (Gate 0 API-verified).
+- Multi-audio switch runtime validation: automated non-media scenarios pass under `flutter test`; fixture-backed MKV checks are release/device QA follow-up (Step 6 harness).
+
+---
+
+## Implementation
+
+Embedded track menus in `PlayerScreen`; enumeration and stale-selection cleanup in `PlaybackService`. Capability-gated on Windows only. Track action failures are non-fatal per integration tests.
 
 ---
 

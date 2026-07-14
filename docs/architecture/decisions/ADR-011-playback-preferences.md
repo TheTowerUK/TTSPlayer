@@ -1,9 +1,10 @@
 # ADR-011: Playback Preferences
 
-**Status:** Accepted  
-**Date:** 2026-07-13  
-**Accepted:** 2026-07-13 (specification sign-off, pre-implementation)  
-**Milestone:** M4 Phase 4.4  
+**Status:** Accepted
+**Date:** 2026-07-13
+**Accepted:** 2026-07-13 (specification sign-off, pre-implementation)
+**Implemented:** 2026-07-14 (M4 Phase 4.4 Steps 3–5; closure Step 7)
+**Milestone:** M4 Phase 4.4
 **Authors:** M4 documentation pass
 
 ---
@@ -86,6 +87,13 @@ Constraints:
 
 - Future phases may add "remember last speed" — requires new ADR.
 - **Implementation (Step 5):** `playbackSpeedSettingsSupported` in `playback_platform.dart` with `@visibleForTesting` override; Settings and PlayerScreen both gate on capability.
+- **Closure (2026-07-14):** Unsupported platforms show stored default read-only; session override and Watch Again behaviour documented in [playback.md](../playback.md).
+
+---
+
+## Implementation
+
+`PlaybackSettings.defaultPlaybackSpeed` in settings envelope; explicit Save per ADR-006. Step 5 audit added read-only unsupported-platform UI. Validated in settings and integration tests; P18/P19 in Phase 4.4 runtime harness.
 
 ---
 

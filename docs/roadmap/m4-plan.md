@@ -1,14 +1,14 @@
 # M4 — User Experience and Platform Integration
 
-**Status:** Active development (`v0.5.0-dev`) — **Phase 4.4 specification accepted; implementation not started**  
-**Branch:** `m4-development`  
-**Development version:** `v0.5.0-dev`  
-**Predecessor:** M3.5 Media Access Platform  
+**Status:** Active development (`v0.5.0-dev`) — **Phase 4.4 complete; Phase 4.5 next**
+**Branch:** `m4-development`
+**Development version:** `v0.5.0-dev`
+**Predecessor:** M3.5 Media Access Platform
 **M3.5 status:** ✅ Complete — tag `m3.5-complete`
 
-→ [Release tracker](../release/v0.5.0-dev.md)  
-→ [M3.5 release snapshot](../release/m3.5-media-access-complete.md)  
-→ [Roadmap principles](./principles.md)  
+→ [Release tracker](../release/v0.5.0-dev.md)
+→ [M3.5 release snapshot](../release/m3.5-media-access-complete.md)
+→ [Roadmap principles](./principles.md)
 → [Architecture index](../architecture/README.md)
 
 > **Phase numbering note:** M4 sub-phases **4.1–4.7** are distinct from M3.5 **Phase 4** (network catalogue and provider configuration, complete 2026-07-07). See [M3.5 Phase 4 plan](./m35-phase-4-plan.md) for the closed network-client cycle.
@@ -54,8 +54,8 @@ Implement in order unless a documented dependency allows parallel documentation 
 | **4.1** | Provider Management | ✅ Complete (2026-07-12) |
 | **4.2** | Settings Framework | ✅ Complete (2026-07-12) |
 | **4.3** | Library Experience | ✅ Complete (2026-07-13) |
-| **4.4** | Playback Improvements | Spec accepted — implementation next | [spec](./m4-phase-4.4-playback-improvements.md) |
-| **4.5** | Performance and Caching | Planned |
+| **4.4** | Playback Improvements | ✅ Complete (2026-07-14) | [spec](./m4-phase-4.4-playback-improvements.md) |
+| **4.5** | Performance and Caching | **Next** — planned |
 | **4.6** | Diagnostics and Supportability | Planned |
 | **4.7** | Release and Documentation | Planned |
 
@@ -105,7 +105,7 @@ M3.5 implemented provider configuration, local/HTTP catalogue loading, startup s
 - Update [provider-management.md](../architecture/provider-management.md) from planning → accepted at phase close
 - [ADR-001](../architecture/decisions/ADR-001-provider-health-model.md), [ADR-002](../architecture/decisions/ADR-002-provider-refresh-lifecycle.md), [ADR-003](../architecture/decisions/ADR-003-provider-status-presentation.md)
 
-→ Architecture: [provider-management.md](../architecture/provider-management.md)  
+→ Architecture: [provider-management.md](../architecture/provider-management.md)
 → Specification: [m4-phase-4.1-provider-management.md](./m4-phase-4.1-provider-management.md)
 
 ---
@@ -152,7 +152,7 @@ M3.5 implemented provider configuration, local/HTTP catalogue loading, startup s
 - Update [settings.md](../architecture/settings.md) from planning → accepted at phase close
 - [ADR-004](../architecture/decisions/ADR-004-settings-storage-and-versioning.md), [ADR-005](../architecture/decisions/ADR-005-settings-information-architecture.md), [ADR-006](../architecture/decisions/ADR-006-settings-validation-and-apply-behaviour.md)
 
-→ Architecture: [settings.md](../architecture/settings.md)  
+→ Architecture: [settings.md](../architecture/settings.md)
 → Specification: [m4-phase-4.2-settings-framework.md](./m4-phase-4.2-settings-framework.md)
 
 ---
@@ -200,14 +200,14 @@ M3.5 implemented provider configuration, local/HTTP catalogue loading, startup s
 - Update [library.md](../architecture/library.md) from planning → accepted at phase close
 - [ADR-007](../architecture/decisions/ADR-007-library-metadata-and-favourites.md), [ADR-008](../architecture/decisions/ADR-008-library-sorting-and-filtering.md), [ADR-009](../architecture/decisions/ADR-009-library-navigation-and-breadcrumbs.md)
 
-→ Architecture: [library.md](../architecture/library.md)  
+→ Architecture: [library.md](../architecture/library.md)
 → Specification: [m4-phase-4.3-library-experience.md](./m4-phase-4.3-library-experience.md)
 
 ---
 
 ### Phase 4.4 — Playback Improvements
 
-**Status:** Gate 0 **complete** · Specification **accepted** · ADR-010–013 **accepted** — implementation not started.
+**Status:** ✅ **Complete** (2026-07-14) — Gate 0 · specification · ADR-010–013 · implementation · validation · closure.
 
 **Objective:** Refine playback UX and multi-track handling on top of existing resume and resolver integration.
 
@@ -221,12 +221,12 @@ Inventory → Capability Audit → ADRs → Specification → Implementation
 
 0. Capability Audit — **complete** ([audit](./m4-phase-4.4-gate0-capability-audit.md))
 1. Specification + ADRs — **complete** ([spec](./m4-phase-4.4-playback-improvements.md), ADR-010–013)
-2. PlaybackService extensions
-3. Settings integration
-4. Player UI
-5. Tests
-6. Windows runtime validation
-7. Closure
+2. PlaybackService extensions — **complete**
+3. Settings integration — **complete**
+4. Player UI — **complete**
+5. Integration audit — **complete** (`964fb78`)
+6. Windows runtime validation — **complete** (`11b3607`)
+7. Closure — **complete** (2026-07-14)
 
 **Scope (Gate 0 confirmed):**
 
@@ -265,12 +265,12 @@ Inventory → Capability Audit → ADRs → Specification → Implementation
 **Documentation outputs:**
 
 - [Phase 4.4 Gate 0 audit](./m4-phase-4.4-gate0-capability-audit.md) (complete)
-- [Phase 4.4 implementation specification](./m4-phase-4.4-playback-improvements.md) (accepted — pre-implementation)
-- ADR-010–013 ([index](../architecture/decisions/README.md#index))
-- Update [playback.md](../architecture/playback.md) at closure
+- [Phase 4.4 implementation specification](./m4-phase-4.4-playback-improvements.md) (complete)
+- ADR-010–013 ([index](../architecture/decisions/README.md#index)) — implemented
+- [playback.md](../architecture/playback.md) — accepted at closure
 
-→ Architecture: [playback.md](../architecture/playback.md)  
-→ Gate 0: [m4-phase-4.4-gate0-capability-audit.md](./m4-phase-4.4-gate0-capability-audit.md)  
+→ Architecture: [playback.md](../architecture/playback.md)
+→ Gate 0: [m4-phase-4.4-gate0-capability-audit.md](./m4-phase-4.4-gate0-capability-audit.md)
 → Specification: [m4-phase-4.4-playback-improvements.md](./m4-phase-4.4-playback-improvements.md)
 
 ---

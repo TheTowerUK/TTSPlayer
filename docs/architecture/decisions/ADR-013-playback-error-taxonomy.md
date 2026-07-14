@@ -1,9 +1,10 @@
 # ADR-013: Playback Error Taxonomy
 
-**Status:** Accepted  
-**Date:** 2026-07-13  
-**Accepted:** 2026-07-13 (specification sign-off, pre-implementation)  
-**Milestone:** M4 Phase 4.4  
+**Status:** Accepted
+**Date:** 2026-07-13
+**Accepted:** 2026-07-13 (specification sign-off, pre-implementation)
+**Implemented:** 2026-07-14 (M4 Phase 4.4 Steps 2–4; closure Step 7)
+**Milestone:** M4 Phase 4.4
 **Authors:** M4 documentation pass
 
 ---
@@ -100,6 +101,13 @@ M3 already maps some failures in `_friendlyError` and resolver gates. Phase 4.4 
 
 - Phase 4.6 diagnostics may expose deeper detail — must link to Provider Status, not replace layer boundaries.
 - **Implementation note (Step 4):** `_ErrorView` uses `PlaybackErrorMessages.forKind(playbackErrorKind)`; `resolverFailed` adds a one-line hint toward Provider Status without duplicating provider diagnostics.
+- **Closure (2026-07-14):** Retry clears stale fatal state before re-prepare; rate/track failures remain non-fatal. P16/P16b validated in runtime harness.
+
+---
+
+## Implementation
+
+`PlaybackErrorKind` taxonomy in `PlaybackService`; fatal errors block play until retry. Integration and widget tests cover copy and retry lifecycle.
 
 ---
 

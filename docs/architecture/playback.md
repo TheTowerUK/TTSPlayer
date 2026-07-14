@@ -1,15 +1,15 @@
-# Playback (M4 Phase 4.4)
+# Playback (M4 Phase 4.4 — accepted)
 
-**Status:** **Step 6 complete** — Windows runtime harness executed; Step 7 closure next  
-**Related roadmap phase:** [M4 Phase 4.4 — Playback Improvements](../roadmap/m4-phase-4.4-playback-improvements.md)  
+**Status:** **Implemented and accepted** — Phase 4.4 complete (2026-07-14)
+**Related roadmap phase:** [M4 Phase 4.4 — Playback Improvements](../roadmap/m4-phase-4.4-playback-improvements.md)
 **Gate 0 audit:** [m4-phase-4.4-gate0-capability-audit.md](../roadmap/m4-phase-4.4-gate0-capability-audit.md)
 
-→ [Media access abstraction](./media-access-abstraction.md)  
-→ [Path mapping](./path-mapping.md)  
-→ [Settings](./settings.md)  
+→ [Media access abstraction](./media-access-abstraction.md)
+→ [Path mapping](./path-mapping.md)
+→ [Settings](./settings.md)
 → [M4 foundation snapshot](../release/m4-foundation-complete.md)
 
-**ADRs (Accepted 2026-07-13):**
+**ADRs (Accepted 2026-07-13; implemented Phase 4.4):**
 
 - [ADR-010: Playback State Extensions](./decisions/ADR-010-playback-state-extensions.md)
 - [ADR-011: Playback Preferences](./decisions/ADR-011-playback-preferences.md)
@@ -20,152 +20,166 @@
 
 ## Purpose
 
-Refine playback UX on top of M3 playback and M3.5 resolver integration — speed, embedded track selection, keyboard shortcuts, resume polish, and playback-layer errors — without reimplementing resume persistence or provider/settings behaviour.
+`PlaybackService` is the sole authority for playback lifecycle on top of M3 resume persistence and M3.5 resolver integration. Phase 4.4 adds Windows playback speed, embedded audio/subtitle selection, capability-gated player controls, keyboard shortcuts, and a formal three-layer error taxonomy — without changing catalogue schema, resume keys, or provider/settings behaviour.
 
-**Cadence:**
-
-```
-Inventory → Gate 0 ✅ → ADRs ✅ → Specification ✅ → Step 2 service ✅ → Step 3 settings ✅ → Step 4 player UI ✅ → Step 5 integration audit ✅ → Step 6 runtime ✅ → Step 7 closure (next)
-```
-
-Capabilities are limited to [Gate 0 verified outcomes](../roadmap/m4-phase-4.4-gate0-capability-audit.md#phase-44-scope-hand-off). Chapters and external subtitle sidecars are deferred.
+Capabilities are limited to [Gate 0 verified outcomes](../roadmap/m4-phase-4.4-gate0-capability-audit.md). Chapters and external subtitle sidecars remain deferred.
 
 ---
 
-## Architectural principles
+## Architecture
 
-### PlaybackService is the single authority ([ADR-010](./decisions/ADR-010-playback-state-extensions.md))
+### Authority model ([ADR-010](./decisions/ADR-010-playback-state-extensions.md))
 
 ```
-PlayerScreen  →  PlaybackService  →  media_kit | video_player
+PlayerScreen  →  PlaybackService  →  PlaybackSessionControls  →  media_kit | video_player
 ```
 
-**Player UI reflects `PlaybackService` state; it does not own playback state.**
+- `PlayerScreen` reflects service state; it does not own rate, track selection, or fatal error state.
+- `PlayerScreen` must not import `media_kit` or `video_player`.
+- Presentation-only UI state (overlay visibility, hide timer, open menus) stays in the player widget.
 
-### Three-layer error taxonomy ([ADR-013](./decisions/ADR-013-playback-error-taxonomy.md))
+### Backend routing
 
-| Layer | Example message | Surface |
+| Platform | Engine | Session controls |
 |---|---|---|
-| Provider | "HTTPS catalogue unavailable" | Dashboard / Provider Status |
-| Resolver | (mapped to playback copy in player) | Pre-play boundary |
-| Playback | "This video could not be played." | Player error view |
+| Windows desktop | `media_kit` | `MediaKitSessionControls` — rate, embedded tracks |
+| Other | `video_player` | `UnsupportedSessionControls` — rate locked at `1.0`, no track APIs |
 
-Playback must not duplicate Provider Status diagnostics.
+### Three-layer errors ([ADR-013](./decisions/ADR-013-playback-error-taxonomy.md))
 
----
-
-## Gate 0 outcomes (complete)
-
-| Capability | Verified | Phase 4.4 |
+| Layer | Owner | User surface |
 |---|---|---|
-| Playback speed | ✅ | In scope — Windows |
-| Audio tracks | ✅ | In scope — Windows |
-| Subtitle tracks | ✅ | In scope — embedded, Windows |
-| Chapters | ❌ | Post-M4 |
+| Provider | `CatalogService` / dashboard | Provider Status — not in player |
+| Resolver | `MediaLocationResolver` | Mapped to playback copy before init |
+| Playback | `PlaybackService` | Player error view; `PlaybackErrorKind` drives copy |
 
-→ [Full audit](../roadmap/m4-phase-4.4-gate0-capability-audit.md)
-
----
-
-## M4.4 scope (specification)
-
-| In scope | Out of scope |
-|---|---|
-| Playback speed + settings default | Chapters |
-| Embedded audio/subtitle pickers | External subtitle discovery |
-| Keyboard shortcuts (desktop) | Streaming architecture |
-| Resume UX polish | Codec expansion |
-| Playback error presentation | Performance (4.5) |
-| Desktop control polish | Diagnostics (4.6) |
+Resolver failures in the player show playback-layer messaging plus a one-line hint toward Provider Status — not provider diagnostic banners.
 
 ---
 
-## PlaybackService extensions (Step 2) — ✅ complete
+## Playback lifecycle
 
-| Area | Detail |
-|---|---|
-| State | `playbackRate`, `supportedPlaybackRates`, `canChangePlaybackRate`, track DTO lists, selected ids, `playbackErrorKind` |
-| Methods | `setPlaybackRate`, `selectAudioTrack`, `selectSubtitleTrack`, `disableSubtitles` — all return `PlaybackActionResult` |
-| Backend | `PlaybackSessionControls` → `MediaKitSessionControls` (Windows) / `UnsupportedSessionControls` (`video_player`) |
-| Rate lifecycle | Default from injectable provider on `play()`; session override until `stop()` or new `play()` ([ADR-011](./decisions/ADR-011-playback-preferences.md)) |
-| Tracks | Embedded only; reset on new media ([ADR-012](./decisions/ADR-012-track-selection.md)) |
-| Errors | `PlaybackErrorMapper` + `PlaybackErrorKind` ([ADR-013](./decisions/ADR-013-playback-error-taxonomy.md)) |
-| Tests | `playback_service_extensions_test.dart` (30 scenarios) |
+### `play(item, { startPosition })`
 
-**Not in Step 2:** settings default speed persistence, player UI, keyboard shortcuts.
+1. Resolve `item.filePath` via `MediaLocationResolver`; unresolved → fatal `resolverFailed`.
+2. Check local file presence; missing → fatal `fileMissing`.
+3. Initialise player (`media_kit` or `video_player`).
+4. Apply **saved default playback speed** from settings ([ADR-011](./decisions/ADR-011-playback-preferences.md)); clears any prior session override.
+5. Persist duration; seek to `startPosition` when provided, else eligible saved resume position, else zero.
+6. Start playback; subscribe to track streams on Windows; populate DTO lists.
 
-## Default playback speed settings (Step 3) — ✅ complete
+### `retry({ startPosition })`
 
-| Area | Detail |
-|---|---|
-| Storage | `ttsplayer_settings_v1` → `playback.defaultPlaybackSpeed` (ADR-011 field name) |
-| Presets | `0.5`, `0.75`, `1.0`, `1.25`, `1.5`, `2.0` via `PlaybackRatePresets` |
-| Settings UI | Dropdown + explicit Save / Reset playback defaults on `SettingsScreen` |
-| Runtime | `defaultPlaybackRateProvider: () => settingsRepository.defaultPlaybackRate` in `main.dart` |
-| Session vs default | Saved default applies on `play()` / `retry()`; session override unchanged until new media |
-| Non-Windows | Stored preference ignored at backend; rate stays `1.0` |
-| Tests | Repository (14), Settings UI (11), integration (10) |
+Clears fatal error state and notifies listeners **before** re-entering `play()` for the current item. Does not refresh the catalogue. A failed retry surfaces the newly mapped error; successful retry restores playback.
 
-**Not in Step 3:** PlayerScreen speed control, keyboard shortcuts (delivered in Step 4).
+### `stop()`
 
-## Player UI (Step 4) — ✅ complete
+Disposes the controller, clears `currentItem`, fatal errors, track lists, and **session rate override**. Does **not** clear resume keys (`position_*`, `duration_*`).
 
-| Area | Detail |
-|---|---|
-| Speed | Popup preset menu when `canChangePlaybackRate`; session-only via `setPlaybackRate` |
-| Audio | Popup menu when `canSelectAudioTracks`; index fallback labels (`Audio 1`, …) |
-| Subtitles | Popup menu + **Off** when `canSelectSubtitleTracks`; `disableSubtitles` for Off |
-| Errors | `PlaybackErrorMessages.forKind(playbackErrorKind)`; resolver hint to Provider Status |
-| Keyboard | `Space`, arrows, `Esc`, `,`/`.`, `a`/`s` via player `Focus`; capability-gated |
-| Auto-hide | Pins while paused, buffering, menu open; menus reset hide timer |
-| Tests | `player_screen_test.dart` (42 scenarios) |
+### Watch Again (completed state)
 
-**Closure item (resolved Step 5):** Settings shows read-only stored preference on unsupported platforms via `playbackSpeedSettingsSupported`.
+Seek to zero and resume play within the **same session**. Retains session `playbackRate` and track selections — does not call `play()` (no default-rate re-application, no track reset).
 
-→ [Implementation spec](../roadmap/m4-phase-4.4-playback-improvements.md#integration-audit-step-5--complete)
+### New item / different `play()`
 
-## Integration audit (Step 5) — ✅ complete
-
-| Area | Detail |
-|---|---|
-| Platform settings | `playbackSpeedSettingsSupported` + test override; read-only vs editable dropdown |
-| State sync | Stale track IDs cleared in `_syncCapabilityStateFromControls` |
-| Retry UX | `retry()` clears fatal error before `play()` re-prepare |
-| Watch Again | Retains session playback rate (seek-to-zero + resume play; no new `play()`) |
-| Keyboard | `Esc` closes popup menu before player exit |
-| Tests | `playback_integration_test.dart` added |
-
-**Ready for:** Step 7 closure.
+Full controller dispose and re-init. Track lists and selections reset. Session rate override cleared; latest **saved default** applied on successful init.
 
 ---
 
-## Windows runtime validation (Step 6 — ✅)
+## Playback speed ([ADR-011](./decisions/ADR-011-playback-preferences.md))
 
-Harness: `test/phase_44_windows_runtime_test.dart` (`PHASE_44_RUNTIME=1`). Results: **11 passed**, **18 skipped** (media-backed scenarios require Windows desktop app — `flutter test` lacks `media_kit_video` channel; Gate 0 direct `Player()` still passes).
-
-Matrix **P1–P24** in [Phase 4.4 spec](../roadmap/m4-phase-4.4-playback-improvements.md#windows-runtime-validation-step-6--complete).
-
----
-
-## Current baseline (M3 + M3.5)
-
-| Capability | State |
+| Concept | Behaviour |
 |---|---|
-| `PlaybackService` | Windows: `media_kit` + session controls; other: `video_player` + unsupported controls |
-| Resume | `position_*` / `duration_*` in `shared_preferences` |
-| Resolver | `MediaLocationResolver` in `play()` |
-| Rate / tracks / errors | Service-owned (Step 2); Player UI wired (Step 4) |
-| Default speed | Persisted in settings envelope (Step 3) |
-| Player controls | Play/pause, seek, −10/+30, speed/audio/subtitle menus, keyboard shortcuts, ADR-013 errors |
+| **Saved default** | `playback.defaultPlaybackSpeed` in `ttsplayer_settings_v1`; presets `0.5`–`2.0` |
+| **Application** | Applied on each new `play()` / `retry()` preparation after successful init |
+| **Session override** | In-player `setPlaybackRate` marks session override; survives pause, seek, and Watch Again |
+| **Persistence** | Session changes do not auto-save; user saves default explicitly in Settings |
+| **Settings UI** | Editable dropdown + Save when `playbackSpeedSettingsSupported`; otherwise read-only stored value, Save disabled, preference preserved |
+| **Player UI** | Speed menu when `canChangePlaybackRate`; `,` / `.` keyboard presets when supported |
+
+`stop()` clears session override. The next `play()` or `retry()` loads the latest saved default.
 
 ---
 
-## Validation
+## Embedded track selection ([ADR-012](./decisions/ADR-012-track-selection.md))
 
-Matrix **P1–P24** executed at Step 6 — see [Phase 4.4 spec](../roadmap/m4-phase-4.4-playback-improvements.md#windows-runtime-validation-step-6--complete).
+| Control | Visibility | Service API |
+|---|---|---|
+| Audio menu | `canSelectAudioTracks` (≥ 2 tracks) | `selectAudioTrack` |
+| Subtitle menu | `canSelectSubtitleTracks` (≥ 1 track) | `selectSubtitleTrack`, `disableSubtitles` |
+| Off entry | Subtitle menu | `disableSubtitles` → `SubtitleTrack.no()` equivalent |
 
-Gate 0 harness (third-party only): `GATE0_MEDIA_KIT=1` → `gate0_media_kit_capability_test.dart`.  
-Phase 4.4 harness (app-level): `PHASE_44_RUNTIME=1` → `phase_44_windows_runtime_test.dart`.
+- Embedded tracks only — no sidecar discovery.
+- Track lists populate asynchronously after `open`; enumeration failure is non-fatal (empty lists, controls hidden).
+- Stale selected audio/subtitle IDs are cleared when absent from a newly synced track list.
+- New `play()` clears prior track state; selections do not carry across items.
+- **Non-fatal action failures** (`setPlaybackRate`, track select/disable) return `PlaybackActionResult` failure → SnackBar feedback only; they do not set fatal `errorMessage` / `playbackErrorKind`.
+
+---
+
+## Player UI behaviour
+
+### Capability gates
+
+Controls render only when the service reports capability — never disabled placeholders on unsupported platforms.
+
+### Keyboard (desktop, player focused)
+
+| Key | Action |
+|---|---|
+| `Space` | Toggle play/pause |
+| `←` / `→` | Seek −10 s / +30 s |
+| `Esc` | Close open popup menu first; second `Esc` exits player |
+| `,` / `.` | Step playback rate down/up when `canChangePlaybackRate` |
+| `a` / `s` | Open audio / subtitle menu when capability available |
+
+Shortcuts are **ignored** while a popup menu or text field owns focus.
+
+### Auto-hide
+
+Transport chrome pins while initialising, buffering, paused, in error/completed state, or while a popup menu is open. Closing a menu resumes the normal auto-hide timer.
+
+### Fatal error view
+
+Uses `PlaybackErrorMessages.forKind(playbackErrorKind)` with **Try Again** (`retry()`) and **Go Back**. Distinct from non-fatal rate/track SnackBars.
+
+---
+
+## Resume and progress
+
+| Concern | Behaviour |
+|---|---|
+| Storage | `position_{itemId}` / `duration_{itemId}` in `shared_preferences` |
+| Resume offer | `ResumeInfo` thresholds unchanged (`minResumePosition`, `nearEndWindow`) |
+| Detail screen | Resume prompt + optional Start from beginning (`startPosition: Duration.zero`) |
+| Continue Watching | `getContinueWatching` eligibility unchanged |
+| Completion | Clears persisted progress for the item (existing M3 behaviour) |
+| Settings reset | Reset playback / reset all does **not** touch resume keys |
+
+---
+
+## Validation boundaries
+
+### Automated (default `flutter test`)
+
+Service, integration, widget, and settings tests cover rate lifecycle, retry, tracks, errors, resume regression, keyboard/menus, and platform-aware settings. **486 passed**, **5 skipped** (opt-in harnesses only).
+
+### Gate 0 harness (`GATE0_MEDIA_KIT=1`)
+
+Direct `media_kit` `Player()` audit — third-party capability only; does not exercise `PlaybackService` or `PlayerScreen`.
+
+### Phase 4.4 runtime harness (`PHASE_44_RUNTIME=1`)
+
+App-level validation through `PlaybackService` and player UI (`phase_44_windows_runtime_test.dart`).
+
+| Category | Step 6 outcome |
+|---|---|
+| Executable without real media init | **11 passed** — errors, settings, resume eligibility, unsupported-platform settings UI |
+| Skipped in `flutter test` embedding | **18 skipped** — media-backed playback (P1–P4, P5–P9, P11–P15, P22–P24) |
+| Fixture not configured | P4, P5, P24 (`GATE0_HTTPS_URI`, `GATE0_MULTI_AUDIO_URI`) |
+| Invalid fixture | P7–P9 (`GATE0_SUBTITLED_URI` not MKV) |
+
+**Limitation:** `flutter test` lacks the `media_kit_video` platform channel required by `PlaybackService` (`VideoController`). Gate 0 bare `Player()` still passes. Media-backed scenarios are **release/device QA follow-up** on Windows desktop (`flutter run -d windows`) with TNAS/local fixtures — not Phase 4.4 code blockers.
 
 ---
 
@@ -174,4 +188,4 @@ Phase 4.4 harness (app-level): `PHASE_44_RUNTIME=1` → `phase_44_windows_runtim
 - [M4 Phase 4.4 implementation spec](../roadmap/m4-phase-4.4-playback-improvements.md)
 - [Gate 0 audit](../roadmap/m4-phase-4.4-gate0-capability-audit.md)
 - [settings.md](./settings.md)
-- [diagnostics.md](./diagnostics.md)
+- [diagnostics.md](./diagnostics.md) *(Phase 4.6)*
