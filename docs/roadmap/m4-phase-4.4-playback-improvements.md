@@ -107,7 +107,7 @@ PlayerScreen  →  PlaybackService  →  media_kit | video_player
 |---|---|---|
 | **0** | Capability Audit | ✅ Complete — [audit](./m4-phase-4.4-gate0-capability-audit.md) (`f044187`) |
 | **1** | Specification + ADRs | ✅ This document + ADR-010–013 |
-| **2** | PlaybackService extensions | Not started |
+| **2** | PlaybackService extensions | ✅ Complete — service layer + `playback_service_extensions_test.dart` (30 scenarios) |
 | **3** | Settings integration | Not started |
 | **4** | Player UI | Not started |
 | **5** | Tests | Not started |
@@ -123,21 +123,31 @@ PlayerScreen  →  PlaybackService  →  media_kit | video_player
 | Capability | Location | State |
 |---|---|---|
 | Dual backend | `playback_platform.dart` | Windows: `media_kit`; else `video_player` |
-| Authority | `playback_service.dart` | ~800 lines; resume, seek, preflight |
+| Authority | `playback_service.dart` | Resume, seek, preflight; rate/tracks/errors (Step 2) |
 | Player UI | `player_screen.dart` | Play/pause, seek, −10/+30, retry, auto-hide overlay |
 | Resume | `shared_preferences` `position_*` / `duration_*` | Detail resume + Continue Watching |
 | Resolver gate | `play()` → `MediaLocationResolver` | Unresolved → error before init |
 | Settings playback group | `PlaybackSettings` placeholder | Empty until Step 3 |
 
-**Not wired:** speed, track pickers, keyboard shortcuts, structured `PlaybackErrorKind`, settings default speed.
+**Not wired:** track/speed player UI, keyboard shortcuts, settings default speed (Step 3).
 
-**Tests today:** `playback_preflight_test.dart`, `continue_watching_test.dart`, `gate0_media_kit_capability_test.dart` (Gate 0 only).
+**Tests today:** `playback_preflight_test.dart`, `continue_watching_test.dart`, `playback_service_extensions_test.dart`, `gate0_media_kit_capability_test.dart` (Gate 0 only).
 
 ---
 
-## PlaybackService extensions (Step 2)
+## PlaybackService extensions (Step 2) — ✅ complete
 
-Implement per [ADR-010](../architecture/decisions/ADR-010-playback-state-extensions.md).
+Implemented per [ADR-010](../architecture/decisions/ADR-010-playback-state-extensions.md). No `PlayerScreen` or `SettingsRepository` changes in this step.
+
+### Delivered
+
+| Area | Location |
+|---|---|
+| DTOs | `lib/models/playback/` — `PlaybackAudioTrack`, `PlaybackSubtitleTrack`, `PlaybackErrorKind`, `PlaybackActionResult`, `PlaybackRatePresets` |
+| Backend adapter | `lib/services/playback/` — `PlaybackSessionControls`, `MediaKitSessionControls`, `UnsupportedSessionControls` |
+| Error mapping | `PlaybackErrorMapper`, `PlaybackErrorMessages` (ADR-013) |
+| Service APIs | `playbackRate`, track getters, `setPlaybackRate`, `selectAudioTrack`, `selectSubtitleTrack`, `disableSubtitles` |
+| Tests | `test/playback_service_extensions_test.dart` — 30 service-level scenarios |
 
 ### New types (`lib/models/` or `lib/services/playback/`)
 
@@ -323,7 +333,7 @@ Use `Shortcuts` / `Actions` or `Focus` with `KeyboardListener` — consistent wi
 
 Mirrors Phases 4.2–4.3: **service and settings before UI**.
 
-1. **Step 2 — PlaybackService extensions** — DTOs, rate, tracks, error kinds, tests
+1. ~~**Step 2 — PlaybackService extensions**~~ — ✅ DTOs, rate, tracks, error kinds, tests
 2. **Step 3 — Settings integration** — envelope, repository, playback section UI
 3. **Step 4 — Player UI** — speed, track menus, shortcuts, error copy, resume polish
 4. **Step 5 — Tests** — fill gaps in matrix unit/widget coverage

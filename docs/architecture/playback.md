@@ -1,6 +1,6 @@
 # Playback (M4 Phase 4.4)
 
-**Status:** **Specification accepted (pre-implementation)** — Gate 0 complete · ADRs accepted · implementation not started  
+**Status:** **Step 2 complete** — Gate 0 complete · ADRs accepted · service extensions shipped; UI/settings next  
 **Related roadmap phase:** [M4 Phase 4.4 — Playback Improvements](../roadmap/m4-phase-4.4-playback-improvements.md)  
 **Gate 0 audit:** [m4-phase-4.4-gate0-capability-audit.md](../roadmap/m4-phase-4.4-gate0-capability-audit.md)
 
@@ -25,7 +25,7 @@ Refine playback UX on top of M3 playback and M3.5 resolver integration — speed
 **Cadence:**
 
 ```
-Inventory → Gate 0 ✅ → ADRs ✅ → Specification ✅ → Implementation (next)
+Inventory → Gate 0 ✅ → ADRs ✅ → Specification ✅ → Step 2 service ✅ → Settings + UI (next)
 ```
 
 Capabilities are limited to [Gate 0 verified outcomes](../roadmap/m4-phase-4.4-gate0-capability-audit.md#phase-44-scope-hand-off). Chapters and external subtitle sidecars are deferred.
@@ -80,16 +80,21 @@ Playback must not duplicate Provider Status diagnostics.
 
 ---
 
-## PlaybackService extensions (planned — Step 2)
+## PlaybackService extensions (Step 2) — ✅ complete
 
 | Area | Detail |
 |---|---|
-| State | `playbackRate`, track DTO lists, selected ids, `PlaybackErrorKind` |
-| Methods | `setPlaybackRate`, `selectAudioTrack`, `selectSubtitleTrack` |
-| Settings | Default speed from `SettingsRepository` ([ADR-011](./decisions/ADR-011-playback-preferences.md)) |
-| Tracks | Embedded only; Windows-first ([ADR-012](./decisions/ADR-012-track-selection.md)) |
+| State | `playbackRate`, `supportedPlaybackRates`, `canChangePlaybackRate`, track DTO lists, selected ids, `playbackErrorKind` |
+| Methods | `setPlaybackRate`, `selectAudioTrack`, `selectSubtitleTrack`, `disableSubtitles` — all return `PlaybackActionResult` |
+| Backend | `PlaybackSessionControls` → `MediaKitSessionControls` (Windows) / `UnsupportedSessionControls` (`video_player`) |
+| Rate lifecycle | Default from injectable provider on `play()`; session override until `stop()` or new `play()` ([ADR-011](./decisions/ADR-011-playback-preferences.md)) |
+| Tracks | Embedded only; reset on new media ([ADR-012](./decisions/ADR-012-track-selection.md)) |
+| Errors | `PlaybackErrorMapper` + `PlaybackErrorKind` ([ADR-013](./decisions/ADR-013-playback-error-taxonomy.md)) |
+| Tests | `playback_service_extensions_test.dart` (30 scenarios) |
 
-→ [Implementation spec](../roadmap/m4-phase-4.4-playback-improvements.md#playbackservice-extensions-step-2)
+**Not in Step 2:** settings default speed persistence, player UI, keyboard shortcuts.
+
+→ [Implementation spec](../roadmap/m4-phase-4.4-playback-improvements.md#playbackservice-extensions-step-2--complete)
 
 ---
 
@@ -97,11 +102,12 @@ Playback must not duplicate Provider Status diagnostics.
 
 | Capability | State |
 |---|---|
-| `PlaybackService` | Windows: `media_kit`; other: `video_player` |
+| `PlaybackService` | Windows: `media_kit` + session controls; other: `video_player` + unsupported controls |
 | Resume | `position_*` / `duration_*` in `shared_preferences` |
 | Resolver | `MediaLocationResolver` in `play()` |
+| Rate / tracks / errors | Service-owned (Step 2) — UI not wired |
 | Player controls | Play/pause, seek, −10/+30, retry, buffering |
-| **Not wired** | Speed, tracks, shortcuts, structured errors, settings default |
+| **Not wired** | Speed/track player UI, shortcuts, settings default speed |
 
 ---
 

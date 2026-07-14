@@ -9,10 +9,19 @@ import 'package:video_player/video_player.dart';
 
 import '../models/catalog.dart';
 import '../models/media_item.dart';
-import 'media_access/media_access_config.dart';
+import '../models/playback/playback_action_result.dart';
+import '../models/playback/playback_audio_track.dart';
+import '../models/playback/playback_error_kind.dart';
+import '../models/playback/playback_rate_presets.dart';
+import '../models/playback/playback_subtitle_track.dart';
 import 'media_access/media_location_resolver.dart';
 import 'media_access/media_provider_config.dart';
 import 'media_access/resolved_media_location.dart';
+import 'playback/playback_error_mapper.dart';
+import 'playback/playback_error_messages.dart';
+import 'playback/playback_session_controls.dart';
+import 'playback/media_kit_session_controls.dart';
+import 'playback/unsupported_session_controls.dart';
 import 'playback_platform.dart';
 
 // ---------------------------------------------------------------------------
@@ -150,11 +159,34 @@ class ContinueWatchingEntry {
 // PlaybackService
 // ---------------------------------------------------------------------------
 
+typedef DefaultPlaybackRateProvider = double Function();
+
+typedef MediaKitInitOverride = Future<void> Function(
+  PlaybackService service,
+  String mediaUri,
+  int generation,
+);
+
+double _fallbackDefaultPlaybackRate() => PlaybackRatePresets.defaultRate;
+
 class PlaybackService extends ChangeNotifier {
-  PlaybackService({MediaLocationResolver? mediaLocationResolver})
-      : _mediaLocationResolver = mediaLocationResolver ?? _defaultMediaLocationResolver();
+  PlaybackService({
+    MediaLocationResolver? mediaLocationResolver,
+    DefaultPlaybackRateProvider? defaultPlaybackRateProvider,
+    @visibleForTesting MediaKitInitOverride? mediaKitInitOverride,
+    @visibleForTesting PlaybackSessionControls? initialSessionControls,
+  })  : _mediaLocationResolver =
+            mediaLocationResolver ?? _defaultMediaLocationResolver(),
+        _defaultPlaybackRateProvider =
+            defaultPlaybackRateProvider ?? _fallbackDefaultPlaybackRate,
+        _mediaKitInitOverride = mediaKitInitOverride,
+        _sessionControls = initialSessionControls;
 
   final MediaLocationResolver _mediaLocationResolver;
+  final DefaultPlaybackRateProvider _defaultPlaybackRateProvider;
+  final MediaKitInitOverride? _mediaKitInitOverride;
+
+  PlaybackSessionControls? _sessionControls;
 
   static MediaLocationResolver _defaultMediaLocationResolver() {
     return MediaLocationResolver(
@@ -177,6 +209,14 @@ class PlaybackService extends ChangeNotifier {
   MediaItem? _currentItem;
   bool _isInitializing = false;
   String? _errorMessage;
+  PlaybackErrorKind? _playbackErrorKind;
+
+  double _playbackRate = PlaybackRatePresets.defaultRate;
+  bool _hasSessionRateOverride = false;
+  List<PlaybackAudioTrack> _availableAudioTracks = const [];
+  List<PlaybackSubtitleTrack> _availableSubtitleTracks = const [];
+  String? _selectedAudioTrackId;
+  String? _selectedSubtitleTrackId;
 
   // Throttle position writes to once every 5 s while playing.
   DateTime _lastPositionSave = DateTime.fromMillisecondsSinceEpoch(0);
@@ -200,9 +240,7 @@ class PlaybackService extends ChangeNotifier {
       'This video could not be opened. It may be unsupported or unavailable.';
 
   /// Shown beneath playback errors in the player UI.
-  static const playbackFailedNote =
-      'Some formats, codecs, or large NAS files may not be supported '
-      'by the current playback engine.';
+  static const playbackFailedNote = PlaybackErrorMessages.playbackFailedNote;
 
   /// Incremented on [stop] to cancel in-flight [play] calls.
   int _playGeneration = 0;
@@ -223,18 +261,69 @@ class PlaybackService extends ChangeNotifier {
   MediaItem? get currentItem => _currentItem;
   bool get isInitializing => _isInitializing;
   String? get errorMessage => _errorMessage;
+  PlaybackErrorKind? get playbackErrorKind => _playbackErrorKind;
 
-  bool get isReady => usesMediaKit
-      ? _mediaKitPlayer != null && _mediaKitVideoController != null
-      : (_videoController?.value.isInitialized ?? false);
+  double get playbackRate => _playbackRate;
 
-  Duration get position => usesMediaKit
-      ? _mediaKitPlayer!.state.position
-      : (_videoController?.value.position ?? Duration.zero);
+  List<double> get supportedPlaybackRates => PlaybackRatePresets.supported;
 
-  Duration get duration => usesMediaKit
-      ? _mediaKitPlayer!.state.duration
-      : (_videoController?.value.duration ?? Duration.zero);
+  bool get canChangePlaybackRate =>
+      isReady && (_sessionControls?.supportsPlaybackRate ?? false);
+
+  bool get canSelectAudioTracks =>
+      isReady &&
+      (_sessionControls?.supportsTrackSelection ?? false) &&
+      _availableAudioTracks.length >= 2;
+
+  bool get canSelectSubtitleTracks =>
+      isReady &&
+      (_sessionControls?.supportsTrackSelection ?? false) &&
+      _availableSubtitleTracks.isNotEmpty;
+
+  List<PlaybackAudioTrack> get availableAudioTracks =>
+      List.unmodifiable(_availableAudioTracks);
+
+  List<PlaybackSubtitleTrack> get availableSubtitleTracks =>
+      List.unmodifiable(_availableSubtitleTracks);
+
+  String? get selectedAudioTrackId => _selectedAudioTrackId;
+
+  /// Null when subtitles are off.
+  String? get selectedSubtitleTrackId => _selectedSubtitleTrackId;
+
+  @visibleForTesting
+  void attachSessionControlsForTest(PlaybackSessionControls controls) {
+    _sessionControls = controls;
+    _syncCapabilityStateFromControls();
+    notifyListeners();
+  }
+
+  @visibleForTesting
+  PlaybackSessionControls? get sessionControls => _sessionControls;
+
+  @visibleForTesting
+  bool get hasSessionRateOverride => _hasSessionRateOverride;
+
+  bool _forceReadyForTest = false;
+  Duration? _forcedDurationForTest;
+  Duration? _forcedPositionForTest;
+  bool _forcedCompletedForTest = false;
+
+  bool get isReady =>
+      _forceReadyForTest ||
+      (usesMediaKit
+          ? _mediaKitPlayer != null && _mediaKitVideoController != null
+          : (_videoController?.value.isInitialized ?? false));
+
+  Duration get duration => _forcedDurationForTest ??
+      (usesMediaKit
+          ? _mediaKitPlayer!.state.duration
+          : (_videoController?.value.duration ?? Duration.zero));
+
+  Duration get position => _forcedPositionForTest ??
+      (usesMediaKit
+          ? _mediaKitPlayer!.state.position
+          : (_videoController?.value.position ?? Duration.zero));
 
   bool get isPlaying => usesMediaKit
       ? _mediaKitPlayer!.state.playing
@@ -244,9 +333,11 @@ class PlaybackService extends ChangeNotifier {
       ? _mediaKitPlayer!.state.buffering
       : (_videoController?.value.isBuffering ?? false);
 
-  bool get isCompleted => usesMediaKit
-      ? _mediaKitPlayer!.state.completed
-      : (_videoController?.value.isCompleted ?? false);
+  bool get isCompleted =>
+      (_forceReadyForTest && _forcedCompletedForTest) ||
+      (usesMediaKit
+          ? _mediaKitPlayer!.state.completed
+          : (_videoController?.value.isCompleted ?? false));
 
   double get aspectRatio {
     if (usesMediaKit) {
@@ -316,7 +407,8 @@ class PlaybackService extends ChangeNotifier {
 
     _currentItem = item;
     _isInitializing = true;
-    _errorMessage = null;
+    _clearPlaybackError();
+    _resetCapabilityState();
     _completionCleared = false;
     _resetStateTracking();
     notifyListeners();
@@ -324,7 +416,7 @@ class PlaybackService extends ChangeNotifier {
     try {
       final location = _mediaLocationResolver.resolve(item.filePath);
       if (!location.isPlayable || location.uri == null) {
-        _errorMessage = location.errorReason ?? playbackFailedMessage;
+        _setPlaybackError(PlaybackErrorMapper.fromResolver(location));
         _logState('Error: media location unresolved (${location.status.name})');
         return;
       }
@@ -335,8 +427,7 @@ class PlaybackService extends ChangeNotifier {
 
       if (presence.isLocal && presence.exists == false) {
         _logInitProbeAnswer(skipped: true, reason: 'file missing');
-        _errorMessage =
-            'File not found. It may have been moved or deleted since the last scan.';
+        _setPlaybackError(PlaybackErrorMapper.fileMissing());
         return;
       }
 
@@ -365,6 +456,13 @@ class PlaybackService extends ChangeNotifier {
       }
 
       _logState('Initialised');
+
+      await _applyDefaultPlaybackRate();
+
+      if (generation != _playGeneration) {
+        await _disposeController();
+        return;
+      }
 
       final mediaDuration = duration;
       await _saveDuration(item.id, mediaDuration);
@@ -404,7 +502,7 @@ class PlaybackService extends ChangeNotifier {
       if (generation != _playGeneration) return;
       _logState('Error: $e');
       debugPrint('[PlaybackService] play failed: $e\n$stack');
-      _errorMessage = _friendlyError(e);
+      _setPlaybackError(PlaybackErrorMapper.fromException(e));
       await _disposeController();
     } finally {
       if (generation == _playGeneration) {
@@ -421,6 +519,10 @@ class PlaybackService extends ChangeNotifier {
 
   Future<void> togglePlayPause() async {
     if (!isReady) return;
+    if (_forceReadyForTest) {
+      notifyListeners();
+      return;
+    }
     if (usesMediaKit) {
       if (_mediaKitPlayer!.state.playing) {
         await _mediaKitPlayer!.pause();
@@ -449,9 +551,126 @@ class PlaybackService extends ChangeNotifier {
     await _flushPosition();
     await _disposeController();
     _currentItem = null;
-    _errorMessage = null;
+    _clearPlaybackError();
+    _resetCapabilityState();
     _isInitializing = false;
     notifyListeners();
+  }
+
+  Future<PlaybackActionResult> setPlaybackRate(double rate) async {
+    if (!isReady || _sessionControls == null) {
+      return const PlaybackActionResult.invalidArgument('Playback not ready');
+    }
+    if (!PlaybackRatePresets.isSupported(rate)) {
+      return const PlaybackActionResult.invalidArgument('Unsupported playback rate');
+    }
+    if (!_sessionControls!.supportsPlaybackRate) {
+      return const PlaybackActionResult.unsupported('Playback rate not supported');
+    }
+
+    final result = await _sessionControls!.setPlaybackRate(rate);
+    if (result.isSuccess) {
+      _playbackRate = _readPlaybackRateFromControls(fallback: rate);
+      _hasSessionRateOverride = true;
+      notifyListeners();
+    }
+    return result;
+  }
+
+  Future<PlaybackActionResult> selectAudioTrack(String trackId) async {
+    if (!isReady || _sessionControls == null) {
+      return const PlaybackActionResult.invalidArgument('Playback not ready');
+    }
+    if (!_sessionControls!.supportsTrackSelection) {
+      return const PlaybackActionResult.unsupported('Audio tracks not supported');
+    }
+
+    if (_selectedAudioTrackId == trackId) {
+      return const PlaybackActionResult.success();
+    }
+
+    final result = await _sessionControls!.selectAudioTrack(trackId);
+    if (result.isSuccess) {
+      _syncCapabilityStateFromControls();
+      notifyListeners();
+    }
+    return result;
+  }
+
+  Future<PlaybackActionResult> selectSubtitleTrack(String trackId) async {
+    if (!isReady || _sessionControls == null) {
+      return const PlaybackActionResult.invalidArgument('Playback not ready');
+    }
+    if (!_sessionControls!.supportsTrackSelection) {
+      return const PlaybackActionResult.unsupported('Subtitles not supported');
+    }
+
+    if (_selectedSubtitleTrackId == trackId) {
+      return const PlaybackActionResult.success();
+    }
+
+    final result = await _sessionControls!.selectSubtitleTrack(trackId);
+    if (result.isSuccess) {
+      _syncCapabilityStateFromControls();
+      notifyListeners();
+    }
+    return result;
+  }
+
+  Future<PlaybackActionResult> disableSubtitles() async {
+    if (!isReady || _sessionControls == null) {
+      return const PlaybackActionResult.invalidArgument('Playback not ready');
+    }
+    if (!_sessionControls!.supportsTrackSelection) {
+      return const PlaybackActionResult.unsupported('Subtitles not supported');
+    }
+
+    if (_selectedSubtitleTrackId == null) {
+      return const PlaybackActionResult.success();
+    }
+
+    final result = await _sessionControls!.disableSubtitles();
+    if (result.isSuccess) {
+      _syncCapabilityStateFromControls();
+      notifyListeners();
+    }
+    return result;
+  }
+
+  @visibleForTesting
+  void simulateReadyForTest(MediaItem item) {
+    _currentItem = item;
+    _isInitializing = false;
+    _forceReadyForTest = true;
+    notifyListeners();
+  }
+
+  @visibleForTesting
+  void simulatePlaybackMetricsForTest({
+    Duration? duration,
+    Duration? position,
+    bool completed = false,
+  }) {
+    _forcedDurationForTest = duration;
+    _forcedPositionForTest = position;
+    _forcedCompletedForTest = completed;
+  }
+
+  @visibleForTesting
+  void runPlaybackTickForTest() => _onPlaybackTick();
+
+  @visibleForTesting
+  void clearReadySimulationForTest() {
+    _forceReadyForTest = false;
+    _forcedDurationForTest = null;
+    _forcedPositionForTest = null;
+    _forcedCompletedForTest = false;
+  }
+
+  @visibleForTesting
+  void setPlaybackErrorForTest(PlaybackErrorKind kind, String message) {
+    _playbackErrorKind = kind;
+    _errorMessage = message;
   }
 
   /// Test helper — persists resume state without starting playback.
@@ -480,8 +699,19 @@ class PlaybackService extends ChangeNotifier {
   // ---------------------------------------------------------------------------
 
   Future<void> _initMediaKit(String mediaUri, int generation) async {
+    if (_mediaKitInitOverride != null) {
+      await _mediaKitInitOverride(this, mediaUri, generation);
+      if (generation != _playGeneration) return;
+      if (_sessionControls == null && _mediaKitPlayer != null) {
+        _bindMediaKitSessionControls();
+      }
+      _syncCapabilityStateFromControls();
+      return;
+    }
+
     _mediaKitPlayer = Player();
     _mediaKitVideoController = VideoController(_mediaKitPlayer!);
+    _bindMediaKitSessionControls();
     _attachMediaKitListeners(generation);
 
     final media = Media(mediaUriForPlayback(mediaUri));
@@ -505,10 +735,20 @@ class PlaybackService extends ChangeNotifier {
             ),
           );
     }
+
+    _syncCapabilityStateFromControls();
+  }
+
+  void _bindMediaKitSessionControls() {
+    final player = _mediaKitPlayer;
+    if (player == null) return;
+    _sessionControls = MediaKitSessionControls(player);
   }
 
   Future<void> _initVideoPlayer(String mediaUri, int generation) async {
     _videoController = _buildVideoPlayerController(mediaUri);
+    _sessionControls = const UnsupportedSessionControls();
+    _syncCapabilityStateFromControls();
     await _videoController!.initialize().timeout(
       _initTimeout,
       onTimeout: () => throw TimeoutException(
@@ -520,6 +760,10 @@ class PlaybackService extends ChangeNotifier {
   }
 
   Future<void> seekToPosition(Duration position) async {
+    if (_forceReadyForTest) {
+      _forcedPositionForTest = position;
+      return;
+    }
     if (usesMediaKit) {
       await _mediaKitPlayer!.seek(position);
     } else {
@@ -528,6 +772,7 @@ class PlaybackService extends ChangeNotifier {
   }
 
   Future<void> startPlayback() async {
+    if (_forceReadyForTest) return;
     if (usesMediaKit) {
       await _mediaKitPlayer!.play();
     } else {
@@ -551,6 +796,16 @@ class PlaybackService extends ChangeNotifier {
       player.stream.completed.listen((_) => onUpdate()),
       player.stream.width.listen((_) => onUpdate()),
       player.stream.height.listen((_) => onUpdate()),
+      player.stream.tracks.listen((_) {
+        if (generation != _playGeneration) return;
+        _syncCapabilityStateFromControls();
+        notifyListeners();
+      }),
+      player.stream.rate.listen((rate) {
+        if (generation != _playGeneration) return;
+        _playbackRate = rate;
+        notifyListeners();
+      }),
     ];
   }
 
@@ -642,6 +897,10 @@ class PlaybackService extends ChangeNotifier {
       await sub.cancel();
     }
     _mediaKitSubs = [];
+
+    await _sessionControls?.dispose();
+    _sessionControls = null;
+    _resetCapabilityState(clearSessionOverride: true);
 
     final mediaKitPlayer = _mediaKitPlayer;
     _mediaKitPlayer = null;
@@ -755,28 +1014,76 @@ class PlaybackService extends ChangeNotifier {
     _logState('$question → no${reason != null ? ' ($reason)' : ''}');
   }
 
-  static String _friendlyError(Object e) {
-    if (e is TimeoutException) {
-      return playbackFailedMessage;
+  void _setPlaybackError(PlaybackErrorMapping mapping) {
+    _playbackErrorKind = mapping.kind;
+    _errorMessage = mapping.userMessage;
+    if (mapping.debugDetail != null) {
+      debugPrint('[PlaybackService] ${mapping.kind.name}: ${mapping.debugDetail}');
+    }
+  }
+
+  void _clearPlaybackError() {
+    _playbackErrorKind = null;
+    _errorMessage = null;
+  }
+
+  void _resetCapabilityState({bool clearSessionOverride = true}) {
+    if (clearSessionOverride) {
+      _hasSessionRateOverride = false;
+    }
+    _playbackRate = PlaybackRatePresets.defaultRate;
+    _availableAudioTracks = const [];
+    _availableSubtitleTracks = const [];
+    _selectedAudioTrackId = null;
+    _selectedSubtitleTrackId = null;
+  }
+
+  double _readPlaybackRateFromControls({required double fallback}) {
+    final controls = _sessionControls;
+    if (controls == null) return fallback;
+    try {
+      return controls.readSnapshot().playbackRate;
+    } catch (e, stack) {
+      debugPrint('[PlaybackService] rate read failed: $e\n$stack');
+      return fallback;
+    }
+  }
+
+  void _syncCapabilityStateFromControls() {
+    final controls = _sessionControls;
+    if (controls == null) return;
+    try {
+      final snapshot = controls.readSnapshot();
+      _playbackRate = snapshot.playbackRate;
+      _availableAudioTracks = snapshot.audioTracks;
+      _availableSubtitleTracks = snapshot.subtitleTracks;
+      _selectedAudioTrackId = snapshot.selectedAudioTrackId;
+      _selectedSubtitleTrackId = snapshot.selectedSubtitleTrackId;
+    } catch (e, stack) {
+      debugPrint(
+        '[PlaybackService] track/rate sync failed: $e\n$stack',
+      );
+    }
+  }
+
+  Future<void> _applyDefaultPlaybackRate() async {
+    final controls = _sessionControls;
+    if (controls == null || !controls.supportsPlaybackRate) {
+      _playbackRate = PlaybackRatePresets.defaultRate;
+      return;
     }
 
-    final raw = e.toString();
-    if (raw.contains('No such file') || raw.contains('FileNotFound')) {
-      return 'File not found. It may have been moved or deleted since the last scan.';
+    final target = PlaybackRatePresets.normalize(_defaultPlaybackRateProvider());
+    final result = await controls.setPlaybackRate(target);
+    if (result.isSuccess) {
+      _playbackRate = _readPlaybackRateFromControls(fallback: target);
+      _hasSessionRateOverride = false;
+    } else {
+      _playbackRate = PlaybackRatePresets.defaultRate;
+      debugPrint(
+        '[PlaybackService] default rate apply failed: ${result.debugDetail}',
+      );
     }
-    if (raw.contains('Permission') || raw.contains('Access')) {
-      return 'Access denied. Check that the NAS share is mounted and accessible.';
-    }
-    if (raw.contains('NetworkError') || raw.contains('SocketException')) {
-      return 'Network error. Check your connection to the NAS.';
-    }
-    if (raw.contains('format') ||
-        raw.contains('codec') ||
-        raw.contains('PlatformException') ||
-        raw.contains('UnimplementedError')) {
-      return playbackFailedMessage;
-    }
-    return playbackFailedMessage;
   }
 
   static String _statusMessage(MediaItem item) {
