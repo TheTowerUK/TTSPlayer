@@ -305,9 +305,11 @@ class PlaybackService extends ChangeNotifier {
   bool get hasSessionRateOverride => _hasSessionRateOverride;
 
   bool _forceReadyForTest = false;
+  bool _forcePlayingForTest = false;
   Duration? _forcedDurationForTest;
   Duration? _forcedPositionForTest;
   bool _forcedCompletedForTest = false;
+  bool _forcedBufferingForTest = false;
 
   bool get isReady =>
       _forceReadyForTest ||
@@ -325,13 +327,17 @@ class PlaybackService extends ChangeNotifier {
           ? _mediaKitPlayer!.state.position
           : (_videoController?.value.position ?? Duration.zero));
 
-  bool get isPlaying => usesMediaKit
-      ? _mediaKitPlayer!.state.playing
-      : (_videoController?.value.isPlaying ?? false);
+  bool get isPlaying => _forceReadyForTest
+      ? _forcePlayingForTest
+      : (usesMediaKit
+          ? _mediaKitPlayer!.state.playing
+          : (_videoController?.value.isPlaying ?? false));
 
-  bool get isBuffering => usesMediaKit
-      ? _mediaKitPlayer!.state.buffering
-      : (_videoController?.value.isBuffering ?? false);
+  bool get isBuffering => _forceReadyForTest
+      ? _forcedBufferingForTest
+      : (usesMediaKit
+          ? _mediaKitPlayer!.state.buffering
+          : (_videoController?.value.isBuffering ?? false));
 
   bool get isCompleted =>
       (_forceReadyForTest && _forcedCompletedForTest) ||
@@ -520,6 +526,7 @@ class PlaybackService extends ChangeNotifier {
   Future<void> togglePlayPause() async {
     if (!isReady) return;
     if (_forceReadyForTest) {
+      _forcePlayingForTest = !_forcePlayingForTest;
       notifyListeners();
       return;
     }
@@ -642,6 +649,25 @@ class PlaybackService extends ChangeNotifier {
     _currentItem = item;
     _isInitializing = false;
     _forceReadyForTest = true;
+    _forcePlayingForTest = true;
+    if (_sessionControls != null) {
+      _syncCapabilityStateFromControls();
+    }
+    notifyListeners();
+  }
+
+  @visibleForTesting
+  void simulatePreparingForTest() {
+    _isInitializing = true;
+    _forceReadyForTest = false;
+    _forcePlayingForTest = false;
+    notifyListeners();
+  }
+
+  @visibleForTesting
+  void simulatePlayingForTest({required bool playing, bool buffering = false}) {
+    _forcePlayingForTest = playing;
+    _forcedBufferingForTest = buffering;
     notifyListeners();
   }
 
@@ -662,6 +688,8 @@ class PlaybackService extends ChangeNotifier {
   @visibleForTesting
   void clearReadySimulationForTest() {
     _forceReadyForTest = false;
+    _forcePlayingForTest = false;
+    _forcedBufferingForTest = false;
     _forcedDurationForTest = null;
     _forcedPositionForTest = null;
     _forcedCompletedForTest = false;

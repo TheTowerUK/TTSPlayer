@@ -24,7 +24,6 @@ class PlaybackRatePresets {
     return defaultRate;
   }
 
-  /// User-facing label for settings and player UI (storage uses [supported] values).
   static String displayLabel(double rate) {
     final normalized = normalize(rate);
     if ((normalized - 1.0).abs() < 0.001) {
@@ -34,5 +33,30 @@ class PlaybackRatePresets {
       return '${normalized.toInt()}×';
     }
     return '${normalized}×';
+  }
+
+  /// Compact label for in-player chrome (e.g. `1×`, `1.25×`).
+  static String compactLabel(double rate) {
+    final normalized = normalize(rate);
+    if ((normalized - 1.0).abs() < 0.001) return '1×';
+    if (normalized == normalized.roundToDouble()) {
+      return '${normalized.toInt()}×';
+    }
+    return '${normalized}×';
+  }
+
+  static int indexOf(double rate) {
+    final normalized = normalize(rate);
+    for (var i = 0; i < supported.length; i++) {
+      if ((supported[i] - normalized).abs() < 0.001) return i;
+    }
+    return supported.indexOf(defaultRate);
+  }
+
+  static double? stepRate(double current, int delta) {
+    final index = indexOf(current);
+    final next = index + delta;
+    if (next < 0 || next >= supported.length) return null;
+    return supported[next];
   }
 }

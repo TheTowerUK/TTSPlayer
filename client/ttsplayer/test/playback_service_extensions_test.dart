@@ -29,6 +29,8 @@ class FakePlaybackSessionControls implements PlaybackSessionControls {
     PlaybackSessionSnapshot? snapshot,
     this.rateApplyFails = false,
     this.enumerationFails = false,
+    this.audioSelectFails = false,
+    this.subtitleSelectFails = false,
   }) : _snapshot = snapshot ?? PlaybackSessionSnapshot.empty;
 
   @override
@@ -39,6 +41,8 @@ class FakePlaybackSessionControls implements PlaybackSessionControls {
 
   bool rateApplyFails;
   bool enumerationFails;
+  bool audioSelectFails;
+  bool subtitleSelectFails;
 
   PlaybackSessionSnapshot _snapshot;
 
@@ -87,6 +91,9 @@ class FakePlaybackSessionControls implements PlaybackSessionControls {
 
   @override
   Future<PlaybackActionResult> selectAudioTrack(String trackId) async {
+    if (audioSelectFails) {
+      return const PlaybackActionResult.backendFailed('audio rejected');
+    }
     lastAudioTrackId = trackId;
     if (!_snapshot.audioTracks.any((track) => track.id == trackId)) {
       return PlaybackActionResult.invalidArgument('Unknown audio track: $trackId');
@@ -103,6 +110,9 @@ class FakePlaybackSessionControls implements PlaybackSessionControls {
 
   @override
   Future<PlaybackActionResult> selectSubtitleTrack(String? trackId) async {
+    if (subtitleSelectFails) {
+      return const PlaybackActionResult.backendFailed('subtitle rejected');
+    }
     if (trackId == null) {
       return disableSubtitles();
     }
