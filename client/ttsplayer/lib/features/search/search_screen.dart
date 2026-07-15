@@ -39,6 +39,7 @@ class _SearchScreenState extends State<SearchScreen> {
   List<SearchResult> _results = const [];
   List<String> _recentQueries = [];
   Timer? _debounce;
+  int _searchGeneration = 0;
 
   static const _debounceDuration = Duration(milliseconds: 150);
   static const _maxRecentQueries = 5;
@@ -65,36 +66,63 @@ class _SearchScreenState extends State<SearchScreen> {
 
   void _onQueryChanged() {
     _debounce?.cancel();
-    _debounce = Timer(_debounceDuration, _runSearch);
+    _debounce = Timer(_debounceDuration, () {
+      unawaited(_runSearch());
+    });
     setState(() {});
   }
 
-  void _runSearch() {
+  Future<void> _runSearch() async {
     final catalog = context.read<CatalogService>().catalog;
     if (catalog == null) return;
 
-    final searchService = context.read<SearchService>();
-    searchService.buildIndex(catalog);
     final query = _controller.text;
-    final results = searchService.search(query, _filters);
+    final trimmed = query.trim();
+    final generation = ++_searchGeneration;
 
-    if (query.trim().length >= 2 && results.isNotEmpty) {
-      _rememberQuery(query.trim());
+    if (trimmed.isEmpty) {
+      if (!mounted || generation != _searchGeneration) return;
+      setState(() => _results = const []);
+      return;
     }
 
-    if (!mounted) return;
-    setState(() => _results = results);
+    final searchService = context.read<SearchService>();
+
+    try {
+      final results = await searchService.searchCatalog(
+        catalog,
+        query,
+        _filters,
+      );
+
+      if (!mounted || generation != _searchGeneration) return;
+
+      if (trimmed.length >= 2 && results.isNotEmpty) {
+        _rememberQuery(trimmed);
+      }
+
+      setState(() => _results = results);
+    } on SearchIndexBuildException {
+      if (!mounted || generation != _searchGeneration) return;
+      setState(() => _results = const []);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Search is temporarily unavailable. Try again.'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
   }
 
   void _clearQuery() {
     _controller.clear();
-    _runSearch();
+    unawaited(_runSearch());
     _focusNode.requestFocus();
   }
 
   void _clearFilters() {
     setState(() => _filters = const SearchFilters.empty());
-    _runSearch();
+    unawaited(_runSearch());
   }
 
   void _rememberQuery(String query) {
@@ -108,7 +136,7 @@ class _SearchScreenState extends State<SearchScreen> {
   void _applyRecentQuery(String query) {
     _controller.text = query;
     _controller.selection = TextSelection.collapsed(offset: query.length);
-    _runSearch();
+    unawaited(_runSearch());
   }
 
   void _openResult(SearchResult result) {
@@ -123,7 +151,7 @@ class _SearchScreenState extends State<SearchScreen> {
           duration: Duration(seconds: 3),
         ),
       );
-      _runSearch();
+      unawaited(_runSearch());
       return;
     }
 
@@ -192,20 +220,18 @@ class _SearchScreenState extends State<SearchScreen> {
                     kind: SearchEmptyKind.catalogueUnavailable,
                     onRetry: () async {
                       await catalogService.rescan();
-                      if (mounted) _runSearch();
+                      if (mounted) unawaited(_runSearch());
                     },
                   );
                 }
 
-                final searchService = context.read<SearchService>();
-                searchService.buildIndex(catalog);
-
-                if (searchService.indexedItemCount == 0) {
+                if (catalog.allItems.isEmpty) {
                   return const SearchEmptyState(
                     kind: SearchEmptyKind.catalogueEmpty,
                   );
                 }
 
+                final searchService = context.read<SearchService>();
                 final query = _controller.text.trim();
                 final queryActive = query.isNotEmpty;
                 final filtersActive = _filters.hasActiveFilters;
@@ -254,7 +280,7 @@ class _SearchScreenState extends State<SearchScreen> {
                             ),
                           ),
                           textInputAction: TextInputAction.search,
-                          onSubmitted: (_) => _runSearch(),
+                          onSubmitted: (_) => unawaited(_runSearch()),
                         ),
                       ),
                     ),
@@ -263,14 +289,14 @@ class _SearchScreenState extends State<SearchScreen> {
                         horizontal: AppSpacing.lg,
                       ),
                       child: SearchFilterChips(
-                        libraryNames: searchService.libraryNames,
-                        extensions: searchService.extensions,
+                        libraryNames: searchService.libraryNamesFor(catalog),
+                        extensions: searchService.extensionsFor(catalog),
                         filters: _filters,
                         resultCount: _results.length,
                         queryActive: queryActive,
                         onFiltersChanged: (filters) {
                           setState(() => _filters = filters);
-                          _runSearch();
+                          unawaited(_runSearch());
                         },
                       ),
                     ),

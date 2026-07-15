@@ -164,10 +164,12 @@ Widget _searchHarness({
   required Catalog catalog,
   CatalogService? catalogService,
   SettingsRepository? settingsRepository,
+  SearchService? searchService,
   Size viewport = const Size(900, 420),
   Key? screenKey,
 }) {
   final service = catalogService ?? _FakeCatalogService(catalog);
+  final search = searchService ?? SearchService();
   return MultiProvider(
     providers: [
       ChangeNotifierProvider(create: (_) => MediaProviderConfigService()),
@@ -184,7 +186,7 @@ Widget _searchHarness({
         ),
       ),
       Provider(create: (_) => ArtworkService(fileExists: (_) => false)),
-      Provider(create: (_) => SearchService()),
+      Provider<SearchService>.value(value: search),
       ChangeNotifierProvider<CatalogService>.value(value: service),
       ChangeNotifierProvider(
         create: (context) => PlaybackService(
@@ -548,6 +550,62 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(find.byType(ListView), findsWidgets);
+    });
+
+    testWidgets('25 opening search without query does not build index', (tester) async {
+      final catalog = _searchCatalog();
+      final search = SearchService();
+      await tester.pumpWidget(_searchHarness(catalog: catalog, searchService: search));
+      await tester.pumpAndSettle();
+
+      expect(search.indexBuildCount, 0);
+      expect(search.hasIndex, isFalse);
+      expect(find.text('Search your library'), findsOneWidget);
+    });
+
+    testWidgets('26 first valid search builds index once', (tester) async {
+      final catalog = _searchCatalog();
+      final search = SearchService();
+      await tester.pumpWidget(_searchHarness(catalog: catalog, searchService: search));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(const Key('search_query_field')), 'adventure');
+      await tester.pumpAndSettle(const Duration(milliseconds: 200));
+
+      expect(search.indexBuildCount, 1);
+      expect(find.text('Grand Adventure'), findsOneWidget);
+    });
+
+    testWidgets('27 stale async results are not shown for newer query', (tester) async {
+      final catalog = _searchCatalog();
+      final search = SearchService();
+      await tester.pumpWidget(_searchHarness(catalog: catalog, searchService: search));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(const Key('search_query_field')), 'adventure');
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.enterText(find.byKey(const Key('search_query_field')), 'zzzzmissing');
+      await tester.pumpAndSettle(const Duration(milliseconds: 200));
+
+      expect(find.text('Grand Adventure'), findsNothing);
+      expect(find.text('No results found'), findsOneWidget);
+    });
+
+    testWidgets('28 disposing screen during search does not throw', (tester) async {
+      final catalog = _searchCatalog();
+      final search = SearchService();
+      final screenKey = GlobalKey();
+      await tester.pumpWidget(
+        _searchHarness(catalog: catalog, searchService: search, screenKey: screenKey),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(const Key('search_query_field')), 'adventure');
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle(const Duration(milliseconds: 200));
+
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('24 catalogue unavailable is distinct from no-results',

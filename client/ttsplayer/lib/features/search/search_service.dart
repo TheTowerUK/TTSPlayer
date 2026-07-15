@@ -7,7 +7,17 @@ import 'models/search_filters.dart';
 import 'models/search_index_entry.dart';
 import 'models/search_result.dart';
 
-/// In-memory catalogue search — index built once per catalogue revision.
+/// Thrown when the search index cannot be built; callers may retry.
+class SearchIndexBuildException implements Exception {
+  SearchIndexBuildException([this.message = 'Search index build failed']);
+
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
+/// In-memory catalogue search — index built lazily per catalogue revision (ADR-016).
 class SearchService {
   static const maxResults = 100;
 
@@ -16,29 +26,56 @@ class SearchService {
   List<String> _libraryNames = const [];
   List<String> _extensions = const [];
 
+  int _invalidationGeneration = 0;
+  Future<void>? _buildFuture;
+  String? _buildInFlightIdentity;
+  int _indexBuildCount = 0;
+
+  /// When true, the next index build throws [SearchIndexBuildException] (tests only).
+  @visibleForTesting
+  bool simulateBuildFailure = false;
+
+  @visibleForTesting
+  int get indexBuildCount => _indexBuildCount;
+
+  @visibleForTesting
+  bool get hasIndex => _catalogueIdentity != null;
+
+  @visibleForTesting
+  bool get isBuildInFlight => _buildFuture != null;
+
   List<String> get libraryNames => _libraryNames;
   List<String> get extensions => _extensions;
   int get indexedItemCount => _index.length;
   String? get catalogueIdentity => _catalogueIdentity;
 
-  /// Builds or refreshes the search index when the catalogue changes.
+  /// Library names for filter chips — from the built index when current, else [Catalog].
+  List<String> libraryNamesFor(Catalog catalog) {
+    if (_catalogueIdentity == catalog.catalogueIdentity && _libraryNames.isNotEmpty) {
+      return _libraryNames;
+    }
+    return catalog.libraryFolders.map((f) => f.name).toList();
+  }
+
+  /// Extensions for filter chips — from the built index when current, else [Catalog].
+  List<String> extensionsFor(Catalog catalog) {
+    if (_catalogueIdentity == catalog.catalogueIdentity && _extensions.isNotEmpty) {
+      return _extensions;
+    }
+    return _collectExtensions(catalog);
+  }
+
+  /// Synchronously populates the index (tests and direct ranking assertions).
+  @visibleForTesting
   void buildIndex(Catalog catalog) {
-    final identity = catalog.catalogueIdentity;
-    if (_catalogueIdentity == identity && _index.isNotEmpty) return;
-
-    _catalogueIdentity = identity;
-    _libraryNames = catalog.libraryFolders.map((f) => f.name).toList();
-    _extensions = _collectExtensions(catalog);
-
-    final libraries = catalog.libraryFolders;
-    _index = catalog.allItems
-        .map((item) => _entryForItem(item, libraries))
-        .toList(growable: false);
+    _indexBuildCount++;
+    _populateIndex(catalog);
   }
 
   /// Clears the in-memory search index without rebuilding (ADR-014).
   @visibleForTesting
   void invalidateIndex() {
+    _invalidationGeneration++;
     _index = const [];
     _catalogueIdentity = null;
     _libraryNames = const [];
@@ -46,12 +83,65 @@ class SearchService {
   }
 
   /// Called from [CatalogCacheCoordinator] on successful catalogue replacement.
+  /// Invalidates stale index state; rebuild is deferred until the next search.
   void onCatalogReplaced(Catalog catalog) {
     invalidateIndex();
-    buildIndex(catalog);
   }
 
-  /// Returns ranked results for [query] with optional [filters].
+  /// Ensures an index exists for [catalog]'s [Catalog.catalogueIdentity].
+  Future<void> ensureIndex(Catalog catalog) async {
+    final identity = catalog.catalogueIdentity;
+    if (_hasIndexFor(identity)) return;
+
+    while (true) {
+      if (_buildFuture != null) {
+        await _buildFuture;
+        if (_hasIndexFor(identity)) return;
+      }
+
+      if (_hasIndexFor(identity)) return;
+
+      final gen = _invalidationGeneration;
+      final future = _buildIndexAsync(catalog, identity, gen);
+      _buildFuture = future;
+      _buildInFlightIdentity = identity;
+
+      try {
+        await future;
+      } finally {
+        if (identical(_buildFuture, future)) {
+          _buildFuture = null;
+          _buildInFlightIdentity = null;
+        }
+      }
+
+      if (_hasIndexFor(identity)) return;
+      if (gen != _invalidationGeneration) return;
+      return;
+    }
+  }
+
+  /// Runs [query] against [catalog], building the index first when required.
+  Future<List<SearchResult>> searchCatalog(
+    Catalog catalog,
+    String query,
+    SearchFilters filters,
+  ) async {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return const [];
+
+    final tokens = _tokenize(trimmed);
+    if (tokens.isEmpty) return const [];
+
+    await ensureIndex(catalog);
+    if (_catalogueIdentity != catalog.catalogueIdentity) {
+      return const [];
+    }
+
+    return search(query, filters);
+  }
+
+  /// Returns ranked results for [query] with optional [filters] against the current index.
   List<SearchResult> search(String query, SearchFilters filters) {
     final trimmed = query.trim();
     if (trimmed.isEmpty) return const [];
@@ -77,6 +167,50 @@ class SearchService {
 
     if (hits.length <= maxResults) return hits;
     return hits.sublist(0, maxResults);
+  }
+
+  bool _hasIndexFor(String identity) => _catalogueIdentity == identity;
+
+  Future<void> _buildIndexAsync(
+    Catalog catalog,
+    String identity,
+    int genAtStart,
+  ) async {
+    await Future<void>.delayed(Duration.zero);
+    if (genAtStart != _invalidationGeneration) return;
+    if (_hasIndexFor(identity)) return;
+
+    if (simulateBuildFailure) {
+      throw SearchIndexBuildException();
+    }
+
+    final libraries = catalog.libraryFolders;
+    final entries = catalog.allItems
+        .map((item) => _entryForItem(item, libraries))
+        .toList(growable: false);
+    final libraryNames = libraries.map((f) => f.name).toList();
+    final extensions = _collectExtensions(catalog);
+
+    if (genAtStart != _invalidationGeneration) return;
+    if (_buildInFlightIdentity != identity) return;
+
+    _indexBuildCount++;
+    _catalogueIdentity = identity;
+    _libraryNames = libraryNames;
+    _extensions = extensions;
+    _index = entries;
+  }
+
+  void _populateIndex(Catalog catalog) {
+    final identity = catalog.catalogueIdentity;
+    _catalogueIdentity = identity;
+    _libraryNames = catalog.libraryFolders.map((f) => f.name).toList();
+    _extensions = _collectExtensions(catalog);
+
+    final libraries = catalog.libraryFolders;
+    _index = catalog.allItems
+        .map((item) => _entryForItem(item, libraries))
+        .toList(growable: false);
   }
 
   SearchIndexEntry _entryForItem(MediaItem item, List<MediaFolder> libraries) {

@@ -1,6 +1,6 @@
 # M4 Phase 4.5 — Performance and Caching (Implementation Specification)
 
-**Status:** **In progress** — Step 3 complete (2026-07-15); Step 4 next
+**Status:** **In progress** — Step 4 complete (2026-07-15); Step 5 next
 **Milestone:** M4 — User Experience and Platform Integration  
 **Branch:** `m4-development`  
 **Development version:** `v0.5.0-dev`  
@@ -56,8 +56,8 @@ Step 0 captures inventory; Steps 6–7 record numbers. Targets below are **accep
 | **1** | Specification + ADRs | ✅ This document + ADR-014–016 |
 | **2** | Cache invalidation orchestration | ✅ Complete — `CatalogCacheCoordinator`, app-scoped `SearchService` |
 | **3** | Artwork candidate bounds + image decode | ✅ Complete — LRU 500, decode hints, ImageCache budget |
-| **4** | Search index lifecycle + startup deferral | **Next** |
-| **5** | Large-folder scroll tuning + memory hooks | Planned |
+| **4** | Search index lifecycle + startup deferral | ✅ Complete — deferred build, identity guard, concurrency |
+| **5** | Large-folder scroll tuning + memory hooks | **Next** |
 | **6** | Integration tests + micro-benchmarks | Planned |
 | **7** | Windows runtime validation | Planned |
 | **8** | Closure | Planned |
@@ -210,24 +210,69 @@ Step 0 captures inventory; Steps 6–7 record numbers. Targets below are **accep
 
 ---
 
-## Step 4 — Search index lifecycle + startup deferral
+## Step 4 — Search index lifecycle + startup deferral — ✅ complete
 
 **ADR:** [ADR-016](../architecture/decisions/ADR-016-search-index-and-large-library-browsing.md)
 
-### Deliverables
+### Pre-change lifecycle (audit, Step 4 entry)
 
-| Item | Description |
+| Stage | Previous behaviour |
 |---|---|
-| Shared `SearchService` | Injected into `SearchScreen` via `Provider` |
-| `scheduleRebuild(Catalog)` | Async/deferred; identity guard |
-| Indexing UI | `SearchScreen` shows status while building |
-| Dashboard | Does not await index build |
-| Tests | Shared identity skip; rebuild on new identity; search works after build |
+| App startup | `SearchService()` created in `main.dart`; no index until first `buildIndex` |
+| Search open | `SearchScreen.build()` called `buildIndex(catalog)` on every rebuild — **eager build without query** |
+| First query | `_runSearch()` called `buildIndex` then sync `search()` |
+| Catalogue replace | `onCatalogReplaced()` → `invalidateIndex()` + **immediate `buildIndex(catalog)`** |
+| Failed refresh | Coordinator not invoked; index preserved |
+| Identity | `_catalogueIdentity == catalog.catalogueIdentity`; skip rebuild when match and index non-empty |
+| Concurrency | None — sync builds could race if called from multiple isolates (not applicable) |
+
+### Delivered
+
+| Item | Location |
+|---|---|
+| Deferred `ensureIndex` / `searchCatalog` | `lib/features/search/search_service.dart` |
+| Invalidate-only `onCatalogReplaced` | Same — no eager rebuild |
+| Filter metadata without index | `libraryNamesFor`, `extensionsFor` |
+| Async search + stale-query guard | `lib/features/search/search_screen.dart` |
+| Test instrumentation | `@visibleForTesting`: `indexBuildCount`, `hasIndex`, `isBuildInFlight`, `simulateBuildFailure` |
+| Lifecycle tests | `test/search_service_lifecycle_test.dart` (13 tests) |
+| Presentation deferral tests | `test/search_presentation_test.dart` (tests 25–28) |
+
+### Post-change lifecycle
+
+```
+Application startup → SearchService created → indexBuildCount = 0
+Search open (no query) → no build; filter chips from Catalog
+First valid search → ensureIndex → one build → searchCatalog returns results
+Later searches (same identity) → reuse index; indexBuildCount unchanged
+Successful replacement → invalidate only → indexBuildCount unchanged until next search
+First search after replacement → one new build for new identity
+Failed refresh → coordinator skipped → index + identity preserved
+Concurrent first searches → one shared in-flight build
+```
 
 ### Unchanged
 
 - Scoring algorithm, filters, `maxResults = 100`
-- Search presentation (grouping, context, actions)
+- Search presentation (grouping, context, actions, empty states)
+- `CatalogCacheCoordinator` invocation contract (artwork clear → search invalidate → favourites validate)
+
+### Test evidence
+
+| Scenario | Verified outcome |
+|---|---|
+| `SearchService()` constructor | `indexBuildCount = 0`, `hasIndex = false` |
+| Open Search without query | `indexBuildCount = 0` (widget test 25) |
+| First valid search | `indexBuildCount = 1` (unit + widget test 26) |
+| Second query same catalogue | `indexBuildCount` still 1 |
+| `onCatalogReplaced` | `hasIndex = false`; no eager build |
+| Catalogue load via coordinator | `catalogueIdentity` null until search |
+| Failed refresh with built index | identity + `indexedItemCount` preserved |
+| Concurrent first searches | `indexBuildCount = 1` |
+| Replacement during in-flight build | stale index not committed |
+| Build failure + retry | in-flight cleared; retry succeeds |
+
+**Commit:** `perf(m4): defer and reuse search index`
 
 ---
 
@@ -304,7 +349,7 @@ Mirror 4.1–4.4: opt-in `PHASE_45_RUNTIME=1`, file `test/phase_45_windows_runti
 - [ ] Measurable targets met or documented with justified exception
 - [ ] No regression on bundled catalogue startup (> 10% threshold)
 - [ ] Failed refresh preserves caches and last-good catalogue
-- [ ] Successful replace invalidates artwork + rebuilds search index
+- [ ] Successful replace invalidates artwork + search index (rebuild deferred until first search)
 - [ ] Artwork candidate cache bounded; ImageCache budget configured
 - [ ] Search index deferred off dashboard critical path
 - [ ] `flutter test` green; `flutter analyze` no new errors

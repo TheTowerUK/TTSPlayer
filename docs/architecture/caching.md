@@ -1,6 +1,6 @@
 # Caching and Performance (M4 Phase 4.5 — planning)
 
-**Status:** **In progress** — Steps 2–3 implemented (2026-07-15)
+**Status:** **In progress** — Steps 2–4 implemented (2026-07-15)
 **Related roadmap phase:** [M4 Phase 4.5 — Performance and Caching](../roadmap/m4-phase-4.5-performance-caching.md)
 
 → [Provider refresh lifecycle](./decisions/ADR-002-provider-refresh-lifecycle.md)  
@@ -36,7 +36,7 @@ All catalogue-derived caches key off `Catalog.catalogueIdentity` ([`CatalogueInf
 |---|---|---|---|
 | **Catalogue runtime** | `CatalogService` | Session; last-good on failure | Replace on successful load only |
 | **Artwork candidates** | `ArtworkService` | Session; bounded LRU (**500**) | Clear on catalogue revision |
-| **Search index** | `SearchService` (app-scoped) | Session; per revision | Invalidate + rebuild on catalogue revision (Step 2) |
+| **Search index** | `SearchService` (app-scoped) | Session; per revision; **deferred build** (Step 4 ✅) |
 | **Image decode** | Flutter `ImageCache` + `ArtworkImage` | Session; **100 MB** budget | Flutter eviction; decode sized per surface |
 
 Playback progress, settings, and library metadata are **not** catalogue-derived caches and follow their existing lifecycles.
@@ -78,7 +78,7 @@ Playback progress, settings, and library metadata are **not** catalogue-derived 
 CatalogService successful replacement
     → CatalogCacheCoordinator.onCatalogReplaced(catalog)
         → ArtworkService.clearCache()
-        → SearchService.onCatalogReplaced(catalog)  // invalidate + rebuild
+        → SearchService.onCatalogReplaced(catalog)  // invalidate only; rebuild on first search
         → LibraryMetadataRepository.validateAgainstCatalog()  // async
 ```
 
@@ -91,11 +91,13 @@ Failed loads do not invoke this chain ([ADR-002](./decisions/ADR-002-provider-re
 - `configureArtworkFlutterImageCache()` — **100 MB** Flutter `ImageCache` budget.
 - Placeholder and `errorBuilder` paths unchanged.
 
-### Search ([ADR-016](./decisions/ADR-016-search-index-and-large-library-browsing.md))
+### Search ([ADR-016](./decisions/ADR-016-search-index-and-large-library-browsing.md)) — Step 4 implemented
 
 - Shared `SearchService` registered at app root via `Provider`.
-- Index rebuild on catalogue replacement is **immediate** in Step 2; dashboard deferral is Step 4.
-- `SearchScreen` consumes shared service; shows indexing state when rebuild in flight.
+- Index build **deferred** until first qualifying `searchCatalog()` call.
+- `onCatalogReplaced` invalidates only; does not eagerly rebuild.
+- `searchCatalog(catalog, query, filters)` ensures index, handles concurrency, executes query.
+- Filter chips use `libraryNamesFor` / `extensionsFor` from `Catalog` before first build.
 - Search **engine** (scoring, filters, max 100 results) unchanged.
 
 ### Large-folder browse

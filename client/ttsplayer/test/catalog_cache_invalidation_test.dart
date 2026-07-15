@@ -108,7 +108,7 @@ void main() {
   });
 
   group('CatalogCacheCoordinator', () {
-    test('onCatalogReplaced clears artwork and rebuilds search index', () {
+    test('onCatalogReplaced clears artwork and invalidates search index', () {
       final artwork = _CountingArtworkService(fileExists: (_) => true);
       final search = SearchService();
       final metadata = LibraryMetadataRepository();
@@ -128,8 +128,9 @@ void main() {
       coordinator.onCatalogReplaced(second);
 
       expect(artwork.clearInvocations, 1);
-      expect(search.catalogueIdentity, 'REV-2');
-      expect(search.indexedItemCount, 1);
+      expect(search.catalogueIdentity, isNull);
+      expect(search.indexedItemCount, 0);
+      expect(search.indexBuildCount, 1);
     });
   });
 
@@ -146,9 +147,9 @@ void main() {
       expect(search.libraryNames, isEmpty);
     });
 
-    test('onCatalogReplaced replaces index for new identity', () {
+    test('onCatalogReplaced invalidates without eager rebuild', () {
       final search = SearchService();
-      search.onCatalogReplaced(
+      search.buildIndex(
         _catalogWithItems(identity: 'OLD', itemIds: ['one', 'two']),
       );
       expect(search.indexedItemCount, 2);
@@ -157,12 +158,25 @@ void main() {
         _catalogWithItems(identity: 'NEW', itemIds: ['solo']),
       );
 
+      expect(search.catalogueIdentity, isNull);
+      expect(search.indexedItemCount, 0);
+    });
+
+    test('search after onCatalogReplaced builds for new identity', () async {
+      final search = SearchService();
+      search.onCatalogReplaced(
+        _catalogWithItems(identity: 'NEW', itemIds: ['solo']),
+      );
+
+      final results = await search.searchCatalog(
+        _catalogWithItems(identity: 'NEW', itemIds: ['solo']),
+        'solo',
+        const SearchFilters.empty(),
+      );
+
       expect(search.catalogueIdentity, 'NEW');
       expect(search.indexedItemCount, 1);
-      expect(
-        search.search('solo', const SearchFilters.empty()).single.item.id,
-        'solo',
-      );
+      expect(results.single.item.id, 'solo');
     });
   });
 
@@ -206,7 +220,8 @@ void main() {
       await wired.catalogService.loadFromFile(goodPath);
 
       expect(wired.artwork.clearInvocations, 1);
-      expect(wired.search.catalogueIdentity, 'GOOD-1');
+      expect(wired.search.catalogueIdentity, isNull);
+      expect(wired.search.indexBuildCount, 0);
       expect(wired.catalogService.catalog?.catalogueIdentity, 'GOOD-1');
     });
 
@@ -257,13 +272,14 @@ void main() {
 
       await wired.catalogService.loadFromFile(firstPath);
       expect(wired.artwork.clearInvocations, 1);
-      expect(wired.search.catalogueIdentity, 'FIRST');
+      expect(wired.search.catalogueIdentity, isNull);
 
       await wired.catalogService.loadFromFile(secondPath);
 
       expect(wired.artwork.clearInvocations, 2);
       expect(wired.catalogService.catalog?.catalogueIdentity, 'SECOND');
-      expect(wired.search.catalogueIdentity, 'SECOND');
+      expect(wired.search.catalogueIdentity, isNull);
+      expect(wired.search.indexBuildCount, 0);
     });
 
     test('failed rescan retains last-good catalogue without extra invalidation',
@@ -292,7 +308,8 @@ void main() {
 
       expect(wired.artwork.clearInvocations, 1);
       expect(wired.catalogService.catalog?.catalogueIdentity, 'KEPT-RESCAN');
-      expect(wired.search.catalogueIdentity, 'KEPT-RESCAN');
+      expect(wired.search.catalogueIdentity, isNull);
+      expect(wired.search.indexBuildCount, 0);
       expect(wired.catalogService.errorMessage, isNotNull);
     });
 
