@@ -2,7 +2,8 @@
 
 **Status:** Accepted  
 **Date:** 2026-07-14  
-**Accepted:** 2026-07-14 (specification sign-off, pre-implementation)  
+**Accepted:** 2026-07-14 (specification sign-off, pre-implementation)
+**Implemented:** 2026-07-15 (M4 Phase 4.5 Step 3)
 **Milestone:** M4 Phase 4.5  
 **Authors:** M4 documentation pass
 
@@ -62,6 +63,24 @@ Phase 4.3 unified artwork across dashboard, folder, search, and detail. Phase 4.
 ### Neutral
 
 - Phase 4.6 cache health can expose candidate count and ImageCache byte usage.
+- **Implementation (Step 3):** `LruCache` capacity 500; `ArtworkDecodeSize` / surface presets; coordinator invalidation unchanged.
+
+---
+
+## Implementation
+
+| Aspect | Detail |
+|---|---|
+| **Cache owner** | `ArtworkService` |
+| **Capacity** | 500 entries (production default) |
+| **LRU policy** | Evict LRU on insert at capacity; access promotes |
+| **Key identity** | Entity-scoped prefixes — not filename |
+| **Decode sizing** | Logical surface size × DPR → `cacheWidth` / `cacheHeight` |
+| **Flutter budget** | 100 MB via `configureArtworkFlutterImageCache()` |
+| **Invalidation** | `clearCache()` via `CatalogCacheCoordinator` (ADR-014) |
+| **Limitations** | No disk cache; placeholder entries cached; no negative decode cache |
+
+Tests: `lru_cache_test.dart`, `artwork_service_lru_test.dart`, `artwork_decode_size_test.dart`, `artwork_image_test.dart`.
 
 ---
 

@@ -1,6 +1,6 @@
 # M4 Phase 4.5 — Performance and Caching (Implementation Specification)
 
-**Status:** **In progress** — Step 2 complete (2026-07-14); Step 3 next
+**Status:** **In progress** — Step 3 complete (2026-07-15); Step 4 next
 **Milestone:** M4 — User Experience and Platform Integration  
 **Branch:** `m4-development`  
 **Development version:** `v0.5.0-dev`  
@@ -55,8 +55,8 @@ Step 0 captures inventory; Steps 6–7 record numbers. Targets below are **accep
 | **0** | Performance baseline audit | ✅ Complete — [audit](./m4-phase-4.5-baseline-audit.md) |
 | **1** | Specification + ADRs | ✅ This document + ADR-014–016 |
 | **2** | Cache invalidation orchestration | ✅ Complete — `CatalogCacheCoordinator`, app-scoped `SearchService` |
-| **3** | Artwork candidate bounds + image decode | **Next** |
-| **4** | Search index lifecycle + startup deferral | Planned |
+| **3** | Artwork candidate bounds + image decode | ✅ Complete — LRU 500, decode hints, ImageCache budget |
+| **4** | Search index lifecycle + startup deferral | **Next** |
 | **5** | Large-folder scroll tuning + memory hooks | Planned |
 | **6** | Integration tests + micro-benchmarks | Planned |
 | **7** | Windows runtime validation | Planned |
@@ -73,7 +73,8 @@ Step 0 captures inventory; Steps 6–7 record numbers. Targets below are **accep
 | Capability | Location | State |
 |---|---|---|
 | Catalogue load | `CatalogService` | Bundled / local / HTTP; last-good on failure |
-| Artwork resolution | `ArtworkService` | Thumbnail → sidecar → folder art → placeholder |
+| Artwork resolution | `ArtworkService` | Thumbnail → sidecar → folder art → placeholder; **LRU 500** |
+| Artwork decode | `ArtworkImage` | `cacheWidth` / `cacheHeight` from logical surface size |
 | Artwork invalidation | `CatalogCacheCoordinator` | `clearCache()` on successful replace |
 | Search engine | `SearchService` (app-scoped) | In-memory index; scoring unchanged |
 | Search UI | `SearchScreen` | Shared `SearchService` via `Provider` |
@@ -81,7 +82,50 @@ Step 0 captures inventory; Steps 6–7 record numbers. Targets below are **accep
 | Provider refresh | Phase 4.1 | ADR-002 lifecycle |
 | Library metadata | `LibraryMetadataRepository` | Validates on catalogue replace |
 
-**Tests today:** `catalog_service_artwork_cache_test.dart`, `search_service_test.dart`, `search_presentation_test.dart`, provider selection and catalogue HTTP tests.
+**Tests today:** `catalog_cache_invalidation_test.dart`, `lru_cache_test.dart`, `artwork_service_lru_test.dart`, `artwork_decode_size_test.dart`, `artwork_image_test.dart`, plus existing artwork and search tests.
+
+---
+
+## Step 3 evidence — artwork cache and decode sizing
+
+| Item | Value |
+|---|---|
+| **Cache owner** | `ArtworkService` (`LruCache<String, ArtworkCandidate>`) |
+| **Production capacity** | **500** entries (`ArtworkService.defaultCacheCapacity`) |
+| **Eviction policy** | Least-recently-used on insert; `get` / `putIfAbsent` promote to MRU |
+| **Cache key identity** | `library:{id}`, `folder:{id}`, `media:{id}` — entity id, not filename |
+| **Flutter ImageCache budget** | **100 MB** (`configureArtworkFlutterImageCache()` at app start) |
+| **Decode hints** | `ArtworkImage.logicalDecodeSize` → physical `cacheWidth` / `cacheHeight` via DPR |
+
+### Surfaces using decode hints
+
+| Surface | Sizing strategy |
+|---|---|
+| Folder / library cards | `CardArtworkBand` — layout constraints |
+| Media grid cards | `TtsMediaCard` — `LayoutBuilder` in artwork band |
+| Continue Watching | `LayoutBuilder` in hero card artwork |
+| Search results | `ArtworkSurfaceSizes.searchResultThumbnail()` (56×84 logical) |
+| Favourites rows | `ArtworkSurfaceSizes.favouritesRowThumbnail()` (72×48 logical) |
+| Item detail poster | Screen width × 16:9 via `ArtworkSurfaceSizes.itemDetailPoster()` |
+
+### Catalogue refresh behaviour (unchanged from Step 2)
+
+| Event | Artwork cache |
+|---|---|
+| Successful replacement | Cleared once via `CatalogCacheCoordinator` |
+| Failed refresh/rescan | Preserved |
+
+### Test evidence
+
+- `lru_cache_test.dart` — LRU fundamentals (8 tests)
+- `artwork_service_lru_test.dart` — capacity bound, identity, clear/re-resolve (6 tests)
+- `artwork_decode_size_test.dart` — DPR rounding and surface presets (6 tests)
+- `artwork_image_test.dart` — placeholder fallback + ImageCache budget (3 tests)
+- `catalog_cache_invalidation_test.dart` — coordinator lifecycle preserved
+
+**Expected outcome:** App-owned artwork candidate entries remain ≤ 500 during session browse; decode memory reduced architecturally by sizing hints — exact RAM not measured in Step 3.
+
+**Limitation:** Placeholder candidates are cached (successful resolution with no file); image decode failures are not negative-cached in `ArtworkService` (handled by `errorBuilder` in `ArtworkImage` only).
 
 ---
 
@@ -140,25 +184,29 @@ Step 0 captures inventory; Steps 6–7 record numbers. Targets below are **accep
 
 ---
 
-## Step 3 — Artwork candidate bounds + image decode
+## Step 3 — Artwork candidate bounds + image decode — ✅ complete
 
 **ADR:** [ADR-015](../architecture/decisions/ADR-015-artwork-and-image-decode-caching.md)
 
-### Deliverables
+### Delivered
 
-| Item | Description |
+| Item | Location |
 |---|---|
-| LRU cache | Replace unbounded `Map` in `ArtworkService` with capped LRU (default 500) |
-| `clearCache()` | Clears LRU entirely on revision |
-| `ArtworkImage` | `cacheWidth` / `cacheHeight` from layout |
-| App init | Set `imageCache.maximumSizeBytes` for desktop |
-| Tests | LRU eviction; clear on replace; decode constraints smoke |
+| `LruCache` | `lib/services/artwork/lru_cache.dart` |
+| Bounded `ArtworkService` | Default capacity 500; `@visibleForTesting cacheEntryCount` |
+| `ArtworkDecodeSize` / `ArtworkSurfaceSizes` | `lib/services/artwork/artwork_decode_size.dart` |
+| Decode hints | `ArtworkImage.logicalDecodeSize` → `cacheWidth` / `cacheHeight` |
+| Flutter budget | `configureArtworkFlutterImageCache()` in `main.dart` |
+| Tests | `lru_cache_test.dart`, `artwork_service_lru_test.dart`, `artwork_decode_size_test.dart`, `artwork_image_test.dart` |
 
 ### Unchanged
 
 - Resolution precedence order
 - `MediaLocationResolver` at image boundary
 - Placeholder on failure
+- Step 2 invalidation orchestration
+
+→ [Step 3 evidence](#step-3-evidence--artwork-cache-and-decode-sizing)
 
 ---
 
@@ -308,3 +356,4 @@ Mirror 4.1–4.4: opt-in `PHASE_45_RUNTIME=1`, file `test/phase_45_windows_runti
 |---|---|
 | 2026-07-14 | Initial specification; Step 0 audit; ADR-014–016 accepted |
 | 2026-07-14 | Step 2 cache invalidation orchestration complete |
+| 2026-07-15 | Step 3 artwork LRU + decode sizing complete |

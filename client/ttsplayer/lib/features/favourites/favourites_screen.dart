@@ -5,6 +5,7 @@ import '../../library/favourites_resolver.dart';
 import '../../models/catalog.dart';
 import '../../navigation/folder_navigation.dart';
 import '../../screens/item_detail_screen.dart';
+import '../../services/artwork/artwork_decode_size.dart';
 import '../../services/artwork/artwork_service.dart';
 import '../../services/library/library_metadata_repository.dart';
 import '../../theme/app_theme.dart';
@@ -125,6 +126,8 @@ class _FavouriteListTile extends StatelessWidget {
                           parentFolder: entry.parentFolder,
                         ),
                         fit: BoxFit.cover,
+                        logicalDecodeSize:
+                            ArtworkSurfaceSizes.favouritesRowThumbnail(),
                       ),
               ),
               const SizedBox(width: AppSpacing.md),

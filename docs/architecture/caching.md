@@ -1,6 +1,6 @@
 # Caching and Performance (M4 Phase 4.5 — planning)
 
-**Status:** **In progress** — Step 2 orchestration implemented (2026-07-14)
+**Status:** **In progress** — Steps 2–3 implemented (2026-07-15)
 **Related roadmap phase:** [M4 Phase 4.5 — Performance and Caching](../roadmap/m4-phase-4.5-performance-caching.md)
 
 → [Provider refresh lifecycle](./decisions/ADR-002-provider-refresh-lifecycle.md)  
@@ -35,9 +35,9 @@ All catalogue-derived caches key off `Catalog.catalogueIdentity` ([`CatalogueInf
 | Domain | Owner | Lifetime | Invalidation |
 |---|---|---|---|
 | **Catalogue runtime** | `CatalogService` | Session; last-good on failure | Replace on successful load only |
-| **Artwork candidates** | `ArtworkService` | Session; bounded LRU | Clear on catalogue revision |
+| **Artwork candidates** | `ArtworkService` | Session; bounded LRU (**500**) | Clear on catalogue revision |
 | **Search index** | `SearchService` (app-scoped) | Session; per revision | Invalidate + rebuild on catalogue revision (Step 2) |
-| **Image decode** | Flutter `ImageCache` + widget sizing | Session; bounded bytes | Flutter eviction + revision clears candidate paths |
+| **Image decode** | Flutter `ImageCache` + `ArtworkImage` | Session; **100 MB** budget | Flutter eviction; decode sized per surface |
 
 Playback progress, settings, and library metadata are **not** catalogue-derived caches and follow their existing lifecycles.
 
@@ -57,8 +57,9 @@ Playback progress, settings, and library metadata are **not** catalogue-derived 
 
 | Area | Today | Risk at scale |
 |---|---|---|
-| `ArtworkService._cache` | Unbounded `Map`; sync `existsSync` on miss | Memory growth; UI jank on cold grid scroll |
-| `ArtworkImage` | `Image.file` / `Image.network` at full resolution | Decode memory spikes |
+| `ArtworkService._cache` | **LRU 500** entries; sync `existsSync` on miss | Bounded; re-probe after eviction |
+| `ArtworkImage` | `cacheWidth` / `cacheHeight` from `logicalDecodeSize` | Decode memory bounded per surface |
+| Flutter `ImageCache` | **100 MB** budget at startup | Separate from candidate cache |
 | `SearchService` | App-scoped `Provider`; shared across screens | Step 2 ✅ |
 | `onCatalogReplaced` | `CatalogCacheCoordinator` — artwork, search, favourites | Step 2 ✅ |
 | Folder grids | Lazy sliver delegates | Derived `view.items` list materialized per folder (acceptable) |
@@ -83,12 +84,12 @@ CatalogService successful replacement
 
 Failed loads do not invoke this chain ([ADR-002](./decisions/ADR-002-provider-refresh-lifecycle.md), [ADR-014](./decisions/ADR-014-catalogue-revision-cache-invalidation.md)).
 
-### Artwork ([ADR-015](./decisions/ADR-015-artwork-and-image-decode-caching.md))
+### Artwork ([ADR-015](./decisions/ADR-015-artwork-and-image-decode-caching.md)) — Step 3 implemented
 
-- Bounded LRU for artwork **candidate** resolution (path discovery results).
-- `ArtworkImage` passes decode constraints (`cacheWidth` / `cacheHeight`) derived from layout.
-- Desktop `ImageCache.maximumSizeBytes` budget applied at app start.
-- Placeholder path remains synchronous; failed loads use `errorBuilder`.
+- `LruCache` in `ArtworkService` — default **500** entries; keys `library:`, `folder:`, `media:` + entity id.
+- `ArtworkImage.logicalDecodeSize` → physical decode pixels via device pixel ratio.
+- `configureArtworkFlutterImageCache()` — **100 MB** Flutter `ImageCache` budget.
+- Placeholder and `errorBuilder` paths unchanged.
 
 ### Search ([ADR-016](./decisions/ADR-016-search-index-and-large-library-browsing.md))
 

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/media_folder.dart';
 import '../models/media_item.dart';
 import '../services/artwork/artwork_service.dart';
+import '../services/artwork/artwork_decode_size.dart';
 import '../theme/app_theme.dart';
 import 'artwork/artwork_image.dart';
 
@@ -35,7 +36,8 @@ class _TtsMediaCardState extends State<TtsMediaCard> {
   bool _hovered = false;
   bool _pressed = false;
 
-  static const double _metadataMaxHeight = 72;
+  static const double _metadataMaxHeight =
+      ArtworkSurfaceSizes.mediaCardMetadataMaxHeight;
 
   @override
   Widget build(BuildContext context) {
@@ -76,9 +78,17 @@ class _TtsMediaCardState extends State<TtsMediaCard> {
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      ArtworkImage(
-                        candidate: candidate,
-                        fit: BoxFit.cover,
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          return ArtworkImage(
+                            candidate: candidate,
+                            fit: BoxFit.cover,
+                            logicalDecodeSize: Size(
+                              constraints.maxWidth,
+                              constraints.maxHeight,
+                            ),
+                          );
+                        },
                       ),
                       if (widget.item.status != MediaItemStatus.available)
                         Positioned(

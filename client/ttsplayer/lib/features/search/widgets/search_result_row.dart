@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../services/artwork/artwork_decode_size.dart';
 import '../../../services/artwork/artwork_service.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/artwork/artwork_image.dart';
@@ -58,6 +59,8 @@ class SearchResultRow extends StatelessWidget {
                       child: ArtworkImage(
                         candidate: candidate,
                         iconSize: AppIcons.md,
+                        logicalDecodeSize:
+                            ArtworkSurfaceSizes.searchResultThumbnail(),
                       ),
                     ),
                   ),

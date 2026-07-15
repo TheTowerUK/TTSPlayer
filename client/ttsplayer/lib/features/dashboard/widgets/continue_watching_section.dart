@@ -129,7 +129,17 @@ class _ContinueWatchingCard extends StatelessWidget {
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      ArtworkImage(candidate: candidate),
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          return ArtworkImage(
+                            candidate: candidate,
+                            logicalDecodeSize: Size(
+                              constraints.maxWidth,
+                              constraints.maxHeight,
+                            ),
+                          );
+                        },
+                      ),
                       if (progress != null)
                         Positioned(
                           left: 0,

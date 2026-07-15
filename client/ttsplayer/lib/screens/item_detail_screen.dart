@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/media_item.dart';
+import '../services/artwork/artwork_decode_size.dart';
 import '../services/artwork/artwork_service.dart';
 import '../services/playback_service.dart';
 import '../theme/app_theme.dart';
@@ -61,6 +62,9 @@ class _PosterArea extends StatelessWidget {
           ArtworkImage(
             candidate: candidate,
             iconSize: 64,
+            logicalDecodeSize: ArtworkSurfaceSizes.itemDetailPoster(
+              MediaQuery.sizeOf(context).width,
+            ),
           ),
           if (item.status != MediaItemStatus.available)
             Positioned(

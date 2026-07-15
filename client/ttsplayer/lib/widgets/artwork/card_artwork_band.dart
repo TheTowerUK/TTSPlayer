@@ -32,6 +32,7 @@ class CardArtworkBand extends StatelessWidget {
           child: ArtworkImage(
             candidate: candidate,
             iconSize: iconSize,
+            logicalDecodeSize: Size(width, height),
           ),
         );
       },

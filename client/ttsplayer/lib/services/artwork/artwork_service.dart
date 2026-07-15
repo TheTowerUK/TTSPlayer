@@ -1,18 +1,33 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
+
 import '../../models/media_folder.dart';
 import '../../models/media_item.dart';
 import 'artwork_candidate.dart';
 import 'artwork_kind.dart';
 import 'library_visual_kind.dart';
+import 'lru_cache.dart';
 
 /// Local/UNC artwork resolution — no network providers, no catalogue mutation.
 class ArtworkService {
-  ArtworkService({bool Function(String path)? fileExists})
-      : _fileExists = fileExists ?? _defaultFileExists;
+  ArtworkService({
+    bool Function(String path)? fileExists,
+    int? cacheCapacity,
+  })  : _fileExists = fileExists ?? _defaultFileExists,
+        _cache = LruCache<String, ArtworkCandidate>(
+          cacheCapacity ?? defaultCacheCapacity,
+        );
+
+  /// Default app-owned artwork candidate cache capacity (ADR-015).
+  static const int defaultCacheCapacity = 500;
 
   final bool Function(String path) _fileExists;
-  final Map<String, ArtworkCandidate> _cache = {};
+  final LruCache<String, ArtworkCandidate> _cache;
+
+  /// Number of entries in the app-owned artwork candidate cache.
+  @visibleForTesting
+  int get cacheEntryCount => _cache.length;
 
   static bool _defaultFileExists(String path) {
     try {

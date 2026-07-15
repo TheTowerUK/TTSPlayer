@@ -20,9 +20,11 @@ import 'services/playback_service.dart';
 import 'services/scan_history_service.dart';
 import 'services/scanner_service.dart';
 import 'theme/app_theme.dart';
+import 'widgets/artwork/artwork_image.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  configureArtworkFlutterImageCache();
   if (!kIsWeb && Platform.isWindows) {
     MediaKit.ensureInitialized();
   }
