@@ -1,9 +1,6 @@
 # ADR-015: Artwork and Image Decode Caching
 
-**Status:** Accepted  
-**Date:** 2026-07-14  
-**Accepted:** 2026-07-14 (specification sign-off, pre-implementation)
-**Implemented:** 2026-07-15 (M4 Phase 4.5 Step 3)
+**Status:** Accepted — implemented (M4 Phase 4.5 closure 2026-07-16)
 **Milestone:** M4 Phase 4.5  
 **Authors:** M4 documentation pass
 
@@ -38,6 +35,8 @@ Phase 4.3 unified artwork across dashboard, folder, search, and detail. Phase 4.
 6. **No disk thumbnail store** in 4.5. No new dependencies.
 
 7. **Placeholder and error paths** unchanged — `errorBuilder` → `MediaPlaceholder`; missing files never hide items.
+
+8. **Flutter `ImageCache` is not cleared on catalogue replacement** — only the app-owned `ArtworkService` candidate cache is cleared. Pixel cache eviction remains framework-managed within the 100 MB budget.
 
 ---
 
@@ -76,9 +75,9 @@ Phase 4.3 unified artwork across dashboard, folder, search, and detail. Phase 4.
 | **LRU policy** | Evict LRU on insert at capacity; access promotes |
 | **Key identity** | Entity-scoped prefixes — not filename |
 | **Decode sizing** | Logical surface size × DPR → `cacheWidth` / `cacheHeight` |
-| **Flutter budget** | 100 MB via `configureArtworkFlutterImageCache()` |
-| **Invalidation** | `clearCache()` via `CatalogCacheCoordinator` (ADR-014) |
-| **Limitations** | No disk cache; placeholder entries cached; no negative decode cache |
+| **Flutter budget** | 100 MB via `configureArtworkFlutterImageCache()`; not cleared on catalogue replace |
+| **Invalidation** | `clearCache()` via `CatalogCacheCoordinator` (ADR-014) — candidate cache only |
+| **Limitations** | No disk cache; placeholder entries cached; no negative decode cache; exact RAM savings not measured |
 
 Tests: `lru_cache_test.dart`, `artwork_service_lru_test.dart`, `artwork_decode_size_test.dart`, `artwork_image_test.dart`. Step 6 integration/benchmarks; Step 7 runtime R11–R12 (`phase_45_windows_runtime_test.dart`).
 
@@ -94,7 +93,15 @@ Tests: `lru_cache_test.dart`, `artwork_service_lru_test.dart`, `artwork_decode_s
 
 **Rejected for 4.5 unless profiling proves sync probes block frames — defer unless baseline audit shows need.
 
-### Alternative C — Skip candidate cache entirely; only ImageCache sizing
+### Alternative D — Global Flutter `ImageCache.clear()` on catalogue replacement
+
+**Rejected because:** Forces full decode re-fetch across all surfaces; unrelated to catalogue revision; harms scroll performance after rescan.
+
+### Alternative E — Claim exact RAM savings from decode hints
+
+**Rejected because:** Decode sizing bounds architectural risk; per-session RAM varies by content and DPR — report informational benchmarks only.
+
+### Alternative F — Skip candidate cache entirely; only ImageCache sizing
 
 **Rejected because:** Repeated sidecar path probes per scroll still waste UI time.
 

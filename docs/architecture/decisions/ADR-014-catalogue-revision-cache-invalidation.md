@@ -1,9 +1,7 @@
 # ADR-014: Catalogue Revision Cache Invalidation
 
-**Status:** Accepted  
-**Date:** 2026-07-14  
-**Accepted:** 2026-07-14 (specification sign-off, pre-implementation)  
-**Milestone:** M4 Phase 4.5  
+**Status:** Accepted — implemented (M4 Phase 4.5 closure 2026-07-16)
+**Milestone:** M4 Phase 4.5
 **Authors:** M4 documentation pass
 
 ---
@@ -36,7 +34,7 @@ TTSPlayer holds several **derived** in-memory structures from the loaded `Catalo
    | Consumer | Action |
    |---|---|
    | `ArtworkService` | `clearCache()` (existing) |
-   | `SearchService` | schedule full index rebuild for new identity |
+   | `SearchService` | `invalidateIndex()` — rebuild deferred until first qualifying `searchCatalog()` |
    | `LibraryMetadataRepository` | `validateAgainstCatalog()` (existing) |
 
 4. **Orchestration** lives at the app composition root (`main.dart` callback or a dedicated coordinator type). Individual services do not call each other directly.
@@ -69,9 +67,19 @@ TTSPlayer holds several **derived** in-memory structures from the loaded `Catalo
 ### Neutral
 
 - `catalog.json` schema unchanged; identity must remain stable per indexer contract.
-- **Implementation (Step 2):** `CatalogCacheCoordinator` at composition root; `SearchService` app-scoped; synchronous invalidate + rebuild on replace.
+- **Implementation:** `CatalogCacheCoordinator` at composition root; `SearchService` app-scoped; invalidate-only on replace (rebuild deferred per ADR-016).
 
 ---
+
+## Failure behaviour
+
+- **Failed catalogue load/rescan:** `CatalogService` retains last-good catalogue; `onCatalogReplaced` is **not** invoked; artwork cache, search index, and favourites remain valid for the prior identity.
+- **Favourites reconciliation failure:** `validateAgainstCatalog()` errors are logged; catalogue replacement still succeeds; coordinator does not roll back the new catalogue.
+
+## Known limitations
+
+- No incremental cache diff across rescans — full artwork clear and search invalidate on each successful replacement.
+- Phase 4.6 diagnostics may expose cache counts; not part of 4.5 UI.
 
 ## Implementation
 
@@ -89,7 +97,11 @@ Wired in M4 Phase 4.5 Step 2 (`main.dart`, `catalog_cache_coordinator.dart`). Re
 
 **Rejected because:** Violates ADR-002; user loses cached artwork during transient network failure.
 
-### Alternative C — Disk-persisted catalogue snapshot
+### Alternative D — Per-screen invalidation listeners
+
+**Rejected because:** Duplicates orchestration, risks missed consumers, and breaks the single composition-root contract established in Step 2.
+
+### Alternative E — Disk-persisted catalogue snapshot
 
 **Rejected because:** Out of M4 scope; migration and corruption surface too large for 4.5.
 

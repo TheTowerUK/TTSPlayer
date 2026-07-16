@@ -27,7 +27,7 @@ Planning documents for [M4 — User Experience and Platform Integration](../road
 | [Settings](./settings.md) | 4.2 | **Implemented / Accepted** — [spec](../roadmap/m4-phase-4.2-settings-framework.md) |
 | [Library experience](./library.md) | 4.3 | **Implemented / Accepted** — [spec](../roadmap/m4-phase-4.3-library-experience.md) |
 | [Playback](./playback.md) | 4.4 | **Implemented / Accepted** — [spec](../roadmap/m4-phase-4.4-playback-improvements.md) · ADR-010–013 |
-| [Caching](./caching.md) | 4.5 | Spec accepted — [spec](../roadmap/m4-phase-4.5-performance-caching.md) · [baseline](../roadmap/m4-phase-4.5-baseline-audit.md) · ADR-014–016 |
+| [Caching](./caching.md) | 4.5 | **Implemented / Accepted** — [spec](../roadmap/m4-phase-4.5-performance-caching.md) · ADR-014–016 |
 | [Diagnostics](./diagnostics.md) | 4.6 | Planning |
 
 ## Architecture Decision Records

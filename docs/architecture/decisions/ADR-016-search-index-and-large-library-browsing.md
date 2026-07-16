@@ -1,9 +1,6 @@
 # ADR-016: Search Index and Large-Library Browsing
 
-**Status:** Accepted — implemented (M4 Phase 4.5 Step 4)
-**Date:** 2026-07-14
-**Accepted:** 2026-07-14 (specification sign-off)
-**Implemented:** 2026-07-15 (deferred index lifecycle)
+**Status:** Accepted — implemented (M4 Phase 4.5 closure 2026-07-16)
 **Milestone:** M4 Phase 4.5  
 **Authors:** M4 documentation pass
 
@@ -104,7 +101,19 @@ Folder browse already uses lazy `SliverChildBuilderDelegate` grids; the bottlene
 
 ---
 
-## Implementation notes (Step 6)
+## Implementation
+
+| Component | Location |
+|---|---|
+| Deferred `ensureIndex` / `searchCatalog` | `lib/features/search/search_service.dart` |
+| Invalidate-only `onCatalogReplaced` | Same |
+| Search UI deferral | `lib/features/search/search_screen.dart` |
+| Large-folder memoization + scroll | `lib/screens/folder_screen.dart`, `FolderPresentationConfig` |
+| Search result flatten | `lib/features/search/widgets/search_results_list.dart` |
+
+**Tests:** `search_service_lifecycle_test.dart`, `search_presentation_test.dart`, `large_folder_presentation_test.dart`, `performance_integration_test.dart`, `phase_45_windows_runtime_test.dart` (R25–R28, R36).
+
+## Implementation notes (Steps 6–7)
 
 Lifecycle integration tests and opt-in micro-benchmarks (`performance_integration_test.dart`, `performance_microbenchmarks_test.dart`) assert `indexBuildCount` per the lifecycle above without wall-clock pass/fail gates. Step 7 Windows runtime R25–R28 validates search deferral and reuse in `phase_45_windows_runtime_test.dart`.
 

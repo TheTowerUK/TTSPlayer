@@ -1,6 +1,6 @@
 # M4 — User Experience and Platform Integration
 
-**Status:** Active development (`v0.5.0-dev`) — **Phase 4.5 specification accepted; implementation next**
+**Status:** Active development (`v0.5.0-dev`) — **Phase 4.5 complete; Phase 4.6 next**
 **Branch:** `m4-development`
 **Development version:** `v0.5.0-dev`
 **Predecessor:** M3.5 Media Access Platform
@@ -55,7 +55,7 @@ Implement in order unless a documented dependency allows parallel documentation 
 | **4.2** | Settings Framework | ✅ Complete (2026-07-12) |
 | **4.3** | Library Experience | ✅ Complete (2026-07-13) |
 | **4.4** | Playback Improvements | ✅ Complete (2026-07-14) | [spec](./m4-phase-4.4-playback-improvements.md) |
-| **4.5** | Performance and Caching | Step 5 ✅ — Step 6 next | [spec](./m4-phase-4.5-performance-caching.md) |
+| **4.5** | Performance and Caching | ✅ Complete (2026-07-16) — [spec](./m4-phase-4.5-performance-caching.md) · [caching](../architecture/caching.md) |
 | **4.6** | Diagnostics and Supportability | Planned |
 | **4.7** | Release and Documentation | Planned |
 
@@ -275,9 +275,11 @@ Inventory → Capability Audit → ADRs → Specification → Implementation
 
 ---
 
-### Phase 4.5 — Performance and Caching
+### Phase 4.5 — Performance and Caching — ✅ complete
 
-**Status:** Baseline audit ✅ · Specification **accepted** · ADR-014–016 **accepted** · Steps 2–7 **complete** — Step 8 closure next.
+**Status:** Baseline audit ✅ · Specification **accepted** · ADR-014–016 **implemented** · Steps 0–8 **complete** · Closure 2026-07-16.
+
+**Closure validation:** Normal suite **556 passed / 7 skipped**; runtime **20 passed / 2 skipped** (`PHASE_45_RUNTIME=1`); benchmarks informational (`PHASE_45_BENCHMARK=1`).
 
 **Objective:** Keep large libraries responsive through deliberate caching and lazy rendering.
 
@@ -297,7 +299,7 @@ Baseline Audit → ADRs → Invalidation → Artwork → Search → Scroll tunin
 5. Large-folder scroll tuning + memory hooks — **complete**
 6. Integration tests + micro-benchmarks — **complete**
 7. Windows runtime validation — **complete**
-8. Closure
+8. Closure — **complete**
 
 **Scope:**
 
@@ -335,7 +337,7 @@ Baseline Audit → ADRs → Invalidation → Artwork → Search → Scroll tunin
 
 - [Phase 4.5 baseline audit](./m4-phase-4.5-baseline-audit.md) (complete)
 - [Phase 4.5 implementation specification](./m4-phase-4.5-performance-caching.md) (accepted)
-- [caching.md](../architecture/caching.md) — update to implemented at closure
+- [caching.md](../architecture/caching.md) — **accepted at closure**
 - ADR-014–016 ([index](../architecture/decisions/README.md#index))
 
 → Architecture: [caching.md](../architecture/caching.md)
