@@ -1,6 +1,6 @@
 # M4 Phase 4.5 — Performance and Caching (Implementation Specification)
 
-**Status:** **In progress** — Step 6 complete (2026-07-16); Step 7 next
+**Status:** **In progress** — Step 7 complete (2026-07-16); Step 8 closure next
 **Milestone:** M4 — User Experience and Platform Integration  
 **Branch:** `m4-development`  
 **Development version:** `v0.5.0-dev`  
@@ -59,8 +59,8 @@ Step 0 captures inventory; Steps 6–7 record numbers. Targets below are **accep
 | **4** | Search index lifecycle + startup deferral | ✅ Complete — deferred build, identity guard, concurrency |
 | **5** | Large-folder scroll tuning + memory hooks | ✅ Complete — lazy grids tuned, metrics, fixture |
 | **6** | Integration tests + micro-benchmarks | ✅ Complete — lifecycle integration + opt-in benchmarks |
-| **7** | Windows runtime validation | **Next** |
-| **8** | Closure | Planned |
+| **7** | Windows runtime validation | ✅ Complete — R1–R38 matrix, baseline capture |
+| **8** | Closure | **Next** |
 
 **Suggested commit cadence:** invalidation wiring → artwork → search → scroll tuning → tests/benchmarks → harness → docs closure.
 
@@ -481,24 +481,84 @@ flutter test test/catalog_cache_invalidation_test.dart
 
 ---
 
-## Step 7 — Windows runtime validation
+## Step 7 — Windows runtime validation — ✅ complete
 
-### Harness pattern
+### Harness
 
-Mirror 4.1–4.4: opt-in `PHASE_45_RUNTIME=1`, file `test/phase_45_windows_runtime_test.dart`.
+| Item | Value |
+|---|---|
+| File | `test/phase_45_windows_runtime_test.dart` |
+| Env var | `PHASE_45_RUNTIME=1` |
+| Platform | Windows only (clean skip elsewhere) |
+| Optional live catalogue | `PHASE_45_LOCAL_CATALOG` (path to `catalog.json`) |
+| Baseline helper | `test/support/phase_45_runtime_baseline.dart` |
 
-### Scenario matrix (prefix **C**)
+```powershell
+cd client\ttsplayer
+$env:PHASE_45_RUNTIME='1'
+flutter test test/phase_45_windows_runtime_test.dart --tags phase45-runtime
+```
 
-| ID | Scenario | Expect |
-|---|---|---|
-| **C1** | Bundled startup | Dashboard loads; no error banner |
-| **C2** | Open search before index ready (large fixture env) | Indexing state visible; then search works |
-| **C3** | Successful catalogue refresh | Artwork + index invalidated (observable via test hooks) |
-| **C4** | Failed refresh | Last-good; index count unchanged |
-| **C5** | Folder with many items (fixture or env) | Grid builds; scroll does not throw |
-| **C6** | LRU smoke | Candidate count ≤ cap after heavy browse |
+### Runtime matrix R1–R38
 
-**Manual follow-up (not blockers):** subjective 60fps scroll on real NAS folder with sidecars; memory profiler snapshot after extended browse.
+| ID | Area | Status | Automation |
+|---|---|---|---|
+| R1–R5 | Large-folder lazy open | **Pass** | Widget + metrics |
+| R6–R9 | Extended scroll | **Pass** | Widget |
+| R10 | Scroll smoothness | **Manual pending** | Desktop `flutter run` |
+| R11–R12 | Artwork LRU bounds | **Pass** | `cacheEntryCount`, `cacheEvictionCount` |
+| R13–R16 | Sort/filter prep | **Pass** | `FolderPresentationMetrics` |
+| R17–R21 | Navigation + replacement | **Pass** | Scroll offset + identity |
+| R22–R24 | Window resize | **Pass** | Widget |
+| R25–R28 | Search lifecycle | **Pass** | `indexBuildCount` + widget |
+| R29–R30 | Catalogue replace / failed refresh | **Pass** | Coordinator + caches |
+| R31–R32 | ImageCache budget | **Pass** | Unit |
+| R33–R35 | Recovery paths | **Pass** | Service |
+| R36 | Search flatten once | **Pass** | `SearchPresentationMetrics` |
+| R37–R38 | Optional local catalogue | **Skipped** | Requires `PHASE_45_LOCAL_CATALOG` |
+
+**Manual checkpoints (not CI gates):** R10 scroll smoothness; artwork flicker; resize sharpness; external memory profiler.
+
+### Windows runtime baseline (informational — dev machine)
+
+| Metric | Observed |
+|---|---|
+| Platform | Windows 11 Pro, build 26200 |
+| Dart | 3.12.2 |
+| Fixture | Generated 2 000 items |
+| Initial media card builds | 9 |
+| Post-scroll media card builds | 99 |
+| Initial view preparations | 1 |
+| Post sort/filter preparations | 4 |
+| Search index builds (folder open) | 0 |
+| Search index builds (after queries) | 1 |
+| Artwork cache peak (scroll) | 99 |
+| Artwork cache peak (programmatic) | 500 |
+| Artwork evictions | 100 |
+| Suite duration | ~18 s |
+
+### Benchmark revalidation (Step 7 vs Step 6 medians)
+
+| Operation | Step 6 | Step 7 | Notes |
+|---|---|---|---|
+| `search_index_first_build` | 2.13 ms | 2.71 ms | Informational |
+| `search_query_warm_index` | 2.07 ms | 2.31 ms | Informational |
+| `search_index_build_large` | 10.98 ms | 14.09 ms | Informational |
+| `artwork_populate_beyond_capacity` | 5.68 ms | 6.04 ms | Informational |
+| Operation counts / bounds | — | — | Unchanged; no regression |
+
+Differences are observational only — not pass/fail gates.
+
+### Step 8 readiness
+
+- [x] R1–R38 matrix documented with pass/skip/manual status
+- [x] Runtime harness executed on Windows
+- [x] Benchmark revalidated
+- [x] Deterministic suites remain green
+- [ ] Phase 4.5 definition of done reconciliation (Step 8)
+- [ ] `caching.md` accepted at closure (Step 8)
+
+**Commit:** `test(m4): validate performance on Windows`
 
 ---
 
@@ -573,4 +633,4 @@ Mirror 4.1–4.4: opt-in `PHASE_45_RUNTIME=1`, file `test/phase_45_windows_runti
 | 2026-07-15 | Step 3 artwork LRU + decode sizing complete |
 | 2026-07-15 | Step 4 deferred search index lifecycle complete |
 | 2026-07-16 | Step 5 large-folder scroll tuning complete (`6ed7b17`) |
-| 2026-07-16 | Step 6 integration tests + opt-in micro-benchmarks complete |
+| 2026-07-16 | Step 7 Windows runtime validation complete — R1–R38 matrix |

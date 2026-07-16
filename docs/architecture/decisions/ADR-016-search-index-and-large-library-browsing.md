@@ -106,7 +106,7 @@ Folder browse already uses lazy `SliverChildBuilderDelegate` grids; the bottlene
 
 ## Implementation notes (Step 6)
 
-Lifecycle integration tests and opt-in micro-benchmarks (`performance_integration_test.dart`, `performance_microbenchmarks_test.dart`) assert `indexBuildCount` per the lifecycle above without wall-clock pass/fail gates. Search result flatten-once behaviour tracked via `SearchPresentationMetrics`.
+Lifecycle integration tests and opt-in micro-benchmarks (`performance_integration_test.dart`, `performance_microbenchmarks_test.dart`) assert `indexBuildCount` per the lifecycle above without wall-clock pass/fail gates. Step 7 Windows runtime R25–R28 validates search deferral and reuse in `phase_45_windows_runtime_test.dart`.
 
 ---
 

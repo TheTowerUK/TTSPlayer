@@ -277,7 +277,7 @@ Inventory → Capability Audit → ADRs → Specification → Implementation
 
 ### Phase 4.5 — Performance and Caching
 
-**Status:** Baseline audit ✅ · Specification **accepted** · ADR-014–016 **accepted** · Steps 2–6 **complete** — Step 7 next.
+**Status:** Baseline audit ✅ · Specification **accepted** · ADR-014–016 **accepted** · Steps 2–7 **complete** — Step 8 closure next.
 
 **Objective:** Keep large libraries responsive through deliberate caching and lazy rendering.
 
@@ -296,7 +296,7 @@ Baseline Audit → ADRs → Invalidation → Artwork → Search → Scroll tunin
 4. Search index lifecycle + startup deferral — **complete**
 5. Large-folder scroll tuning + memory hooks — **complete**
 6. Integration tests + micro-benchmarks — **complete**
-7. Windows runtime validation
+7. Windows runtime validation — **complete**
 8. Closure
 
 **Scope:**

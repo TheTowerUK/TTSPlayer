@@ -1,6 +1,6 @@
 # Caching and Performance (M4 Phase 4.5 — planning)
 
-**Status:** **In progress** — Steps 2–6 implemented (2026-07-16)
+**Status:** **In progress** — Steps 2–7 implemented (2026-07-16)
 **Related roadmap phase:** [M4 Phase 4.5 — Performance and Caching](../roadmap/m4-phase-4.5-performance-caching.md)
 
 → [Provider refresh lifecycle](./decisions/ADR-002-provider-refresh-lifecycle.md)  
@@ -118,6 +118,17 @@ $env:PHASE_45_BENCHMARK='1'
 flutter test test/performance_microbenchmarks_test.dart
 ```
 
+### Step 7 — Windows runtime validation (implemented)
+
+Opt-in `PHASE_45_RUNTIME=1` on Windows exercises R1–R38: lazy folder open, scroll, sort/filter, navigation, resize, search lifecycle, catalogue replace/fail, LRU bounds, recovery paths. Optional `PHASE_45_LOCAL_CATALOG` for live catalogue smoke.
+
+Runtime timings and baseline metrics are **informational only** — printed via `Phase45RuntimeBaseline` at suite end.
+
+```powershell
+$env:PHASE_45_RUNTIME='1'
+flutter test test/phase_45_windows_runtime_test.dart
+```
+
 ### Search ([ADR-016](./decisions/ADR-016-search-index-and-large-library-browsing.md)) — Step 4 implemented
 
 - Shared `SearchService` registered at app root via `Provider`.
@@ -163,7 +174,7 @@ flutter test test/performance_microbenchmarks_test.dart
 | **Step 0 baseline audit** | Capture measurable before-state |
 | **Unit / integration tests** | Invalidation, bounds, deferred index, lifecycle integration (Step 6) |
 | **Micro-benchmarks** | Opt-in `PHASE_45_BENCHMARK=1`; informational timings on 100/2000/10000 fixtures |
-| **Phase 4.5 Windows runtime harness** | Scroll smoke, search open while indexing, refresh invalidation |
+| **Phase 4.5 Windows runtime harness** | Scroll, search, replace smoke; `PHASE_45_RUNTIME=1` (Step 7 ✅) |
 | **Manual desktop QA** | Subjective 60fps scroll on real large NAS folder |
 
 Gate 0-style capability audit is **not** required — APIs are Flutter/Dart standard library.
