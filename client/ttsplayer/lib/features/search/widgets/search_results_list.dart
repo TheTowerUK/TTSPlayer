@@ -26,6 +26,7 @@ class SearchResultsList extends StatelessWidget {
   Widget build(BuildContext context) {
     final groups = groupSearchResultsByLibrary(results);
     final showHeaders = groups.length > 1;
+    final rows = _flattenGroups(groups, showHeaders);
 
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(
@@ -34,69 +35,92 @@ class SearchResultsList extends StatelessWidget {
         AppSpacing.lg,
         AppSpacing.lg,
       ),
-      itemCount: _itemCount(groups, showHeaders),
+      itemCount: rows.length,
       separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
-      itemBuilder: (context, index) => _buildItem(
+      itemBuilder: (context, index) => rows[index].build(
         context,
-        groups,
-        index,
-        showHeaders,
+        catalog: catalog,
+        onOpenResult: onOpenResult,
+        onBrowseFolder: onBrowseFolder,
       ),
     );
   }
 
-  int _itemCount(List<SearchResultGroup> groups, bool showHeaders) {
-    var count = 0;
-    for (final group in groups) {
-      if (showHeaders) count += 1;
-      count += group.results.length;
-    }
-    return count;
-  }
-
-  Widget _buildItem(
-    BuildContext context,
+  List<_SearchListRow> _flattenGroups(
     List<SearchResultGroup> groups,
-    int index,
     bool showHeaders,
   ) {
-    var cursor = 0;
+    final rows = <_SearchListRow>[];
     for (final group in groups) {
       if (showHeaders) {
-        if (index == cursor) {
-          return Semantics(
-            header: true,
-            label: 'Library: ${group.libraryName}',
-            child: Padding(
-              padding: const EdgeInsets.only(top: AppSpacing.xs),
-              child: Text(
-                group.libraryName.toUpperCase(),
-                style: AppTypography.sectionLabel,
-              ),
-            ),
-          );
-        }
-        cursor++;
+        rows.add(_SearchListHeader(group.libraryName));
       }
-
       for (final result in group.results) {
-        if (index == cursor) {
-          final contextLabel = catalogueFolderContext(catalog, result.item.id);
-          return SearchResultRow(
-            result: result,
-            displayContext: contextLabel,
-            onOpen: () => onOpenResult(result),
-            onBrowseFolder: onBrowseFolder != null &&
-                    _canBrowseFolder(catalog, result)
-                ? () => onBrowseFolder!(result)
-                : null,
-          );
-        }
-        cursor++;
+        rows.add(_SearchListResult(result));
       }
     }
+    return rows;
+  }
+}
 
-    return const SizedBox.shrink();
+sealed class _SearchListRow {
+  const _SearchListRow();
+
+  Widget build(
+    BuildContext context, {
+    required Catalog catalog,
+    required void Function(SearchResult result) onOpenResult,
+    required void Function(SearchResult result)? onBrowseFolder,
+  });
+}
+
+final class _SearchListHeader extends _SearchListRow {
+  const _SearchListHeader(this.libraryName);
+
+  final String libraryName;
+
+  @override
+  Widget build(
+    BuildContext context, {
+    required Catalog catalog,
+    required void Function(SearchResult result) onOpenResult,
+    required void Function(SearchResult result)? onBrowseFolder,
+  }) {
+    return Semantics(
+      header: true,
+      label: 'Library: $libraryName',
+      child: Padding(
+        padding: const EdgeInsets.only(top: AppSpacing.xs),
+        child: Text(
+          libraryName.toUpperCase(),
+          style: AppTypography.sectionLabel,
+        ),
+      ),
+    );
+  }
+}
+
+final class _SearchListResult extends _SearchListRow {
+  const _SearchListResult(this.result);
+
+  final SearchResult result;
+
+  @override
+  Widget build(
+    BuildContext context, {
+    required Catalog catalog,
+    required void Function(SearchResult result) onOpenResult,
+    required void Function(SearchResult result)? onBrowseFolder,
+  }) {
+    final contextLabel = catalogueFolderContext(catalog, result.item.id);
+    final canBrowse = onBrowseFolder != null && _canBrowseFolder(catalog, result);
+
+    return SearchResultRow(
+      result: result,
+      displayContext: contextLabel,
+      onOpen: () => onOpenResult(result),
+      onBrowseFolder: canBrowse ? () => onBrowseFolder(result) : null,
+    );
   }
 
   bool _canBrowseFolder(Catalog catalog, SearchResult result) {

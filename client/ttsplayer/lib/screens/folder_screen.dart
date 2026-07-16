@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../library/folder_presentation_config.dart';
+import '../library/folder_presentation_metrics.dart';
 import '../library/library_folder_view.dart';
 import '../models/catalog.dart';
 import '../models/library_filter.dart';
@@ -134,19 +136,45 @@ class _FolderBrowseBodyState extends State<_FolderBrowseBody> {
   late LibrarySortMode _sortMode;
   LibraryFilter _filter = LibraryFilter.all;
 
+  LibraryFolderView? _cachedView;
+  String? _cachedFolderId;
+  LibrarySortMode? _cachedSortMode;
+  LibraryFilter? _cachedFilter;
+
   @override
   void initState() {
     super.initState();
     _sortMode = context.read<SettingsRepository>().defaultLibrarySortMode;
   }
 
+  @override
+  void didUpdateWidget(covariant _FolderBrowseBody oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.folder, widget.folder)) {
+      _cachedView = null;
+    }
+  }
+
   LibraryFolderView _buildView() {
-    return buildLibraryFolderView(
+    if (_cachedView != null &&
+        _cachedFolderId == widget.folder.id &&
+        _cachedSortMode == _sortMode &&
+        _cachedFilter == _filter) {
+      return _cachedView!;
+    }
+
+    FolderPresentationMetrics.viewPreparationCount++;
+    final view = buildLibraryFolderView(
       folder: widget.folder,
       sortMode: _sortMode,
       filter: _filter,
       catalogSupportedExtensions: widget.catalogSupportedExtensions,
     );
+    _cachedView = view;
+    _cachedFolderId = widget.folder.id;
+    _cachedSortMode = _sortMode;
+    _cachedFilter = _filter;
+    return view;
   }
 
   Future<void> _setAsDefaultSort() async {
@@ -381,6 +409,10 @@ class _FolderContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CustomScrollView(
+      key: PageStorageKey<String>(
+        FolderPresentationConfig.scrollStorageKey(folder.id),
+      ),
+      scrollCacheExtent: FolderPresentationConfig.gridScrollCacheExtent,
       slivers: [
         if (view.subfolders.isNotEmpty) ...[
           const _SectionSliver(title: 'Subfolders'),
@@ -390,24 +422,29 @@ class _FolderContent extends StatelessWidget {
             sliver: SliverGrid(
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
+                  FolderPresentationMetrics.folderCardBuildCount++;
                   final sub = view.subfolders[index];
-                  return TtsFolderCard(
-                    folder: sub,
-                    topLeftOverlay: FavouriteFolderToggle(
-                      folderId: sub.id,
-                      compact: true,
+                  return RepaintBoundary(
+                    child: TtsFolderCard(
+                      key: ValueKey('folder-card-${sub.id}'),
+                      folder: sub,
+                      topLeftOverlay: FavouriteFolderToggle(
+                        folderId: sub.id,
+                        compact: true,
+                      ),
+                      onTap: () => openFolderScreen(context, sub),
                     ),
-                    onTap: () => openFolderScreen(context, sub),
                   );
                 },
                 childCount: view.subfolders.length,
+                addAutomaticKeepAlives:
+                    FolderPresentationConfig.addAutomaticKeepAlives,
+                addRepaintBoundaries:
+                    FolderPresentationConfig.addRepaintBoundaries,
+                addSemanticIndexes:
+                    FolderPresentationConfig.addSemanticIndexes,
               ),
-              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: AppSpacing.gridSubfolder,
-                mainAxisSpacing: AppSpacing.gridGap,
-                crossAxisSpacing: AppSpacing.gridGap,
-                childAspectRatio: AppSpacing.gridAspectLibrary,
-              ),
+              gridDelegate: FolderPresentationConfig.subfolderGridDelegate,
             ),
           ),
           const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.section)),
@@ -419,25 +456,30 @@ class _FolderContent extends StatelessWidget {
             sliver: SliverGrid(
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
+                  FolderPresentationMetrics.mediaCardBuildCount++;
                   final item = view.items[index];
-                  return TtsMediaCard(
-                    item: item,
-                    parentFolder: folder,
-                    topLeftOverlay: FavouriteItemToggle(
-                      itemId: item.id,
-                      compact: true,
+                  return RepaintBoundary(
+                    child: TtsMediaCard(
+                      key: ValueKey('media-card-${item.id}'),
+                      item: item,
+                      parentFolder: folder,
+                      topLeftOverlay: FavouriteItemToggle(
+                        itemId: item.id,
+                        compact: true,
+                      ),
+                      onTap: () => _openDetail(context, item),
                     ),
-                    onTap: () => _openDetail(context, item),
                   );
                 },
                 childCount: view.items.length,
+                addAutomaticKeepAlives:
+                    FolderPresentationConfig.addAutomaticKeepAlives,
+                addRepaintBoundaries:
+                    FolderPresentationConfig.addRepaintBoundaries,
+                addSemanticIndexes:
+                    FolderPresentationConfig.addSemanticIndexes,
               ),
-              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: AppSpacing.gridMedia,
-                mainAxisSpacing: AppSpacing.gridGap,
-                crossAxisSpacing: AppSpacing.gridGap,
-                childAspectRatio: AppSpacing.gridAspectMedia,
-              ),
+              gridDelegate: FolderPresentationConfig.mediaGridDelegate,
             ),
           ),
         ],

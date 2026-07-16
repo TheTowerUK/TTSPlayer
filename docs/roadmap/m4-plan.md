@@ -55,7 +55,7 @@ Implement in order unless a documented dependency allows parallel documentation 
 | **4.2** | Settings Framework | ✅ Complete (2026-07-12) |
 | **4.3** | Library Experience | ✅ Complete (2026-07-13) |
 | **4.4** | Playback Improvements | ✅ Complete (2026-07-14) | [spec](./m4-phase-4.4-playback-improvements.md) |
-| **4.5** | Performance and Caching | Step 4 ✅ — Step 5 next | [spec](./m4-phase-4.5-performance-caching.md) |
+| **4.5** | Performance and Caching | Step 5 ✅ — Step 6 next | [spec](./m4-phase-4.5-performance-caching.md) |
 | **4.6** | Diagnostics and Supportability | Planned |
 | **4.7** | Release and Documentation | Planned |
 
@@ -277,7 +277,7 @@ Inventory → Capability Audit → ADRs → Specification → Implementation
 
 ### Phase 4.5 — Performance and Caching
 
-**Status:** Baseline audit ✅ · Specification **accepted** · ADR-014–016 **accepted** · Steps 2–4 **complete** — Step 5 next.
+**Status:** Baseline audit ✅ · Specification **accepted** · ADR-014–016 **accepted** · Steps 2–5 **complete** — Step 6 next.
 
 **Objective:** Keep large libraries responsive through deliberate caching and lazy rendering.
 

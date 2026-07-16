@@ -1,6 +1,6 @@
 # Caching and Performance (M4 Phase 4.5 — planning)
 
-**Status:** **In progress** — Steps 2–4 implemented (2026-07-15)
+**Status:** **In progress** — Steps 2–5 implemented (2026-07-16)
 **Related roadmap phase:** [M4 Phase 4.5 — Performance and Caching](../roadmap/m4-phase-4.5-performance-caching.md)
 
 → [Provider refresh lifecycle](./decisions/ADR-002-provider-refresh-lifecycle.md)  
@@ -90,6 +90,15 @@ Failed loads do not invoke this chain ([ADR-002](./decisions/ADR-002-provider-re
 - `ArtworkImage.logicalDecodeSize` → physical decode pixels via device pixel ratio.
 - `configureArtworkFlutterImageCache()` — **100 MB** Flutter `ImageCache` budget.
 - Placeholder and `errorBuilder` paths unchanged.
+
+### Large-folder browse — Step 5 implemented
+
+- `FolderScreen` retains lazy `SliverChildBuilderDelegate` grids.
+- `scrollCacheExtent: ScrollCacheExtent.pixels(400)` on folder `CustomScrollView`.
+- Per-card `RepaintBoundary`, stable `ValueKey`s, `PageStorageKey` per folder id.
+- `FolderPresentationMetrics` — test-only build and view-prep counters.
+- `buildLargeCatalog()` factory for in-memory stress fixtures (not shipped).
+- Search results list pre-flattens grouped rows (no per-index O(n) scan).
 
 ### Search ([ADR-016](./decisions/ADR-016-search-index-and-large-library-browsing.md)) — Step 4 implemented
 

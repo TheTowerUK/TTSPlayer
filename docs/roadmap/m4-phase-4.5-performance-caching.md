@@ -1,6 +1,6 @@
 # M4 Phase 4.5 — Performance and Caching (Implementation Specification)
 
-**Status:** **In progress** — Step 4 complete (2026-07-15); Step 5 next
+**Status:** **In progress** — Step 5 complete (2026-07-16); Step 6 next
 **Milestone:** M4 — User Experience and Platform Integration  
 **Branch:** `m4-development`  
 **Development version:** `v0.5.0-dev`  
@@ -57,8 +57,8 @@ Step 0 captures inventory; Steps 6–7 record numbers. Targets below are **accep
 | **2** | Cache invalidation orchestration | ✅ Complete — `CatalogCacheCoordinator`, app-scoped `SearchService` |
 | **3** | Artwork candidate bounds + image decode | ✅ Complete — LRU 500, decode hints, ImageCache budget |
 | **4** | Search index lifecycle + startup deferral | ✅ Complete — deferred build, identity guard, concurrency |
-| **5** | Large-folder scroll tuning + memory hooks | **Next** |
-| **6** | Integration tests + micro-benchmarks | Planned |
+| **5** | Large-folder scroll tuning + memory hooks | ✅ Complete — lazy grids tuned, metrics, fixture |
+| **6** | Integration tests + micro-benchmarks | **Next** |
 | **7** | Windows runtime validation | Planned |
 | **8** | Closure | Planned |
 
@@ -276,21 +276,67 @@ Concurrent first searches → one shared in-flight build
 
 ---
 
-## Step 5 — Large-folder scroll + memory hooks
+## Step 5 — Large-folder scroll + memory hooks — ✅ complete
 
-### Deliverables
+### Pre-change audit (Step 5 entry)
 
-| Item | Description |
+| Surface | Widget pattern | Lazy? | Notes |
+|---|---|---|---|
+| `FolderScreen` | `CustomScrollView` + `SliverChildBuilderDelegate` | Yes | Primary large-collection surface; no scroll tuning |
+| Dashboard sections | Horizontal `ListView.separated` | Yes | Capped 8–12 items |
+| `LibrariesSection` | `GridView.builder` + `shrinkWrap` | Builder | Bounded library roots only |
+| `SearchResultsList` | `ListView.separated` | Yes | Capped at 100; O(n) index scan per row |
+| `FavouritesScreen` | `ListView.separated` | Yes | Unbounded but user-curated |
+| Dashboard shell | `SliverChildListDelegate` | Eager | Bounded section count |
+
+No `PageStorageKey`, `scrollCacheExtent`, or explicit delegate flags before Step 5.
+
+### Delivered
+
+| Item | Location |
 |---|---|
-| Scroll tuning | Evaluate `cacheExtent` on folder/dashboard grids; `RepaintBoundary` on cards if profiled |
-| Session metrics | Optional debug-only accessors: candidate cache length, index size, image cache bytes |
-| Documentation | Record tuning choices in `caching.md` at closure |
+| `FolderPresentationConfig` | `lib/library/folder_presentation_config.dart` |
+| `FolderPresentationMetrics` | `lib/library/folder_presentation_metrics.dart` |
+| Folder grid tuning | `lib/screens/folder_screen.dart` — `scrollCacheExtent`, `RepaintBoundary`, stable keys, view memoization |
+| Search list flatten | `lib/features/search/widgets/search_results_list.dart` — O(1) row lookup |
+| Large catalogue factory | `test/support/large_catalog_factory.dart` (default 2000 items) |
+| Widget tests | `test/large_folder_presentation_test.dart` (13 tests) |
+| Runtime harness | `test/phase_45_windows_runtime_test.dart` (`PHASE_45_RUNTIME=1`) |
 
-### Out of scope
+### Tuning values
 
-- Pagination UI
-- Persisted scroll positions
-- Virtual merged libraries
+| Setting | Value | Rationale |
+|---|---|---|
+| `scrollCacheExtent` | `ScrollCacheExtent.pixels(400)` | ~1 media-card row; modest increase over default 250 |
+| `addAutomaticKeepAlives` | `true` | Default; explicit for audit |
+| `addRepaintBoundaries` | `true` | Delegate + per-card `RepaintBoundary` |
+| `addSemanticIndexes` | `true` | Accessibility preserved |
+| Item keys | `ValueKey('media-card-{id}')` | Stable identity across rebuilds |
+| Scroll storage | `PageStorageKey('folder-scroll:{folderId}')` | Per-folder position when route remounts |
+| View memoization | `_FolderBrowseBody` cache | Sort/filter prep once per folder revision |
+
+### Test evidence
+
+| Scenario | Verified outcome |
+|---|---|
+| 2000-item folder initial build | `mediaCardBuildCount < 50` (not 2000) |
+| After scroll | Build count increases; still ≪ total |
+| Item detail pop | Scroll offset preserved on same route |
+| Child folder push | Child opens at offset 0 |
+| Viewport resize while scrolled | No exception; offset valid |
+| Settings notify | `viewPreparationCount` unchanged |
+| Folder browse | `search.indexBuildCount = 0` |
+| 600 artwork identities | `cacheEntryCount ≤ 500` |
+| Catalogue replace | View cache invalidates via folder identity |
+
+**Commit:** `perf(m4): tune large-folder browsing`
+
+### Unchanged
+
+- Dashboard carousel caps
+- Artwork LRU 500 / ImageCache 100 MB
+- Search deferred index lifecycle (Step 4)
+- Folder-first navigation semantics
 
 ---
 

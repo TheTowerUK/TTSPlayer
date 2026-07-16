@@ -39,7 +39,7 @@ Folder browse already uses lazy `SliverChildBuilderDelegate` grids; the bottlene
 
 8. **Filter chip metadata** — `libraryNamesFor(catalog)` and `extensionsFor(catalog)` derive from the live `Catalog` when no index exists; after build they reuse indexed metadata.
 
-9. **Large-folder browse** — retain `CustomScrollView` + sliver grids. Phase 4.5 may tune `cacheExtent` and `RepaintBoundary` where profiling warrants. No virtual merged libraries.
+9. **Large-folder browse** — retain `CustomScrollView` + sliver grids (Step 5: `scrollCacheExtent` 400px, `RepaintBoundary`, `PageStorageKey`, view memoization). No virtual merged libraries.
 
 ---
 
