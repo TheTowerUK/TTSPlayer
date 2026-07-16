@@ -56,7 +56,7 @@ Implement in order unless a documented dependency allows parallel documentation 
 | **4.3** | Library Experience | ✅ Complete (2026-07-13) |
 | **4.4** | Playback Improvements | ✅ Complete (2026-07-14) | [spec](./m4-phase-4.4-playback-improvements.md) |
 | **4.5** | Performance and Caching | ✅ Complete (2026-07-16) — [spec](./m4-phase-4.5-performance-caching.md) · [caching](../architecture/caching.md) |
-| **4.6** | Diagnostics and Supportability | Planned |
+| **4.6** | Diagnostics and Supportability | **Proposed** — [spec](./m4-phase-4.6-diagnostics-supportability.md) · Step 1 planning ✅ |
 | **4.7** | Release and Documentation | Planned |
 
 ---
@@ -348,44 +348,46 @@ Baseline Audit → ADRs → Invalidation → Artwork → Search → Scroll tunin
 
 ### Phase 4.6 — Diagnostics and Supportability
 
-**Objective:** Make common failures diagnosable from within the application.
+**Status:** **Proposed** — Step 1 planning complete (2026-07-16). No production implementation yet.
+
+**Objective:** Improve application supportability by exposing internal runtime state that **already exists** — provider health, catalogue summary, cache bounds, search lifecycle, playback capabilities — in a read-only Diagnostics experience. Consume existing instrumentation; do not create duplicate monitoring systems.
 
 **Scope:**
 
-- Diagnostics screen
-- Active provider and source information
-- Catalogue status
-- Resolver configuration summary
-- Item counts
-- Last refresh timestamp
-- Cache health indicators
-- Application version and build information
-- Readable network/TLS errors (build on M3.5 `remote_fetch_errors`)
-- Optional diagnostic export (plain text / JSON — no secrets)
+- `DiagnosticsService` + `RuntimeDiagnosticsSnapshot` (ADR-017, ADR-018)
+- Read-only Diagnostics screen from Settings → Diagnostics & Advanced
+- Clipboard export (plain text per ADR-019); optional Windows file save
+- Promote diagnostics-facing getters on `ArtworkService` and `SearchService`
+- Redaction: no personal paths, secrets, or stack traces
+- Windows runtime validation (`PHASE_46_RUNTIME=1`)
 
 **Out of scope:**
 
-- Remote telemetry or crash reporting services
+- Remote telemetry or crash reporting
 - Automatic log upload
+- Log ring buffer
+- Reset diagnostic counters UI
+- Test-only metrics (`FolderPresentationMetrics`, benchmark harnesses) in production UI
+- JSON export (deferred)
 
 **Dependencies:** Phases 4.1, 4.2, 4.5; [diagnostics architecture](../architecture/diagnostics.md).
 
-**Definition of done:**
-
-- Diagnostics screen reachable from Settings
-- Shows enough context to debug catalogue, provider, and resolver issues without reading source
-- Export optional and clearly labelled
+**Definition of done:** See [Phase 4.6 specification](./m4-phase-4.6-diagnostics-supportability.md#definition-of-done-phase-46-final).
 
 **Validation expectations:**
 
-- Widget smoke for diagnostics screen
-- Manual: reproduce HTTPS failure and confirm readable message in diagnostics
+- Unit, widget, and integration tests for snapshot, screen, and export
+- `PHASE_46_RUNTIME=1` matrix D1–D10 on Windows
+- Manual: HTTPS/TLS failure shows readable provider error without certificate dump
 
 **Documentation outputs:**
 
-- Update [diagnostics.md](../architecture/diagnostics.md)
+- [Phase 4.6 implementation specification](./m4-phase-4.6-diagnostics-supportability.md) ✅ Step 1
+- [diagnostics.md](../architecture/diagnostics.md) — proposed → accepted at closure
+- [ADR-017](../architecture/decisions/ADR-017-diagnostics-architecture.md), [ADR-018](../architecture/decisions/ADR-018-runtime-snapshot-model.md), [ADR-019](../architecture/decisions/ADR-019-diagnostics-export-support-strategy.md)
 
-→ Architecture: [diagnostics.md](../architecture/diagnostics.md)
+→ Architecture: [diagnostics.md](../architecture/diagnostics.md)  
+→ Specification: [m4-phase-4.6-diagnostics-supportability.md](./m4-phase-4.6-diagnostics-supportability.md)
 
 ---
 

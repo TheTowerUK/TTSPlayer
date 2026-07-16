@@ -28,7 +28,7 @@ Planning documents for [M4 — User Experience and Platform Integration](../road
 | [Library experience](./library.md) | 4.3 | **Implemented / Accepted** — [spec](../roadmap/m4-phase-4.3-library-experience.md) |
 | [Playback](./playback.md) | 4.4 | **Implemented / Accepted** — [spec](../roadmap/m4-phase-4.4-playback-improvements.md) · ADR-010–013 |
 | [Caching](./caching.md) | 4.5 | **Implemented / Accepted** — [spec](../roadmap/m4-phase-4.5-performance-caching.md) · ADR-014–016 |
-| [Diagnostics](./diagnostics.md) | 4.6 | Planning |
+| [Diagnostics](./diagnostics.md) | 4.6 | **Proposed** — [spec](../roadmap/m4-phase-4.6-diagnostics-supportability.md) · ADR-017–019 |
 
 ## Architecture Decision Records
 
@@ -52,3 +52,4 @@ Significant cross-layer decisions are recorded as ADRs:
 | PlaybackService | `client/ttsplayer/lib/services/playback_service.dart` | Windows: media_kit; other: video_player; uses resolver |
 | ArtworkService | `client/ttsplayer/lib/services/artwork/` | Sidecar and placeholder artwork; bounded cache (4.5) |
 | SearchService | `client/ttsplayer/lib/features/search/` | In-memory search index (4.5 lifecycle) |
+| DiagnosticsService | `client/ttsplayer/lib/services/diagnostics/` *(planned 4.6)* | Read-only runtime snapshot aggregation |
