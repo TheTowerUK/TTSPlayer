@@ -1,7 +1,6 @@
 # ADR-017: Diagnostics Architecture
 
-**Status:** Proposed  
-**Date:** 2026-07-16  
+**Status:** Accepted — implemented (M4 Phase 4.6 Step 2, 2026-07-16)  
 **Milestone:** M4 Phase 4.6  
 **Authors:** M4 documentation pass
 
@@ -73,6 +72,8 @@ Operational actions (refresh catalogue, open provider settings) stay on the dash
 ### 5. Failure behaviour
 
 `DiagnosticsService.buildSnapshot()` must complete even when individual sources are null or unavailable. Per-field fallbacks (`"Unavailable"`) — the screen must never throw.
+
+**Implementation (Step 2):** Public API is `captureSnapshot()` (async for cached `package_info`). Plain-text formatting lives in `diagnostics_export_formatter.dart`; `DiagnosticsService.formatExport()` delegates without I/O.
 
 ---
 

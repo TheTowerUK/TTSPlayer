@@ -1,7 +1,5 @@
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
-
 import '../../models/media_folder.dart';
 import '../../models/media_item.dart';
 import 'artwork_candidate.dart';
@@ -26,8 +24,10 @@ class ArtworkService {
   final LruCache<String, ArtworkCandidate> _cache;
 
   /// Number of entries in the app-owned artwork candidate cache.
-  @visibleForTesting
   int get cacheEntryCount => _cache.length;
+
+  /// Maximum artwork candidate cache capacity (ADR-015).
+  int get cacheCapacity => defaultCacheCapacity;
 
   static bool _defaultFileExists(String path) {
     try {
@@ -38,7 +38,6 @@ class ArtworkService {
   }
 
   /// Number of LRU evictions in the artwork candidate cache.
-  @visibleForTesting
   int get cacheEvictionCount => _cache.evictionCount;
 
   void clearCache() => _cache.clear();

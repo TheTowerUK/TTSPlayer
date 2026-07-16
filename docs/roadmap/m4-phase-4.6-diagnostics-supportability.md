@@ -1,6 +1,6 @@
 # M4 Phase 4.6 — Diagnostics and Supportability (Implementation Specification)
 
-**Status:** **Proposed** — Step 1 planning complete (2026-07-16)
+**Status:** **In progress** — Step 2 data layer complete (2026-07-16)
 **Milestone:** M4 — User Experience and Platform Integration
 **Branch:** `m4-development`
 **Development version:** `v0.5.0-dev`
@@ -11,11 +11,11 @@
 → [Diagnostics architecture](../architecture/diagnostics.md)
 → [v0.5.0-dev release tracker](../release/v0.5.0-dev.md)
 
-**ADRs (Proposed 2026-07-16):**
+**ADRs:**
 
-- [ADR-017: Diagnostics Architecture](../architecture/decisions/ADR-017-diagnostics-architecture.md)
-- [ADR-018: Runtime Snapshot Model](../architecture/decisions/ADR-018-runtime-snapshot-model.md)
-- [ADR-019: Diagnostics Export and Support Strategy](../architecture/decisions/ADR-019-diagnostics-export-support-strategy.md)
+- [ADR-017: Diagnostics Architecture](../architecture/decisions/ADR-017-diagnostics-architecture.md) — **Accepted** (Step 2)
+- [ADR-018: Runtime Snapshot Model](../architecture/decisions/ADR-018-runtime-snapshot-model.md) — **Accepted** (Step 2)
+- [ADR-019: Diagnostics Export and Support Strategy](../architecture/decisions/ADR-019-diagnostics-export-support-strategy.md) — **Proposed**
 
 Follow the established M4 cadence: **instrumentation audit → ADRs → architecture → aggregation service → UI → export → tests → Windows validation → closure**.
 
@@ -57,17 +57,82 @@ Promote selected `@visibleForTesting` counters to **diagnostics-facing getters**
 
 | Step | Name | Status |
 |---|---|---|
-| **0** | Instrumentation audit | **Next** (may overlap Step 1 audit section below) |
-| **1** | Specification + ADRs | ✅ This document + ADR-017–019 |
-| **2** | Snapshot model + `DiagnosticsService` | Planned |
-| **3** | Production getter promotion on cache/search owners | Planned |
-| **4** | Diagnostics screen UI (Settings entry) | Planned |
+| **0** | Instrumentation audit | ✅ (Step 1) |
+| **1** | Specification + ADRs | ✅ Step 1 |
+| **2** | Snapshot model + `DiagnosticsService` | ✅ Step 2 |
+| **3** | Production getter promotion on cache/search owners | ✅ Merged into Step 2 |
+| **4** | Diagnostics screen UI (Settings entry) | **Next** |
 | **5** | Clipboard export + support bundle | Planned |
 | **6** | Unit/widget/integration tests | Planned |
 | **7** | Windows runtime validation | Planned |
 | **8** | Closure | Planned |
 
-**Suggested commit cadence:** snapshot model → getter promotion → UI → export → tests → runtime harness → docs closure.
+**Suggested commit cadence:** snapshot model → UI → clipboard wiring → runtime harness → docs closure.
+
+---
+
+## Step 2 — Data layer implementation (2026-07-16)
+
+### Code ownership
+
+| Path | Role |
+|---|---|
+| `lib/services/diagnostics/diagnostics_service.dart` | Sole aggregation boundary |
+| `lib/services/diagnostics/runtime_diagnostics_models.dart` | Immutable section DTOs + `RuntimeDiagnosticsSnapshot` |
+| `lib/services/diagnostics/diagnostics_redaction.dart` | Identity truncation + sensitive-text stripping |
+| `lib/services/diagnostics/diagnostics_export_formatter.dart` | Pure `formatDiagnosticsExport()` (no I/O) |
+| `lib/services/diagnostics/diagnostic_section_status.dart` | `DiagnosticSectionStatus` enum |
+
+### Public API
+
+```dart
+Future<RuntimeDiagnosticsSnapshot> captureSnapshot()
+String formatExport(RuntimeDiagnosticsSnapshot snapshot)
+```
+
+- Async for `package_info_plus` cache on first capture only.
+- `applicationStartedAt` fixed at composition root (`main.dart`); `startupElapsed = capturedAt - applicationStartedAt`.
+- No persistence, subscriptions, or service mutation.
+
+### Promoted production getters
+
+| Service | Getters |
+|---|---|
+| `ArtworkService` | `cacheEntryCount`, `cacheCapacity`, `cacheEvictionCount` |
+| `SearchService` | `indexBuildCount`, `hasIndex`, `isBuildInFlight` (existing `catalogueIdentity`, `indexedItemCount`) |
+
+### Unavailable-value strategy
+
+- `DiagnosticSectionStatus` per section: `complete`, `partial`, `unavailable`.
+- Nullable typed fields — `null` means unavailable at field level; `false`/`0` retain distinct meaning.
+- Playback session fields `null` when no active session (not `false`).
+- `CatalogueDiagnostics?` null when no catalogue loaded; `LibraryDiagnostics?` null when metadata repo not initialized.
+- Section mapping uses per-section try/catch — one failing source does not suppress others.
+
+### Redaction
+
+- Catalogue/search identity: scanner ids (`CatalogueInfo.id`, `legacy:{generatedAt}`) are safe; `redactIdentity()` truncates to 12 chars + `…` for defence in depth.
+- Provider rows: kind + health labels only — **no** `definition.location`, hostnames, or paths.
+- Errors: `redactSensitiveText()` strips drive/UNC/Unix paths, `file://`, HTTP(S) URLs, credentials, stack traces.
+- Playback: item id truncated; **no** title, path, or resolver URI.
+
+### Plain-text formatter
+
+`formatDiagnosticsExport()` implemented in Step 2 (data-layer boundary). Clipboard/file delivery remains Step 5 (ADR-019).
+
+### Composition root
+
+`DiagnosticsService` registered as `Provider<DiagnosticsService>.value` in `main.dart` after `PlaybackService` construction. No UI consumer yet.
+
+### Tests added (32)
+
+- `test/diagnostics_snapshot_test.dart`
+- `test/diagnostics_redaction_test.dart`
+- `test/diagnostics_service_test.dart`
+- `test/diagnostics_integration_test.dart`
+- `test/support/diagnostics_test_harness.dart`
+
+**Validation:** **588 passed**, **7 skipped**, **0 failed** (normal suite); `flutter analyze` **89** issues (unchanged baseline).
 
 ---
 
@@ -371,3 +436,4 @@ Manual: reproduce HTTPS/TLS failure; confirm readable provider error in diagnost
 | Date | Change |
 |---|---|
 | 2026-07-16 | Step 1 planning specification; ADR-017–019 proposed |
+| 2026-07-16 | Step 2: `DiagnosticsService`, snapshot DTOs, redaction, formatter; ADR-017–018 accepted |

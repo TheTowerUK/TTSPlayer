@@ -1,0 +1,357 @@
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+
+import '../../features/search/search_service.dart';
+import '../../models/catalogue_provider_snapshot.dart';
+import '../../models/media_folder.dart';
+import '../../services/artwork/artwork_service.dart';
+import '../../services/catalog_service.dart';
+import '../../services/library/library_metadata_repository.dart';
+import '../../services/media_access/media_access_config.dart';
+import '../../services/media_access/media_catalogue_provider.dart';
+import '../../services/media_access/media_provider_config_service.dart';
+import '../../services/playback_platform.dart';
+import '../../services/playback_service.dart';
+import 'diagnostic_section_status.dart';
+import 'diagnostics_export_formatter.dart';
+import 'diagnostics_redaction.dart';
+import 'runtime_diagnostics_models.dart';
+
+/// Read-only aggregation of runtime diagnostics (ADR-017).
+///
+/// Observes production services without mutating them. Production services
+/// must not import this type.
+class DiagnosticsService {
+  DiagnosticsService({
+    required CatalogService catalogService,
+    required ArtworkService artworkService,
+    required SearchService searchService,
+    required PlaybackService playbackService,
+    required MediaProviderConfigService mediaProviderConfigService,
+    required LibraryMetadataRepository libraryMetadataRepository,
+    required DateTime applicationStartedAt,
+    Future<PackageInfo> Function()? packageInfoLoader,
+    String Function()? platformNameProvider,
+    bool Function()? imageCacheAvailableProvider,
+  })  : _catalogService = catalogService,
+        _artworkService = artworkService,
+        _searchService = searchService,
+        _playbackService = playbackService,
+        _mediaProviderConfigService = mediaProviderConfigService,
+        _libraryMetadataRepository = libraryMetadataRepository,
+        _applicationStartedAt = applicationStartedAt,
+        _packageInfoLoader = packageInfoLoader ?? PackageInfo.fromPlatform,
+        _platformNameProvider = platformNameProvider ?? _defaultPlatformName,
+        _imageCacheAvailableProvider =
+            imageCacheAvailableProvider ?? _defaultImageCacheAvailable;
+
+  final CatalogService _catalogService;
+  final ArtworkService _artworkService;
+  final SearchService _searchService;
+  final PlaybackService _playbackService;
+  final MediaProviderConfigService _mediaProviderConfigService;
+  final LibraryMetadataRepository _libraryMetadataRepository;
+  final DateTime _applicationStartedAt;
+  final Future<PackageInfo> Function() _packageInfoLoader;
+  final String Function() _platformNameProvider;
+  final bool Function() _imageCacheAvailableProvider;
+
+  PackageInfo? _cachedPackageInfo;
+
+  /// When the application process started — fixed for the service lifetime.
+  DateTime get applicationStartedAt => _applicationStartedAt;
+
+  /// Builds a point-in-time snapshot of runtime diagnostics.
+  Future<RuntimeDiagnosticsSnapshot> captureSnapshot() async {
+    final capturedAt = DateTime.now().toUtc();
+    final application = await _captureApplication(capturedAt);
+    final provider = _captureProvider();
+    final catalogue = _captureCatalogue();
+    final cache = _captureCache();
+    final search = _captureSearch(catalogue);
+    final playback = _capturePlayback();
+    final library = _captureLibrary(catalogue);
+
+    return RuntimeDiagnosticsSnapshot(
+      capturedAt: capturedAt,
+      application: application,
+      provider: provider,
+      catalogue: catalogue,
+      cache: cache,
+      search: search,
+      playback: playback,
+      library: library,
+    );
+  }
+
+  /// Stable plain-text export for support bundles (formatter only — no I/O).
+  String formatExport(RuntimeDiagnosticsSnapshot snapshot) {
+    return formatDiagnosticsExport(snapshot);
+  }
+
+  Future<ApplicationDiagnostics> _captureApplication(DateTime capturedAt) async {
+    try {
+      _cachedPackageInfo ??= await _packageInfoLoader();
+      final info = _cachedPackageInfo!;
+      final elapsed = capturedAt.difference(_applicationStartedAt);
+      return ApplicationDiagnostics(
+        status: DiagnosticSectionStatus.complete,
+        appName: info.appName,
+        appVersion: info.version,
+        buildNumber: info.buildNumber,
+        platform: _platformNameProvider(),
+        startupElapsed: elapsed.isNegative ? Duration.zero : elapsed,
+      );
+    } catch (_) {
+      return const ApplicationDiagnostics(
+        status: DiagnosticSectionStatus.unavailable,
+      );
+    }
+  }
+
+  ProviderDiagnostics _captureProvider() {
+    try {
+      final snapshot = _catalogService.providerSnapshot;
+      final config = _mediaProviderConfigService.config;
+      final active = snapshot.activeProvider;
+      final rows = snapshot.providers
+          .map(
+            (record) => ProviderAttemptDiagnostics(
+              providerKindLabel:
+                  providerKindLabel(record.definition.kind.name),
+              healthLabel: record.health.name,
+              isActive: record.isActive,
+              lastErrorSummary: _safeErrorSummary(record.lastError),
+              lastAttemptAt: record.lastAttemptAt,
+              lastSuccessAt: record.lastSuccessAt,
+            ),
+          )
+          .toList(growable: false);
+
+      return ProviderDiagnostics(
+        status: DiagnosticSectionStatus.complete,
+        accessModeLabel: _accessModeLabel(snapshot.accessMode),
+        activeProviderKindLabel: active == null
+            ? 'Unavailable'
+            : providerKindLabel(active.kind.name),
+        activeSourceCategoryLabel:
+            _activeSourceCategoryLabel(snapshot, active),
+        configuredProviderCount: config.catalogueProviders.length,
+        isUsingFallback: _catalogService.isUsingFallback,
+        isDegradedLoad: snapshot.isDegradedLoad,
+        isDemoFallback: snapshot.isDemoFallback,
+        lastRefreshAt: _catalogService.lastRefreshedAt,
+        lastSuccessfulLoadAt: snapshot.lastCatalogueLoadAt,
+        lastLoadStartedAt: snapshot.lastLoadStartedAt,
+        lastCycleErrorSummary: _safeErrorSummary(snapshot.lastCycleError),
+        providers: rows,
+      );
+    } catch (_) {
+      return const ProviderDiagnostics(
+        status: DiagnosticSectionStatus.unavailable,
+        providers: [],
+      );
+    }
+  }
+
+  CatalogueDiagnostics? _captureCatalogue() {
+    try {
+      final catalog = _catalogService.catalog;
+      if (catalog == null) {
+        return null;
+      }
+      return CatalogueDiagnostics(
+        status: DiagnosticSectionStatus.complete,
+        catalogueIdentity: redactIdentity(catalog.catalogueIdentity),
+        sourceKindLabel: _catalogService.catalogueSourceLabel,
+        generatedAt: catalog.generatedAt,
+        libraryCount: catalog.folders.length,
+        folderCount: _countFolders(catalog.folders),
+        itemCount: catalog.totalItems,
+        isDemoData: _catalogService.isDemoCatalogue,
+        isDegraded: _catalogService.isDegradedLoad,
+        isLoading: _catalogService.isLoading,
+        lastErrorSummary: _safeErrorSummary(_catalogService.errorMessage),
+        lastSuccessfulReplacementAt: _catalogService.lastCatalogueLoadAt,
+      );
+    } catch (_) {
+      return const CatalogueDiagnostics(status: DiagnosticSectionStatus.unavailable);
+    }
+  }
+
+  CacheDiagnostics _captureCache() {
+    try {
+      int? budgetBytes;
+      int? currentBytes;
+      int? liveImageCount;
+      if (_imageCacheAvailableProvider()) {
+        final imageCache = PaintingBinding.instance.imageCache;
+        budgetBytes = imageCache.maximumSizeBytes;
+        currentBytes = imageCache.currentSizeBytes;
+        liveImageCount = imageCache.liveImageCount;
+      }
+
+      return CacheDiagnostics(
+        status: DiagnosticSectionStatus.complete,
+        artworkCandidateCount: _artworkService.cacheEntryCount,
+        artworkCandidateCapacity: _artworkService.cacheCapacity,
+        artworkEvictionCount: _artworkService.cacheEvictionCount,
+        imageCacheBudgetBytes: budgetBytes,
+        imageCacheCurrentBytes: currentBytes,
+        imageCacheLiveImageCount: liveImageCount,
+      );
+    } catch (_) {
+      return const CacheDiagnostics(status: DiagnosticSectionStatus.unavailable);
+    }
+  }
+
+  SearchDiagnostics _captureSearch(CatalogueDiagnostics? catalogue) {
+    try {
+      final indexedIdentity = _searchService.catalogueIdentity;
+      final activeIdentity = _catalogService.catalog?.catalogueIdentity;
+      final bool? matchesActive = activeIdentity == null
+          ? null
+          : indexedIdentity == activeIdentity;
+
+      return SearchDiagnostics(
+        status: DiagnosticSectionStatus.complete,
+        hasIndex: _searchService.hasIndex,
+        indexBuildCount: _searchService.indexBuildCount,
+        isBuildInFlight: _searchService.isBuildInFlight,
+        indexedCatalogueIdentity: redactIdentity(indexedIdentity),
+        indexedItemCount: _searchService.indexedItemCount,
+        indexMatchesActiveCatalogue: matchesActive,
+        lastBuildFailureCategory: null,
+      );
+    } catch (_) {
+      return const SearchDiagnostics(status: DiagnosticSectionStatus.unavailable);
+    }
+  }
+
+  PlaybackDiagnostics _capturePlayback() {
+    try {
+      final hasSession = _playbackService.currentItem != null;
+      final errorKind = _playbackService.playbackErrorKind;
+      final sessionItemId = hasSession
+          ? redactIdentity(_playbackService.currentItem!.id)
+          : null;
+
+      return PlaybackDiagnostics(
+        status: DiagnosticSectionStatus.complete,
+        engineLabel: useMediaKitPlayback ? 'media_kit' : 'video_player',
+        playbackPlatformSupported: !kIsWeb,
+        speedSettingsSupported: playbackSpeedSettingsSupported,
+        hasActiveSession: hasSession,
+        isMediaPrepared: hasSession ? _playbackService.isReady : null,
+        isPlaying: hasSession ? _playbackService.isPlaying : null,
+        isInitializing: hasSession ? _playbackService.isInitializing : null,
+        canChangePlaybackRate:
+            hasSession ? _playbackService.canChangePlaybackRate : null,
+        canSelectAudioTracks:
+            hasSession ? _playbackService.canSelectAudioTracks : null,
+        canSelectSubtitleTracks:
+            hasSession ? _playbackService.canSelectSubtitleTracks : null,
+        playbackRate: hasSession ? _playbackService.playbackRate : null,
+        errorKind: errorKind,
+        errorMessageSummary: _safeErrorSummary(_playbackService.errorMessage),
+        retryAvailable:
+            hasSession ? errorKind != null : null,
+        audioTrackCount: hasSession
+            ? _playbackService.availableAudioTracks.length
+            : null,
+        subtitleTrackCount: hasSession
+            ? _playbackService.availableSubtitleTracks.length
+            : null,
+        hasAudioTrackSelected: hasSession
+            ? _playbackService.selectedAudioTrackId != null
+            : null,
+        hasSubtitleTrackSelected: hasSession
+            ? _playbackService.selectedSubtitleTrackId != null
+            : null,
+        sessionItemId: sessionItemId,
+      );
+    } catch (_) {
+      return const PlaybackDiagnostics(status: DiagnosticSectionStatus.unavailable);
+    }
+  }
+
+  LibraryDiagnostics? _captureLibrary(CatalogueDiagnostics? catalogue) {
+    try {
+      if (!_libraryMetadataRepository.isLoaded) {
+        return null;
+      }
+
+      return LibraryDiagnostics(
+        status: DiagnosticSectionStatus.complete,
+        favouriteItemCount: _libraryMetadataRepository.favouriteItems.length,
+        favouriteFolderCount:
+            _libraryMetadataRepository.favouriteFolders.length,
+        metadataVersion: _libraryMetadataRepository.metadata.metadataVersion,
+        libraryCount: catalogue?.libraryCount,
+        folderCount: catalogue?.folderCount,
+        itemCount: catalogue?.itemCount,
+        continueWatchingCount: null,
+      );
+    } catch (_) {
+      return const LibraryDiagnostics(status: DiagnosticSectionStatus.unavailable);
+    }
+  }
+
+  static String _defaultPlatformName() {
+    if (kIsWeb) {
+      return 'web';
+    }
+    return Platform.operatingSystem;
+  }
+
+  static bool _defaultImageCacheAvailable() {
+    return WidgetsBinding.instance.isRootWidgetAttached ||
+        WidgetsBinding.instance.platformDispatcher.views.isNotEmpty;
+  }
+
+  static String _accessModeLabel(MediaAccessMode mode) {
+    switch (mode) {
+      case MediaAccessMode.localPreferred:
+        return 'Local preferred';
+      case MediaAccessMode.httpRequired:
+        return 'HTTP required';
+    }
+  }
+
+  static String _activeSourceCategoryLabel(
+    CatalogueProviderSnapshot snapshot,
+    MediaCatalogueProviderDefinition? active,
+  ) {
+    if (snapshot.isDemoFallback || snapshot.demoActiveWithoutProvider) {
+      return 'Demo';
+    }
+    if (active == null) {
+      return 'Unavailable';
+    }
+    switch (active.kind) {
+      case MediaCatalogueProviderKind.localFile:
+        return 'Local file';
+      case MediaCatalogueProviderKind.http:
+        return 'HTTPS';
+    }
+  }
+
+  static int _countFolders(List<MediaFolder> folders) {
+    var count = folders.length;
+    for (final folder in folders) {
+      count += _countFolders(folder.subfolders);
+    }
+    return count;
+  }
+
+  static String? _safeErrorSummary(String? message) {
+    if (message == null || message.isEmpty) {
+      return null;
+    }
+    final redacted = redactSensitiveText(message);
+    return redacted.isEmpty ? null : redacted;
+  }
+}

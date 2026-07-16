@@ -35,13 +35,13 @@ class SearchService {
   @visibleForTesting
   bool simulateBuildFailure = false;
 
-  @visibleForTesting
+  /// Lifetime count of completed index builds for this service instance.
   int get indexBuildCount => _indexBuildCount;
 
-  @visibleForTesting
+  /// Whether a search index is currently held for a catalogue identity.
   bool get hasIndex => _catalogueIdentity != null;
 
-  @visibleForTesting
+  /// Whether an index build [Future] is in flight.
   bool get isBuildInFlight => _buildFuture != null;
 
   List<String> get libraryNames => _libraryNames;

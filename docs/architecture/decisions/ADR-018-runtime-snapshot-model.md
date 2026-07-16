@@ -1,7 +1,6 @@
 # ADR-018: Runtime Snapshot Model
 
-**Status:** Proposed  
-**Date:** 2026-07-16  
+**Status:** Accepted — implemented (M4 Phase 4.6 Step 2, 2026-07-16)  
 **Milestone:** M4 Phase 4.6  
 **Authors:** M4 documentation pass
 
@@ -34,7 +33,16 @@ Immutable value object with:
 | `playback` | `PlaybackDiagnostics` | Required |
 | `library` | `LibraryDiagnostics?` | Null when metadata repo unavailable |
 
-Factory: `DiagnosticsService.buildSnapshot()` — no persistence, no streaming updates. UI may rebuild on navigation or manual refresh.
+Factory: `DiagnosticsService.captureSnapshot()` — no persistence, no streaming updates. UI may rebuild on navigation or manual refresh.
+
+**Implementation refinements (Step 2):**
+
+- `startupElapsed` = `capturedAt - applicationStartedAt` (increases on each capture; bootstrap timestamp fixed at service construction).
+- Catalogue identity: scanner-generated `CatalogueInfo.id` is safe; `redactIdentity()` truncates for display only — internal search/cache identities unchanged.
+- Provider section uses source category labels (`Local file`, `HTTPS`, `Demo`) — no hostnames or paths.
+- Playback: no media title or path; session bools are `null` without an active session.
+- `continueWatchingCount`: `null` (not applicable until async resume aggregation is justified).
+- `DiagnosticSectionStatus` on each section DTO for unavailable vs complete semantics.
 
 ### 2. Section DTOs and field contracts
 

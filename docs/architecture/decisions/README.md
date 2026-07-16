@@ -83,8 +83,8 @@ Every ADR must include these headings (use [ADR-template.md](./ADR-template.md))
 | [ADR-014](./ADR-014-catalogue-revision-cache-invalidation.md) | Catalogue Revision Cache Invalidation | Accepted |
 | [ADR-015](./ADR-015-artwork-and-image-decode-caching.md) | Artwork and Image Decode Caching | Accepted |
 | [ADR-016](./ADR-016-search-index-and-large-library-browsing.md) | Search Index and Large-Library Browsing | Accepted |
-| [ADR-017](./ADR-017-diagnostics-architecture.md) | Diagnostics Architecture | Proposed |
-| [ADR-018](./ADR-018-runtime-snapshot-model.md) | Runtime Snapshot Model | Proposed |
+| [ADR-017](./ADR-017-diagnostics-architecture.md) | Diagnostics Architecture | Accepted |
+| [ADR-018](./ADR-018-runtime-snapshot-model.md) | Runtime Snapshot Model | Accepted |
 | [ADR-019](./ADR-019-diagnostics-export-support-strategy.md) | Diagnostics Export and Support Strategy | Proposed |
 
 ---

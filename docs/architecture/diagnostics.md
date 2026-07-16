@@ -1,6 +1,6 @@
 # Diagnostics and Supportability (M4 Phase 4.6)
 
-**Status:** **Proposed** — Step 1 planning complete (2026-07-16); implementation not started  
+**Status:** **In progress** — Step 2 data layer implemented (2026-07-16)  
 **Related roadmap phase:** [M4 Phase 4.6 — Diagnostics and Supportability](../roadmap/m4-phase-4.6-diagnostics-supportability.md)
 
 → [Provider management](./provider-management.md)  
@@ -8,11 +8,11 @@
 → [Caching](./caching.md)  
 → [M3.5 remote fetch errors](../../client/ttsplayer/lib/services/remote_fetch_errors.dart) *(implementation reference)*
 
-**ADRs (Proposed):**
+**ADRs:**
 
-- [ADR-017: Diagnostics Architecture](./decisions/ADR-017-diagnostics-architecture.md)
-- [ADR-018: Runtime Snapshot Model](./decisions/ADR-018-runtime-snapshot-model.md)
-- [ADR-019: Diagnostics Export and Support Strategy](./decisions/ADR-019-diagnostics-export-support-strategy.md)
+- [ADR-017: Diagnostics Architecture](./decisions/ADR-017-diagnostics-architecture.md) — **Accepted**
+- [ADR-018: Runtime Snapshot Model](./decisions/ADR-018-runtime-snapshot-model.md) — **Accepted**
+- [ADR-019: Diagnostics Export and Support Strategy](./decisions/ADR-019-diagnostics-export-support-strategy.md) — **Proposed**
 
 ---
 
@@ -64,7 +64,18 @@ Give users and maintainers enough **in-app context** to diagnose catalogue, prov
 
 ---
 
-## Proposed architecture (ADR-017)
+## Implemented data layer (Step 2)
+
+| Component | Location | Status |
+|---|---|---|
+| `DiagnosticsService` | `client/ttsplayer/lib/services/diagnostics/diagnostics_service.dart` | ✅ Composition-root wired |
+| `RuntimeDiagnosticsSnapshot` + section DTOs | `runtime_diagnostics_models.dart` | ✅ Immutable |
+| Redaction | `diagnostics_redaction.dart` | ✅ Centralized |
+| Plain-text formatter | `diagnostics_export_formatter.dart` | ✅ No I/O (clipboard deferred) |
+
+**Not yet implemented:** Diagnostics screen, Settings navigation, clipboard, `PHASE_46_RUNTIME` harness.
+
+---
 
 ```
 Composition root (main.dart)
@@ -217,3 +228,4 @@ Opt-in: `PHASE_46_RUNTIME=1` in `test/phase_46_windows_runtime_test.dart`
 | Date | Change |
 |---|---|
 | 2026-07-16 | Step 1: instrumentation audit, proposed architecture, ADR-017–019 |
+| 2026-07-16 | Step 2: `DiagnosticsService` + snapshot DTOs implemented; ADR-017–018 accepted |

@@ -16,6 +16,7 @@ import 'services/media_access/media_provider_config_service.dart';
 import 'services/media_access/media_location_resolver.dart';
 import 'services/library/library_metadata_repository.dart';
 import 'services/settings/settings_repository.dart';
+import 'services/diagnostics/diagnostics_service.dart';
 import 'services/playback_service.dart';
 import 'services/scan_history_service.dart';
 import 'services/scanner_service.dart';
@@ -24,6 +25,7 @@ import 'widgets/artwork/artwork_image.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  final applicationStartedAt = DateTime.now().toUtc();
   configureArtworkFlutterImageCache();
   if (!kIsWeb && Platform.isWindows) {
     MediaKit.ensureInitialized();
@@ -58,6 +60,21 @@ Future<void> main() async {
     onCatalogReplaced: catalogCacheCoordinator.onCatalogReplaced,
   );
 
+  final playbackService = PlaybackService(
+    mediaLocationResolver: mediaLocationResolver,
+    defaultPlaybackRateProvider: () => settingsRepository.defaultPlaybackRate,
+  );
+
+  final diagnosticsService = DiagnosticsService(
+    catalogService: catalogService,
+    artworkService: artworkService,
+    searchService: searchService,
+    playbackService: playbackService,
+    mediaProviderConfigService: providerConfigService,
+    libraryMetadataRepository: libraryMetadataRepository,
+    applicationStartedAt: applicationStartedAt,
+  );
+
   runApp(
     MultiProvider(
       providers: [
@@ -76,13 +93,10 @@ Future<void> main() async {
         ChangeNotifierProvider<CatalogService>.value(
           value: catalogService,
         ),
-        ChangeNotifierProvider(
-          create: (_) => PlaybackService(
-            mediaLocationResolver: mediaLocationResolver,
-            defaultPlaybackRateProvider: () =>
-                settingsRepository.defaultPlaybackRate,
-          ),
+        ChangeNotifierProvider<PlaybackService>.value(
+          value: playbackService,
         ),
+        Provider<DiagnosticsService>.value(value: diagnosticsService),
         ChangeNotifierProvider(create: (_) => ScannerService()),
         ChangeNotifierProvider(create: (_) => ScanHistoryService()),
       ],
