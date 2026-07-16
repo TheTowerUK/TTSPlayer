@@ -1,6 +1,6 @@
 # Caching and Performance (M4 Phase 4.5 — planning)
 
-**Status:** **In progress** — Steps 2–5 implemented (2026-07-16)
+**Status:** **In progress** — Steps 2–6 implemented (2026-07-16)
 **Related roadmap phase:** [M4 Phase 4.5 — Performance and Caching](../roadmap/m4-phase-4.5-performance-caching.md)
 
 → [Provider refresh lifecycle](./decisions/ADR-002-provider-refresh-lifecycle.md)  
@@ -98,7 +98,25 @@ Failed loads do not invoke this chain ([ADR-002](./decisions/ADR-002-provider-re
 - Per-card `RepaintBoundary`, stable `ValueKey`s, `PageStorageKey` per folder id.
 - `FolderPresentationMetrics` — test-only build and view-prep counters.
 - `buildLargeCatalog()` factory for in-memory stress fixtures (not shipped).
+- `SearchPresentationMetrics` — test-only flatten counter (Step 6).
 - Search results list pre-flattens grouped rows (no per-index O(n) scan).
+
+### Step 6 — integration and benchmarks (implemented)
+
+| Layer | Role |
+|---|---|
+| `performance_integration_test.dart` | End-to-end lifecycle: catalogue replace, LRU, search, failure paths |
+| `performance_microbenchmarks_test.dart` | Opt-in `PHASE_45_BENCHMARK=1`; informational `Stopwatch` timings |
+| `large_catalog_factory.dart` | Small 100 / medium 2000 / large 10000 in-memory fixtures |
+
+**Deterministic gates:** coordinator callback counts, `indexBuildCount`, `cacheEntryCount` ≤ 500, lazy folder build inequalities, flatten-once-per-build.
+
+**Informational only:** micro-benchmark min/median/max printed to stdout; not pass/fail.
+
+```powershell
+$env:PHASE_45_BENCHMARK='1'
+flutter test test/performance_microbenchmarks_test.dart
+```
 
 ### Search ([ADR-016](./decisions/ADR-016-search-index-and-large-library-browsing.md)) — Step 4 implemented
 
@@ -143,8 +161,8 @@ Failed loads do not invoke this chain ([ADR-002](./decisions/ADR-002-provider-re
 | Layer | Role |
 |---|---|
 | **Step 0 baseline audit** | Capture measurable before-state |
-| **Unit / integration tests** | Invalidation, bounds, deferred index, no regression on demo catalogue |
-| **Micro-benchmarks** | Parse and index build on synthetic large fixture (test-only) |
+| **Unit / integration tests** | Invalidation, bounds, deferred index, lifecycle integration (Step 6) |
+| **Micro-benchmarks** | Opt-in `PHASE_45_BENCHMARK=1`; informational timings on 100/2000/10000 fixtures |
 | **Phase 4.5 Windows runtime harness** | Scroll smoke, search open while indexing, refresh invalidation |
 | **Manual desktop QA** | Subjective 60fps scroll on real large NAS folder |
 

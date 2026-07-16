@@ -104,6 +104,12 @@ Folder browse already uses lazy `SliverChildBuilderDelegate` grids; the bottlene
 
 ---
 
+## Implementation notes (Step 6)
+
+Lifecycle integration tests and opt-in micro-benchmarks (`performance_integration_test.dart`, `performance_microbenchmarks_test.dart`) assert `indexBuildCount` per the lifecycle above without wall-clock pass/fail gates. Search result flatten-once behaviour tracked via `SearchPresentationMetrics`.
+
+---
+
 ## Related documents
 
 - [ADR-014: Catalogue Revision Cache Invalidation](./ADR-014-catalogue-revision-cache-invalidation.md)

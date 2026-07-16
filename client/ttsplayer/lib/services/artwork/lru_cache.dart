@@ -34,6 +34,7 @@ class LruCache<K, V> {
   void clear() {
     _entries.clear();
     _order.clear();
+    _evictionCount = 0;
   }
 
   void _touch(K key) {
@@ -41,8 +42,14 @@ class LruCache<K, V> {
     _order.add(key);
   }
 
+  int _evictionCount = 0;
+
+  /// Number of LRU evictions performed (test observability only).
+  int get evictionCount => _evictionCount;
+
   void _evictIfNeeded() {
     if (_entries.length < maxCapacity) return;
+    _evictionCount++;
     final lru = _order.first;
     _order.removeAt(0);
     _entries.remove(lru);

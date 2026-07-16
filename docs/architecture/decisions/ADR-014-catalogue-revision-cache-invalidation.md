@@ -75,7 +75,7 @@ TTSPlayer holds several **derived** in-memory structures from the loaded `Catalo
 
 ## Implementation
 
-Wired in M4 Phase 4.5 Step 2 (`main.dart`, `catalog_cache_coordinator.dart`). Regression tests in `catalog_cache_invalidation_test.dart`.
+Wired in M4 Phase 4.5 Step 2 (`main.dart`, `catalog_cache_coordinator.dart`). Regression tests in `catalog_cache_invalidation_test.dart`. Step 6 end-to-end lifecycle in `performance_integration_test.dart`.
 
 ---
 

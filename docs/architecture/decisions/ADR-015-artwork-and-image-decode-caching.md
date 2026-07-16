@@ -80,7 +80,7 @@ Phase 4.3 unified artwork across dashboard, folder, search, and detail. Phase 4.
 | **Invalidation** | `clearCache()` via `CatalogCacheCoordinator` (ADR-014) |
 | **Limitations** | No disk cache; placeholder entries cached; no negative decode cache |
 
-Tests: `lru_cache_test.dart`, `artwork_service_lru_test.dart`, `artwork_decode_size_test.dart`, `artwork_image_test.dart`.
+Tests: `lru_cache_test.dart`, `artwork_service_lru_test.dart`, `artwork_decode_size_test.dart`, `artwork_image_test.dart`. Step 6 integration and opt-in benchmarks in `performance_integration_test.dart` / `performance_microbenchmarks_test.dart` (`cacheEvictionCount`, sustained 600 identities).
 
 ---
 

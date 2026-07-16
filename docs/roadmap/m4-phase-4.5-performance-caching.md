@@ -1,6 +1,6 @@
 # M4 Phase 4.5 — Performance and Caching (Implementation Specification)
 
-**Status:** **In progress** — Step 5 complete (2026-07-16); Step 6 next
+**Status:** **In progress** — Step 6 complete (2026-07-16); Step 7 next
 **Milestone:** M4 — User Experience and Platform Integration  
 **Branch:** `m4-development`  
 **Development version:** `v0.5.0-dev`  
@@ -58,8 +58,8 @@ Step 0 captures inventory; Steps 6–7 record numbers. Targets below are **accep
 | **3** | Artwork candidate bounds + image decode | ✅ Complete — LRU 500, decode hints, ImageCache budget |
 | **4** | Search index lifecycle + startup deferral | ✅ Complete — deferred build, identity guard, concurrency |
 | **5** | Large-folder scroll tuning + memory hooks | ✅ Complete — lazy grids tuned, metrics, fixture |
-| **6** | Integration tests + micro-benchmarks | **Next** |
-| **7** | Windows runtime validation | Planned |
+| **6** | Integration tests + micro-benchmarks | ✅ Complete — lifecycle integration + opt-in benchmarks |
+| **7** | Windows runtime validation | **Next** |
 | **8** | Closure | Planned |
 
 **Suggested commit cadence:** invalidation wiring → artwork → search → scroll tuning → tests/benchmarks → harness → docs closure.
@@ -340,21 +340,144 @@ No `PageStorageKey`, `scrollCacheExtent`, or explicit delegate flags before Step
 
 ---
 
-## Step 6 — Integration tests + micro-benchmarks
+## Step 6 — Integration tests + micro-benchmarks — ✅ complete
 
-### Test additions
+### Objective
 
-| File / area | Scenarios |
+Connect Steps 2–5 unit evidence into end-to-end lifecycle scenarios. Provide deterministic operation-count gates and opt-in informational micro-benchmarks — **no fragile wall-clock pass/fail thresholds** in the normal test suite.
+
+### Pre-Step-6 evidence map (Steps 2–5 — reused, not duplicated)
+
+| Evidence | Source | What it proves |
+|---|---|---|
+| Coordinator invocation once per successful replace | `catalog_cache_invalidation_test.dart` | Artwork clear → search invalidate → favourites validate |
+| Failed load/rescan preserves caches | Same + `CatalogService` integration tests | Last-good catalogue; coordinator not invoked |
+| Artwork `cacheEntryCount` ≤ 500 | `artwork_service_lru_test.dart`, `lru_cache_test.dart` | LRU capacity, eviction, entity-scoped keys |
+| Flutter `ImageCache` 100 MB budget | `artwork_image_test.dart` | Startup budget configured |
+| `SearchService.indexBuildCount` lifecycle | `search_service_lifecycle_test.dart` (13 tests) | Deferred build, identity guard, concurrency |
+| Search open without query — zero builds | `search_presentation_test.dart` (tests 25–28) | Presentation deferral |
+| `FolderPresentationMetrics` lazy bounds | `large_folder_presentation_test.dart` (13 tests) | Initial builds ≪ total; scroll incremental |
+| 2 000-item in-memory factory | `test/support/large_catalog_factory.dart` | Deterministic fixture; no static JSON blob |
+| Search result grouping | `search_presentation_test.dart` | Group order and empty states |
+| Phase 4.5 Windows runtime harness | `phase_45_windows_runtime_test.dart` (`PHASE_45_RUNTIME=1`) | Observational scroll/search smoke (Step 7 extends) |
+| Catalogue load/refresh/rescan | Existing `catalog_service` + provider tests | Last-good semantics baseline |
+
+Step 6 **connects** these components; it does not re-assert every unit invariant.
+
+### Delivered
+
+| Item | Location |
 |---|---|
-| `catalog_cache_invalidation_test.dart` | Replace vs failed refresh side effects |
-| `artwork_service_lru_test.dart` | Cap, eviction, clear |
-| `search_service_lifecycle_test.dart` | Deferred build, identity, shared instance |
-| `catalog_performance_test.dart` | Parse + index build timing on synthetic fixture (threshold assert or skip in CI) |
+| Integration lifecycle suite | `test/performance_integration_test.dart` (7 tests) |
+| Opt-in micro-benchmarks | `test/performance_microbenchmarks_test.dart` (`PHASE_45_BENCHMARK=1`) |
+| Benchmark report helper | `test/support/performance_benchmark_report.dart` |
+| Search flatten metrics | `lib/features/search/search_presentation_metrics.dart` |
+| Extended fixture sizes | `large_catalog_factory.dart` — small **100**, medium **2000**, large **10000** |
+| Artwork eviction observability | `LruCache.evictionCount`, `ArtworkService.cacheEvictionCount` |
 
-### Synthetic fixture
+### Integration lifecycle proven
 
-- Add `test/fixtures/catalog_large.json` (or generator) — flat or shallow tree, **~5 000** items, valid schema.
-- Not used as default app asset.
+```text
+Initial catalogue active (PERF-A, 2000 items)
+  → resolve 600 artwork identities (LRU bounded; evictions > 0)
+  → first search (indexBuildCount = 1)
+  → repeated searches (indexBuildCount unchanged)
+  → successful replace (PERF-B)
+  → coordinator: artwork clear once; search invalidate only (no eager rebuild)
+  → browse/search new catalogue (one new index build on first search)
+  → failed refresh (missing file)
+  → last-good PERF-B preserved; caches unchanged
+```
+
+Additional groups: search flatten widget integration, large-folder lazy metrics widget integration, failure-path (build retry, replacement during in-flight build, favourites reconciliation failure).
+
+### Deterministic pass/fail gates (operation counts and bounds)
+
+| Assertion | Gate type |
+|---|---|
+| `clearInvocations` / coordinator callbacks per replace | Deterministic |
+| `indexBuildCount` per ADR-016 lifecycle | Deterministic |
+| `cacheEntryCount` ≤ 500 under sustained browse | Deterministic |
+| `cacheEvictionCount` > 0 beyond capacity | Deterministic |
+| `FolderPresentationMetrics` initial builds < total items | Deterministic (structural inequality) |
+| `SearchPresentationMetrics.flattenInvocationCount` per list build | Deterministic |
+| Catalogue `catalogueIdentity` before/after transitions | Deterministic |
+| Failed replacement preserves index + artwork | Deterministic |
+
+### Informational only (not pass/fail)
+
+| Measurement | Notes |
+|---|---|
+| Micro-benchmark min/median/max/total µs | `Stopwatch`; warm-up + iterations; printed only when `PHASE_45_BENCHMARK=1` |
+| Windows runtime harness timings | Machine-specific; Step 7 |
+| Process memory / FPS | Explicitly rejected as CI gates |
+
+**Why wall-clock thresholds were rejected:** Parse and index timings vary widely by CPU and CI load; operation-count and bound assertions prove architectural intent without flaky gates.
+
+### Benchmark invocation
+
+```powershell
+cd client\ttsplayer
+$env:PHASE_45_BENCHMARK='1'
+flutter test test/performance_microbenchmarks_test.dart
+Remove-Item Env:PHASE_45_BENCHMARK -ErrorAction SilentlyContinue
+flutter test   # benchmark reports 1 clean skip (~1)
+```
+
+**Warm-up / iteration strategy:** Default 3 warm-up + 10 measure iterations per operation (`PerformanceBenchmarkReport`); artwork sustained insertion uses 1 + 3; large 10k index uses 1 + 3.
+
+### Fixture sizes
+
+| Name | Items | Usage |
+|---|---|---|
+| Small | 100 | Integration search flatten; benchmark replace identity |
+| Medium | 2 000 | Integration lifecycle; folder/search benchmarks |
+| Large | 10 000 | Opt-in benchmark only (`search_index_build_large`) |
+
+Stable IDs, identities, folder structure, extensions — generated in memory via `buildLargeCatalog()`; no NAS, network, or multi-megabyte JSON asset.
+
+### Observed benchmark output (dev Windows, informational)
+
+| Operation | n | median |
+|---|---|---|
+| `search_index_first_build` | 2000 | ~2.1 ms |
+| `search_query_warm_index` | 2000 | ~2.1 ms |
+| `search_invalidate_only` | 2000 | ~0 µs |
+| `search_index_rebuild_after_replace` | 100 | ~95 µs |
+| `folder_view_prepare` | 2000 | ~63 µs |
+| `folder_view_memoized_reuse` | 2000 | ~2 µs |
+| `folder_view_filter_change` | 2000 | ~388 µs |
+| `artwork_populate_beyond_capacity` | 600 | ~5.7 ms |
+| `artwork_cache_hit` | 600 | ~12 µs (evictions=100) |
+| `search_index_build_large` | 10000 | ~11 ms |
+
+Values are local observations only — not SLA claims.
+
+### Test evidence (Step 6 additions)
+
+| File | Tests | Focus |
+|---|---|---|
+| `performance_integration_test.dart` | 7 | End-to-end lifecycle, flatten, folder lazy, failure paths |
+| `performance_microbenchmarks_test.dart` | 4 (+1 skip) | Opt-in timings |
+
+**Focused suite commands:**
+
+```powershell
+flutter test test/performance_integration_test.dart
+flutter test test/large_folder_presentation_test.dart
+flutter test test/search_service_lifecycle_test.dart
+flutter test test/artwork_service_lru_test.dart
+flutter test test/catalog_cache_invalidation_test.dart
+```
+
+### Known limitations
+
+- No isolates for index build; 10k benchmark still runs on test isolate.
+- Widget lazy card counts use structural inequalities, not exact viewport-dependent counts.
+- Runtime harness not extended in Step 6 — Step 7 owns Windows validation pass.
+- No production telemetry or persistent metrics.
+
+**Commit:** `test(m4): add performance integration benchmarks`
 
 ---
 
@@ -448,3 +571,6 @@ Mirror 4.1–4.4: opt-in `PHASE_45_RUNTIME=1`, file `test/phase_45_windows_runti
 | 2026-07-14 | Initial specification; Step 0 audit; ADR-014–016 accepted |
 | 2026-07-14 | Step 2 cache invalidation orchestration complete |
 | 2026-07-15 | Step 3 artwork LRU + decode sizing complete |
+| 2026-07-15 | Step 4 deferred search index lifecycle complete |
+| 2026-07-16 | Step 5 large-folder scroll tuning complete (`6ed7b17`) |
+| 2026-07-16 | Step 6 integration tests + opt-in micro-benchmarks complete |

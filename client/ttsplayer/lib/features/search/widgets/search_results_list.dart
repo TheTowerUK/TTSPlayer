@@ -4,6 +4,7 @@ import '../../../library/folder_display_context.dart';
 import '../../../models/catalog.dart';
 import '../../../theme/app_theme.dart';
 import '../models/search_result.dart';
+import '../search_presentation_metrics.dart';
 import '../search_result_grouper.dart';
 import 'search_result_row.dart';
 
@@ -26,6 +27,7 @@ class SearchResultsList extends StatelessWidget {
   Widget build(BuildContext context) {
     final groups = groupSearchResultsByLibrary(results);
     final showHeaders = groups.length > 1;
+    SearchPresentationMetrics.recordFlatten();
     final rows = _flattenGroups(groups, showHeaders);
 
     return ListView.separated(

@@ -1,11 +1,17 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:ttsplayer/models/catalog.dart';
 import 'package:ttsplayer/models/media_folder.dart';
 import 'package:ttsplayer/models/media_item.dart';
 
-/// Generates large in-memory catalogues for lazy-browse and cache tests.
-///
-/// Not shipped as app assets — constructed in test or opt-in runtime harness.
-Catalog buildLargeCatalog({
+/// Standard fixture sizes for performance tests and opt-in benchmarks.
+const int smallCatalogItemCount = 100;
+const int mediumCatalogItemCount = 2000;
+const int largeCatalogItemCount = 10000;
+
+/// JSON map for a generated catalogue (test/benchmark only).
+Map<String, dynamic> largeCatalogJson({
   int itemCount = 2000,
   int subfolderCount = 0,
   int subfolderItemCount = 0,
@@ -55,7 +61,7 @@ Catalog buildLargeCatalog({
     subfolders: subfolders,
   );
 
-  return Catalog.fromJson({
+  return {
     'generated_at': '2026-07-16T10:00:00+00:00',
     'total_items': itemCount + (subfolderCount * subfolderItemCount),
     'catalogue': {
@@ -65,7 +71,68 @@ Catalog buildLargeCatalog({
       'supported_extensions': ['mp4', 'mkv'],
     },
     'folders': [folder.toJson()],
-  });
+  };
+}
+
+/// Generates large in-memory catalogues for lazy-browse and cache tests.
+///
+/// Not shipped as app assets — constructed in test or opt-in runtime harness.
+Catalog buildLargeCatalog({
+  int itemCount = 2000,
+  int subfolderCount = 0,
+  int subfolderItemCount = 0,
+  String catalogueIdentity = 'large-test-catalogue',
+  String libraryName = 'Large Library',
+  String folderId = 'large-folder',
+  String folderPath = r'Y:\Media\Large',
+}) {
+  return Catalog.fromJson(
+    largeCatalogJson(
+      itemCount: itemCount,
+      subfolderCount: subfolderCount,
+      subfolderItemCount: subfolderItemCount,
+      catalogueIdentity: catalogueIdentity,
+      libraryName: libraryName,
+      folderId: folderId,
+      folderPath: folderPath,
+    ),
+  );
+}
+
+/// Serialises a catalogue produced by [buildLargeCatalog] for file-based loads.
+Map<String, dynamic> largeCatalogToJson(Catalog catalog) {
+  final info = catalog.catalogueInfo;
+  return {
+    'generated_at': catalog.generatedAt,
+    'total_items': catalog.totalItems,
+    if (info != null)
+      'catalogue': {
+        'id': info.id,
+        'scanner_version': info.scannerVersion,
+        'catalogue_version': info.catalogueVersion,
+        'supported_extensions': info.supportedExtensions,
+      },
+    'folders': catalog.folders.map((f) => f.toJson()).toList(),
+  };
+}
+
+/// Writes a generated catalogue JSON file and returns its path.
+Future<String> writeLargeCatalogFile(
+  Directory dir, {
+  int itemCount = 2000,
+  String catalogueIdentity = 'large-test-catalogue',
+  String filename = 'catalog.json',
+}) async {
+  final file = File('${dir.path}/$filename');
+  await file.writeAsString(
+    jsonEncode(
+      largeCatalogJson(
+        itemCount: itemCount,
+        catalogueIdentity: catalogueIdentity,
+      ),
+    ),
+  );
+  return file.path;
 }
 
 /// Returns the primary large-folder node from [buildLargeCatalog].

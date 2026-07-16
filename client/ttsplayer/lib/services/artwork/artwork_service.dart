@@ -37,6 +37,10 @@ class ArtworkService {
     }
   }
 
+  /// Number of LRU evictions in the artwork candidate cache.
+  @visibleForTesting
+  int get cacheEvictionCount => _cache.evictionCount;
+
   void clearCache() => _cache.clear();
 
   ArtworkCandidate forLibrary(MediaFolder folder) =>
