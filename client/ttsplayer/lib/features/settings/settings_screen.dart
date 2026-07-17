@@ -11,6 +11,7 @@ import '../../services/media_access/media_provider_config_service.dart';
 import '../../services/settings/settings_repository.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/tts_app_bar.dart';
+import 'diagnostics_screen.dart';
 import 'widgets/media_provider_settings_form.dart';
 import 'widgets/settings_section.dart';
 
@@ -241,6 +242,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() => _populateNetworkFromRepository(repository));
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Network settings reset to defaults.')),
+    );
+  }
+
+  Future<void> _openDiagnostics() async {
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => const DiagnosticsScreen(),
+      ),
     );
   }
 
@@ -513,6 +523,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 Text(
                                   _appVersion ?? 'Unknown',
                                   key: const Key('app_version'),
+                                ),
+                                const SizedBox(height: AppSpacing.base),
+                                ListTile(
+                                  key: const Key('view_diagnostics'),
+                                  contentPadding: EdgeInsets.zero,
+                                  leading: const Icon(
+                                    Icons.monitor_heart_outlined,
+                                  ),
+                                  title: const Text('View diagnostics'),
+                                  subtitle: const Text(
+                                    'Read-only runtime state for troubleshooting.',
+                                  ),
+                                  trailing: const Icon(Icons.chevron_right),
+                                  onTap: _openDiagnostics,
                                 ),
                                 const SizedBox(height: AppSpacing.base),
                                 OutlinedButton.icon(

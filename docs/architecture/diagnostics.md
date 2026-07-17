@@ -73,7 +73,16 @@ Give users and maintainers enough **in-app context** to diagnose catalogue, prov
 | Redaction | `diagnostics_redaction.dart` | ✅ Centralized |
 | Plain-text formatter | `diagnostics_export_formatter.dart` | ✅ No I/O (clipboard deferred) |
 
-**Not yet implemented:** Diagnostics screen, Settings navigation, clipboard, `PHASE_46_RUNTIME` harness.
+**Not yet implemented:** Clipboard copy, file export, `PHASE_46_RUNTIME` harness.
+
+### Diagnostics screen (Step 4)
+
+| Component | Location |
+|---|---|
+| `DiagnosticsScreen` | `client/ttsplayer/lib/features/settings/diagnostics_screen.dart` |
+| Settings entry | `SettingsScreen` → View diagnostics |
+| Formatters | `diagnostics_formatters.dart` |
+| Widgets | `widgets/diagnostics_*.dart` |
 
 ---
 
@@ -228,4 +237,4 @@ Opt-in: `PHASE_46_RUNTIME=1` in `test/phase_46_windows_runtime_test.dart`
 | Date | Change |
 |---|---|
 | 2026-07-16 | Step 1: instrumentation audit, proposed architecture, ADR-017–019 |
-| 2026-07-16 | Step 2: `DiagnosticsService` + snapshot DTOs implemented; ADR-017–018 accepted |
+| 2026-07-17 | Step 4: Diagnostics screen UI + Settings navigation |

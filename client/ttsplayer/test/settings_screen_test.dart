@@ -6,14 +6,21 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ttsplayer/features/search/search_service.dart';
+import 'package:ttsplayer/features/settings/diagnostics_screen.dart';
 import 'package:ttsplayer/features/settings/settings_screen.dart';
 import 'package:ttsplayer/models/application_settings.dart';
 import 'package:ttsplayer/models/playback/playback_rate_presets.dart';
+import 'package:ttsplayer/services/artwork/artwork_service.dart';
+import 'package:ttsplayer/services/diagnostics/diagnostics_service.dart';
 import 'package:ttsplayer/services/playback_platform.dart';
+import 'package:ttsplayer/services/playback_service.dart';
 import 'package:ttsplayer/services/library/library_metadata_repository.dart';
 import 'package:ttsplayer/services/media_access/media_provider_config_service.dart';
 import 'package:ttsplayer/services/settings/settings_repository.dart';
 import 'package:ttsplayer/theme/app_theme.dart';
+
+import 'support/diagnostics_test_harness.dart';
 
 class _RejectPlaybackSaveRepository extends SettingsRepository {
   @override
@@ -28,6 +35,7 @@ class _RejectPlaybackSaveRepository extends SettingsRepository {
 Widget _settingsHarness(
   SettingsRepository repository, {
   LibraryMetadataRepository? metadataRepository,
+  DiagnosticsService? diagnosticsService,
 }) {
   return MultiProvider(
     providers: [
@@ -37,6 +45,8 @@ Widget _settingsHarness(
         ChangeNotifierProvider<LibraryMetadataRepository>.value(
           value: metadataRepository,
         ),
+      if (diagnosticsService != null)
+        Provider<DiagnosticsService>.value(value: diagnosticsService),
     ],
     child: MaterialApp(
       theme: AppTheme.dark,
@@ -49,6 +59,7 @@ Future<void> _pumpSettingsScreen(
   WidgetTester tester,
   SettingsRepository repository, {
   LibraryMetadataRepository? metadataRepository,
+  DiagnosticsService? diagnosticsService,
 }) async {
   tester.view.physicalSize = const Size(900, 900);
   tester.view.devicePixelRatio = 1.0;
@@ -56,7 +67,11 @@ Future<void> _pumpSettingsScreen(
 
   await repository.initialize();
   await tester.pumpWidget(
-    _settingsHarness(repository, metadataRepository: metadataRepository),
+    _settingsHarness(
+      repository,
+      metadataRepository: metadataRepository,
+      diagnosticsService: diagnosticsService,
+    ),
   );
   await tester.pump();
   for (var i = 0; i < 10; i++) {
@@ -452,6 +467,110 @@ void main() {
 
       expect(find.textContaining('1.25×'), findsOneWidget);
       expect(repository.defaultPlaybackRate, 1.25);
+    });
+  });
+
+  group('SettingsScreen — diagnostics (M4.4.6 Step 4)', () {
+    testWidgets('shows View diagnostics entry', (tester) async {
+      PackageInfo.setMockInitialValues(
+        appName: 'TTSPlayer',
+        packageName: 'ttsplayer',
+        version: '0.5.0-dev',
+        buildNumber: '42',
+        buildSignature: 'sig',
+        installerStore: null,
+      );
+      SharedPreferences.setMockInitialValues({});
+      final repository = SettingsRepository();
+      final diagnostics = await buildDiagnosticsHarness();
+      await _pumpSettingsScreen(
+        tester,
+        repository,
+        diagnosticsService: diagnostics,
+      );
+
+      expect(find.byKey(const Key('view_diagnostics')), findsOneWidget);
+      expect(find.text('View diagnostics'), findsOneWidget);
+    });
+
+    testWidgets('opens DiagnosticsScreen without capturing before navigation',
+        (tester) async {
+      PackageInfo.setMockInitialValues(
+        appName: 'TTSPlayer',
+        packageName: 'ttsplayer',
+        version: '0.5.0-dev',
+        buildNumber: '42',
+        buildSignature: 'sig',
+        installerStore: null,
+      );
+      SharedPreferences.setMockInitialValues({});
+      final repository = SettingsRepository();
+      final metadata = LibraryMetadataRepository();
+      await metadata.initialize();
+      final config = MediaProviderConfigService();
+      await config.load();
+      final wrapped = FakeDiagnosticsService(
+        catalogService: StubCatalogService(
+          stubCatalog: diagnosticsCatalog(identity: 'REV-SET', itemCount: 1),
+        ),
+        artworkService: ArtworkService(fileExists: (_) => true),
+        searchService: SearchService(),
+        playbackService: PlaybackService(),
+        mediaProviderConfigService: config,
+        libraryMetadataRepository: metadata,
+        applicationStartedAt: DateTime.utc(2026, 7, 16, 9),
+      );
+
+      await _pumpSettingsScreen(
+        tester,
+        repository,
+        diagnosticsService: wrapped,
+      );
+
+      expect(wrapped.captureCount, 0);
+
+      await tester.ensureVisible(find.byKey(const Key('view_diagnostics')));
+      await tester.tap(find.byKey(const Key('view_diagnostics')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(DiagnosticsScreen), findsOneWidget);
+      expect(wrapped.captureCount, greaterThanOrEqualTo(1));
+    });
+
+    testWidgets('unsaved network changes remain after returning from diagnostics',
+        (tester) async {
+      PackageInfo.setMockInitialValues(
+        appName: 'TTSPlayer',
+        packageName: 'ttsplayer',
+        version: '0.5.0-dev',
+        buildNumber: '42',
+        buildSignature: 'sig',
+        installerStore: null,
+      );
+      SharedPreferences.setMockInitialValues({});
+      final repository = SettingsRepository();
+      final diagnostics = await buildDiagnosticsHarness();
+      await _pumpSettingsScreen(
+        tester,
+        repository,
+        diagnosticsService: diagnostics,
+      );
+
+      await tester.enterText(
+        find.byKey(const Key('catalogue_fetch_timeout')),
+        '45',
+      );
+      await tester.pump();
+
+      await tester.ensureVisible(find.byKey(const Key('view_diagnostics')));
+      await tester.tap(find.byKey(const Key('view_diagnostics')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Back'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('45'), findsOneWidget);
+      final saveButton = find.byKey(const Key('save_network_settings'));
+      expect(tester.widget<FilledButton>(saveButton).onPressed, isNotNull);
     });
   });
 }

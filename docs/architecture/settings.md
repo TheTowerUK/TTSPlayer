@@ -7,7 +7,7 @@
 → [Phase 4.2 specification](../roadmap/m4-phase-4.2-settings-framework.md)  
 → [Runtime validation results](../roadmap/m4-phase-4.2-settings-framework.md#windows-runtime-validation-2026-07-12)  
 → [Playback](./playback.md) *(4.4 — spec accepted)*  
-→ [Diagnostics](./diagnostics.md) *(4.6 — deferred deep detail)*
+→ [Diagnostics](./diagnostics.md) *(4.6 — View diagnostics from Settings)*
 
 **ADRs (Accepted):**
 
@@ -30,7 +30,7 @@ Provide a **structured, versioned preferences architecture** that evolved the M3
 | Versioned envelope | `ttsplayer_settings_v1` JSON in `shared_preferences` |
 | Load order | Envelope → legacy `media_provider_config_v1` migration → defaults |
 | Legacy dual-read | One-release read of legacy provider key during migration |
-| Grouped UI | Single scrollable `SettingsScreen` with General, Library & Providers, Playback (placeholder), Network, Diagnostics |
+| Grouped UI | Single scrollable `SettingsScreen` with General, Library & Providers, Playback, Network, Diagnostics & Advanced (version, **View diagnostics**, reset) |
 | Provider editor | Same fields as M3.5 standalone screen; embedded in Library & Providers |
 | Network timeout | 5–120 seconds; consumed by `CatalogService` per HTTP fetch |
 | Save apply (ADR-006) | Provider/network save does **not** auto-reload catalogue |

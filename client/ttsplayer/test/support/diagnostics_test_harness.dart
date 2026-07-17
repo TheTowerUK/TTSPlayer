@@ -1,4 +1,8 @@
+import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:provider/provider.dart';
+import 'package:ttsplayer/features/settings/diagnostics_screen.dart';
+import 'package:ttsplayer/theme/app_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ttsplayer/features/search/search_service.dart';
 import 'package:ttsplayer/models/catalog.dart';
@@ -239,44 +243,106 @@ MediaFolder diagnosticsMediaFolder() {
 
 RuntimeDiagnosticsSnapshot minimalSnapshot({
   DateTime? capturedAt,
+  SearchDiagnostics? search,
+  PlaybackDiagnostics? playback,
+  LibraryDiagnostics? library,
+  ProviderDiagnostics? provider,
+  CacheDiagnostics? cache,
+  bool omitLibrary = false,
 }) {
   final at = capturedAt ?? DateTime.utc(2026, 7, 16, 12);
   return RuntimeDiagnosticsSnapshot(
     capturedAt: at,
     application: const ApplicationDiagnostics(
       status: DiagnosticSectionStatus.complete,
+      appName: 'TTSPlayer',
       appVersion: '0.5.0-dev',
       buildNumber: '42',
       platform: 'windows',
       startupElapsed: Duration(minutes: 3),
     ),
-    provider: const ProviderDiagnostics(
-      status: DiagnosticSectionStatus.complete,
-      accessModeLabel: 'Local preferred',
-    ),
+    provider: provider ??
+        const ProviderDiagnostics(
+          status: DiagnosticSectionStatus.complete,
+          accessModeLabel: 'Local preferred',
+        ),
     catalogue: const CatalogueDiagnostics(
       status: DiagnosticSectionStatus.complete,
       catalogueIdentity: '2026-07-14T1…',
       itemCount: 2,
+      libraryCount: 1,
+      folderCount: 2,
     ),
-    cache: const CacheDiagnostics(
-      status: DiagnosticSectionStatus.complete,
-      artworkCandidateCount: 1,
-      artworkCandidateCapacity: 500,
-    ),
-    search: const SearchDiagnostics(
-      status: DiagnosticSectionStatus.complete,
-      hasIndex: false,
-      indexBuildCount: 0,
-    ),
-    playback: const PlaybackDiagnostics(
-      status: DiagnosticSectionStatus.complete,
-      engineLabel: 'media_kit',
-    ),
-    library: const LibraryDiagnostics(
-      status: DiagnosticSectionStatus.complete,
-      favouriteItemCount: 0,
-      favouriteFolderCount: 0,
+    cache: cache ??
+        const CacheDiagnostics(
+          status: DiagnosticSectionStatus.complete,
+          artworkCandidateCount: 1,
+          artworkCandidateCapacity: 500,
+          imageCacheCurrentBytes: 44 * 1024 * 1024,
+          imageCacheBudgetBytes: 100 * 1024 * 1024,
+        ),
+    search: search ??
+        const SearchDiagnostics(
+          status: DiagnosticSectionStatus.complete,
+          hasIndex: false,
+          indexBuildCount: 0,
+        ),
+    playback: playback ??
+        const PlaybackDiagnostics(
+          status: DiagnosticSectionStatus.complete,
+          engineLabel: 'media_kit',
+          hasActiveSession: false,
+        ),
+    library: omitLibrary
+        ? null
+        : (library ??
+            const LibraryDiagnostics(
+              status: DiagnosticSectionStatus.complete,
+              favouriteItemCount: 0,
+              favouriteFolderCount: 0,
+            )),
+  );
+}
+
+/// Test double with controllable [captureSnapshot] behaviour.
+class FakeDiagnosticsService extends DiagnosticsService {
+  FakeDiagnosticsService({
+    required super.catalogService,
+    required super.artworkService,
+    required super.searchService,
+    required super.playbackService,
+    required super.mediaProviderConfigService,
+    required super.libraryMetadataRepository,
+    required super.applicationStartedAt,
+  });
+
+  int captureCount = 0;
+  Duration captureDelay = Duration.zero;
+  Object? throwOnCapture;
+  RuntimeDiagnosticsSnapshot Function(int captureCount)? snapshotFactory;
+
+  @override
+  Future<RuntimeDiagnosticsSnapshot> captureSnapshot() async {
+    captureCount++;
+    if (captureDelay > Duration.zero) {
+      await Future<void>.delayed(captureDelay);
+    }
+    if (throwOnCapture != null) {
+      throw throwOnCapture!;
+    }
+    if (snapshotFactory != null) {
+      return snapshotFactory!(captureCount);
+    }
+    return minimalSnapshot();
+  }
+}
+
+Widget diagnosticsScreenHarness(DiagnosticsService service) {
+  return Provider<DiagnosticsService>.value(
+    value: service,
+    child: MaterialApp(
+      theme: AppTheme.dark,
+      home: const DiagnosticsScreen(),
     ),
   );
 }

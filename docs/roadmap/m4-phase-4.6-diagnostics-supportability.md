@@ -61,8 +61,8 @@ Promote selected `@visibleForTesting` counters to **diagnostics-facing getters**
 | **1** | Specification + ADRs | ✅ Step 1 |
 | **2** | Snapshot model + `DiagnosticsService` | ✅ Step 2 |
 | **3** | Production getter promotion on cache/search owners | ✅ Merged into Step 2 |
-| **4** | Diagnostics screen UI (Settings entry) | **Next** |
-| **5** | Clipboard export + support bundle | Planned |
+| **4** | Diagnostics screen UI (Settings entry) | ✅ Step 4 |
+| **5** | Clipboard export + support bundle | **Next** |
 | **6** | Unit/widget/integration tests | Planned |
 | **7** | Windows runtime validation | Planned |
 | **8** | Closure | Planned |
@@ -132,7 +132,40 @@ String formatExport(RuntimeDiagnosticsSnapshot snapshot)
 - `test/diagnostics_integration_test.dart`
 - `test/support/diagnostics_test_harness.dart`
 
-**Validation:** **588 passed**, **7 skipped**, **0 failed** (normal suite); `flutter analyze` **89** issues (unchanged baseline).
+**Validation:** **606 passed**, **7 skipped**, **0 failed** (normal suite); `flutter analyze` **89** issues (unchanged baseline).
+
+---
+
+## Step 4 — Diagnostics screen UI (2026-07-17)
+
+### Navigation
+
+Settings → **Diagnostics & Advanced** → **View diagnostics** (`Key('view_diagnostics')`) pushes `DiagnosticsScreen` without discarding unsaved Settings state.
+
+### Screen ownership
+
+| Path | Role |
+|---|---|
+| `lib/features/settings/diagnostics_screen.dart` | Read-only diagnostics UI |
+| `lib/features/settings/diagnostics_formatters.dart` | Presentation formatting helpers |
+| `lib/features/settings/widgets/diagnostics_section.dart` | Section heading + status banner |
+| `lib/features/settings/widgets/diagnostics_value_row.dart` | Label/value rows |
+| `lib/features/settings/widgets/diagnostics_status_banner.dart` | Partial/unavailable banner |
+
+### Snapshot lifecycle
+
+1. Screen opens → loading (`Collecting diagnostics…`)
+2. `DiagnosticsService.captureSnapshot()` on first frame
+3. Immutable snapshot displayed
+4. **Refresh diagnostics** (app bar + footer button) captures new snapshot; previous snapshot stays visible during refresh
+5. Refresh failure keeps prior snapshot + inline warning
+
+No clipboard, file export, or counter reset in Step 4.
+
+### Tests added (18)
+
+- `test/diagnostics_screen_test.dart` — loading, sections, refresh, redaction, async safety
+- `test/settings_screen_test.dart` — navigation, unsaved-changes preservation
 
 ---
 
@@ -437,3 +470,4 @@ Manual: reproduce HTTPS/TLS failure; confirm readable provider error in diagnost
 |---|---|
 | 2026-07-16 | Step 1 planning specification; ADR-017–019 proposed |
 | 2026-07-16 | Step 2: `DiagnosticsService`, snapshot DTOs, redaction, formatter; ADR-017–018 accepted |
+| 2026-07-17 | Step 4: `DiagnosticsScreen` + Settings navigation; 18 new UI tests |
