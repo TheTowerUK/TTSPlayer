@@ -56,7 +56,7 @@ Implement in order unless a documented dependency allows parallel documentation 
 | **4.3** | Library Experience | ✅ Complete (2026-07-13) |
 | **4.4** | Playback Improvements | ✅ Complete (2026-07-14) | [spec](./m4-phase-4.4-playback-improvements.md) |
 | **4.5** | Performance and Caching | ✅ Complete (2026-07-16) — [spec](./m4-phase-4.5-performance-caching.md) · [caching](../architecture/caching.md) |
-| **4.6** | Diagnostics and Supportability | **In progress** — [spec](./m4-phase-4.6-diagnostics-supportability.md) · Step 5 clipboard ✅ |
+| **4.6** | Diagnostics and Supportability | **In progress** — [spec](./m4-phase-4.6-diagnostics-supportability.md) · Step 7 runtime ✅ |
 | **4.7** | Release and Documentation | Planned |
 
 ---
@@ -348,7 +348,7 @@ Baseline Audit → ADRs → Invalidation → Artwork → Search → Scroll tunin
 
 ### Phase 4.6 — Diagnostics and Supportability
 
-**Status:** **In progress** — Step 5 clipboard export complete (2026-07-17).
+**Status:** **In progress** — Step 7 Windows runtime validation complete (2026-07-17).
 
 **Objective:** Improve application supportability by exposing internal runtime state that **already exists** — provider health, catalogue summary, cache bounds, search lifecycle, playback capabilities — in a read-only Diagnostics experience. Consume existing instrumentation; do not create duplicate monitoring systems.
 

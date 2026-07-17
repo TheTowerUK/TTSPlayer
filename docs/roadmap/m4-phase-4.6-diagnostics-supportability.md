@@ -64,9 +64,7 @@ Promote selected `@visibleForTesting` counters to **diagnostics-facing getters**
 | **4** | Diagnostics screen UI (Settings entry) | ✅ Step 4 |
 | **5** | Clipboard export + support bundle | ✅ Step 5 |
 | **6** | Documentation / release hardening | Planned |
-| **7** | Windows runtime harness (`PHASE_46_RUNTIME=1`) | Planned |
-| **6** | Unit/widget/integration tests | Planned |
-| **7** | Windows runtime validation | Planned |
+| **7** | Windows runtime harness (`PHASE_46_RUNTIME=1`) | ✅ Step 7 |
 | **8** | Closure | Planned |
 
 **Suggested commit cadence:** snapshot model → UI → clipboard wiring → runtime harness → docs closure.
@@ -198,6 +196,46 @@ No clipboard, file export, or counter reset in Step 4.
 - `test/diagnostics_clipboard_test.dart` — coordinator, copy lifecycle, redaction, races, integration
 
 **Validation:** **624 passed**, **7 skipped**; `flutter analyze` **89** issues (baseline maintained).
+
+---
+
+## Step 7 — Windows runtime validation (2026-07-17)
+
+### Harness
+
+| File | Role |
+|---|---|
+| `test/phase_46_windows_runtime_test.dart` | D1–D10 matrix (`@Tags(['phase46-runtime'])`) |
+| `test/support/phase_46_runtime_harness.dart` | Production `DiagnosticsService` wiring + recording clipboard |
+| `test/support/phase_46_runtime_baseline.dart` | Informational timing observations |
+
+```powershell
+$env:PHASE_46_RUNTIME='1'
+flutter test test/phase_46_windows_runtime_test.dart --tags phase46-runtime
+```
+
+Optional: `$env:PHASE_46_LOCAL_CATALOG='path\to\catalog.json'` (skips when unset).
+
+### D1–D10 results (Windows, automated)
+
+| ID | Scenario | Classification |
+|---|---|---|
+| D1 | Settings → View diagnostics | Automated pass |
+| D2 | Initial snapshot — seven sections | Automated pass |
+| D3 | Provider diagnostics + redaction | Automated pass |
+| D4 | Catalogue/library counts | Automated pass |
+| D5 | Cache non-mutation | Automated pass |
+| D6 | Search before/after query | Automated pass |
+| D7 | Playback inactive baseline | Automated pass |
+| D8 | Clipboard export (recording writer) | Automated pass |
+| D9 | Redaction + failure isolation | Automated pass |
+| D10 | Refresh, lifecycle, stability | Automated pass |
+
+**Manual follow-ups:** narrow/wide layout, keyboard focus, external Windows clipboard paste, high-DPI.
+
+**Runtime validation:** **10 passed**, **1 skipped** (optional live catalogue); normal suite **624 passed**, **8 skipped** (+1 harness gate skip).
+
+Phase 4.6 remains open pending Step 8 closure.
 
 ---
 
@@ -503,3 +541,4 @@ Manual: reproduce HTTPS/TLS failure; confirm readable provider error in diagnost
 | 2026-07-16 | Step 1 planning specification; ADR-017–019 proposed |
 | 2026-07-16 | Step 2: `DiagnosticsService`, snapshot DTOs, redaction, formatter; ADR-017–018 accepted |
 | 2026-07-17 | Step 5: Clipboard export + ADR-019 accepted; 17 new tests |
+| 2026-07-17 | Step 7: Windows runtime harness D1–D10 (`PHASE_46_RUNTIME=1`) |

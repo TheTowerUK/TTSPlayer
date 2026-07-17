@@ -74,7 +74,7 @@ Give users and maintainers enough **in-app context** to diagnose catalogue, prov
 | Plain-text formatter | `diagnostics_export_formatter.dart` | ✅ |
 | Clipboard export | `diagnostics_export_coordinator.dart`, `diagnostics_clipboard.dart` | ✅ Step 5 |
 
-**Not yet implemented:** File export, `PHASE_46_RUNTIME` harness.
+**Not yet implemented:** File export, Phase 4.6 closure (Step 8).
 
 ### Diagnostics screen (Step 4–5)
 
@@ -184,21 +184,26 @@ Provider Status panel (ADR-003) retains refresh/retry; no cache/search detail ad
 
 ---
 
-## Runtime validation (Step 7 — design)
+## Runtime validation (Step 7 — implemented)
 
 Opt-in: `PHASE_46_RUNTIME=1` in `test/phase_46_windows_runtime_test.dart`
 
-| ID | Scenario |
-|---|---|
-| D1 | Open Diagnostics from Settings — no exception |
-| D2 | Snapshot populated with loaded catalogue |
-| D3 | Provider section matches `providerSnapshot` |
-| D4 | Cache section after browse — count ≤ 500 |
-| D5–D6 | Search lifecycle before/after first query |
-| D7 | Playback idle capabilities shown |
-| D8 | Copy to clipboard — non-empty stable headings |
-| D9 | Export — no path leakage |
-| D10 | Failed catalogue load — error + prior identity preserved |
+| ID | Scenario | Status |
+|---|---|---|
+| D1 | Open Diagnostics from Settings | ✅ Automated |
+| D2 | Snapshot populated — seven sections | ✅ Automated |
+| D3 | Provider section safe + consistent | ✅ Automated |
+| D4 | Catalogue/library counts match fixture | ✅ Automated |
+| D5 | Cache section + non-mutation | ✅ Automated |
+| D6 | Search lifecycle before/after query | ✅ Automated |
+| D7 | Playback idle capabilities | ✅ Automated |
+| D8 | Copy export — stable headings, recording clipboard | ✅ Automated |
+| D9 | Redaction + failure isolation | ✅ Automated |
+| D10 | Refresh, lifecycle, dispose safety | ✅ Automated |
+
+Optional live catalogue: `PHASE_46_LOCAL_CATALOG` (skips when unset).
+
+Manual: layout, keyboard, external clipboard paste, high-DPI.
 
 ---
 
@@ -241,4 +246,4 @@ Opt-in: `PHASE_46_RUNTIME=1` in `test/phase_46_windows_runtime_test.dart`
 | Date | Change |
 |---|---|
 | 2026-07-16 | Step 1: instrumentation audit, proposed architecture, ADR-017–019 |
-| 2026-07-17 | Step 5: Clipboard export + ADR-019 accepted |
+| 2026-07-17 | Step 7: Windows runtime harness D1–D10 (`PHASE_46_RUNTIME=1`) |
