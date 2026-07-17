@@ -62,7 +62,9 @@ Promote selected `@visibleForTesting` counters to **diagnostics-facing getters**
 | **2** | Snapshot model + `DiagnosticsService` | ✅ Step 2 |
 | **3** | Production getter promotion on cache/search owners | ✅ Merged into Step 2 |
 | **4** | Diagnostics screen UI (Settings entry) | ✅ Step 4 |
-| **5** | Clipboard export + support bundle | **Next** |
+| **5** | Clipboard export + support bundle | ✅ Step 5 |
+| **6** | Documentation / release hardening | Planned |
+| **7** | Windows runtime harness (`PHASE_46_RUNTIME=1`) | Planned |
 | **6** | Unit/widget/integration tests | Planned |
 | **7** | Windows runtime validation | Planned |
 | **8** | Closure | Planned |
@@ -118,7 +120,7 @@ String formatExport(RuntimeDiagnosticsSnapshot snapshot)
 
 ### Plain-text formatter
 
-`formatDiagnosticsExport()` implemented in Step 2 (data-layer boundary). Clipboard/file delivery remains Step 5 (ADR-019).
+`formatDiagnosticsExport()` implemented in Step 2. Clipboard delivery implemented in Step 5 (ADR-019 **Accepted**). File export deferred.
 
 ### Composition root
 
@@ -166,6 +168,36 @@ No clipboard, file export, or counter reset in Step 4.
 
 - `test/diagnostics_screen_test.dart` — loading, sections, refresh, redaction, async safety
 - `test/settings_screen_test.dart` — navigation, unsaved-changes preservation
+
+---
+
+## Step 5 — Clipboard export (2026-07-17)
+
+### ADR-019
+
+**Accepted** — clipboard is the primary v1 support-delivery mechanism; file export deferred.
+
+### Copy lifecycle (Option A)
+
+1. User selects **Copy diagnostics**
+2. Duplicate requests blocked via shared in-flight guard with Refresh
+3. `DiagnosticsExportCoordinator` captures fresh snapshot → `formatExport()` → clipboard
+4. Displayed snapshot updated to match copied output
+5. SnackBar: *Diagnostics copied to clipboard.*
+
+### Components
+
+| Path | Role |
+|---|---|
+| `diagnostics_clipboard.dart` | `DiagnosticsClipboardWriter` + Flutter implementation |
+| `diagnostics_export_coordinator.dart` | Capture → format → clipboard orchestration |
+| `diagnostics_screen.dart` | Copy footer action + feedback |
+
+### Tests added (17)
+
+- `test/diagnostics_clipboard_test.dart` — coordinator, copy lifecycle, redaction, races, integration
+
+**Validation:** **624 passed**, **7 skipped**; `flutter analyze` **89** issues (baseline maintained).
 
 ---
 
@@ -470,4 +502,4 @@ Manual: reproduce HTTPS/TLS failure; confirm readable provider error in diagnost
 |---|---|
 | 2026-07-16 | Step 1 planning specification; ADR-017–019 proposed |
 | 2026-07-16 | Step 2: `DiagnosticsService`, snapshot DTOs, redaction, formatter; ADR-017–018 accepted |
-| 2026-07-17 | Step 4: `DiagnosticsScreen` + Settings navigation; 18 new UI tests |
+| 2026-07-17 | Step 5: Clipboard export + ADR-019 accepted; 17 new tests |

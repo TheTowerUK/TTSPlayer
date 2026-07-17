@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
+import 'package:ttsplayer/features/settings/diagnostics_clipboard.dart';
 import 'package:ttsplayer/features/settings/diagnostics_screen.dart';
 import 'package:ttsplayer/theme/app_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -335,14 +336,44 @@ class FakeDiagnosticsService extends DiagnosticsService {
     }
     return minimalSnapshot();
   }
+
+  Object? throwOnFormat;
+
+  @override
+  String formatExport(RuntimeDiagnosticsSnapshot snapshot) {
+    if (throwOnFormat != null) {
+      throw throwOnFormat!;
+    }
+    return super.formatExport(snapshot);
+  }
 }
 
-Widget diagnosticsScreenHarness(DiagnosticsService service) {
+class FakeClipboardWriter implements DiagnosticsClipboardWriter {
+  String? lastWrittenText;
+  int writeCount = 0;
+  Object? throwOnWrite;
+
+  @override
+  Future<void> writeText(String text) async {
+    writeCount++;
+    if (throwOnWrite != null) {
+      throw throwOnWrite!;
+    }
+    lastWrittenText = text;
+  }
+}
+
+Widget diagnosticsScreenHarness(
+  DiagnosticsService service, {
+  DiagnosticsClipboardWriter? clipboardWriter,
+}) {
   return Provider<DiagnosticsService>.value(
     value: service,
     child: MaterialApp(
       theme: AppTheme.dark,
-      home: const DiagnosticsScreen(),
+      home: DiagnosticsScreen(
+        clipboardWriter: clipboardWriter ?? FakeClipboardWriter(),
+      ),
     ),
   );
 }

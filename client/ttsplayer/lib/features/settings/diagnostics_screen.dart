@@ -6,13 +6,20 @@ import '../../services/diagnostics/diagnostics_service.dart';
 import '../../services/diagnostics/runtime_diagnostics_models.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/tts_app_bar.dart';
+import 'diagnostics_clipboard.dart';
+import 'diagnostics_export_coordinator.dart';
 import 'diagnostics_formatters.dart';
 import 'widgets/diagnostics_section.dart';
 import 'widgets/diagnostics_value_row.dart';
 
 /// Read-only runtime diagnostics (M4 Phase 4.6).
 class DiagnosticsScreen extends StatefulWidget {
-  const DiagnosticsScreen({super.key});
+  const DiagnosticsScreen({
+    super.key,
+    DiagnosticsClipboardWriter? clipboardWriter,
+  }) : _clipboardWriter = clipboardWriter;
+
+  final DiagnosticsClipboardWriter? _clipboardWriter;
 
   @override
   State<DiagnosticsScreen> createState() => _DiagnosticsScreenState();
@@ -22,9 +29,13 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
   RuntimeDiagnosticsSnapshot? _snapshot;
   bool _initialLoading = true;
   bool _refreshing = false;
+  bool _copying = false;
   String? _screenError;
   String? _refreshMessage;
   int _captureGeneration = 0;
+  int _copyGeneration = 0;
+
+  DiagnosticsExportCoordinator? _exportCoordinator;
 
   @override
   void initState() {
@@ -34,8 +45,20 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
     });
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _exportCoordinator ??= DiagnosticsExportCoordinator(
+      diagnosticsService: context.read<DiagnosticsService>(),
+      clipboardWriter:
+          widget._clipboardWriter ?? const FlutterDiagnosticsClipboardWriter(),
+    );
+  }
+
+  bool get _operationInFlight => _refreshing || _copying;
+
   Future<void> _captureSnapshot({required bool initial}) async {
-    if (_refreshing) return;
+    if (_operationInFlight) return;
 
     final generation = ++_captureGeneration;
     if (initial) {
@@ -76,6 +99,37 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
     }
   }
 
+  Future<void> _copyDiagnostics() async {
+    if (_operationInFlight || _snapshot == null) return;
+
+    final generation = ++_copyGeneration;
+    setState(() => _copying = true);
+
+    final result = await _exportCoordinator!.copyDiagnostics();
+    if (!mounted || generation != _copyGeneration) return;
+
+    setState(() => _copying = false);
+
+    switch (result) {
+      case DiagnosticsExportSuccess(:final snapshot):
+        setState(() => _snapshot = snapshot);
+        _showCopyFeedback('Diagnostics copied to clipboard.');
+      case DiagnosticsExportCaptureFailure():
+        _showCopyFeedback('Diagnostics could not be collected. Try again.');
+      case DiagnosticsExportFormatFailure():
+        _showCopyFeedback('Diagnostics could not be copied.');
+      case DiagnosticsExportClipboardFailure():
+        _showCopyFeedback('Diagnostics could not be copied.');
+    }
+  }
+
+  void _showCopyFeedback(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -86,7 +140,7 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
           IconButton(
             key: const Key('refresh_diagnostics'),
             tooltip: 'Refresh diagnostics',
-            onPressed: _initialLoading || _refreshing
+            onPressed: _initialLoading || _operationInFlight
                 ? null
                 : () => _captureSnapshot(initial: false),
             icon: _refreshing
@@ -197,6 +251,12 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
                     key: Key('diagnostics_refresh_progress'),
                   ),
                 ],
+                if (_copying) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  const LinearProgressIndicator(
+                    key: Key('diagnostics_copy_progress'),
+                  ),
+                ],
                 const SizedBox(height: AppSpacing.section),
                 _buildApplicationSection(snapshot),
                 const SizedBox(height: AppSpacing.section),
@@ -212,9 +272,25 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
                 const SizedBox(height: AppSpacing.section),
                 _buildLibrarySection(snapshot),
                 const SizedBox(height: AppSpacing.section),
+                Tooltip(
+                  message: 'Copy diagnostics',
+                  child: FilledButton.icon(
+                    key: const Key('copy_diagnostics'),
+                    onPressed: _operationInFlight ? null : _copyDiagnostics,
+                    icon: _copying
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.copy),
+                    label: const Text('Copy diagnostics'),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
                 OutlinedButton.icon(
                   key: const Key('refresh_diagnostics_button'),
-                  onPressed: _refreshing
+                  onPressed: _operationInFlight
                       ? null
                       : () => _captureSnapshot(initial: false),
                   icon: const Icon(Icons.refresh),

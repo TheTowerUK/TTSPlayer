@@ -1,6 +1,6 @@
 # Diagnostics and Supportability (M4 Phase 4.6)
 
-**Status:** **In progress** — Step 2 data layer implemented (2026-07-16)  
+**Status:** **In progress** — Step 5 clipboard export complete (2026-07-17)  
 **Related roadmap phase:** [M4 Phase 4.6 — Diagnostics and Supportability](../roadmap/m4-phase-4.6-diagnostics-supportability.md)
 
 → [Provider management](./provider-management.md)  
@@ -12,7 +12,7 @@
 
 - [ADR-017: Diagnostics Architecture](./decisions/ADR-017-diagnostics-architecture.md) — **Accepted**
 - [ADR-018: Runtime Snapshot Model](./decisions/ADR-018-runtime-snapshot-model.md) — **Accepted**
-- [ADR-019: Diagnostics Export and Support Strategy](./decisions/ADR-019-diagnostics-export-support-strategy.md) — **Proposed**
+- [ADR-019: Diagnostics Export and Support Strategy](./decisions/ADR-019-diagnostics-export-support-strategy.md) — **Accepted**
 
 ---
 
@@ -71,17 +71,21 @@ Give users and maintainers enough **in-app context** to diagnose catalogue, prov
 | `DiagnosticsService` | `client/ttsplayer/lib/services/diagnostics/diagnostics_service.dart` | ✅ Composition-root wired |
 | `RuntimeDiagnosticsSnapshot` + section DTOs | `runtime_diagnostics_models.dart` | ✅ Immutable |
 | Redaction | `diagnostics_redaction.dart` | ✅ Centralized |
-| Plain-text formatter | `diagnostics_export_formatter.dart` | ✅ No I/O (clipboard deferred) |
+| Plain-text formatter | `diagnostics_export_formatter.dart` | ✅ |
+| Clipboard export | `diagnostics_export_coordinator.dart`, `diagnostics_clipboard.dart` | ✅ Step 5 |
 
-**Not yet implemented:** Clipboard copy, file export, `PHASE_46_RUNTIME` harness.
+**Not yet implemented:** File export, `PHASE_46_RUNTIME` harness.
 
-### Diagnostics screen (Step 4)
+### Diagnostics screen (Step 4–5)
 
 | Component | Location |
 |---|---|
 | `DiagnosticsScreen` | `client/ttsplayer/lib/features/settings/diagnostics_screen.dart` |
 | Settings entry | `SettingsScreen` → View diagnostics |
-| Formatters | `diagnostics_formatters.dart` |
+| Copy action | Footer **Copy diagnostics** |
+| Export coordinator | `diagnostics_export_coordinator.dart` |
+| Clipboard boundary | `diagnostics_clipboard.dart` |
+| Formatters | `diagnostics_formatters.dart` (UI) / `formatDiagnosticsExport()` (export) |
 | Widgets | `widgets/diagnostics_*.dart` |
 
 ---
@@ -237,4 +241,4 @@ Opt-in: `PHASE_46_RUNTIME=1` in `test/phase_46_windows_runtime_test.dart`
 | Date | Change |
 |---|---|
 | 2026-07-16 | Step 1: instrumentation audit, proposed architecture, ADR-017–019 |
-| 2026-07-17 | Step 4: Diagnostics screen UI + Settings navigation |
+| 2026-07-17 | Step 5: Clipboard export + ADR-019 accepted |

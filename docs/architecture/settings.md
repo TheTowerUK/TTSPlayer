@@ -30,7 +30,7 @@ Provide a **structured, versioned preferences architecture** that evolved the M3
 | Versioned envelope | `ttsplayer_settings_v1` JSON in `shared_preferences` |
 | Load order | Envelope → legacy `media_provider_config_v1` migration → defaults |
 | Legacy dual-read | One-release read of legacy provider key during migration |
-| Grouped UI | Single scrollable `SettingsScreen` with General, Library & Providers, Playback, Network, Diagnostics & Advanced (version, **View diagnostics**, reset) |
+| Grouped UI | Single scrollable `SettingsScreen` with General, Library & Providers, Playback, Network, Diagnostics & Advanced (version, **View diagnostics**, reset). Diagnostics screen provides **Copy diagnostics** and **Refresh diagnostics**. |
 | Provider editor | Same fields as M3.5 standalone screen; embedded in Library & Providers |
 | Network timeout | 5–120 seconds; consumed by `CatalogService` per HTTP fetch |
 | Save apply (ADR-006) | Provider/network save does **not** auto-reload catalogue |
