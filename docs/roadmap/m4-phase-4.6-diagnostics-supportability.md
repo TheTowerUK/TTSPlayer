@@ -1,11 +1,11 @@
 # M4 Phase 4.6 — Diagnostics and Supportability (Implementation Specification)
 
-**Status:** **In progress** — Step 2 data layer complete (2026-07-16)
+**Status:** **Complete** — closed Step 8 (2026-07-17)
 **Milestone:** M4 — User Experience and Platform Integration
 **Branch:** `m4-development`
 **Development version:** `v0.5.0-dev`
+**Closure commit:** Step 8 (2026-07-17)
 **Predecessor:** M4 Phase 4.5 complete — closure `0ae4da9`
-**Planning baseline:** No production implementation in Step 1
 
 → [M4 plan](./m4-plan.md#phase-46--diagnostics-and-supportability)
 → [Diagnostics architecture](../architecture/diagnostics.md)
@@ -15,7 +15,7 @@
 
 - [ADR-017: Diagnostics Architecture](../architecture/decisions/ADR-017-diagnostics-architecture.md) — **Accepted** (Step 2)
 - [ADR-018: Runtime Snapshot Model](../architecture/decisions/ADR-018-runtime-snapshot-model.md) — **Accepted** (Step 2)
-- [ADR-019: Diagnostics Export and Support Strategy](../architecture/decisions/ADR-019-diagnostics-export-support-strategy.md) — **Proposed**
+- [ADR-019: Diagnostics Export and Support Strategy](../architecture/decisions/ADR-019-diagnostics-export-support-strategy.md) — **Accepted** (Step 5)
 
 Follow the established M4 cadence: **instrumentation audit → ADRs → architecture → aggregation service → UI → export → tests → Windows validation → closure**.
 
@@ -63,9 +63,9 @@ Promote selected `@visibleForTesting` counters to **diagnostics-facing getters**
 | **3** | Production getter promotion on cache/search owners | ✅ Merged into Step 2 |
 | **4** | Diagnostics screen UI (Settings entry) | ✅ Step 4 |
 | **5** | Clipboard export + support bundle | ✅ Step 5 |
-| **6** | Documentation / release hardening | Planned |
+| **6** | Documentation / release hardening | ✅ Merged into Step 8 closure |
 | **7** | Windows runtime harness (`PHASE_46_RUNTIME=1`) | ✅ Step 7 |
-| **8** | Closure | Planned |
+| **8** | Closure | ✅ Step 8 |
 
 **Suggested commit cadence:** snapshot model → UI → clipboard wiring → runtime harness → docs closure.
 
@@ -481,19 +481,110 @@ Manual: reproduce HTTPS/TLS failure; confirm readable provider error in diagnost
 
 ## Definition of done (Phase 4.6 final)
 
-- [ ] ADR-017–019 accepted at closure
-- [ ] `DiagnosticsService` aggregates existing runtime state without circular dependencies
-- [ ] Production diagnostics getters promoted on `ArtworkService` and `SearchService` (no duplicate counters)
-- [ ] `DiagnosticsScreen` reachable from Settings → Diagnostics & Advanced
-- [ ] Read-only grouped sections for application, provider, catalogue, cache, search, playback
-- [ ] Copy-to-clipboard support bundle (plain text per ADR-019)
-- [ ] No personal filesystem paths or secrets in UI or export
-- [ ] Dashboard Provider Status unchanged in role (ADR-003 boundary preserved)
-- [ ] Unit + widget + integration tests pass
-- [ ] `PHASE_46_RUNTIME=1` harness executed on Windows
-- [ ] `diagnostics.md` updated to implemented/accepted
-- [ ] `flutter test` green; `flutter analyze` no new errors
-- [ ] No remote telemetry, crash reporting, or log upload
+- [x] ADR-017–019 accepted at closure
+- [x] `DiagnosticsService` aggregates existing runtime state without circular dependencies
+- [x] Production diagnostics getters promoted on `ArtworkService` and `SearchService` (no duplicate counters)
+- [x] `DiagnosticsScreen` reachable from Settings → Diagnostics & Advanced
+- [x] Read-only grouped sections for application, provider, catalogue, cache, search, playback, library
+- [x] Copy-to-clipboard support bundle (plain text per ADR-019)
+- [x] No personal filesystem paths or secrets in UI or export
+- [x] Dashboard Provider Status unchanged in role (ADR-003 boundary preserved)
+- [x] Unit + widget + integration tests pass
+- [x] `PHASE_46_RUNTIME=1` harness executed on Windows
+- [x] `diagnostics.md` updated to implemented/accepted
+- [x] `flutter test` green; `flutter analyze` no new Phase 4.6 errors
+- [x] No remote telemetry, crash reporting, or log upload
+
+---
+
+## Step 8 — Closure and definition-of-done (2026-07-17)
+
+### Objective
+
+Reconcile every planned requirement, ADR, and definition-of-done criterion; classify manual/optional follow-ups; mark Phase 4.6 complete. Documentation-only — no new diagnostics features.
+
+### Step reconciliation
+
+| Step | Verdict |
+|---|---|
+| **0–1** Planning + ADRs | **Satisfied** — scope, exclusions, ADR-017–019 authored before implementation |
+| **2** Data layer | **Satisfied with evidence** — `90aad3e`; seven DTOs, redaction, formatter, ADR-017–018 accepted |
+| **3** Getter promotion | **Merged into Step 2** — `ArtworkService` / `SearchService` production getters |
+| **4** Diagnostics UI | **Satisfied with evidence** — `9de717a`; Settings navigation, seven sections, refresh lifecycle |
+| **5** Clipboard export | **Satisfied with evidence** — `eae1a62`; ADR-019 accepted; Option A copy lifecycle |
+| **6** Documentation hardening | **Merged into Step 8** — architecture + roadmap closure |
+| **7** Windows runtime | **Satisfied with evidence** — `f50fa73`; D1–D10 automated; 10 passed / 1 skipped |
+| **8** Closure | **This step** |
+
+### Definition-of-done reconciliation
+
+| Criterion | Verdict | Evidence |
+|---|---|---|
+| ADR-017–019 accepted and implemented | **Satisfied with evidence** | ADRs + Steps 2, 5, 8 |
+| Diagnostics aggregation boundary | **Satisfied with evidence** | `DiagnosticsService` sole owner |
+| Immutable snapshot model | **Satisfied with evidence** | `RuntimeDiagnosticsSnapshot` |
+| Seven sections | **Satisfied with evidence** | UI + export + runtime D2 |
+| Settings navigation | **Satisfied with evidence** | D1, `settings_screen_test.dart` |
+| Read-only Diagnostics screen | **Satisfied with evidence** | Step 4 |
+| Refresh | **Satisfied with evidence** | Non-mutating; D10 |
+| Clipboard copy | **Satisfied with evidence** | Step 5; D8 |
+| Redaction contract | **Satisfied with evidence** | `diagnostics_redaction_test.dart`, D9 |
+| No path/credential/URL/stack leakage | **Satisfied with evidence** | Redaction + runtime tests |
+| Partial failure isolation | **Satisfied with evidence** | D9, section status model |
+| Complete failure recoverable | **Satisfied with evidence** | Retry UI + tests |
+| Search not built by diagnostics | **Satisfied with evidence** | D6, integration tests |
+| Artwork cache not cleared | **Satisfied with evidence** | D5 non-mutation audit |
+| Catalogue not reloaded | **Satisfied with evidence** | Integration + runtime audit |
+| Playback unchanged | **Satisfied with evidence** | Runtime non-mutation audit |
+| Duplicate operations blocked | **Satisfied with evidence** | D8, clipboard tests |
+| Windows runtime matrix | **Satisfied with evidence** | D1–D10 pass |
+| Normal test suite green | **Satisfied with evidence** | 624 passed, 8 skipped |
+| Architecture docs accepted | **Satisfied** | `diagnostics.md` Implemented/Accepted |
+| No unresolved blocker | **Satisfied** | See overflow classification below |
+
+### Settings-row overflow (Step 7 observation)
+
+| Investigation | Finding |
+|---|---|
+| Reproduces in widget test? | Yes — ~6.5 px `RenderFlex` overflow at `settings_screen.dart:553` |
+| Affected control | **Pre-existing footer Row** with Save playback / Save network buttons — **not** the View diagnostics `ListTile` |
+| Introduced by Phase 4.6? | **No** — Row existed before Step 4 (`9de717a` added only the diagnostics `ListTile` above) |
+| Supported Windows app layout? | **Not reproduced** in runtime harness functional pass; overflow tied to constrained test viewport (~768 px content width) |
+| User-visible clipping? | Not observed in D1 navigation success; Flutter test reports layout overflow only |
+
+**Classification:** **Existing baseline issue** — document for optional Settings layout follow-up; **not a Phase 4.6 blocker**.
+
+### Manual and optional follow-ups
+
+| Item | Classification |
+|---|---|
+| Narrow/wide layout, keyboard, scroll, Snackbar, high-DPI | **Manual release follow-up** |
+| External Windows clipboard paste | **Manual release follow-up** |
+| `PHASE_46_LOCAL_CATALOG` | **Optional validation** — skipped when unset |
+| File export | **Deferred by design** (ADR-019) |
+| Settings footer button Row overflow in narrow test viewport | **Existing baseline issue** |
+
+### Final evidence
+
+| Suite | Result |
+|---|---|
+| Normal `flutter test` | **624 passed, 8 skipped, 0 failed** |
+| Runtime `PHASE_46_RUNTIME=1` | **10 passed, 1 skipped, 0 failed** (not rerun at closure — docs-only) |
+| `flutter analyze` | **89** existing warning/information findings; no new Phase 4.6 errors or warnings |
+| `git diff --check` | Clean |
+
+### Commits
+
+| Step | Hash |
+|---|---|
+| 1 Planning | `83cb3f9` |
+| 2 Data layer | `90aad3e` |
+| 4 UI | `9de717a` |
+| 5 Clipboard | `eae1a62` |
+| 7 Runtime | `f50fa73` |
+| 8 Closure | *(this commit)* |
+
+**Phase 4.6: COMPLETE.** Next M4 phase: **4.7 Release and Documentation**.
 
 ---
 
@@ -541,4 +632,4 @@ Manual: reproduce HTTPS/TLS failure; confirm readable provider error in diagnost
 | 2026-07-16 | Step 1 planning specification; ADR-017–019 proposed |
 | 2026-07-16 | Step 2: `DiagnosticsService`, snapshot DTOs, redaction, formatter; ADR-017–018 accepted |
 | 2026-07-17 | Step 5: Clipboard export + ADR-019 accepted; 17 new tests |
-| 2026-07-17 | Step 7: Windows runtime harness D1–D10 (`PHASE_46_RUNTIME=1`) |
+| 2026-07-17 | Step 8: Phase closed — definition-of-done reconciled |

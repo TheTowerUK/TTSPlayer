@@ -1,6 +1,6 @@
 # Diagnostics and Supportability (M4 Phase 4.6)
 
-**Status:** **In progress** — Step 5 clipboard export complete (2026-07-17)  
+**Status:** **Implemented / Accepted** — Phase 4.6 closed (2026-07-17)  
 **Related roadmap phase:** [M4 Phase 4.6 — Diagnostics and Supportability](../roadmap/m4-phase-4.6-diagnostics-supportability.md)
 
 → [Provider management](./provider-management.md)  
@@ -28,104 +28,115 @@ Give users and maintainers enough **in-app context** to diagnose catalogue, prov
 
 ---
 
-## Existing instrumentation inventory (Step 1 audit)
+## Ownership
 
-### Consume in production diagnostics (no duplicate measurement)
+```
+Production services
+    → DiagnosticsService
+        → RuntimeDiagnosticsSnapshot
+            → DiagnosticsScreen
+            → formatExport()
+                → DiagnosticsExportCoordinator
+                    → DiagnosticsClipboardWriter
+```
 
-| Owner | Available state | Diagnostics section |
-|---|---|---|
-| `CatalogService` | `providerSnapshot`, `activeCatalogueProvider`, `lastRefreshedAt`, `lastCatalogueLoadAt`, `catalog`, `catalogueIdentity`, `isLoading`, `errorMessage`, `isUsingFallback`, `isDegradedLoad`, `catalogSource` | Provider, Catalogue |
-| `CatalogueProviderSnapshot` | Per-provider health, timestamps, `lastError` (ADR-001) | Provider |
-| `MediaProviderConfigService` | Access mode, provider kind, HTTPS host | Provider |
-| `ArtworkService` | `cacheEntryCount`, `cacheEvictionCount`, `defaultCacheCapacity` | Cache |
-| Flutter `ImageCache` | `maximumSizeBytes`, `currentSizeBytes` | Cache |
-| `SearchService` | `catalogueIdentity`, `indexedItemCount`, `hasIndex`, `indexBuildCount`, `isBuildInFlight` | Search |
-| `PlaybackService` | `currentItem` (id/title), `playbackErrorKind`, `errorMessage`, `isPlaying`, `isInitializing` | Playback |
-| `playback_platform.dart` | `useMediaKitPlayback`, `playbackSpeedSettingsSupported` | Playback |
-| `package_info` | Version, build | Application |
-| `LibraryMetadataRepository` | Favourite counts | Library |
-
-### Test-only — excluded from production diagnostics
-
-| Source | Reason |
+| Rule | Detail |
 |---|---|
-| `FolderPresentationMetrics` | Widget test counters |
-| `SearchPresentationMetrics` | Flatten invocation test hook |
-| `Phase45RuntimeBaseline` / `PerformanceBenchmarkReport` | Opt-in CI harness |
-| `PHASE_45_RUNTIME` / `PHASE_45_BENCHMARK` | Dev/CI env gates |
-| `SearchService.simulateBuildFailure` | Test injection |
+| Aggregation owner | `DiagnosticsService` only |
+| Source direction | Production services → diagnostics (never reverse) |
+| UI boundary | `DiagnosticsScreen` reads `DiagnosticsService` only — no direct service aggregation |
+| Export boundary | `formatDiagnosticsExport()` is the sole text-generation path |
+| Clipboard boundary | Receives final redacted plain text only |
+| Lifetime | App-scoped `Provider<DiagnosticsService>` at composition root |
 
-### Light extension in implementation (Step 2–3)
-
-| Gap | Approach |
-|---|---|
-| Application startup elapsed | Single bootstrap timestamp in `DiagnosticsService` |
-| Library scan stats | Optional read from `ScannerService` if exposed |
-
----
-
-## Implemented data layer (Step 2)
-
-| Component | Location | Status |
-|---|---|---|
-| `DiagnosticsService` | `client/ttsplayer/lib/services/diagnostics/diagnostics_service.dart` | ✅ Composition-root wired |
-| `RuntimeDiagnosticsSnapshot` + section DTOs | `runtime_diagnostics_models.dart` | ✅ Immutable |
-| Redaction | `diagnostics_redaction.dart` | ✅ Centralized |
-| Plain-text formatter | `diagnostics_export_formatter.dart` | ✅ |
-| Clipboard export | `diagnostics_export_coordinator.dart`, `diagnostics_clipboard.dart` | ✅ Step 5 |
-
-**Not yet implemented:** File export, Phase 4.6 closure (Step 8).
-
-### Diagnostics screen (Step 4–5)
+### Component map
 
 | Component | Location |
 |---|---|
+| `DiagnosticsService` | `client/ttsplayer/lib/services/diagnostics/diagnostics_service.dart` |
+| `RuntimeDiagnosticsSnapshot` + section DTOs | `runtime_diagnostics_models.dart` |
+| Redaction | `diagnostics_redaction.dart` |
+| Plain-text formatter | `diagnostics_export_formatter.dart` |
 | `DiagnosticsScreen` | `client/ttsplayer/lib/features/settings/diagnostics_screen.dart` |
-| Settings entry | `SettingsScreen` → View diagnostics |
-| Copy action | Footer **Copy diagnostics** |
+| UI formatters | `diagnostics_formatters.dart` |
+| Section widgets | `widgets/diagnostics_*.dart` |
 | Export coordinator | `diagnostics_export_coordinator.dart` |
 | Clipboard boundary | `diagnostics_clipboard.dart` |
-| Formatters | `diagnostics_formatters.dart` (UI) / `formatDiagnosticsExport()` (export) |
-| Widgets | `widgets/diagnostics_*.dart` |
 
 ---
 
-```
-Composition root (main.dart)
-    CatalogService, ArtworkService, SearchService,
-    PlaybackService, MediaProviderConfigService,
-    SettingsRepository, LibraryMetadataRepository
-              │
-              ▼ (read-only observation)
-    DiagnosticsService
-              │
-              ├── buildSnapshot() → RuntimeDiagnosticsSnapshot (ADR-018)
-              └── formatExport()  → plain text (ADR-019)
+## Snapshot lifecycle
 
-Settings → Diagnostics & Advanced → DiagnosticsScreen
-              │
-              ├── Grouped read-only sections
-              └── Copy to clipboard (primary)
+### Open or refresh
+
+```
+Open Diagnostics / Refresh diagnostics
+    → captureSnapshot()
+    → immutable RuntimeDiagnosticsSnapshot
+    → DiagnosticsScreen render
 ```
 
-**Ownership rules:**
+- One `capturedAt` per snapshot.
+- Startup elapsed = `capturedAt − applicationStartedAt` (fixed bootstrap timestamp).
+- Refresh keeps the previous snapshot visible while capturing; recoverable refresh failure preserves the prior snapshot.
 
-- `DiagnosticsService` depends on production services — **never** the reverse.
-- No circular dependencies.
-- Snapshot build is synchronous where possible.
+### Copy (Option A — ADR-019)
 
-### DTO ownership (ADR-018)
+```
+Copy diagnostics
+    → fresh captureSnapshot()
+    → formatExport(snapshot)
+    → DiagnosticsClipboardWriter.writeText()
+    → displayed snapshot updated to match copied output
+    → SnackBar confirmation
+```
 
-| Type | Responsibility |
+Duplicate Refresh/Copy operations share an in-flight guard.
+
+---
+
+## Seven sections (stable order)
+
+| # | Section | Primary sources |
+|---|---|---|
+| 1 | Application | `package_info`, platform, startup elapsed, `capturedAt` |
+| 2 | Provider | `CatalogService.providerSnapshot`, `MediaProviderConfigService` |
+| 3 | Catalogue | `CatalogService.catalog` aggregates (identity, counts, flags) |
+| 4 | Cache | `ArtworkService` counters, Flutter `ImageCache` bytes |
+| 5 | Search | `SearchService` index lifecycle |
+| 6 | Playback | `PlaybackService`, `playback_platform.dart` |
+| 7 | Library | `LibraryMetadataRepository` favourite counts |
+
+Each section carries `DiagnosticSectionStatus` (`complete`, `partial`, `unavailable`). Nullable fields mean unavailable; `false` and `0` retain distinct semantics.
+
+---
+
+## Failure isolation
+
+| Failure | Behaviour |
 |---|---|
-| `RuntimeDiagnosticsSnapshot` | Root immutable DTO + `capturedAt` |
-| `ApplicationDiagnostics` | Version, build, platform, startup elapsed |
-| `ProviderDiagnostics` | Active provider, health rows, refresh timestamps |
-| `CatalogueDiagnostics` | Identity, counts, loading/error flags |
-| `CacheDiagnostics` | Artwork LRU + Flutter image cache bytes |
-| `SearchDiagnostics` | Index state, build count, in-flight |
-| `PlaybackDiagnostics` | Engine, capabilities, session, errors |
-| `LibraryDiagnostics` | Favourite counts, metadata version |
+| Single source section throws | Section marked unavailable/partial; other sections still render |
+| Initial capture throws | Screen-level error + Retry; no raw exception text |
+| Refresh throws | Prior snapshot preserved + inline warning |
+| Copy capture throws | Prior snapshot preserved; safe SnackBar |
+| Copy format/clipboard throws | Prior snapshot preserved; safe SnackBar |
+
+Raw exceptions and stack traces are never displayed or exported.
+
+---
+
+## Non-mutation guarantees
+
+Diagnostics operations (open, refresh, copy) do **not**:
+
+- Reload or refresh the catalogue
+- Clear or invalidate artwork caches
+- Build or rebuild the search index
+- Change playback state or rate
+- Save or reset Settings
+- Reset diagnostic counters
+
+Verified by integration tests, clipboard tests, and Windows runtime harness D5–D6 non-mutation audit.
 
 ---
 
@@ -133,108 +144,79 @@ Settings → Diagnostics & Advanced → DiagnosticsScreen
 
 **Never expose in UI or export:**
 
-- Raw `file_path`, UNC paths, NAS mount paths
-- Full HTTPS URLs with path segments
-- Passwords, tokens, certificate files
-- Stack traces
+- Local paths (`Y:\`, `C:\Users`, `/volume1/`, UNC)
+- File URIs and full HTTP/HTTPS URLs with paths or query strings
+- Credentials, tokens, passwords
+- Media titles, filenames, folder names in diagnostics output
+- Stack traces and raw exception messages
 
 **Allowed:**
 
-- Truncated catalogue/search identity hashes
-- Provider kind labels (local / https)
-- HTTPS hostname (+ port)
-- User-readable error messages from `remote_fetch_errors`
-- Counts and durations
+- Truncated catalogue/search identities
+- Provider kind and health labels
+- Safe HTTPS host summaries (no paths)
+- User-readable error categories from `remote_fetch_errors`
+- Counts, durations, booleans, capability flags
+
+Redaction is centralized in `diagnostics_redaction.dart` and applied before DTO assembly and export formatting.
 
 ---
 
-## User experience (design only — not implemented)
+## Export (ADR-019)
 
-### Entry
-
-Extend **Settings → Diagnostics & Advanced**:
-
-- Retain existing version display and reset actions.
-- Add **View diagnostics** → `DiagnosticsScreen`.
-- Subtitle: read-only runtime state for troubleshooting.
-
-### Diagnostics screen
-
-| Element | Behaviour |
+| Item | Status |
 |---|---|
-| Layout | Scrollable sections mirroring ADR-018 DTOs |
-| Primary action | Copy to clipboard (`formatExport`) |
-| Secondary (optional) | Save `.txt` on Windows |
-| Reset counters | **Not in v1** (ADR-019) |
-| Hidden developer section | **Rejected for v1** |
-
-### Dashboard unchanged
-
-Provider Status panel (ADR-003) retains refresh/retry; no cache/search detail added there.
+| Format | Plain text with stable `=== Section ===` headings |
+| Delivery | **Copy diagnostics** → system clipboard |
+| Fresh capture | Yes — copy always captures current state |
+| Display alignment | Copied text matches on-screen snapshot (Option A) |
+| File save | **Deferred** |
+| JSON / upload / telemetry / log bundles | **Rejected for v1** |
+| Persistence of copied text | None |
 
 ---
 
-## Export strategy (ADR-019)
+## Validation
 
-- **Format:** Plain text with stable `=== Section ===` headings
-- **Delivery:** Clipboard primary; optional file save on Windows
-- **JSON / upload / telemetry:** Out of scope
-- **Log ring buffer:** Deferred
-- **TLS hints:** Optional link to TNAS deploy checklist when error pattern matches
-
----
-
-## Runtime validation (Step 7 — implemented)
-
-Opt-in: `PHASE_46_RUNTIME=1` in `test/phase_46_windows_runtime_test.dart`
-
-| ID | Scenario | Status |
-|---|---|---|
-| D1 | Open Diagnostics from Settings | ✅ Automated |
-| D2 | Snapshot populated — seven sections | ✅ Automated |
-| D3 | Provider section safe + consistent | ✅ Automated |
-| D4 | Catalogue/library counts match fixture | ✅ Automated |
-| D5 | Cache section + non-mutation | ✅ Automated |
-| D6 | Search lifecycle before/after query | ✅ Automated |
-| D7 | Playback idle capabilities | ✅ Automated |
-| D8 | Copy export — stable headings, recording clipboard | ✅ Automated |
-| D9 | Redaction + failure isolation | ✅ Automated |
-| D10 | Refresh, lifecycle, dispose safety | ✅ Automated |
-
-Optional live catalogue: `PHASE_46_LOCAL_CATALOG` (skips when unset).
-
-Manual: layout, keyboard, external clipboard paste, high-DPI.
-
----
-
-## Testing considerations
-
-| Layer | Focus |
+| Layer | Tests |
 |---|---|
-| Unit | `buildSnapshot`, `formatExport`, redaction helpers |
-| Widget | `DiagnosticsScreen` sections, copy action, Settings navigation |
-| Integration | Wired harness — counts match live services |
-| Runtime | `PHASE_46_RUNTIME=1` matrix D1–D10 |
-| Failure paths | Null catalogue, search build failure, export still renders |
+| Unit | `diagnostics_snapshot_test.dart`, `diagnostics_service_test.dart`, `diagnostics_redaction_test.dart` |
+| Widget | `diagnostics_screen_test.dart`, `settings_screen_test.dart` (navigation) |
+| Integration | `diagnostics_integration_test.dart` |
+| Clipboard | `diagnostics_clipboard_test.dart` |
+| Runtime (Windows) | `phase_46_windows_runtime_test.dart` — D1–D10 with `PHASE_46_RUNTIME=1` |
+
+**Evidence (closure):** normal suite **624 passed, 8 skipped**; runtime **10 passed, 1 skipped**; `flutter analyze` **89** existing findings, no new Phase 4.6 errors or warnings.
+
+### Manual release follow-ups (not blockers)
+
+- Narrow/wide Windows layout visual check
+- Keyboard focus traversal and scroll
+- Snackbar visibility wording
+- External Windows clipboard paste into Notepad
+- Long identity wrapping and high-DPI layout
+- Optional `PHASE_46_LOCAL_CATALOG` live catalogue validation
 
 ---
 
-## Out of scope
+## Out of scope (deferred by design)
 
+- File export to disk
 - Sentry / Firebase / automatic upload
 - Remote admin console
 - Log ring buffer in export
 - Reset diagnostic counters UI
-- `FolderPresentationMetrics` in production UI
-- Performance micro-benchmark UI
 - SQLite / persistent diagnostics store
+- Hidden developer mode
+- JSON primary export
 
 ---
 
 ## Related documents
 
 - [M4 Phase 4.6 specification](../roadmap/m4-phase-4.6-diagnostics-supportability.md)
-- [caching.md](./caching.md) — cache health UI deferred from 4.5
+- [Phase 4.6 closure record](../roadmap/m4-phase-4.6-diagnostics-supportability.md#step-8--closure-and-definition-of-done-2026-07-17)
+- [caching.md](./caching.md)
 - [provider-management.md](./provider-management.md)
 - [settings.md](./settings.md)
 - [TNAS deploy checklist](../deployment/tnas-caddy-deploy-checklist.md)
@@ -246,4 +228,7 @@ Manual: layout, keyboard, external clipboard paste, high-DPI.
 | Date | Change |
 |---|---|
 | 2026-07-16 | Step 1: instrumentation audit, proposed architecture, ADR-017–019 |
-| 2026-07-17 | Step 7: Windows runtime harness D1–D10 (`PHASE_46_RUNTIME=1`) |
+| 2026-07-16 | Step 2: data layer implemented; ADR-017–018 accepted |
+| 2026-07-17 | Steps 4–5: UI + clipboard export; ADR-019 accepted |
+| 2026-07-17 | Step 7: Windows runtime harness D1–D10 |
+| 2026-07-17 | Step 8: Phase closed — Implemented / Accepted |

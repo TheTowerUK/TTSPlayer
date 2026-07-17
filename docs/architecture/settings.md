@@ -7,7 +7,7 @@
 → [Phase 4.2 specification](../roadmap/m4-phase-4.2-settings-framework.md)  
 → [Runtime validation results](../roadmap/m4-phase-4.2-settings-framework.md#windows-runtime-validation-2026-07-12)  
 → [Playback](./playback.md) *(4.4 — spec accepted)*  
-→ [Diagnostics](./diagnostics.md) *(4.6 — View diagnostics from Settings)*
+→ [Diagnostics](./diagnostics.md) *(4.6 complete — View diagnostics, Copy diagnostics)*
 
 **ADRs (Accepted):**
 

@@ -85,7 +85,7 @@ Every ADR must include these headings (use [ADR-template.md](./ADR-template.md))
 | [ADR-016](./ADR-016-search-index-and-large-library-browsing.md) | Search Index and Large-Library Browsing | Accepted |
 | [ADR-017](./ADR-017-diagnostics-architecture.md) | Diagnostics Architecture | Accepted |
 | [ADR-018](./ADR-018-runtime-snapshot-model.md) | Runtime Snapshot Model | Accepted |
-| [ADR-019](./ADR-019-diagnostics-export-support-strategy.md) | Diagnostics Export and Support Strategy | Proposed |
+| [ADR-019](./ADR-019-diagnostics-export-support-strategy.md) | Diagnostics Export and Support Strategy | Accepted |
 
 ---
 
