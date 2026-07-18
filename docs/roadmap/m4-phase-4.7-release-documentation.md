@@ -212,6 +212,38 @@ Branch `m4-development` — documentation closure commit follows Step 6. `README
 
 **Phase 4.7: COMPLETE.** **M4 milestone: COMPLETE** (documentation and automated validation).
 
+### Remaining release activities (post-documentation closure)
+
+M4 engineering and documentation closure is done. Two activities remain before the milestone is **release-finished**:
+
+| # | Activity | Purpose |
+|---|---|---|
+| 1 | [Manual Windows QA](#step-4--manual-windows-qa) — 17-point checklist | Final confidence pass on desktop workflows; not expected to discover major defects |
+| 2 | Version bump + git tags | Separates semver release from documentation closure |
+
+Keep tagging **after** manual QA sign-off — good practice adopted for this milestone.
+
+### Release tagging sequence (after QA sign-off)
+
+1. Bump `client/ttsplayer/pubspec.yaml` → `version: 0.5.0+1` (or project convention)
+2. Commit version bump only (no feature changes)
+3. Annotated tags, e.g.:
+   - `git tag -a m4-complete -m "M4 milestone complete"`
+   - `git tag -a v0.5.0 -m "TTSPlayer v0.5.0 — M4 User Experience and Platform Integration"`
+
+Update [release-history.md](../release/release-history.md) when tags are applied.
+
+### Release discipline — no M4 drift
+
+After manual QA is complete, **do not extend M4 with new features**. If QA surfaces minor UI polish, spacing, artwork sizing, or wording:
+
+| Finding | Action |
+|---|---|
+| Genuine release issue (broken behaviour, data loss, blocker) | Isolated fix on `m4-development`; tag after fix |
+| Cosmetic / polish only | Defer to next milestone — e.g. [deferred dashboard UX](../m4-plan.md#phase-47--release-and-documentation) |
+
+This preserves M4 as a completed, auditable milestone rather than allowing scope creep at the tag boundary.
+
 ---
 
 ## Related documents

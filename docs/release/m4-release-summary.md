@@ -178,9 +178,9 @@ Playback harness skips are expected: `flutter test` cannot initialise `media_kit
 
 ## Next steps
 
-1. Execute [manual Windows QA checklist](../roadmap/m4-phase-4.7-release-documentation.md#step-4--manual-windows-qa)
-2. Apply annotated tag `m4-complete` when satisfied
-3. Decide `pubspec.yaml` bump and `v0.5.0` stable tag timing
+1. Execute [manual Windows QA checklist](../roadmap/m4-phase-4.7-release-documentation.md#step-4--manual-windows-qa) — 17 points; confidence pass only
+2. Apply [release tagging sequence](../roadmap/m4-phase-4.7-release-documentation.md#release-tagging-sequence-after-qa-sign-off) — `pubspec.yaml` → `0.5.0`, then `m4-complete` / `v0.5.0` tags
+3. Observe [release discipline](../roadmap/m4-phase-4.7-release-documentation.md#release-discipline--no-m4-drift) — no new M4 features; cosmetic findings → next milestone
 4. Begin M5 planning when ready — [roadmap](../roadmap/roadmap.md)
 
 ---
