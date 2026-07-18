@@ -426,6 +426,38 @@ Baseline Audit → ADRs → Invalidation → Artwork → Search → Scroll tunin
 - Full Windows regression checklist executed
 - TNAS HTTPS smoke optional but recommended if provider changes touched network layer
 
+**Observations — deferred improvements (not Phase 4.7 implementation):**
+
+These are documented for a future UX polish pass. They are **not functional defects** and **not blockers** for M4 release or Phase 4.7 closure.
+
+#### Deferred UI improvement — Dashboard playback artwork (Continue Watching)
+
+The **Continue Watching** row uses large fixed-size hero cards (`CardLayout.continueWatchingCardHeight`) that pre-date the M4.5 artwork decode pipeline. With bounded LRU artwork resolution and `ArtworkImage` loading, some items appear **stretched** when the container aspect ratio does not match the resolved artwork.
+
+This does not affect playback, resume, or catalogue behaviour — only visual quality for some media.
+
+A future UI refinement should review card layout and image presentation, considering:
+
+- Preserving artwork aspect ratio (no stretching)
+- Appropriate `BoxFit` behaviour (`cover` or `contain` as appropriate per card type)
+- Consistent card sizing across dashboard sections
+- Optional redesign of Continue Watching card dimensions to better suit landscape video artwork
+
+#### Future work — Dashboard card consistency
+
+As the dashboard evolved through M3 and M4, sections use slightly different card proportions:
+
+| Section | Current layout reference |
+|---|---|
+| Libraries | Library cards — landscape 16:9 band |
+| Continue Watching | Hero row — fixed 300 px height |
+| Recently Added | Portrait carousel — 160×240 |
+| Featured Folders | Landscape carousel — 280×200 |
+
+A future **Dashboard UX polish** task should standardize artwork aspect ratios, spacing, and card sizing across all dashboard components — especially after M4.5 artwork caching and decode sizing. This broadens the Continue Watching stretch fix into a coherent visual language before additional media types (music, books, images) are added.
+
+**Classification:** Visual enhancement only · **not** in Phase 4.7 scope · **not** an M4 release blocker.
+
 **Documentation outputs:**
 
 - Updated [release history](../release/release-history.md)

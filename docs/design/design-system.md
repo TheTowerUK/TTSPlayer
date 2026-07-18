@@ -251,6 +251,17 @@ Standardise now; implement in Sprint 3 (Artwork).
 
 Missing artwork: **neutral placeholder** (`errorBuilder` / placeholder widget) — never hide the item.
 
+### Known visual debt (M4.5 artwork pipeline — deferred UX polish)
+
+**Not a functional defect.** Documented for a post-M4 dashboard UX pass; not in Phase 4.7 implementation scope.
+
+| Area | Observation |
+|---|---|
+| **Continue Watching** | Fixed hero card height (`CardLayout.continueWatchingCardHeight`) can stretch artwork when M4.5 decode/cached candidates do not match the 16:9 band — reduce stretching via aspect-preserving `BoxFit` and/or card dimension review |
+| **Dashboard sections overall** | Libraries, Continue Watching, Recently Added, and Featured Folders use different card widths/heights/ratios — future pass should unify spacing and artwork presentation |
+
+See [M4 Phase 4.7 observations](../roadmap/m4-plan.md#phase-47--release-and-documentation) in the roadmap.
+
 ---
 
 ## Icons
