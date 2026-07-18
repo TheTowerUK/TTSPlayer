@@ -159,12 +159,14 @@ Phase 2.5 was **accepted** 2026-07-05:
 
 ---
 
-## Phase 3a implementation (in progress)
+## Phase 3a implementation (complete — M3.5)
 
 - `MediaLocationResolver` under `client/ttsplayer/lib/services/media_access/`
 - `LocalFileProvider`, `HttpServingProvider` as first two implementations
 - Unit tests: `test/media_location_resolver_test.dart`
-- **Not yet wired:** `CatalogService`, settings UI (future phases)
+- **Wired in M3.5 Phase 4:** `CatalogService`, settings UI, startup provider selection
+
+→ [M3.5 release snapshot](../release/m3.5-media-access-complete.md)
 
 ---
 

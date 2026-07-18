@@ -1,5 +1,37 @@
 # Release History
 
+## M4 — User Experience and Platform Integration
+
+**Date:** July 2026  
+**Milestone:** M4 — **Complete** 2026-07-18  
+**Tag:** `m4-complete` (recommended after manual QA sign-off)
+
+→ [Full release snapshot](./m4-release-summary.md)  
+→ [Phase 4.7 closure spec](../roadmap/m4-phase-4.7-release-documentation.md)
+
+### Added
+
+- Provider Management — health model, status panel, refresh/retry (ADR-001–003)
+- Settings Framework — versioned envelope, grouped UI, migration (ADR-004–006)
+- Library Experience — favourites, sort/filter, breadcrumbs, search presentation (ADR-007–009)
+- Playback Improvements — speed, audio/subtitle tracks, error taxonomy (ADR-010–013)
+- Performance and Caching — cache invalidation, artwork LRU, search index lifecycle (ADR-014–016)
+- Diagnostics and Supportability — runtime snapshot, read-only UI, clipboard export (ADR-017–019)
+
+### Validation (2026-07-18)
+
+- `flutter test`: **624 passed**, **8 skipped**
+- Six Windows runtime harness suites (Phases 4.1–4.6)
+- `flutter analyze`: **89** baseline findings; no new M4 errors
+
+### Deferred (not blockers)
+
+- Continue Watching artwork stretch — dashboard UX polish
+- Dashboard card consistency — future UX pass
+- Manual Windows QA checklist — execute before tag
+
+---
+
 ## M3.5 – Media Access Foundation
 
 **Date:** July 2026  

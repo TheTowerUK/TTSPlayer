@@ -7,7 +7,7 @@ Canonical milestone detail lives in [`docs/roadmap/`](docs/roadmap/).
 | M2 | [First Playable Release](docs/roadmap/roadmap.md#m2--first-playable-release) | ✅ v0.2.0 |
 | M3 | [Personal Media Experience](docs/roadmap/m3-personal-media-experience.md) | ✅ v0.3.0 |
 | M3.5 | [Network Client Foundation](docs/roadmap/network-client-foundation.md) | ✅ `m3.5-complete` |
-| M4 | [User Experience and Platform Integration](docs/roadmap/m4-plan.md) | 🔄 Active — Phase 4.4 spec accepted (`v0.5.0-dev`) |
+| M4 | [User Experience and Platform Integration](docs/roadmap/m4-plan.md) | ✅ Complete — [release summary](docs/release/m4-release-summary.md) (`v0.5.0-dev`) |
 | M7 | [Multi-device Experience](docs/roadmap/mobile-delivery.md#m7--multi-device-experience) | Planned |
 
 → [Roadmap principles](docs/roadmap/principles.md)  
@@ -65,9 +65,10 @@ Sprint checkpoints: `m3-sprint-3`, `m3-complete`. Sprint 4 delivered Featured Fo
 
 ## M4 — User Experience and Platform Integration
 
-**Status:** Active development — Phase 4.4 specification accepted; implementation not started  
+**Status:** ✅ Complete — 2026-07-18  
 **Branch:** `m4-development`  
-**Development version:** `v0.5.0-dev`
+**Development version:** `v0.5.0-dev`  
+**Tag (recommended):** `m4-complete` after manual QA sign-off
 
 ### M4 progress
 
@@ -76,19 +77,11 @@ Sprint checkpoints: `m3-sprint-3`, `m3-complete`. Sprint 4 delivered Featured Fo
 | **4.1** | Provider Management | ✅ Complete (2026-07-12) |
 | **4.2** | Settings Framework | ✅ Complete (2026-07-12) |
 | **4.3** | Library Experience | ✅ Complete (2026-07-13) |
-| **4.4** | Playback Improvements | Specification accepted — Gate 0 complete — implementation next |
+| **4.4** | Playback Improvements | ✅ Complete (2026-07-14) |
+| **4.5** | Performance and Caching | ✅ Complete (2026-07-16) |
+| **4.6** | Diagnostics and Supportability | ✅ Complete (2026-07-17) |
+| **4.7** | Release and Documentation | ✅ Complete (2026-07-18) |
 
-→ [Phase 4.4 specification](docs/roadmap/m4-phase-4.4-playback-improvements.md)  
-→ [Gate 0 audit](docs/roadmap/m4-phase-4.4-gate0-capability-audit.md)  
-→ [ADR-010–013](docs/architecture/decisions/README.md#index)
-
-### Focus
-
-Polish settings, provider visibility, library browsing, playback controls, performance, and in-app diagnostics — building on M3 personal UX and M3.5 provider-neutral media access.
-
+→ [M4 release summary](docs/release/m4-release-summary.md)  
 → [M4 plan](docs/roadmap/m4-plan.md)  
-→ [Phase 4.1 specification](docs/roadmap/m4-phase-4.1-provider-management.md)  
-→ [Phase 4.2 specification](docs/roadmap/m4-phase-4.2-settings-framework.md) *(complete)*  
-→ [Phase 4.3 specification](docs/roadmap/m4-phase-4.3-library-experience.md) *(complete)*  
-→ [Phase 4.4 specification](docs/roadmap/m4-phase-4.4-playback-improvements.md) *(accepted)*  
 → [v0.5.0-dev tracker](docs/release/v0.5.0-dev.md)

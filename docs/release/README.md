@@ -6,13 +6,15 @@ Shipping history and milestone snapshots for TTSPlayer.
 
 ## Current stable milestone
 
-**M3.5 — Configurable HTTPS Media Platform**
+**M4 — User Experience and Platform Integration**
 
 | | |
 |---|---|
-| **Status** | ✅ Complete |
-| **Tag** | `m3.5-complete` |
-| **Validated** | TerraMaster TNAS with HTTPS (Caddy) |
+| **Status** | ✅ Complete (documentation + automated validation) |
+| **Snapshot** | [M4 release summary](./m4-release-summary.md) |
+| **Tag** | `m4-complete` — recommended after manual QA sign-off |
+
+**Previous validated milestone:** M3.5 — tag `m3.5-complete`
 
 → [M3.5 release snapshot](./m3.5-media-access-complete.md#deployment-validation--2026-07-07)
 
@@ -20,13 +22,15 @@ Shipping history and milestone snapshots for TTSPlayer.
 
 ## Current development branch
 
-`m4-development`
+`m4-development` — M4 milestone closed; tag decision pending
 
 ---
 
 ## Current work
 
-**M4 — User Experience and Platform Integration** — [M4 plan](../roadmap/m4-plan.md) · [v0.5.0-dev tracker](./v0.5.0-dev.md) · [M4 foundation snapshot](./m4-foundation-complete.md) *(Phases 4.1–4.3)*
+**M4 complete** — [release summary](./m4-release-summary.md) · [Phase 4.7 closure](../roadmap/m4-phase-4.7-release-documentation.md) · [v0.5.0-dev tracker](./v0.5.0-dev.md)
+
+Next: M5 planning — [roadmap](../roadmap/roadmap.md)
 
 ---
 
@@ -36,9 +40,10 @@ Milestones and development branches are tracked separately: a completed mileston
 
 | State | Value |
 |---|---|
-| Latest validated release | M3.5 (`m3.5-complete`) |
+| Latest milestone | M4 — [release summary](./m4-release-summary.md) |
+| Recommended tag | `m4-complete` (after manual QA) |
 | Development branch | `m4-development` |
-| Current work | M4 (`v0.5.0-dev`) |
+| Previous validated tag | `m3.5-complete` |
 
 ---
 
@@ -46,7 +51,8 @@ Milestones and development branches are tracked separately: a completed mileston
 
 | Document | Milestone | Tag |
 |---|---|---|
-| [v0.5.0-dev — M4 development cycle](./v0.5.0-dev.md) | M4 (active) | — |
+| [M4 — User Experience and Platform Integration](./m4-release-summary.md) | M4 | `m4-complete` (pending) |
+| [v0.5.0-dev — M4 development cycle](./v0.5.0-dev.md) | M4 (archived cycle) | — |
 | [M4 foundation snapshot — Phases 4.1–4.3](./m4-foundation-complete.md) | M4 (development archive) | — |
 | [M3.5 — Configurable HTTPS Media Platform](./m3.5-media-access-complete.md) | M3.5 | `m3.5-complete` |
 | [v0.3.0 — Personal Media Experience](./v0.3.0.md) | M3 | `v0.3.0` / `m3-complete` |

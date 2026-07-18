@@ -17,9 +17,9 @@ System design notes for TTSPlayer — scanner, catalogue schema, client services
 | [Path mapping](./path-mapping.md) | Accepted — HTTP serving layer rules |
 | [Media access abstraction](./media-access-abstraction.md) | Accepted — provider-neutral playable URI model |
 
-## M4 planning (active)
+## M4 planning (complete)
 
-Planning documents for [M4 — User Experience and Platform Integration](../roadmap/m4-plan.md). These describe **intent and baseline** — not implemented M4 work.
+Planning and implementation documents for [M4 — User Experience and Platform Integration](../roadmap/m4-plan.md). All M4 architecture domains are **Implemented / Accepted**.
 
 | Document | Phase | Status |
 |---|---|---|

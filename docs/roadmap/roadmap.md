@@ -55,13 +55,14 @@ HTTPS catalogue loading, provider configuration UI, startup provider selection, 
 
 ## M4 — User Experience and Platform Integration
 
-**Status:** Planning — branch `m4-development`, `v0.5.0-dev`
+**Status:** ✅ Complete — [release summary](../release/m4-release-summary.md) (2026-07-18)
 
 Polish the personal media application: provider management, settings framework, library UX, playback improvements, caching, diagnostics, and release documentation. Builds on M3.5 provider-neutral architecture without replacing filesystem-driven libraries.
 
 → [M4 plan](./m4-plan.md)  
+→ [M4 release summary](../release/m4-release-summary.md)  
 → [v0.5.0-dev tracker](../release/v0.5.0-dev.md)  
-→ [Architecture planning](../architecture/README.md)
+→ [Architecture index](../architecture/README.md)
 
 ---
 

@@ -1,6 +1,6 @@
 # M4 — User Experience and Platform Integration
 
-**Status:** Active development (`v0.5.0-dev`) — **Phase 4.6 complete; Phase 4.7 next**
+**Status:** **COMPLETE** (`v0.5.0-dev`) — **Phase 4.7 closed 2026-07-18**
 **Branch:** `m4-development`
 **Development version:** `v0.5.0-dev`
 **Predecessor:** M3.5 Media Access Platform
@@ -56,9 +56,8 @@ Implement in order unless a documented dependency allows parallel documentation 
 | **4.3** | Library Experience | ✅ Complete (2026-07-13) |
 | **4.4** | Playback Improvements | ✅ Complete (2026-07-14) | [spec](./m4-phase-4.4-playback-improvements.md) |
 | **4.5** | Performance and Caching | ✅ Complete (2026-07-16) — [spec](./m4-phase-4.5-performance-caching.md) · [caching](../architecture/caching.md) |
-| **4.6** | Diagnostics and Supportability | **Complete** — [spec](./m4-phase-4.6-diagnostics-supportability.md) · closure 2026-07-17 |
-| **4.7** | Release and Documentation | **Next** |
-| **4.7** | Release and Documentation | Planned |
+| **4.6** | Diagnostics and Supportability | ✅ Complete (2026-07-17) — [spec](./m4-phase-4.6-diagnostics-supportability.md) · [diagnostics](../architecture/diagnostics.md) |
+| **4.7** | Release and Documentation | ✅ Complete (2026-07-18) — [spec](./m4-phase-4.7-release-documentation.md) · [release summary](../release/m4-release-summary.md) |
 
 ---
 
@@ -394,6 +393,8 @@ Baseline Audit → ADRs → Invalidation → Artwork → Search → Scroll tunin
 
 ### Phase 4.7 — Release and Documentation
 
+**Status:** ✅ **COMPLETE** (2026-07-18)
+
 **Objective:** Close M4 with validated documentation and release artefacts.
 
 **Scope:**
@@ -460,8 +461,9 @@ A future **Dashboard UX polish** task should standardize artwork aspect ratios, 
 
 **Documentation outputs:**
 
+- [Phase 4.7 closure spec](./m4-phase-4.7-release-documentation.md)
+- [M4 release summary](../release/m4-release-summary.md)
 - Updated [release history](../release/release-history.md)
-- M4 release snapshot (new doc at closure)
 - [roadmap.md](./roadmap.md) and [MILESTONES.md](../../MILESTONES.md) updated
 
 ---
@@ -500,14 +502,16 @@ Each sub-phase follows the lifecycle proven during M3.5:
 
 M4 is complete when:
 
-- [ ] Settings are coherent and persistent
-- [ ] Provider state is visible and manageable
-- [ ] Library browsing is polished
-- [ ] Playback controls and track handling are improved
-- [ ] Large libraries remain responsive
-- [ ] Common failures are diagnosable from within the application
-- [ ] Windows local and HTTPS media paths remain regression-safe
-- [ ] Release documentation is complete
+- [x] Settings are coherent and persistent
+- [x] Provider state is visible and manageable
+- [x] Library browsing is polished
+- [x] Playback controls and track handling are improved
+- [x] Large libraries remain responsive
+- [x] Common failures are diagnosable from within the application
+- [x] Windows local and HTTPS media paths remain regression-safe
+- [x] Release documentation is complete
+
+**M4 milestone: COMPLETE** (2026-07-18) — see [M4 release summary](../release/m4-release-summary.md).
 
 ---
 

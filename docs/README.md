@@ -17,7 +17,7 @@ Project identity and planning live here.
 | M2 | First Playable Release | ✅ v0.2.0 |
 | M3 | Personal Media Experience | ✅ v0.3.0 |
 | M3.5 | Media Access Foundation | ✅ `m3.5-complete` |
-| M4 | [User Experience and Platform Integration](./roadmap/m4-plan.md) | 🔄 Planning (`v0.5.0-dev`) |
+| M4 | [User Experience and Platform Integration](./roadmap/m4-plan.md) | ✅ Complete — [release summary](./release/m4-release-summary.md) |
 | M5 | Music Library | Planned |
 | M6 | Books & Comics | Planned |
 | M7 | Multi-device Experience | Planned |
