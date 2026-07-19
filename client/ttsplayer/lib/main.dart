@@ -7,6 +7,7 @@ import 'package:media_kit/media_kit.dart';
 import 'package:provider/provider.dart';
 
 import 'features/dashboard/dashboard_screen.dart';
+import 'features/music/music_library_service.dart';
 import 'features/search/search_service.dart';
 import 'navigation/app_navigator.dart';
 import 'services/artwork/artwork_service.dart';
@@ -39,6 +40,7 @@ Future<void> main() async {
 
   final artworkService = ArtworkService();
   final searchService = SearchService();
+  final musicLibraryService = MusicLibraryService();
 
   final isWindowsDesktop = !kIsWeb && Platform.isWindows;
   final mediaLocationResolver = MediaLocationResolver(
@@ -52,6 +54,7 @@ Future<void> main() async {
   final catalogCacheCoordinator = CatalogCacheCoordinator(
     artworkService: artworkService,
     searchService: searchService,
+    musicLibraryService: musicLibraryService,
     libraryMetadataRepository: libraryMetadataRepository,
   );
 
@@ -90,6 +93,7 @@ Future<void> main() async {
         Provider<MediaLocationResolver>.value(value: mediaLocationResolver),
         Provider<ArtworkService>.value(value: artworkService),
         Provider<SearchService>.value(value: searchService),
+        Provider<MusicLibraryService>.value(value: musicLibraryService),
         ChangeNotifierProvider<CatalogService>.value(
           value: catalogService,
         ),
