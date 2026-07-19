@@ -30,6 +30,14 @@ Planning and implementation documents for [M4 — User Experience and Platform I
 | [Caching](./caching.md) | 4.5 | **Implemented / Accepted** — [spec](../roadmap/m4-phase-4.5-performance-caching.md) · ADR-014–016 |
 | [Diagnostics](./diagnostics.md) | 4.6 | **Implemented / Accepted** — [spec](../roadmap/m4-phase-4.6-diagnostics-supportability.md) · ADR-017–019 |
 
+## M5 planning (active)
+
+Planning document for [M5 — Music](../roadmap/m5-plan.md). **Not implemented.**
+
+| Document | Phase | Status |
+|---|---|---|
+| [Music](./music.md) | 5.0+ | **Planned / Proposed** — [M5 plan](../roadmap/m5-plan.md) · ADR-020–023 |
+
 ## Architecture Decision Records
 
 Significant cross-layer decisions are recorded as ADRs:

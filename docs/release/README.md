@@ -10,27 +10,19 @@ Shipping history and milestone snapshots for TTSPlayer.
 
 | | |
 |---|---|
-| **Status** | ✅ Complete (documentation + automated validation) |
+| **Status** | ✅ Complete |
+| **Tag** | `v0.5.0` / `m4-complete` |
 | **Snapshot** | [M4 release summary](./m4-release-summary.md) |
-| **Tag** | `m4-complete` — recommended after manual QA sign-off |
-
-**Previous validated milestone:** M3.5 — tag `m3.5-complete`
-
-→ [M3.5 release snapshot](./m3.5-media-access-complete.md#deployment-validation--2026-07-07)
 
 ---
 
-## Current development branch
+## Current development focus
 
-`m4-development` — M4 milestone closed; tag decision pending
+**M5 — Music** — Phase 5.0 planning (documentation-only)
 
----
+→ [M5 plan](../roadmap/m5-plan.md) · [Music architecture](../architecture/music.md)
 
-## Current work
-
-**M4 complete** — [release summary](./m4-release-summary.md) · [Phase 4.7 closure](../roadmap/m4-phase-4.7-release-documentation.md) · [v0.5.0-dev tracker](./v0.5.0-dev.md)
-
-Next: M5 planning — [roadmap](../roadmap/roadmap.md)
+**Branch:** `m4-development`
 
 ---
 
@@ -40,8 +32,8 @@ Milestones and development branches are tracked separately: a completed mileston
 
 | State | Value |
 |---|---|
-| Latest milestone | M4 — [release summary](./m4-release-summary.md) |
-| Recommended tag | `m4-complete` (after manual QA) |
+| Latest release | M4 — `v0.5.0` — [release summary](./m4-release-summary.md) |
+| Current planning | M5 — [M5 plan](../roadmap/m5-plan.md) |
 | Development branch | `m4-development` |
 | Previous validated tag | `m3.5-complete` |
 
@@ -51,7 +43,7 @@ Milestones and development branches are tracked separately: a completed mileston
 
 | Document | Milestone | Tag |
 |---|---|---|
-| [M4 — User Experience and Platform Integration](./m4-release-summary.md) | M4 | `m4-complete` (pending) |
+| [M4 — User Experience and Platform Integration](./m4-release-summary.md) | M4 | `v0.5.0` / `m4-complete` |
 | [v0.5.0-dev — M4 development cycle](./v0.5.0-dev.md) | M4 (archived cycle) | — |
 | [M4 foundation snapshot — Phases 4.1–4.3](./m4-foundation-complete.md) | M4 (development archive) | — |
 | [M3.5 — Configurable HTTPS Media Platform](./m3.5-media-access-complete.md) | M3.5 | `m3.5-complete` |

@@ -7,7 +7,8 @@ Canonical milestone detail lives in [`docs/roadmap/`](docs/roadmap/).
 | M2 | [First Playable Release](docs/roadmap/roadmap.md#m2--first-playable-release) | ✅ v0.2.0 |
 | M3 | [Personal Media Experience](docs/roadmap/m3-personal-media-experience.md) | ✅ v0.3.0 |
 | M3.5 | [Network Client Foundation](docs/roadmap/network-client-foundation.md) | ✅ `m3.5-complete` |
-| M4 | [User Experience and Platform Integration](docs/roadmap/m4-plan.md) | ✅ Complete — [release summary](docs/release/m4-release-summary.md) (`v0.5.0-dev`) |
+| M4 | [User Experience and Platform Integration](docs/roadmap/m4-plan.md) | ✅ `v0.5.0` — [release summary](docs/release/m4-release-summary.md) |
+| M5 | [Music](docs/roadmap/m5-plan.md) | 🔄 Planning — Phase 5.0 |
 | M7 | [Multi-device Experience](docs/roadmap/mobile-delivery.md#m7--multi-device-experience) | Planned |
 
 → [Roadmap principles](docs/roadmap/principles.md)  
@@ -83,5 +84,28 @@ Sprint checkpoints: `m3-sprint-3`, `m3-complete`. Sprint 4 delivered Featured Fo
 | **4.7** | Release and Documentation | ✅ Complete (2026-07-18) |
 
 → [M4 release summary](docs/release/m4-release-summary.md)  
-→ [M4 plan](docs/roadmap/m4-plan.md)  
-→ [v0.5.0-dev tracker](docs/release/v0.5.0-dev.md)
+→ [M4 plan](docs/roadmap/m4-plan.md)
+
+---
+
+## M5 — Music
+
+**Status:** Planning — Phase 5.0 (documentation)
+**Branch:** `m4-development`
+**Baseline:** `v0.5.0`
+
+### M5 progress
+
+| Sub-phase | Focus | Status |
+|---|---|---|
+| **5.0** | Planning and Architecture | **In progress** |
+| **5.1** | Music Catalogue and Metadata | Planned |
+| **5.2** | Music Library Experience | Planned |
+| **5.3** | Music Playback and Queue | Planned |
+| **5.4** | Music State and Listening History | Planned |
+| **5.5** | Performance, Diagnostics and Runtime Validation | Planned |
+| **5.6** | Release and Documentation | Planned |
+
+→ [M5 plan](docs/roadmap/m5-plan.md)
+→ [Music architecture](docs/architecture/music.md) *(Proposed)*
+→ [ADR-020–023](docs/architecture/decisions/README.md#m5--music-proposed)
