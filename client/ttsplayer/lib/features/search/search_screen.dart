@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../navigation/folder_navigation.dart';
 import '../../models/catalog.dart';
 import '../../screens/item_detail_screen.dart';
+import '../music/screens/music_track_detail_screen.dart';
 import '../../services/catalog_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/loading_card.dart';
@@ -158,7 +159,12 @@ class _SearchScreenState extends State<SearchScreen> {
     Navigator.push<void>(
       context,
       MaterialPageRoute<void>(
-        builder: (_) => ItemDetailScreen(item: item),
+        builder: (_) {
+          if (item.isAudio) {
+            return MusicTrackDetailScreen(trackId: item.id);
+          }
+          return ItemDetailScreen(item: item);
+        },
       ),
     );
   }

@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 
 import '../../../services/artwork/artwork_decode_size.dart';
 import '../../../services/artwork/artwork_service.dart';
+import '../../../models/media_item.dart';
+import '../../../models/media_kind.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/artwork/artwork_image.dart';
 import '../models/search_result.dart';
@@ -25,22 +27,24 @@ class SearchResultRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final item = result.item;
-    final playable = item.status.isPlayable;
     final artworkService = context.read<ArtworkService>();
     final candidate = artworkService.forMediaItem(item);
     final contextLabel =
         displayContext.isNotEmpty ? displayContext : result.folderContext;
+    final musicMeta = _musicMetadataLine(item);
 
     return Semantics(
       container: true,
-      label: 'Media: ${item.title}${contextLabel.isNotEmpty ? ', in $contextLabel' : ''}',
+      label: '${_kindLabel(item)}: ${item.title}'
+          '${musicMeta.isNotEmpty ? ', $musicMeta' : ''}'
+          '${contextLabel.isNotEmpty ? ', in $contextLabel' : ''}',
       child: Material(
         key: Key('search_result_${item.id}'),
         color: AppColors.card,
         borderRadius: AppRadius.cardRadius,
         child: InkWell(
           borderRadius: AppRadius.cardRadius,
-          onTap: playable ? onOpen : null,
+          onTap: onOpen,
           child: Container(
             decoration: BoxDecoration(
               borderRadius: AppRadius.cardRadius,
@@ -76,6 +80,15 @@ class SearchResultRow extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
+                      if (musicMeta.isNotEmpty) ...[
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(
+                          musicMeta,
+                          style: AppTypography.cardSubtitle,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                       if (contextLabel.isNotEmpty) ...[
                         const SizedBox(height: AppSpacing.xs),
                         Text(
@@ -88,10 +101,10 @@ class SearchResultRow extends StatelessWidget {
                       const SizedBox(height: AppSpacing.xs),
                       Row(
                         children: [
-                          const _KindChip(label: 'Media'),
+                          _KindChip(label: _kindLabel(item)),
                           const SizedBox(width: AppSpacing.sm),
                           _ExtensionChip(label: item.extension.toUpperCase()),
-                          if (!playable) ...[
+                          if (!item.status.isPlayable) ...[
                             const SizedBox(width: AppSpacing.sm),
                             Text(
                               item.status.name,
@@ -132,6 +145,25 @@ class SearchResultRow extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  static String _kindLabel(MediaItem item) {
+    return switch (item.mediaKind) {
+      MediaKind.video => 'Video',
+      MediaKind.audio => 'Audio',
+      MediaKind.image => 'Image',
+      MediaKind.unknown => 'Media',
+    };
+  }
+
+  static String _musicMetadataLine(MediaItem item) {
+    if (!item.isAudio) return '';
+    final artist = item.artist ?? item.albumArtist;
+    final album = item.album;
+    if (artist != null && album != null) {
+      return '$artist · $album';
+    }
+    return artist ?? album ?? '';
   }
 }
 
