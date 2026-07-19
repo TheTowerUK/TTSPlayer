@@ -3,19 +3,27 @@ import 'package:ttsplayer/constants/supported_extensions.dart';
 
 /// Expected extensions — must match backend/indexer.py SUPPORTED_EXTENSIONS.
 const _expectedExtensions = [
+  'aac',
   'avi',
   'bmp',
+  'flac',
   'gif',
   'jpeg',
   'jpg',
+  'm4a',
   'm4v',
   'mkv',
   'mov',
+  'mp3',
   'mp4',
+  'ogg',
+  'opus',
   'png',
   'tif',
   'tiff',
+  'wav',
   'webp',
+  'wma',
 ];
 
 void main() {

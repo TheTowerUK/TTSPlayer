@@ -5,10 +5,20 @@ from __future__ import annotations
 import json
 import tempfile
 import unittest
+import unittest.mock
 from datetime import datetime, timezone
 from pathlib import Path
 
 import indexer
+
+
+def _all_items_from_folders(folders: list[dict]) -> list[dict]:
+    """Collect every indexed item from a folder tree (depth-first)."""
+    items: list[dict] = []
+    for folder in folders:
+        items.extend(folder.get("items", []))
+        items.extend(_all_items_from_folders(folder.get("subfolders", [])))
+    return items
 
 
 class SupportedExtensionTests(unittest.TestCase):
@@ -256,6 +266,107 @@ class LibraryMergeTests(unittest.TestCase):
             videos_node_after = next(f for f in merged["folders"] if f["name"] == "Videos")
             video_exts = {Path(i["file_path"]).suffix.lower() for i in videos_node_after["items"]}
             self.assertIn(".mp4", video_exts)
+
+
+class MusicIndexingTests(unittest.TestCase):
+    def test_audio_extensions_in_supported_set(self):
+        for ext in (".mp3", ".flac", ".m4a", ".ogg", ".wav"):
+            with self.subTest(ext=ext):
+                self.assertIn(ext, indexer.SUPPORTED_EXTENSIONS)
+
+    def test_make_item_audio_emits_media_kind_and_metadata(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            album = root / "Artist" / "Album"
+            album.mkdir(parents=True)
+            track = album / "01 - Song.mp3"
+            track.write_bytes(b"fake")
+
+            warnings: list[dict] = []
+            with unittest.mock.patch.object(
+                indexer.music_metadata,
+                "build_music_metadata",
+                return_value={
+                    "media_kind": "audio",
+                    "title": "Song",
+                    "artist": "Artist",
+                    "album": "Album",
+                    "album_artist": "Artist",
+                    "track_number": 1,
+                    "artist_group_key": "artist",
+                    "album_group_key": "artist|album|scope",
+                },
+            ):
+                item = indexer.make_item(track, warnings)
+
+            self.assertIsNotNone(item)
+            self.assertEqual(item["media_kind"], "audio")
+            self.assertEqual(item["artist"], "Artist")
+            self.assertEqual(item["album"], "Album")
+
+    def test_scan_folder_indexes_audio_and_sets_version_three(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            music = root / "Music" / "Artist" / "Album"
+            music.mkdir(parents=True)
+            (music / "track.mp3").write_bytes(b"x")
+            (root / "Videos").mkdir()
+            (root / "Videos" / "clip.mp4").write_bytes(b"v")
+
+            warnings: list[dict] = []
+            counters = {"folders": 0, "items": 0}
+            with unittest.mock.patch.object(
+                indexer.music_metadata,
+                "build_music_metadata",
+                side_effect=lambda path, tags=None: {
+                    "media_kind": "audio",
+                    "title": path.stem,
+                    "artist": "Artist",
+                    "album": "Album",
+                    "album_artist": "Artist",
+                    "artist_group_key": "artist",
+                    "album_group_key": "artist|album|scope",
+                },
+            ):
+                folders, total = indexer.scan_root(root, warnings, counters)
+
+            self.assertGreaterEqual(total, 2)
+            audio_items = [
+                i
+                for i in _all_items_from_folders(folders)
+                if i.get("media_kind") == "audio"
+            ]
+            self.assertTrue(audio_items)
+
+    def test_cover_sidecar_excluded_beside_audio(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            album = Path(tmp) / "Album"
+            album.mkdir()
+            (album / "track.mp3").write_bytes(b"a")
+            (album / "cover.jpg").write_bytes(b"p")
+
+            warnings: list[dict] = []
+            counters = {"folders": 0, "items": 0}
+            with unittest.mock.patch.object(
+                indexer.music_metadata,
+                "build_music_metadata",
+                return_value={
+                    "media_kind": "audio",
+                    "title": "track",
+                    "artist": "A",
+                    "album": "Album",
+                    "album_artist": "A",
+                    "artist_group_key": "a",
+                    "album_group_key": "a|album|scope",
+                },
+            ):
+                node = indexer.scan_folder(album, warnings, counters, library_name="Album")
+
+            names = {Path(i["file_path"]).name for i in node["items"]}
+            self.assertEqual(names, {"track.mp3"})
+
+    def test_catalogue_version_constant_is_three(self):
+        self.assertEqual(indexer.CATALOGUE_VERSION, 3)
 
 
 class AddedAtTests(unittest.TestCase):
