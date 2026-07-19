@@ -68,13 +68,14 @@ Polish the personal media application: provider management, settings framework, 
 
 ## M5 — Music
 
-**Status:** In progress — Phase 5.0 complete; **Phase 5.1 next**
+**Status:** In progress — Phase 5.1 complete; **Phase 5.2 next**
 
-Extend TTSPlayer with music catalogue metadata, artist/album/track browsing, queue-based audio playback, and application-managed listening state — building on M4 platform services without a parallel architecture.
+Extend TTSPlayer with music catalogue metadata (✅ M5.1), artist/album/track browsing (M5.2), queue-based audio playback, and application-managed listening state — building on M4 platform services without a parallel architecture.
 
 → [M5 plan](./m5-plan.md)
-→ [Music architecture](../architecture/music.md) *(Planned / Proposed)*
-→ [ADR-020–023](../architecture/decisions/README.md#m5--music-proposed)
+→ [Phase 5.1 spec](./m5-phase-5.1-music-catalogue-metadata.md)
+→ [Music architecture](../architecture/music.md)
+→ [ADR-020–023](../architecture/decisions/README.md#m5--music)
 
 ---
 

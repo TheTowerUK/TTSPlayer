@@ -1,8 +1,8 @@
-# Music (M5 — Planned / Proposed)
+# Music (M5)
 
 
 
-**Status:** **In progress** — Phase 5.1 catalogue/metadata implemented (2026-07-19); UI and playback phases planned
+**Status:** **In progress** — Phase 5.1 catalogue/metadata **complete** (2026-07-19); M5.2 music library UI **next**
 
 **Related roadmap:** [M5 — Music](../roadmap/m5-plan.md) · [Phase 5.1 spec](../roadmap/m5-phase-5.1-music-catalogue-metadata.md)
 
@@ -139,49 +139,31 @@ M5 adds **music listening** to TTSPlayer: index audio files in the existing fold
 
 
 
-Current `MediaItem` fields (M4): `id`, `title`, `year`, `duration_seconds`, `file_path`, `thumbnail_path`, `size_bytes`, `status`, `added_at`.
-
-
-
-**Proposed additions (all optional except `media_kind` for indexed audio):**
-
-
+**Shipped fields on audio items (M5.1)** — all optional except `media_kind` for newly indexed audio:
 
 | Field | Type | Source |
-
 |---|---|---|
-
 | `media_kind` | `video` \| `audio` \| `image` | Indexer from extension |
-
-| `artist` | string? | Tags → folder → null |
-
-| `album` | string? | Tags → folder → null |
-
-| `album_artist` | string? | Tags → artist → null |
-
-| `track_title` | string? | Tags; else filename stem |
-
-| `track_number` | int? | Tags |
-
-| `disc_number` | int? | Tags (default 1) |
-
+| `artist` | string | Tags → folder → `Unknown Artist` |
+| `album` | string | Tags → folder → `Unknown Album` |
+| `album_artist` | string | Tags → artist → folder |
+| `title` | string | Tags → filename stem → `Unknown Track` |
+| `track_number` | int? | Tags → filename prefix (`NN - `) |
+| `disc_number` | int? | Tags |
 | `genre` | string? | Tags |
+| `year` | int? | Tags (when present) |
+| `artist_group_key` | string | Normalised resolved artist |
+| `album_group_key` | string | See §5 — collision-safe album grouping |
 
-| `date` | string? | Tags (year or full date) |
+**Not shipped in M5.1:** `compilation` flag, embedded artwork extraction, `track_title` as separate field (title carries display value).
 
-| `compilation` | bool? | Tags or heuristic |
+**Display title precedence:** embedded tag title → filename stem → `Unknown Track`.
 
+**Backward compatibility:** Absent `media_kind` on v2 catalogues: client infers **video**, **audio**, or **image** from file extension. Unknown `media_kind` strings map to `MediaKind.unknown` without crash. Clients tolerate unknown JSON fields.
 
+**Catalogue version:** `catalogue_version: 3` when scanned with indexer ≥ `0.4.0`. Legacy v2 catalogues load without `media_kind`; client infers from extension.
 
-**Display title precedence:** `track_title` → tag title → existing `title` (filename stem).
-
-
-
-**Backward compatibility:** Absent `media_kind` implies **video** for legacy video extensions, **image** for image extensions. Clients must tolerate unknown fields.
-
-
-
-**Catalogue version:** `catalogue_version: 3` when scanned with indexer ≥ 0.4.0. Legacy v2 catalogues load without `media_kind`; client infers from extension.
+**Terminology:** *Music* is the milestone/product area; catalogue JSON uses **`audio`** as the media-kind value (ADR-020).
 
 
 
@@ -189,31 +171,40 @@ Current `MediaItem` fields (M4): `id`, `title`, `year`, `duration_seconds`, `fil
 
 
 
-## 5. Identity and grouping rules
+## 5. Identity and grouping rules (M5.1 implemented)
 
 
 
-| Entity | Identity key (proposed) |
+| Entity | Identity key |
 
 |---|---|
 
-| Track | Existing path-derived `id` (md5 of file path) — **stable across rescans** |
+| Track | Path-derived `id` (md5 of file path) — **stable across rescans** |
 
-| Album | Normalized `(album_artist_or_artist, album, optional disc)` — **derived view**, not stored as filesystem node |
+| Artist browse | `artist_group_key` = normalised resolved `artist` (NFKC casefold, collapsed whitespace) |
 
-| Artist | Normalized display name from track `artist` or `album_artist` |
-
-
-
-**Normalization (proposed):** trim whitespace; case-fold for grouping keys; preserve original casing for display.
+| Album browse | `album_group_key` — see formula below |
 
 
 
-**Compilation:** When `compilation` true or album artist is various-artists sentinel, group under **Various Artists** for artist browse; album browse uses album name + album artist key.
+**Album grouping key (normative, M5.1):**
 
+```text
+album_group_key =
+  normalize(album_artist or artist)
+  + "|"
+  + normalize(album)
+  + "|"
+  + normalize(str(file_path.parent))
+```
 
+The parent-folder component scopes unknown albums and shallow layouts so identical album names under different artists or folders do not share one browse bucket.
 
-**Duplicates:** Same album name from different folders remain **separate** unless user later requests cross-folder merge (out of scope — filesystem is truth).
+**Normalisation:** trim whitespace; empty → missing; NFKC casefold and collapsed whitespace for grouping keys; original casing preserved on display fields (`artist`, `album`, `title`).
+
+**Compilation:** When `compilation` is true or album artist matches a various-artists sentinel — **deferred to M5.2+**; not emitted in M5.1 catalogue output.
+
+**Duplicates:** Same album name from different folders remain **separate** (filesystem is truth).
 
 
 
@@ -237,15 +228,15 @@ Current `MediaItem` fields (M4): `id`, `title`, `year`, `duration_seconds`, `fil
 
 | Album artist | Embedded tag → artist → folder heuristic |
 
-| Track/disc numbers | Embedded tag only |
+| Track/disc numbers | Embedded tag → filename prefix (`NN - `) when recognised |
 
-| Duration | Embedded tag → ffprobe → null |
+| Duration | ffprobe → null |
 
-| Year/date | Embedded tag → null |
+| Year | Embedded tag → null |
 
 
 
-**Folder heuristics (non-binding until 5.1 spec):** common layouts `Artist/Album/tracks`, `Album/tracks`, flat folder — indexer documents supported layouts; ambiguous layouts fall back without error.
+**Folder heuristics (M5.1):** `Artist/Album/tracks`, `Album/tracks`, and root-level files — see [Phase 5.1 spec](../roadmap/m5-phase-5.1-music-catalogue-metadata.md). Ambiguous layouts fall back without error.
 
 
 

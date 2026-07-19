@@ -32,11 +32,11 @@ Planning and implementation documents for [M4 — User Experience and Platform I
 
 ## M5 planning (active)
 
-Planning and catalogue foundation for [M5 — Music](../roadmap/m5-plan.md). **Phase 5.1 catalogue/metadata implemented**; UI and playback phases planned.
+Planning and catalogue foundation for [M5 — Music](../roadmap/m5-plan.md). **Phase 5.1 catalogue/metadata complete**; M5.2 music library UI next.
 
 | Document | Phase | Status |
 |---|---|---|
-| [Music](./music.md) | 5.0 ✅ / 5.1 ✅ impl | [M5 plan](../roadmap/m5-plan.md) · [Phase 5.1 spec](../roadmap/m5-phase-5.1-music-catalogue-metadata.md) · ADR-020/021 **Accepted** |
+| [Music](./music.md) | 5.0 ✅ / 5.1 ✅ | [M5 plan](../roadmap/m5-plan.md) · [Phase 5.1 spec](../roadmap/m5-phase-5.1-music-catalogue-metadata.md) · ADR-020/021 **Accepted** |
 
 ## Architecture Decision Records
 

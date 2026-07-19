@@ -1,11 +1,11 @@
 # M5 — Music
 
-**Status:** **In progress** — Phase 5.1 implementation complete (2026-07-19); **closure pending review**; **Phase 5.2 next** after 5.1 close
+**Status:** **In progress** — Phase 5.1 complete (2026-07-19); **Phase 5.2 next**
 **Branch:** `m4-development` *(continuing on current development branch)*
 **Development version:** `v0.5.0` (M4 release baseline)
 **Predecessor:** M4 — tag `v0.5.0` / `m4-complete` (2026-07-19)
 
-→ [Music architecture](../architecture/music.md) *(Planned / Proposed)*
+→ [Music architecture](../architecture/music.md)
 → [M4 release summary](../release/m4-release-summary.md)
 → [Roadmap principles](./principles.md)
 → [Architecture index](../architecture/README.md)
@@ -61,8 +61,8 @@ Implement in order unless a documented dependency allows parallel documentation 
 | Sub-phase | Focus | Status |
 |---|---|---|
 | **5.0** | Planning and Architecture | ✅ Complete (2026-07-19) |
-| **5.1** | Music Catalogue and Metadata | **Implementation complete** — [spec](./m5-phase-5.1-music-catalogue-metadata.md) · closure pending |
-| **5.2** | Music Library Experience | Planned |
+| **5.1** | Music Catalogue and Metadata | ✅ Complete (2026-07-19) — [spec](./m5-phase-5.1-music-catalogue-metadata.md) |
+| **5.2** | Music Library Experience | **Next** |
 | **5.3** | Music Playback and Queue | Planned |
 | **5.4** | Music State and Listening History | Planned |
 | **5.5** | Performance, Diagnostics and Runtime Validation | Planned |
@@ -148,30 +148,29 @@ Phase 5.1 produces an implementation specification and accepts ADR-020/021 when 
 
 ### Phase 5.1 — Music Catalogue and Metadata
 
-**Status:** **Implementation complete** (2026-07-19) — [Phase 5.1 spec](./m5-phase-5.1-music-catalogue-metadata.md) · closure commit pending review
+**Status:** ✅ **COMPLETE** (2026-07-19) — [Phase 5.1 spec](./m5-phase-5.1-music-catalogue-metadata.md)
 
 **Objective:** Extend the scanner and catalogue model to represent music items with optional embedded-tag metadata while retaining backward compatibility for video and image libraries.
 
-**Scope (planned):**
+**Scope (delivered):**
 
-- `media_kind` (or equivalent) classification: at minimum distinguish **video**, **audio**, **image** in catalogue items
-- Optional music metadata fields on items (not all mandatory): artist, album, album artist, title, track number, disc number, genre, year/date, duration, compilation flag
-- Stable item `id` (path-derived, unchanged from today)
-- Scanner tag extraction strategy (e.g. `ffprobe` / ID3 / Vorbis) with folder-derived fallbacks
-- `catalogue_version` bump to **3** (**proposed** in ADR-020 — not shipped until Phase 5.1 accepts ADR-020)
+- `media_kind` classification: **video**, **audio**, **image** on catalogue items
+- Optional music metadata fields: artist, album, album artist, title, track number, disc number, genre, year (when tagged), `artist_group_key`, `album_group_key`
+- Stable item `id` (path-derived, unchanged)
+- Scanner tag extraction via **ffprobe** with folder-derived fallbacks
+- `catalogue_version: 3`, scanner `0.4.0` (ADR-020 **Accepted**)
 - Missing/incomplete tag behaviour — filename stem, folder names, “Unknown Artist/Album”
-- Artwork association rules at scan time (embedded vs sidecar vs folder.jpg)
-- Compilation and multi-disc handling at metadata layer
+- Artwork sidecar rules extended for audio folders (embedded artwork pipeline deferred)
 - Atomic catalogue writes preserved
 
-**Out of scope:**
+**Out of scope (confirmed):**
 
 - Music UI surfaces (5.2)
 - Queue or listening state (5.3–5.4)
 - External metadata APIs
 - SQLite or secondary catalogue store
 
-**Dependencies:** Phase 5.0 complete; [ADR-020](../architecture/decisions/ADR-020-music-catalogue-schema-and-media-kind.md), [ADR-021](../architecture/decisions/ADR-021-music-metadata-precedence-and-identity.md) (**Proposed** — accept during 5.1 after audit).
+**Dependencies:** Phase 5.0 complete; [ADR-020](../architecture/decisions/ADR-020-music-catalogue-schema-and-media-kind.md), [ADR-021](../architecture/decisions/ADR-021-music-metadata-precedence-and-identity.md) — **Accepted**.
 
 **Definition of done:**
 
@@ -180,17 +179,59 @@ Phase 5.1 produces an implementation specification and accepts ADR-020/021 when 
 - [x] Indexer emits `media_kind` and optional music fields; video/image items unchanged
 - [x] Client parses new fields; unknown fields ignored; video browse/play unchanged
 - [x] Unit tests for indexer and `MediaItem` parsing
-- [x] ADR-020, ADR-021 **Accepted** at implementation validation (closure doc commit pending)
+- [x] ADR-020, ADR-021 **Accepted**
 
-**Validation expectations:**
+**Validation (2026-07-19):**
 
-- Indexer unit/integration tests with fixture libraries (flat, album folders, compilations, tagless files)
-- Client parse tests for mixed catalogues (v2 + v3)
-- Regression: existing mock/bundled catalogues still load
+- Python scanner/metadata tests: **27 passed**
+- Flutter music-focused tests: **12 passed**
+- Flutter full suite: **636 passed**, **8 skipped**
+
+#### Phase 5.1 closure — Definition-of-done reconciliation (2026-07-19)
+
+| # | Criterion | Verdict |
+|---|---|---|
+| 1 | Catalogue and scanner audited | **Satisfied** |
+| 2 | Catalogue version 3 implemented and documented | **Satisfied** |
+| 3 | Version 2 catalogues remain compatible | **Satisfied** |
+| 4 | Media kind explicit and safely parsed | **Satisfied** |
+| 5 | Supported audio extensions documented and tested | **Satisfied** |
+| 6 | Metadata extraction with graceful per-file failure | **Satisfied** |
+| 7 | Precedence and fallback deterministic | **Satisfied** |
+| 8 | Track identity stable across metadata-only rescans | **Satisfied** |
+| 9 | Artist grouping keys deterministic | **Satisfied** |
+| 10 | Album grouping keys deterministic and collision-safe | **Satisfied** |
+| 11 | Missing/corrupt metadata handled safely | **Satisfied** |
+| 12 | Video and image behaviour compatible | **Satisfied** |
+| 13 | Search indexes audio metadata | **Satisfied** |
+| 14 | Continue Watching excludes audio | **Satisfied** |
+| 15 | Artwork, favourites, diagnostics, caches tolerate mixed media | **Satisfied** |
+| 16 | Scanner tests cover music and regressions | **Satisfied** |
+| 17 | Dart tests cover catalogue v2 and v3 | **Satisfied** |
+| 18 | Full relevant test suites pass | **Satisfied** |
+| 19 | ADR-020 and ADR-021 Accepted | **Satisfied** |
+| 20 | ADR-022 and ADR-023 remain Proposed | **Satisfied** |
+| 21 | No music UI, queue, playback surface, or listening state | **Satisfied** |
+| 22 | Documentation and indexes reconciled | **Satisfied** |
+| 23 | M5.2 identified as next active phase | **Satisfied** |
+
+**Phase 5.1: COMPLETE.** Next M5 phase: **5.2 Music Library Experience**.
+
+#### Next phase handoff — M5.2 Music Library Experience
+
+M5.2 delivers **read-only music browsing** over the M5.1 catalogue foundation. Views are derived from `artist_group_key`, `album_group_key`, and track metadata — not filesystem invention.
+
+**In scope:** music entry/navigation; artist, album, and track browse surfaces; sorting and grouping; metadata and artwork placeholder presentation; unknown/partial-metadata states; search presentation for music results.
+
+**Out of scope:** playback queue; shuffle/repeat; MusicPlayerScreen; listening history; Continue Listening; playlists; multi-device sync.
+
+→ [Phase 5.2 scope](#phase-52--music-library-experience)
 
 ---
 
 ### Phase 5.2 — Music Library Experience
+
+**Status:** **Next** — depends on Phase 5.1 complete
 
 **Objective:** Deliver dedicated music browsing surfaces that reflect how users think about music (artists, albums, tracks) without breaking filesystem-driven Libraries.
 
@@ -387,14 +428,14 @@ M5 is complete when:
 
 ---
 
-## Proposed ADRs (M5.0 assessment)
+## M5 ADRs
 
-| ADR | Title | Rationale |
+| ADR | Title | Status |
 |---|---|---|
-| [ADR-020](../architecture/decisions/ADR-020-music-catalogue-schema-and-media-kind.md) | Music Catalogue Schema and Media Kind | Schema version bump, `media_kind`, optional fields — durable contract |
-| [ADR-021](../architecture/decisions/ADR-021-music-metadata-precedence-and-identity.md) | Music Metadata Precedence and Identity | Tag vs folder vs filename; artist/album grouping; compilation rules |
-| [ADR-022](../architecture/decisions/ADR-022-music-queue-and-listening-state.md) | Music Queue and Listening State | Queue ownership, persistence, prune on catalogue replace, key separation from video |
-| [ADR-023](../architecture/decisions/ADR-023-music-player-surface-architecture.md) | Music Player Surface Architecture | Shared service vs dedicated UI vs hybrid — cross-layer UX decision |
+| [ADR-020](../architecture/decisions/ADR-020-music-catalogue-schema-and-media-kind.md) | Music Catalogue Schema and Media Kind | **Accepted** (M5.1) |
+| [ADR-021](../architecture/decisions/ADR-021-music-metadata-precedence-and-identity.md) | Music Metadata Precedence and Identity | **Accepted** (M5.1) |
+| [ADR-022](../architecture/decisions/ADR-022-music-queue-and-listening-state.md) | Music Queue and Listening State | Proposed |
+| [ADR-023](../architecture/decisions/ADR-023-music-player-surface-architecture.md) | Music Player Surface Architecture | Proposed |
 
 No additional ADRs proposed for M5.0. Settings changes (e.g. music default shuffle) can extend ADR-011 in Phase 5.3 spec if needed.
 
@@ -465,7 +506,8 @@ Each sub-phase follows the M4 lifecycle:
 
 | Document | Purpose |
 |---|---|
-| [music.md](../architecture/music.md) | M5 architecture (Planned / Proposed) |
+| [music.md](../architecture/music.md) | M5 architecture (5.1 catalogue complete) |
+| [m5-phase-5.1-music-catalogue-metadata.md](./m5-phase-5.1-music-catalogue-metadata.md) | Phase 5.1 closure spec |
 | [m4-release-summary.md](../release/m4-release-summary.md) | Predecessor milestone |
 | [library.md](../architecture/library.md) | Video library UX baseline |
 | [playback.md](../architecture/playback.md) | Playback authority model |

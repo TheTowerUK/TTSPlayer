@@ -66,7 +66,7 @@ Track **`id`** remains path-derived (stable across rescans). Album and artist id
 
    - **Artist browse key:** normalized `artist`, falling back to `album_artist`
 
-   - **Album browse key:** `(normalized album_artist or artist, normalized album name, normalized parent folder path)` — scopes unknown albums per artist/folder; disc grouping deferred to M5.2+
+   - **Album browse key:** `album_group_key` = `normalize(album_artist or artist) + "|" + normalize(album) + "|" + normalize(parent_folder_path)` — collision-safe; parent folder scopes unknown albums; disc grouping deferred to M5.2+
 
 
 

@@ -8,7 +8,7 @@ Canonical milestone detail lives in [`docs/roadmap/`](docs/roadmap/).
 | M3 | [Personal Media Experience](docs/roadmap/m3-personal-media-experience.md) | ✅ v0.3.0 |
 | M3.5 | [Network Client Foundation](docs/roadmap/network-client-foundation.md) | ✅ `m3.5-complete` |
 | M4 | [User Experience and Platform Integration](docs/roadmap/m4-plan.md) | ✅ `v0.5.0` — [release summary](docs/release/m4-release-summary.md) |
-| M5 | [Music](docs/roadmap/m5-plan.md) | 🔄 In progress — Phase 5.1 next |
+| M5 | [Music](docs/roadmap/m5-plan.md) | 🔄 In progress — Phase 5.2 next (5.1 complete 2026-07-19) |
 | M7 | [Multi-device Experience](docs/roadmap/mobile-delivery.md#m7--multi-device-experience) | Planned |
 
 → [Roadmap principles](docs/roadmap/principles.md)
@@ -90,7 +90,7 @@ Sprint checkpoints: `m3-sprint-3`, `m3-complete`. Sprint 4 delivered Featured Fo
 
 ## M5 — Music
 
-**Status:** In progress — Phase 5.0 complete; **Phase 5.1 next**
+**Status:** In progress — Phase 5.1 complete; **Phase 5.2 next**
 **Branch:** `m4-development`
 **Baseline:** `v0.5.0`
 
@@ -99,13 +99,14 @@ Sprint checkpoints: `m3-sprint-3`, `m3-complete`. Sprint 4 delivered Featured Fo
 | Sub-phase | Focus | Status |
 |---|---|---|
 | **5.0** | Planning and Architecture | ✅ Complete (2026-07-19) |
-| **5.1** | Music Catalogue and Metadata | **Next** |
-| **5.2** | Music Library Experience | Planned |
+| **5.1** | Music Catalogue and Metadata | ✅ Complete (2026-07-19) |
+| **5.2** | Music Library Experience | **Next** |
 | **5.3** | Music Playback and Queue | Planned |
 | **5.4** | Music State and Listening History | Planned |
 | **5.5** | Performance, Diagnostics and Runtime Validation | Planned |
 | **5.6** | Release and Documentation | Planned |
 
 → [M5 plan](docs/roadmap/m5-plan.md)
-→ [Music architecture](docs/architecture/music.md) *(Proposed)*
-→ [ADR-020–023](docs/architecture/decisions/README.md#m5--music-proposed)
+→ [Phase 5.1 spec](docs/roadmap/m5-phase-5.1-music-catalogue-metadata.md)
+→ [Music architecture](docs/architecture/music.md)
+→ [ADR-020–023](docs/architecture/decisions/README.md#m5--music)

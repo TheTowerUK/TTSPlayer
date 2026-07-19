@@ -1,17 +1,18 @@
 # M5 Phase 5.1 — Music Catalogue and Metadata
 
-**Status:** Implementation complete — validation passed; **closure pending review**
+**Status:** ✅ **COMPLETE** (2026-07-19)
 **Milestone:** M5 — Music
 **Branch:** `m4-development`
 **Development version:** `v0.5.0` (M4 release baseline)
 **Predecessor:** Phase 5.0 complete (2026-07-19)
+**Next phase:** [M5.2 — Music Library Experience](./m5-plan.md#phase-52--music-library-experience)
 
 → [M5 plan](./m5-plan.md#phase-51--music-catalogue-and-metadata)
 → [Music architecture](../architecture/music.md)
 → [ADR-020](../architecture/decisions/ADR-020-music-catalogue-schema-and-media-kind.md)
 → [ADR-021](../architecture/decisions/ADR-021-music-metadata-precedence-and-identity.md)
 
-**ADRs (Accepted at implementation validation):**
+**ADRs (Accepted):**
 
 - [ADR-020: Music Catalogue Schema and Media Kind](../architecture/decisions/ADR-020-music-catalogue-schema-and-media-kind.md)
 - [ADR-021: Music Metadata Precedence and Identity](../architecture/decisions/ADR-021-music-metadata-precedence-and-identity.md)
@@ -81,11 +82,13 @@ ADR-020 direction validated: bump to **catalogue version 3**, add explicit **`me
 | Decision | Implementation |
 |---|---|
 | **Catalogue version** | Scanner emits `catalogue_version: 3`; client loads v2 and v3 |
-| **Media kind** | JSON string `video` \| `audio` \| `image`; client enum `MediaKind` + `unknown` |
+| **Media kind** | JSON string `video` \| `audio` \| `image`; Dart enum `MediaKind` + `unknown` |
 | **Legacy v2** | Missing `media_kind` inferred from file extension (`inferMediaKind`) |
 | **Music fields** | Optional: `artist`, `album`, `album_artist`, `track_number`, `disc_number`, `genre`, `year` (when tagged), `artist_group_key`, `album_group_key` |
 | **Track identity** | Unchanged path-derived `id` |
 | **Unified catalogue** | No parallel music catalogue |
+
+**Terminology:** *Music* is the milestone and product area; catalogue JSON and Dart enums use **`audio`** as the media-kind value for indexed music files (ADR-020).
 
 ---
 
@@ -129,7 +132,11 @@ Music/track.mp3                  → root-level; artist/album from tags or Unkno
 |---|---|
 | **Track** | `id = md5(file_path)` — unchanged; metadata edits do not change id |
 | **Artist grouping** | `artist_group_key = normalize(resolved artist)` — NFKC casefold, collapsed whitespace |
-| **Album grouping** | `album_group_key = normalize(album_artist\|artist) + "|" + normalize(album) + "|" + normalize(parent_folder_path)` — prevents global collision on `Unknown Album` |
+| **Album grouping** | `album_group_key = normalize(album_artist or artist) + "\|" + normalize(album) + "\|" + normalize(parent_folder_path)` |
+
+The third component (`normalize(str(file_path.parent))`) scopes unknown albums and shallow layouts so identical album display names under different artists or folders do not collide.
+
+**Implementation reference:** `backend/music_metadata.py` — `build_music_metadata()`.
 
 ---
 
@@ -185,37 +192,72 @@ Legacy v2 fixtures retained in `test/support/music_catalog_fixtures.dart`.
 
 ---
 
-## Phase 5.1 Definition of Done — reconciliation
+## Phase 5.1 Definition of Done — closure reconciliation (2026-07-19)
 
 | # | Criterion | Status |
 |---|---|---|
-| 1 | Repository and scanner audited | ✅ |
-| 2 | Catalogue version 3 implemented and documented | ✅ |
+| 1 | Current catalogue and scanner behaviour was audited | ✅ |
+| 2 | Catalogue version 3 is implemented and documented | ✅ |
 | 3 | Version 2 catalogues remain compatible | ✅ |
-| 4 | Media kind explicit and safe | ✅ |
-| 5 | Supported audio extensions documented and tested | ✅ |
-| 6 | Metadata extraction with graceful failure | ✅ |
-| 7 | Precedence and fallback deterministic | ✅ |
-| 8 | Track identity stable | ✅ |
-| 9 | Artist and album grouping keys deterministic | ✅ |
-| 10 | Missing/corrupt metadata handled safely | ✅ |
-| 11 | Video and image behaviour compatible | ✅ |
-| 12 | Search, artwork, favourites, diagnostics, caches, Continue Watching tolerate mixed media | ✅ |
-| 13 | Scanner fixtures and tests cover music + regressions | ✅ |
-| 14 | Dart fixtures and tests cover v2 and v3 | ✅ |
-| 15 | Full relevant test suites pass | ✅ |
-| 16 | ADR-020 and ADR-021 accepted when implemented | ✅ (pending doc reconcile commit) |
-| 17 | ADR-022 and ADR-023 remain Proposed | ✅ |
-| 18 | No music UI / queue / playback surface / listening state | ✅ |
-| 19 | Documentation and indexes reconciled | ⏳ Closure commit |
-| 20 | M5.2 identified as next phase | ⏳ Closure commit |
+| 4 | Media kind is explicit and safely parsed | ✅ |
+| 5 | Supported audio extensions are documented and tested | ✅ |
+| 6 | Music metadata extraction is implemented with graceful per-file failure | ✅ |
+| 7 | Metadata precedence and fallback rules are deterministic | ✅ |
+| 8 | Track identity remains stable across metadata-only rescans | ✅ |
+| 9 | Artist grouping keys are deterministic | ✅ |
+| 10 | Album grouping keys are deterministic and collision-safe | ✅ |
+| 11 | Missing and corrupt metadata are handled safely | ✅ |
+| 12 | Existing video and image behaviour remains compatible | ✅ |
+| 13 | Search tolerates and indexes audio metadata | ✅ |
+| 14 | Continue Watching excludes audio items | ✅ |
+| 15 | Artwork, favourites, diagnostics, caches, and catalogue replacement tolerate mixed media | ✅ |
+| 16 | Scanner fixtures and tests cover music and regression behaviour | ✅ |
+| 17 | Dart fixtures and tests cover catalogue versions 2 and 3 | ✅ |
+| 18 | Full relevant scanner and Flutter test suites pass | ✅ |
+| 19 | ADR-020 and ADR-021 are Accepted | ✅ |
+| 20 | ADR-022 and ADR-023 remain Proposed | ✅ |
+| 21 | No music UI, queue, playback surface, or listening-state scope was introduced | ✅ |
+| 22 | Documentation and indexes are reconciled | ✅ |
+| 23 | M5.2 is identified as the next active phase | ✅ |
 
-**Next active phase:** **M5.2 — Music Library Experience**
+**Phase 5.1: COMPLETE.**
 
 ---
 
-## Suggested closure commit message (do not commit until report reviewed)
+## Next phase handoff — M5.2 Music Library Experience
 
-```
-docs(m5): close music catalogue and metadata phase
-```
+M5.2 builds **read-only music browsing** over the catalogue foundation established in M5.1. Artist, album, and track views are **derived** from catalogue metadata and grouping keys — not new filesystem nodes.
+
+**Expected M5.2 scope:**
+
+- Music entry point and navigation
+- Artist, album, and track browsing
+- Derived artist and album views using `artist_group_key` and `album_group_key`
+- Sorting and grouping for browse surfaces
+- Metadata presentation (including partial and unknown metadata)
+- Empty and unknown-metadata honest states
+- Artwork placeholder behaviour via existing `ArtworkService`
+- Search integration appropriate to music browsing (presentation over existing index)
+
+**Explicitly out of M5.2 scope** (unless a later plan amendment says otherwise):
+
+- Playback queue
+- Shuffle and repeat
+- MusicPlayerScreen
+- Listening history and Continue Listening
+- Playlists
+- Multi-device synchronisation
+
+→ [Phase 5.2 scope](./m5-plan.md#phase-52--music-library-experience)
+
+---
+
+## Implementation commits
+
+| Commit | Message |
+|---|---|
+| `6e646ba` | `docs(m5): record music catalogue audit findings` |
+| `dadf4cc` | `feat(catalogue): add media kind and music metadata model` |
+| `a32a1a3` | `feat(scanner): index music metadata in catalogue v3` |
+| `5d722ed` | `test(m5): cover music catalogue metadata and compatibility` |
+| `b83dabb` | `docs(m5): reconcile music catalogue architecture and ADRs` |

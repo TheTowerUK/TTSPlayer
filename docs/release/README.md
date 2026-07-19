@@ -18,9 +18,9 @@ Shipping history and milestone snapshots for TTSPlayer.
 
 ## Current development focus
 
-**M5 — Music** — Phase **5.1** next (5.0 complete 2026-07-19) · documentation-only; no production implementation yet
+**M5 — Music** — Phase **5.2** next (5.1 complete 2026-07-19) · catalogue v3 and scanner `0.4.0` implemented
 
-→ [M5 plan](../roadmap/m5-plan.md) · [Music architecture](../architecture/music.md)
+→ [M5 plan](../roadmap/m5-plan.md) · [Phase 5.1 spec](../roadmap/m5-phase-5.1-music-catalogue-metadata.md) · [Music architecture](../architecture/music.md)
 
 **Branch:** `m4-development`
 
@@ -33,7 +33,7 @@ Milestones and development branches are tracked separately: a completed mileston
 | State | Value |
 |---|---|
 | Latest release | M4 — `v0.5.0` — [release summary](./m4-release-summary.md) |
-| Current work | M5 Phase 5.1 — [M5 plan](../roadmap/m5-plan.md) |
+| Current work | M5 Phase 5.2 — [M5 plan](../roadmap/m5-plan.md) |
 | Development branch | `m4-development` |
 | Previous validated tag | `m3.5-complete` |
 
