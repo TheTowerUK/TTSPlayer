@@ -219,9 +219,18 @@ class SearchService {
     final parentFolderName = _parentName(item.filePath);
     final libraryName = _resolveLibraryName(normalizedPath, libraries);
 
+    final musicFields = item.isAudio
+        ? [
+            item.artist,
+            item.album,
+            item.albumArtist,
+            item.genre,
+          ].whereType<String>().join(' ')
+        : '';
+
     final blob = _normalize(
       '${item.title} $fileName ${item.filePath} $libraryName '
-      '$parentFolderName ${item.extension}',
+      '$parentFolderName ${item.extension} $musicFields',
     );
 
     return SearchIndexEntry(

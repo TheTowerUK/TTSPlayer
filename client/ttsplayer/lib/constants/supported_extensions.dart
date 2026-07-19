@@ -1,9 +1,7 @@
 /// Media extensions indexed by the Python scanner.
 ///
 /// Keep in sync with [SUPPORTED_EXTENSIONS] in backend/indexer.py.
-/// Used as a fallback when catalog.json predates the supported_extensions field.
 abstract final class SupportedExtensions {
-  /// Video extensions (indexer [_VIDEO_EXTENSIONS]).
   static const Set<String> video = {
     'avi',
     'm4v',
@@ -12,7 +10,17 @@ abstract final class SupportedExtensions {
     'mp4',
   };
 
-  /// Image extensions (indexer [_IMAGE_EXTENSIONS]).
+  static const Set<String> audio = {
+    'aac',
+    'flac',
+    'm4a',
+    'mp3',
+    'ogg',
+    'opus',
+    'wav',
+    'wma',
+  };
+
   static const Set<String> image = {
     'bmp',
     'gif',
@@ -25,32 +33,39 @@ abstract final class SupportedExtensions {
   };
 
   static const List<String> all = [
+    'aac',
     'avi',
     'bmp',
+    'flac',
     'gif',
     'jpeg',
     'jpg',
+    'm4a',
     'm4v',
     'mkv',
     'mov',
+    'mp3',
     'mp4',
+    'ogg',
+    'opus',
     'png',
     'tif',
     'tiff',
+    'wav',
     'webp',
+    'wma',
   ];
 
-  /// Comma-separated list for UI, e.g. "avi, bmp, gif, …".
   static String get displayLabel => all.join(', ');
 
-  /// Effective video set for browse filter/sort — static set ∩ [catalogSupported].
-  ///
-  /// When [catalogSupported] is null or empty, returns the full static video set.
   static Set<String> effectiveVideoSet({Iterable<String>? catalogSupported}) {
     return _effectiveSet(video, catalogSupported);
   }
 
-  /// Effective image set for browse filter/sort — static set ∩ [catalogSupported].
+  static Set<String> effectiveAudioSet({Iterable<String>? catalogSupported}) {
+    return _effectiveSet(audio, catalogSupported);
+  }
+
   static Set<String> effectiveImageSet({Iterable<String>? catalogSupported}) {
     return _effectiveSet(image, catalogSupported);
   }
@@ -65,7 +80,6 @@ abstract final class SupportedExtensions {
     return staticSet.intersection(normalized);
   }
 
-  /// Extension category for folder-browse type sort/filter (ADR-008).
   static MediaExtensionCategory categoryFor(
     String extension, {
     Iterable<String>? catalogSupported,
@@ -74,6 +88,9 @@ abstract final class SupportedExtensions {
     if (effectiveVideoSet(catalogSupported: catalogSupported).contains(ext)) {
       return MediaExtensionCategory.video;
     }
+    if (effectiveAudioSet(catalogSupported: catalogSupported).contains(ext)) {
+      return MediaExtensionCategory.audio;
+    }
     if (effectiveImageSet(catalogSupported: catalogSupported).contains(ext)) {
       return MediaExtensionCategory.image;
     }
@@ -81,9 +98,9 @@ abstract final class SupportedExtensions {
   }
 }
 
-/// Primary extension grouping for library browse type sort (ADR-008).
 enum MediaExtensionCategory {
   video,
+  audio,
   image,
   other,
 }

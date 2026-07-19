@@ -386,6 +386,7 @@ class PlaybackService extends ChangeNotifier {
 
       final item = catalog.findItemById(itemId);
       if (item == null || !item.status.isPlayable) continue;
+      if (!item.isContinueWatchingEligible) continue;
 
       entries.add(ContinueWatchingEntry(item: item, resume: resume));
     }
