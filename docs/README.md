@@ -18,7 +18,7 @@ Project identity and planning live here.
 | M3 | Personal Media Experience | ✅ v0.3.0 |
 | M3.5 | Media Access Foundation | ✅ `m3.5-complete` |
 | M4 | [User Experience and Platform Integration](./roadmap/m4-plan.md) | ✅ `v0.5.0` — [release summary](./release/m4-release-summary.md) |
-| M5 | [Music](./roadmap/m5-plan.md) | 🔄 In progress — Phase 5.1 next |
+| M5 | [Music](./roadmap/m5-plan.md) | 🔄 In progress — Phase 5.1 complete (closure pending); 5.2 next |
 | M6 | Books & Comics | Planned |
 | M7 | Multi-device Experience | Planned |
 

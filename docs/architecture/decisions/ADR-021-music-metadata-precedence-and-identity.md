@@ -2,7 +2,9 @@
 
 
 
-**Status:** Proposed
+**Status:** Accepted
+
+**Implementation note (M5.1, 2026-07-19):** Implemented in `backend/music_metadata.py` and `MediaItem` parsing. Album grouping key uses `(album_artist|artist, album, parent_folder_scope)` for collision-safe unknown albums. Compilation / Various Artists handling deferred to M5.2+. See [Phase 5.1 spec](../../roadmap/m5-phase-5.1-music-catalogue-metadata.md).
 
 **Date:** 2026-07-19
 
@@ -64,7 +66,7 @@ Track **`id`** remains path-derived (stable across rescans). Album and artist id
 
    - **Artist browse key:** normalized `artist`, falling back to `album_artist`
 
-   - **Album browse key:** `(normalized album_artist or artist, normalized album name, disc_number default 1)`
+   - **Album browse key:** `(normalized album_artist or artist, normalized album name, normalized parent folder path)` — scopes unknown albums per artist/folder; disc grouping deferred to M5.2+
 
 
 

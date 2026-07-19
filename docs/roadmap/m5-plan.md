@@ -1,6 +1,6 @@
 # M5 — Music
 
-**Status:** **In progress** — Phase 5.0 complete (2026-07-19); **Phase 5.1 next**
+**Status:** **In progress** — Phase 5.1 implementation complete (2026-07-19); **closure pending review**; **Phase 5.2 next** after 5.1 close
 **Branch:** `m4-development` *(continuing on current development branch)*
 **Development version:** `v0.5.0` (M4 release baseline)
 **Predecessor:** M4 — tag `v0.5.0` / `m4-complete` (2026-07-19)
@@ -61,7 +61,7 @@ Implement in order unless a documented dependency allows parallel documentation 
 | Sub-phase | Focus | Status |
 |---|---|---|
 | **5.0** | Planning and Architecture | ✅ Complete (2026-07-19) |
-| **5.1** | Music Catalogue and Metadata | **Next** |
+| **5.1** | Music Catalogue and Metadata | **Implementation complete** — [spec](./m5-phase-5.1-music-catalogue-metadata.md) · closure pending |
 | **5.2** | Music Library Experience | Planned |
 | **5.3** | Music Playback and Queue | Planned |
 | **5.4** | Music State and Listening History | Planned |
@@ -148,6 +148,8 @@ Phase 5.1 produces an implementation specification and accepts ADR-020/021 when 
 
 ### Phase 5.1 — Music Catalogue and Metadata
 
+**Status:** **Implementation complete** (2026-07-19) — [Phase 5.1 spec](./m5-phase-5.1-music-catalogue-metadata.md) · closure commit pending review
+
 **Objective:** Extend the scanner and catalogue model to represent music items with optional embedded-tag metadata while retaining backward compatibility for video and image libraries.
 
 **Scope (planned):**
@@ -173,12 +175,12 @@ Phase 5.1 produces an implementation specification and accepts ADR-020/021 when 
 
 **Definition of done:**
 
-- [ ] Supported audio extensions defined and documented (initial set TBD in spec — e.g. `.mp3`, `.flac`, `.m4a`, `.ogg`, `.wav`)
-- [ ] `catalog.json` schema extension documented with backward compatibility proof
-- [ ] Indexer emits `media_kind` and optional music fields; video/image items unchanged
-- [ ] Client parses new fields; unknown fields ignored; video browse/play unchanged
-- [ ] Unit tests for indexer and `MediaItem` parsing
-- [ ] ADR-020, ADR-021 **Accepted** at phase close
+- [x] Supported audio extensions defined and documented (`.mp3`, `.m4a`, `.aac`, `.flac`, `.wav`, `.ogg`, `.opus`, `.wma`)
+- [x] `catalog.json` schema extension documented with backward compatibility proof
+- [x] Indexer emits `media_kind` and optional music fields; video/image items unchanged
+- [x] Client parses new fields; unknown fields ignored; video browse/play unchanged
+- [x] Unit tests for indexer and `MediaItem` parsing
+- [x] ADR-020, ADR-021 **Accepted** at implementation validation (closure doc commit pending)
 
 **Validation expectations:**
 

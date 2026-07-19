@@ -87,12 +87,12 @@ Every ADR must include these headings (use [ADR-template.md](./ADR-template.md))
 | [ADR-018](./ADR-018-runtime-snapshot-model.md) | Runtime Snapshot Model | Accepted |
 | [ADR-019](./ADR-019-diagnostics-export-support-strategy.md) | Diagnostics Export and Support Strategy | Accepted |
 
-### M5 — Music (proposed)
+### M5 — Music
 
 | ADR | Title | Status |
 |---|---|---|
-| [ADR-020](./ADR-020-music-catalogue-schema-and-media-kind.md) | Music Catalogue Schema and Media Kind | Proposed |
-| [ADR-021](./ADR-021-music-metadata-precedence-and-identity.md) | Music Metadata Precedence and Identity | Proposed |
+| [ADR-020](./ADR-020-music-catalogue-schema-and-media-kind.md) | Music Catalogue Schema and Media Kind | Accepted |
+| [ADR-021](./ADR-021-music-metadata-precedence-and-identity.md) | Music Metadata Precedence and Identity | Accepted |
 | [ADR-022](./ADR-022-music-queue-and-listening-state.md) | Music Queue and Listening State | Proposed |
 | [ADR-023](./ADR-023-music-player-surface-architecture.md) | Music Player Surface Architecture | Proposed |
 

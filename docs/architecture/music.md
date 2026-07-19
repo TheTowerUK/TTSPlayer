@@ -2,9 +2,9 @@
 
 
 
-**Status:** **Planned / Proposed** — Phase 5.0 planning complete (2026-07-19); no implementation
+**Status:** **In progress** — Phase 5.1 catalogue/metadata implemented (2026-07-19); UI and playback phases planned
 
-**Related roadmap:** [M5 — Music](../roadmap/m5-plan.md)
+**Related roadmap:** [M5 — Music](../roadmap/m5-plan.md) · [Phase 5.1 spec](../roadmap/m5-phase-5.1-music-catalogue-metadata.md)
 
 **Predecessor baseline:** M4 complete — `v0.5.0`
 
@@ -22,13 +22,10 @@
 
 
 
-**Proposed ADRs (M5.0 — not Accepted):**
+**ADRs:**
 
-
-
-- [ADR-020: Music Catalogue Schema and Media Kind](./decisions/ADR-020-music-catalogue-schema-and-media-kind.md)
-
-- [ADR-021: Music Metadata Precedence and Identity](./decisions/ADR-021-music-metadata-precedence-and-identity.md)
+- [ADR-020: Music Catalogue Schema and Media Kind](./decisions/ADR-020-music-catalogue-schema-and-media-kind.md) — **Accepted** (M5.1)
+- [ADR-021: Music Metadata Precedence and Identity](./decisions/ADR-021-music-metadata-precedence-and-identity.md) — **Accepted** (M5.1)
 
 - [ADR-022: Music Queue and Listening State](./decisions/ADR-022-music-queue-and-listening-state.md)
 
@@ -136,7 +133,9 @@ M5 adds **music listening** to TTSPlayer: index audio files in the existing fold
 
 
 
-## 4. Proposed catalogue and metadata model
+## 4. Catalogue and metadata model (M5.1 implemented)
+
+**Shipped in M5.1** — scanner `0.4.0`, `catalogue_version: 3`. See [Phase 5.1 spec](../roadmap/m5-phase-5.1-music-catalogue-metadata.md).
 
 
 
@@ -182,7 +181,7 @@ Current `MediaItem` fields (M4): `id`, `title`, `year`, `duration_seconds`, `fil
 
 
 
-**Catalogue version:** **Proposed** increment to `catalogue_version: 3` when schema ships (currently `2`) — ADR-020 remains **Proposed** until Phase 5.1 accepts it after audit.
+**Catalogue version:** `catalogue_version: 3` when scanned with indexer ≥ 0.4.0. Legacy v2 catalogues load without `media_kind`; client infers from extension.
 
 
 

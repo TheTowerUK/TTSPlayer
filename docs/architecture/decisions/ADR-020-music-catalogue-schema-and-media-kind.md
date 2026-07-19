@@ -2,7 +2,9 @@
 
 
 
-**Status:** Proposed
+**Status:** Accepted
+
+**Implementation (M5.1):** Scanner `0.4.0` emits `catalogue_version: 3` with `media_kind` on all newly indexed items. Client infers kind for legacy v2 catalogues via extension. See [Phase 5.1 spec](../../roadmap/m5-phase-5.1-music-catalogue-metadata.md).
 
 **Date:** 2026-07-19
 
