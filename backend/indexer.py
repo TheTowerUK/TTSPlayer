@@ -26,6 +26,8 @@ import time
 from pathlib import Path
 from datetime import datetime, timezone
 
+import music_metadata
+
 # Windows console (cp1252) cannot encode emoji or many Unicode characters.
 # Reconfigure stdout/stderr to UTF-8 with replacement so filenames with
 # emoji (e.g. 🔥) don't crash the process before the catalog is written.
@@ -42,18 +44,21 @@ if hasattr(sys.stderr, "reconfigure"):
 #                     in a way the client must detect. The app reads this
 #                     to decide whether it understands the file.
 # ------------------------------------------------------------------
-SCANNER_VERSION = "0.3.3"
-CATALOGUE_VERSION = 2
+SCANNER_VERSION = "0.4.0"
+CATALOGUE_VERSION = 3
 
 # ------------------------------------------------------------------
 # Supported media extensions — single source for full and library scans.
 # ------------------------------------------------------------------
 
 _VIDEO_EXTENSIONS = frozenset({".mp4", ".mkv", ".mov", ".m4v", ".avi"})
+_AUDIO_EXTENSIONS = frozenset({
+    ".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus", ".wma",
+})
 _IMAGE_EXTENSIONS = frozenset({
     ".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp", ".tif", ".tiff",
 })
-SUPPORTED_EXTENSIONS = _VIDEO_EXTENSIONS | _IMAGE_EXTENSIONS
+SUPPORTED_EXTENSIONS = _VIDEO_EXTENSIONS | _AUDIO_EXTENSIONS | _IMAGE_EXTENSIONS
 
 # Lowercase names without the dot — written to catalog.json and shown in the client.
 SUPPORTED_EXTENSIONS_SORTED: list[str] = sorted(
@@ -120,31 +125,42 @@ def _folder_contains_video(file_entries: list[Path]) -> bool:
     return any(e.suffix.lower() in _VIDEO_EXTENSIONS for e in file_entries)
 
 
-def _video_stems_in_folder(file_entries: list[Path]) -> set[str]:
+def _folder_contains_audio(file_entries: list[Path]) -> bool:
+    return any(e.suffix.lower() in _AUDIO_EXTENSIONS for e in file_entries)
+
+
+def _media_stems_in_folder(file_entries: list[Path], extensions: frozenset[str]) -> set[str]:
     return {
         e.stem.lower()
         for e in file_entries
-        if e.suffix.lower() in _VIDEO_EXTENSIONS
+        if e.suffix.lower() in extensions
     }
+
+
+def _video_stems_in_folder(file_entries: list[Path]) -> set[str]:
+    return _media_stems_in_folder(file_entries, _VIDEO_EXTENSIONS)
 
 
 def is_artwork_sidecar(entry: Path, file_entries: list[Path]) -> bool:
     """
-    True when an image file is acting as artwork for sibling video media.
+    True when an image file is acting as artwork for sibling media.
 
-    Named sidecars (poster.jpg, cover.png, …) are excluded only when the
-    folder also contains video files.  Stem-matched images (movie.jpg beside
-    movie.mp4) are excluded whenever a video with the same stem exists.
-    Standalone images in image libraries remain indexed.
+    Named sidecars (poster.jpg, cover.png, …) are excluded when the folder
+    contains video or audio files. Stem-matched images beside media with the
+    same stem are excluded. Standalone images in image libraries remain indexed.
     """
     if entry.suffix.lower() not in _IMAGE_EXTENSIONS:
         return False
 
     has_video = _folder_contains_video(file_entries)
+    has_audio = _folder_contains_audio(file_entries)
     if is_named_artwork_sidecar(entry.name):
-        return has_video
+        return has_video or has_audio
 
-    return entry.stem.lower() in _video_stems_in_folder(file_entries)
+    stem = entry.stem.lower()
+    if stem in _video_stems_in_folder(file_entries):
+        return True
+    return stem in _media_stems_in_folder(file_entries, _AUDIO_EXTENSIONS)
 
 
 def _index_files_in_folder(
@@ -488,6 +504,17 @@ def clean_title(stem: str) -> str:
     return stem.replace(".", " ").replace("_", " ").strip()
 
 
+def media_kind_for_suffix(suffix: str) -> str:
+    lower = suffix.lower()
+    if lower in _VIDEO_EXTENSIONS:
+        return "video"
+    if lower in _AUDIO_EXTENSIONS:
+        return "audio"
+    if lower in _IMAGE_EXTENSIONS:
+        return "image"
+    return "unknown"
+
+
 def make_item(file_path: Path, warnings: list[dict]) -> dict | None:
     """
     Build a media item dict.
@@ -502,14 +529,14 @@ def make_item(file_path: Path, warnings: list[dict]) -> dict | None:
     """
     str_path = str(file_path)
     suffix = file_path.suffix.lower()
+    kind = media_kind_for_suffix(suffix)
     try:
         size = file_path.stat().st_size
-        duration = (
-            None
-            if suffix in _IMAGE_EXTENSIONS
-            else get_duration_seconds(str_path)
-        )
-        return {
+        duration = None
+        if suffix in _VIDEO_EXTENSIONS or suffix in _AUDIO_EXTENSIONS:
+            duration = get_duration_seconds(str_path)
+
+        item: dict = {
             "id": path_id(str_path),
             "title": clean_title(file_path.stem),
             "year": None,
@@ -518,7 +545,19 @@ def make_item(file_path: Path, warnings: list[dict]) -> dict | None:
             "thumbnail_path": None,
             "size_bytes": size,
             "status": "available",
+            "media_kind": kind,
         }
+
+        if kind == "audio":
+            try:
+                music_fields = music_metadata.build_music_metadata(file_path)
+                item.update(music_fields)
+            except Exception as exc:
+                _warn(warnings, str_path, exc)
+                fallback = music_metadata.build_music_metadata(file_path, tags={})
+                item.update(fallback)
+
+        return item
     except _FS_ERRORS as exc:
         _warn(warnings, str_path, exc)
         return None
