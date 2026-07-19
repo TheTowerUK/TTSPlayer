@@ -1,7 +1,7 @@
 # M5 — Music
 
-**Status:** **In progress** — Phase 5.1 complete (2026-07-19); **Phase 5.2 next**
-**Branch:** `m4-development` *(continuing on current development branch)*
+**Status:** **In progress** — Phase 5.2 implementation complete pending closure (2026-07-19); Phase 5.1 complete
+**Branch:** `m5-development`
 **Development version:** `v0.5.0` (M4 release baseline)
 **Predecessor:** M4 — tag `v0.5.0` / `m4-complete` (2026-07-19)
 
@@ -62,7 +62,7 @@ Implement in order unless a documented dependency allows parallel documentation 
 |---|---|---|
 | **5.0** | Planning and Architecture | ✅ Complete (2026-07-19) |
 | **5.1** | Music Catalogue and Metadata | ✅ Complete (2026-07-19) — [spec](./m5-phase-5.1-music-catalogue-metadata.md) |
-| **5.2** | Music Library Experience | **Next** |
+| **5.2** | Music Library Experience | **Active** — [spec](./m5-phase-5.2-music-library-experience.md) |
 | **5.3** | Music Playback and Queue | Planned |
 | **5.4** | Music State and Listening History | Planned |
 | **5.5** | Performance, Diagnostics and Runtime Validation | Planned |
@@ -231,44 +231,50 @@ M5.2 delivers **read-only music browsing** over the M5.1 catalogue foundation. V
 
 ### Phase 5.2 — Music Library Experience
 
-**Status:** **Next** — depends on Phase 5.1 complete
+**Status:** **Active** — implementation complete pending closure review
 
 **Objective:** Deliver dedicated music browsing surfaces that reflect how users think about music (artists, albums, tracks) without breaking filesystem-driven Libraries.
 
-**Scope (planned):**
+**Scope (implemented):**
 
-- Entry from Dashboard and/or Libraries when a folder/library contains audio items
-- **Artists**, **Albums**, **Tracks** views (derived from catalogue metadata, not filesystem invention)
-- Album detail and artist detail screens
-- Unknown artist / unknown album honest empty states
-- Compilation presentation (Various Artists)
-- Music-aware search presentation (extend existing `SearchService` ranking/display — not a new index)
-- Album artwork via existing `ArtworkService` pipeline
-- Large library responsiveness (lazy lists, reuse 4.5 scroll tuning patterns)
+- Dashboard `MusicSection` entry when catalogue contains audio
+- **Artists**, **Albums**, **Tracks** views derived via `MusicLibraryProjection`
+- Artist detail and album detail screens (read-only)
+- Read-only track detail from tracks list and global search
+- Unknown artist / unknown album honest labels
+- Music-aware search presentation (`Audio` kind chip, artist·album subtitle)
+- Album/artist artwork via existing `ArtworkService` pipeline
+- Memoised projection + virtualised lists; large-catalogue test fixture
 
 **Out of scope:**
 
-- Full playlist editor (5.4 may defer)
-- Queue UI (5.3)
-- Replacing video `FolderScreen` for mixed folders — document coexistence strategy
-- Dashboard card consistency polish (M4 deferred debt)
+- Playback, queue, shuffle, repeat (5.3)
+- Playlists, listening history, Continue Listening (5.4)
+- Replacing video `FolderScreen` for mixed folders
+- Embedded artwork decode
+- ADR-022/023 acceptance
 
 **Dependencies:** Phase 5.1 complete.
 
 **Definition of done:**
 
-- [ ] User can browse music by artist, album, and track from at least one library entry point
-- [ ] Album and artist detail screens show artwork, metadata, and playable track list
-- [ ] Unknown/incomplete metadata does not hide items
-- [ ] Music search results appear in global search with clear media context
-- [ ] Video folder browsing unchanged on regression
-- [ ] Widget tests for primary music screens
+- [x] User can browse music by artist, album, and track from dashboard entry point
+- [x] Album and artist detail screens show artwork, metadata, and track list (no play controls)
+- [x] Unknown/incomplete metadata does not hide items
+- [x] Music search results appear in global search with clear media context
+- [x] Video folder browsing unchanged on regression
+- [x] Widget and service tests for primary music screens
+- [x] Opt-in Windows runtime harness (`PHASE_52_RUNTIME=1`)
 
-**Validation expectations:**
+**Validation:**
 
-- Widget tests for artist/album/track navigation
-- Windows smoke: browse large music library folder
-- Harness scenarios added in 5.5
+- `test/music_library_service_test.dart`, `test/music_library_presentation_test.dart`
+- `test/search_presentation_test.dart` audio cases
+- `test/phase_52_windows_runtime_test.dart` (opt-in)
+
+→ [Phase 5.2 specification](./m5-phase-5.2-music-library-experience.md)
+
+**Next after closure:** Phase 5.3 — Music Playback and Queue
 
 ---
 

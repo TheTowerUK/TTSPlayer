@@ -2,7 +2,7 @@
 
 
 
-**Status:** **In progress** — Phase 5.1 catalogue/metadata **complete** (2026-07-19); M5.2 music library UI **next**
+**Status:** **In progress** — Phase 5.2 music library browsing **implemented** (2026-07-19); Phase 5.1 complete
 
 **Related roadmap:** [M5 — Music](../roadmap/m5-plan.md) · [Phase 5.1 spec](../roadmap/m5-phase-5.1-music-catalogue-metadata.md)
 
@@ -448,9 +448,35 @@ Extend existing `SearchService` — **no second index**.
 
 **Filtering:** Phase 5.2 may add music-only filter in search UI; engine remains unified.
 
+**M5.2 implemented:** `SearchResultRow` shows `Audio` kind chip and `artist · album` subtitle; `SearchScreen` routes audio hits to read-only `MusicTrackDetailScreen` (not video `ItemDetailScreen`).
 
 
----
+
+### Phase 5.2 — Derived music library views (implemented)
+
+
+
+Client-side projection over the unified catalogue — no second store:
+
+
+
+| Component | Role |
+
+|---|---|
+
+| `MusicLibraryProjection` | Builds artists, albums, tracks from `Catalog.allItems` where `isAudio` |
+
+| `MusicLibraryService` | Memoises projection by `catalogueIdentity`; invalidated on catalogue replace |
+
+| `MusicSorting` | Deterministic locale-independent ordering |
+
+| Dashboard `MusicSection` | Entry when audio count > 0 |
+
+| Browse screens | Artists, albums, tracks + read-only detail surfaces |
+
+
+
+Grouping authority: `artist_group_key` and `album_group_key` from M5.1 (ADR-021). Legacy items without keys derive keys using the same normalisation formula as the scanner fallback.
 
 
 
@@ -618,7 +644,7 @@ No audio-specific provider type. Provider failure surfaces via existing Provider
 
 | Integration | Catalogue replace → state prune |
 
-| Windows runtime | `PHASE_51_RUNTIME` … `PHASE_55_RUNTIME` opt-in gates (mirrors M4) |
+| Windows runtime | `PHASE_51_RUNTIME` … `PHASE_55_RUNTIME` opt-in gates (mirrors M4); **5.2:** `PHASE_52_RUNTIME=1` → `test/phase_52_windows_runtime_test.dart` |
 
 | Manual QA | Play local + HTTPS audio; video regression checklist in 5.6 |
 
