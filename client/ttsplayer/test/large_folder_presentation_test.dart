@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ttsplayer/features/music/music_library_service.dart';
 import 'package:ttsplayer/features/search/search_service.dart';
 import 'package:ttsplayer/library/folder_presentation_config.dart';
 import 'package:ttsplayer/library/folder_presentation_metrics.dart';
@@ -405,6 +406,7 @@ void main() {
         artworkService: artwork,
         searchService: search,
         libraryMetadataRepository: metadata,
+        musicLibraryService: MusicLibraryService(),
       );
 
       final catalog = buildLargeCatalog(itemCount: 10);

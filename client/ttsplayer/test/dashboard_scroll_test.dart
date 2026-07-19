@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ttsplayer/features/dashboard/dashboard_screen.dart';
+import 'package:ttsplayer/features/music/music_library_service.dart';
+import 'package:ttsplayer/features/search/search_service.dart';
 import 'package:ttsplayer/models/catalog.dart';
 import 'package:ttsplayer/models/media_folder.dart';
 import 'package:ttsplayer/models/media_item.dart';
@@ -88,6 +90,8 @@ Widget _dashboardHarness(Catalog catalog) {
         ),
       ),
       Provider(create: (_) => ArtworkService(fileExists: (_) => false)),
+      Provider(create: (_) => SearchService()),
+      Provider(create: (_) => MusicLibraryService()),
       ChangeNotifierProvider<CatalogService>.value(
         value: _FakeCatalogService(catalog),
       ),
@@ -142,6 +146,8 @@ void main() {
             ),
           ),
           Provider(create: (_) => ArtworkService(fileExists: (_) => false)),
+          Provider(create: (_) => SearchService()),
+          Provider(create: (_) => MusicLibraryService()),
           ChangeNotifierProvider<CatalogService>.value(
             value: _FakeCatalogService(_tallDashboardCatalog()),
           ),

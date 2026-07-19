@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ttsplayer/features/music/music_library_service.dart';
 import 'package:ttsplayer/features/search/models/search_filters.dart';
 import 'package:ttsplayer/features/search/search_service.dart';
 import 'package:ttsplayer/models/catalog.dart';
@@ -259,6 +260,7 @@ void main() {
         artworkService: artwork,
         searchService: search,
         libraryMetadataRepository: metadata,
+        musicLibraryService: MusicLibraryService(),
       );
 
       final first = _catalogWithItems(identity: 'REV-1', itemIds: ['a']);

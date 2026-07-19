@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ttsplayer/features/music/music_library_service.dart';
+import 'package:ttsplayer/features/music/screens/music_track_detail_screen.dart';
 import 'package:ttsplayer/features/search/models/search_filters.dart';
 import 'package:ttsplayer/features/search/search_result_grouper.dart';
 import 'package:ttsplayer/features/search/search_screen.dart';
@@ -187,6 +189,7 @@ Widget _searchHarness({
       ),
       Provider(create: (_) => ArtworkService(fileExists: (_) => false)),
       Provider<SearchService>.value(value: search),
+      Provider(create: (_) => MusicLibraryService()),
       ChangeNotifierProvider<CatalogService>.value(value: service),
       ChangeNotifierProvider(
         create: (context) => PlaybackService(
@@ -301,7 +304,7 @@ void main() {
       expect(find.textContaining('result'), findsOneWidget);
     });
 
-    testWidgets('5 and 6 media results are identified with Media label',
+    testWidgets('5 and 6 video results are identified with Video label',
         (tester) async {
       final catalog = _searchCatalog();
       await tester.pumpWidget(_searchHarness(catalog: catalog));
@@ -310,8 +313,102 @@ void main() {
       await tester.enterText(find.byKey(const Key('search_query_field')), 'adventure');
       await tester.pumpAndSettle(const Duration(milliseconds: 200));
 
-      expect(find.text('Media'), findsWidgets);
+      expect(find.text('Video'), findsWidgets);
       expect(find.byKey(const Key('search_result_item-adventure')), findsOneWidget);
+    });
+
+    testWidgets('5b audio results show Audio label and artist metadata',
+        (tester) async {
+      final catalog = Catalog.fromJson({
+        'generated_at': '2026-07-19T12:00:00+00:00',
+        'total_items': 1,
+        'catalogue': {
+          'id': 'SEARCH-AUDIO',
+          'catalogue_version': 3,
+        },
+        'folders': [
+          {
+            'id': 'music',
+            'name': 'Music',
+            'path': r'Y:\Media\Music',
+            'item_count': 1,
+            'items': [
+              {
+                'id': 'audio-search',
+                'title': 'Searchable Song',
+                'file_path': r'Y:\Media\Music\Artist\Album\song.mp3',
+                'media_kind': 'audio',
+                'artist': 'Test Artist',
+                'album': 'Test Album',
+                'artist_group_key': 'test artist',
+                'album_group_key': 'test artist|test album|scope',
+              },
+            ],
+            'subfolders': [],
+          },
+        ],
+      });
+
+      await tester.pumpWidget(_searchHarness(catalog: catalog));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('search_query_field')),
+        'Searchable',
+      );
+      await tester.pumpAndSettle(const Duration(milliseconds: 200));
+
+      expect(find.text('Audio'), findsWidgets);
+      expect(find.text('Test Artist · Test Album'), findsOneWidget);
+    });
+
+    testWidgets('5c audio search opens read-only track detail not video detail',
+        (tester) async {
+      final catalog = Catalog.fromJson({
+        'generated_at': '2026-07-19T12:00:00+00:00',
+        'total_items': 1,
+        'catalogue': {
+          'id': 'SEARCH-AUDIO-NAV',
+          'catalogue_version': 3,
+        },
+        'folders': [
+          {
+            'id': 'music',
+            'name': 'Music',
+            'path': r'Y:\Media\Music',
+            'item_count': 1,
+            'items': [
+              {
+                'id': 'audio-nav',
+                'title': 'Navigate Song',
+                'file_path': r'Y:\Media\Music\Artist\Album\nav.mp3',
+                'media_kind': 'audio',
+                'artist': 'Nav Artist',
+                'album': 'Nav Album',
+                'artist_group_key': 'nav artist',
+                'album_group_key': 'nav artist|nav album|scope',
+              },
+            ],
+            'subfolders': [],
+          },
+        ],
+      });
+
+      await tester.pumpWidget(_searchHarness(catalog: catalog));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('search_query_field')),
+        'Navigate',
+      );
+      await tester.pumpAndSettle(const Duration(milliseconds: 200));
+
+      await tester.tap(find.byKey(const Key('search_open_audio-nav')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(MusicTrackDetailScreen), findsOneWidget);
+      expect(find.byType(ItemDetailScreen), findsNothing);
+      expect(find.byIcon(Icons.play_arrow), findsNothing);
     });
 
     testWidgets('7 result shows library or containing-folder context',
