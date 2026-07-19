@@ -1,6 +1,6 @@
 # M5 — Music
 
-**Status:** Active planning — **Phase 5.0 in progress**
+**Status:** **In progress** — Phase 5.0 complete (2026-07-19); **Phase 5.1 next**
 **Branch:** `m4-development` *(continuing on current development branch)*
 **Development version:** `v0.5.0` (M4 release baseline)
 **Predecessor:** M4 — tag `v0.5.0` / `m4-complete` (2026-07-19)
@@ -60,8 +60,8 @@ Implement in order unless a documented dependency allows parallel documentation 
 
 | Sub-phase | Focus | Status |
 |---|---|---|
-| **5.0** | Planning and Architecture | **In progress** |
-| **5.1** | Music Catalogue and Metadata | Planned |
+| **5.0** | Planning and Architecture | ✅ Complete (2026-07-19) |
+| **5.1** | Music Catalogue and Metadata | **Next** |
 | **5.2** | Music Library Experience | Planned |
 | **5.3** | Music Playback and Queue | Planned |
 | **5.4** | Music State and Listening History | Planned |
@@ -71,6 +71,8 @@ Implement in order unless a documented dependency allows parallel documentation 
 ---
 
 ### Phase 5.0 — Planning and Architecture
+
+**Status:** ✅ **COMPLETE** (2026-07-19)
 
 **Objective:** Define M5 scope, terminology, catalogue implications, playback architecture options, application state, diagnostics, validation strategy, and milestone Definition of Done.
 
@@ -89,12 +91,52 @@ Implement in order unless a documented dependency allows parallel documentation 
 
 **Definition of done:**
 
-- [ ] `m5-plan.md` and `music.md` reviewed and linked from indexes
-- [ ] Sub-phases 5.1–5.6 defined with scope, out-of-scope, and phase DoD
-- [ ] Proposed ADRs authored for genuine decision areas (not Accepted)
-- [ ] Milestone-level DoD drafted
-- [ ] Risks and open questions recorded
-- [ ] No production code changed
+- [x] `m5-plan.md` and `music.md` reviewed and linked from indexes
+- [x] Sub-phases 5.1–5.6 defined with scope, out-of-scope, and phase DoD
+- [x] Proposed ADRs authored for genuine decision areas (not Accepted)
+- [x] Milestone-level DoD drafted
+- [x] Risks and open questions recorded
+- [x] No production code changed
+
+#### Phase 5.0 closure — Definition-of-done reconciliation (2026-07-19)
+
+| # | Criterion | Verdict | Evidence |
+|---|---|---|---|
+| 1 | M5 milestone scope defined | **Satisfied** | Mission, exclusions, milestone DoD |
+| 2 | M5 principles documented | **Satisfied** | Engineering principles § |
+| 3 | Phases 5.0–5.6 defined | **Satisfied** | Phase structure table |
+| 4 | Every phase has scope, out-of-scope, DoD | **Satisfied** | §5.0–5.6 sections |
+| 5 | Music architecture Planned / Proposed | **Satisfied** | [music.md](../architecture/music.md) status |
+| 6 | M4 platform reuse identified | **Satisfied** | [music.md](../architecture/music.md) §2; Dependencies table |
+| 7 | Catalogue and metadata implications documented | **Satisfied** | [music.md](../architecture/music.md) §4–§7; ADR-020–021 |
+| 8 | Identity, precedence, artwork, grouping, playback, queue, state, search, cache, diagnostics, compatibility, migration covered | **Satisfied** | [music.md](../architecture/music.md) §5–§20 |
+| 9 | Risks and dependencies documented | **Satisfied** | Risks §; Dependencies on M4 § |
+| 10 | Testing and Windows runtime strategies documented | **Satisfied** | [music.md](../architecture/music.md) §19; phase validation sections |
+| 11 | Durable decisions have Proposed ADRs | **Satisfied** | ADR-020–023 **Proposed** |
+| 12 | No production implementation | **Satisfied** | Docs-only commits |
+| 13 | Indexes and milestone references reconciled | **Satisfied** | MILESTONES, roadmap, architecture, release indexes |
+| 14 | M5.1 identified as next active phase | **Satisfied** | Handoff § below |
+
+**Phase 5.0: COMPLETE.** Next M5 phase: **5.1 Music Catalogue and Metadata**.
+
+#### Next phase handoff — M5.1 Music Catalogue and Metadata
+
+Phase 5.1 begins with a **focused repository and scanner audit** before production implementation. The audit validates:
+
+- Current `catalog.json` schema and `MediaItem` parser behaviour
+- `catalogue_version` compatibility handling in `CatalogService`
+- Scanner extension sets (`SUPPORTED_EXTENSIONS`) and audio-extension gap
+- Path-derived `id` generation (stable identity)
+- Metadata extraction options (`ffprobe`, tag libraries) and **standard-library-only** constraint implications
+- Existing fixtures and test factories for catalogue parsing
+- Video and image backward compatibility on mixed catalogues
+- Unknown or missing metadata behaviour (graceful degradation)
+- Whether proposed **`catalogue_version: 3`** and **`media_kind`** should be **Accepted** as specified in ADR-020
+- Deterministic grouping and identity rules proposed in ADR-021
+
+Phase 5.1 produces an implementation specification and accepts ADR-020/021 when implementation boundaries are locked — not during 5.0 closure.
+
+→ [Phase 5.1 scope](#phase-51--music-catalogue-and-metadata)
 
 **Documentation outputs:**
 
@@ -114,7 +156,7 @@ Implement in order unless a documented dependency allows parallel documentation 
 - Optional music metadata fields on items (not all mandatory): artist, album, album artist, title, track number, disc number, genre, year/date, duration, compilation flag
 - Stable item `id` (path-derived, unchanged from today)
 - Scanner tag extraction strategy (e.g. `ffprobe` / ID3 / Vorbis) with folder-derived fallbacks
-- `catalogue_version` bump and client tolerant parsing
+- `catalogue_version` bump to **3** (**proposed** in ADR-020 — not shipped until Phase 5.1 accepts ADR-020)
 - Missing/incomplete tag behaviour — filename stem, folder names, “Unknown Artist/Album”
 - Artwork association rules at scan time (embedded vs sidecar vs folder.jpg)
 - Compilation and multi-disc handling at metadata layer
@@ -127,7 +169,7 @@ Implement in order unless a documented dependency allows parallel documentation 
 - External metadata APIs
 - SQLite or secondary catalogue store
 
-**Dependencies:** Phase 5.0 accepted; [ADR-020](../architecture/decisions/ADR-020-music-catalogue-schema-and-media-kind.md), [ADR-021](../architecture/decisions/ADR-021-music-metadata-precedence-and-identity.md).
+**Dependencies:** Phase 5.0 complete; [ADR-020](../architecture/decisions/ADR-020-music-catalogue-schema-and-media-kind.md), [ADR-021](../architecture/decisions/ADR-021-music-metadata-precedence-and-identity.md) (**Proposed** — accept during 5.1 after audit).
 
 **Definition of done:**
 

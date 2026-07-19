@@ -2,7 +2,7 @@
 
 Living milestone plan. Each milestone builds on the previous without changing the core architecture — the filesystem remains the source of truth, and the catalogue reflects the folder tree as-is.
 
-→ **[Roadmap principles](./principles.md)** — how the project evolves (for humans and AI tools)  
+→ **[Roadmap principles](./principles.md)** — how the project evolves (for humans and AI tools)
 → [Mobile delivery](./mobile-delivery.md) — one app, two access modes
 
 ---
@@ -35,7 +35,7 @@ End-to-end playback on Windows, folder-tree browsing, rescan, resume, and error 
 
 Windows-first polish: library manager, dashboard, Continue Watching, thumbnails, search, diagnostics, Live NAS / Demo visibility.
 
-→ [M3 goals](./m3-personal-media-experience.md)  
+→ [M3 goals](./m3-personal-media-experience.md)
 → [Release snapshot](../release/v0.3.0.md)
 
 ---
@@ -46,9 +46,9 @@ Windows-first polish: library manager, dashboard, Continue Watching, thumbnails,
 
 HTTPS catalogue loading, provider configuration UI, startup provider selection, and end-to-end validation on TerraMaster TNAS + Caddy. Android/iOS home-network smoke builds remain optional follow-up.
 
-→ [M3.5 release snapshot](../release/m3.5-media-access-complete.md)  
-→ [Phase 4 plan](./m35-phase-4-plan.md)  
-→ [Development cycle](../release/v0.4.0-dev.md)  
+→ [M3.5 release snapshot](../release/m3.5-media-access-complete.md)
+→ [Phase 4 plan](./m35-phase-4-plan.md)
+→ [Development cycle](../release/v0.4.0-dev.md)
 → [Mobile delivery overview](./mobile-delivery.md)
 
 ---
@@ -59,16 +59,16 @@ HTTPS catalogue loading, provider configuration UI, startup provider selection, 
 
 Polish the personal media application: provider management, settings framework, library UX, playback improvements, caching, diagnostics, and release documentation. Builds on M3.5 provider-neutral architecture without replacing filesystem-driven libraries.
 
-→ [M4 plan](./m4-plan.md)  
-→ [M4 release summary](../release/m4-release-summary.md)  
-→ [v0.5.0-dev tracker](../release/v0.5.0-dev.md)  
+→ [M4 plan](./m4-plan.md)
+→ [M4 release summary](../release/m4-release-summary.md)
+→ [v0.5.0-dev tracker](../release/v0.5.0-dev.md)
 → [Architecture index](../architecture/README.md)
 
 ---
 
 ## M5 — Music
 
-**Status:** Planning — Phase 5.0 (documentation-only)
+**Status:** In progress — Phase 5.0 complete; **Phase 5.1 next**
 
 Extend TTSPlayer with music catalogue metadata, artist/album/track browsing, queue-based audio playback, and application-managed listening state — building on M4 platform services without a parallel architecture.
 

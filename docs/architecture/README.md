@@ -36,7 +36,7 @@ Planning document for [M5 — Music](../roadmap/m5-plan.md). **Not implemented.*
 
 | Document | Phase | Status |
 |---|---|---|
-| [Music](./music.md) | 5.0+ | **Planned / Proposed** — [M5 plan](../roadmap/m5-plan.md) · ADR-020–023 |
+| [Music](./music.md) | 5.0 ✅ / 5.1 next | **Planned / Proposed** — [M5 plan](../roadmap/m5-plan.md) · ADR-020–023 **Proposed** |
 
 ## Architecture Decision Records
 

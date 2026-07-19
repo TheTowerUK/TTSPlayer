@@ -2,7 +2,7 @@
 
 
 
-**Status:** **Planned / Proposed** — M5 Phase 5.0 planning only; no implementation
+**Status:** **Planned / Proposed** — Phase 5.0 planning complete (2026-07-19); no implementation
 
 **Related roadmap:** [M5 — Music](../roadmap/m5-plan.md)
 
@@ -182,7 +182,7 @@ Current `MediaItem` fields (M4): `id`, `title`, `year`, `duration_seconds`, `fil
 
 
 
-**Catalogue version:** Increment `catalogue_version` (currently `2`) when schema ships — see ADR-020.
+**Catalogue version:** **Proposed** increment to `catalogue_version: 3` when schema ships (currently `2`) — ADR-020 remains **Proposed** until Phase 5.1 accepts it after audit.
 
 
 

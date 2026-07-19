@@ -8,10 +8,10 @@ Canonical milestone detail lives in [`docs/roadmap/`](docs/roadmap/).
 | M3 | [Personal Media Experience](docs/roadmap/m3-personal-media-experience.md) | ✅ v0.3.0 |
 | M3.5 | [Network Client Foundation](docs/roadmap/network-client-foundation.md) | ✅ `m3.5-complete` |
 | M4 | [User Experience and Platform Integration](docs/roadmap/m4-plan.md) | ✅ `v0.5.0` — [release summary](docs/release/m4-release-summary.md) |
-| M5 | [Music](docs/roadmap/m5-plan.md) | 🔄 Planning — Phase 5.0 |
+| M5 | [Music](docs/roadmap/m5-plan.md) | 🔄 In progress — Phase 5.1 next |
 | M7 | [Multi-device Experience](docs/roadmap/mobile-delivery.md#m7--multi-device-experience) | Planned |
 
-→ [Roadmap principles](docs/roadmap/principles.md)  
+→ [Roadmap principles](docs/roadmap/principles.md)
 → [Mobile delivery (future — not M3 scope)](docs/roadmap/mobile-delivery.md)
 
 ---
@@ -48,7 +48,7 @@ Sprint checkpoints: `m3-sprint-3`, `m3-complete`. Sprint 4 delivered Featured Fo
 
 ## M3.5 — Network Client Foundation
 
-**Status:** ✅ Complete  
+**Status:** ✅ Complete
 **Tag:** `m3.5-complete`
 
 ### Highlights
@@ -58,17 +58,17 @@ Sprint checkpoints: `m3-sprint-3`, `m3-complete`. Sprint 4 delivered Featured Fo
 - TNAS deployment validation
 - HTTP Range playback
 
-→ [M3.5 release snapshot](docs/release/m3.5-media-access-complete.md#deployment-validation--2026-07-07)  
-→ [M3.5 goals](docs/roadmap/network-client-foundation.md)  
+→ [M3.5 release snapshot](docs/release/m3.5-media-access-complete.md#deployment-validation--2026-07-07)
+→ [M3.5 goals](docs/roadmap/network-client-foundation.md)
 → [Mobile delivery overview](docs/roadmap/mobile-delivery.md)
 
 ---
 
 ## M4 — User Experience and Platform Integration
 
-**Status:** ✅ Complete — 2026-07-18  
-**Branch:** `m4-development`  
-**Development version:** `v0.5.0-dev`  
+**Status:** ✅ Complete — 2026-07-18
+**Branch:** `m4-development`
+**Development version:** `v0.5.0-dev`
 **Tag (recommended):** `m4-complete` after manual QA sign-off
 
 ### M4 progress
@@ -83,14 +83,14 @@ Sprint checkpoints: `m3-sprint-3`, `m3-complete`. Sprint 4 delivered Featured Fo
 | **4.6** | Diagnostics and Supportability | ✅ Complete (2026-07-17) |
 | **4.7** | Release and Documentation | ✅ Complete (2026-07-18) |
 
-→ [M4 release summary](docs/release/m4-release-summary.md)  
+→ [M4 release summary](docs/release/m4-release-summary.md)
 → [M4 plan](docs/roadmap/m4-plan.md)
 
 ---
 
 ## M5 — Music
 
-**Status:** Planning — Phase 5.0 (documentation)
+**Status:** In progress — Phase 5.0 complete; **Phase 5.1 next**
 **Branch:** `m4-development`
 **Baseline:** `v0.5.0`
 
@@ -98,8 +98,8 @@ Sprint checkpoints: `m3-sprint-3`, `m3-complete`. Sprint 4 delivered Featured Fo
 
 | Sub-phase | Focus | Status |
 |---|---|---|
-| **5.0** | Planning and Architecture | **In progress** |
-| **5.1** | Music Catalogue and Metadata | Planned |
+| **5.0** | Planning and Architecture | ✅ Complete (2026-07-19) |
+| **5.1** | Music Catalogue and Metadata | **Next** |
 | **5.2** | Music Library Experience | Planned |
 | **5.3** | Music Playback and Queue | Planned |
 | **5.4** | Music State and Listening History | Planned |
