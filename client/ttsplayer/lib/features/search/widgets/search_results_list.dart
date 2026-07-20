@@ -16,12 +16,14 @@ class SearchResultsList extends StatelessWidget {
     required this.results,
     required this.onOpenResult,
     required this.onBrowseFolder,
+    this.onPlayResult,
   });
 
   final Catalog catalog;
   final List<SearchResult> results;
   final void Function(SearchResult result) onOpenResult;
   final void Function(SearchResult result)? onBrowseFolder;
+  final void Function(SearchResult result)? onPlayResult;
 
   @override
   Widget build(BuildContext context) {
@@ -44,6 +46,7 @@ class SearchResultsList extends StatelessWidget {
         catalog: catalog,
         onOpenResult: onOpenResult,
         onBrowseFolder: onBrowseFolder,
+        onPlayResult: onPlayResult,
       ),
     );
   }
@@ -73,6 +76,7 @@ sealed class _SearchListRow {
     required Catalog catalog,
     required void Function(SearchResult result) onOpenResult,
     required void Function(SearchResult result)? onBrowseFolder,
+    void Function(SearchResult result)? onPlayResult,
   });
 }
 
@@ -87,6 +91,7 @@ final class _SearchListHeader extends _SearchListRow {
     required Catalog catalog,
     required void Function(SearchResult result) onOpenResult,
     required void Function(SearchResult result)? onBrowseFolder,
+    void Function(SearchResult result)? onPlayResult,
   }) {
     return Semantics(
       header: true,
@@ -113,6 +118,7 @@ final class _SearchListResult extends _SearchListRow {
     required Catalog catalog,
     required void Function(SearchResult result) onOpenResult,
     required void Function(SearchResult result)? onBrowseFolder,
+    void Function(SearchResult result)? onPlayResult,
   }) {
     final contextLabel = catalogueFolderContext(catalog, result.item.id);
     final canBrowse = onBrowseFolder != null && _canBrowseFolder(catalog, result);
@@ -121,8 +127,16 @@ final class _SearchListResult extends _SearchListRow {
       result: result,
       displayContext: contextLabel,
       onOpen: () => onOpenResult(result),
-      onBrowseFolder: canBrowse ? () => onBrowseFolder(result) : null,
+      onBrowseFolder: canBrowse ? () => onBrowseFolder!(result) : null,
+      onPlay: _playCallback(onPlayResult),
     );
+  }
+
+  VoidCallback? _playCallback(void Function(SearchResult result)? onPlayResult) {
+    if (onPlayResult == null) return null;
+    final item = result.item;
+    if (!item.isAudio || !item.status.isPlayable) return null;
+    return () => onPlayResult(result);
   }
 
   bool _canBrowseFolder(Catalog catalog, SearchResult result) {

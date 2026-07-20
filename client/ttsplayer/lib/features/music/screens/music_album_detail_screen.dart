@@ -81,6 +81,9 @@ class MusicAlbumDetailScreen extends StatelessWidget {
                       context,
                       trackId: track.id,
                     ),
+                    onPlay: track.status.isPlayable
+                        ? () => openMusicPlayerScreen(context, track: track)
+                        : null,
                   ),
                 ),
               ],

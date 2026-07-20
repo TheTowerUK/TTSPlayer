@@ -15,6 +15,7 @@ class SearchResultRow extends StatelessWidget {
   final String displayContext;
   final VoidCallback onOpen;
   final VoidCallback? onBrowseFolder;
+  final VoidCallback? onPlay;
 
   const SearchResultRow({
     super.key,
@@ -22,6 +23,7 @@ class SearchResultRow extends StatelessWidget {
     required this.displayContext,
     required this.onOpen,
     this.onBrowseFolder,
+    this.onPlay,
   });
 
   @override
@@ -122,9 +124,17 @@ class SearchResultRow extends StatelessWidget {
                 const SizedBox(width: AppSpacing.sm),
                 Column(
                   children: [
+                    if (onPlay != null)
+                      IconButton(
+                        key: Key('search_play_${item.id}'),
+                        tooltip: 'Play ${item.title}',
+                        icon: const Icon(Icons.play_arrow),
+                        color: AppColors.primary,
+                        onPressed: onPlay,
+                      ),
                     IconButton(
                       key: Key('search_open_${item.id}'),
-                      tooltip: 'Open details',
+                      tooltip: 'Open details for ${item.title}',
                       icon: const Icon(Icons.open_in_new_outlined),
                       color: AppColors.primary,
                       onPressed: onOpen,
