@@ -8,6 +8,7 @@ import '../../../widgets/section_header.dart';
 import '../../../widgets/tts_app_bar.dart';
 import '../music_library_service.dart';
 import '../music_navigation.dart';
+import '../music_queue_seeding.dart';
 import '../widgets/music_artwork_thumbnail.dart';
 import '../widgets/music_list_tiles.dart';
 
@@ -55,6 +56,8 @@ class MusicAlbumDetailScreen extends StatelessWidget {
             '${album.trackCount} tracks',
           ].join(' · ');
 
+          final canPlayAlbum = MusicQueueSeeding.hasPlayableTracks(album.tracks);
+
           return Scrollbar(
             thumbVisibility: true,
             child: ListView(
@@ -71,6 +74,25 @@ class MusicAlbumDetailScreen extends StatelessWidget {
                 Text(album.displayTitle, style: AppTypography.sectionTitle),
                 const SizedBox(height: AppSpacing.sm),
                 Text(meta, style: AppTypography.cardSubtitle),
+                const SizedBox(height: AppSpacing.base),
+                Semantics(
+                  button: true,
+                  enabled: canPlayAlbum,
+                  label: 'Play album ${album.displayTitle}',
+                  excludeSemantics: true,
+                  child: FilledButton.icon(
+                    key: const Key('music_album_play'),
+                    onPressed: canPlayAlbum
+                        ? () => openMusicPlayerFromAlbum(context, album: album)
+                        : null,
+                    icon: const Icon(Icons.play_arrow),
+                    label: const Text('Play album'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      minimumSize: const Size.fromHeight(48),
+                    ),
+                  ),
+                ),
                 const SizedBox(height: AppSpacing.section),
                 const SectionHeader(title: 'Tracks'),
                 const SizedBox(height: AppSpacing.sm),
@@ -82,8 +104,13 @@ class MusicAlbumDetailScreen extends StatelessWidget {
                       trackId: track.id,
                     ),
                     onPlay: track.status.isPlayable
-                        ? () => openMusicPlayerScreen(context, track: track)
+                        ? () => openMusicPlayerFromAlbumTrack(
+                              context,
+                              album: album,
+                              track: track,
+                            )
                         : null,
+                    playSemanticsLabel: 'Play ${track.title} from album',
                   ),
                 ),
               ],

@@ -19,6 +19,12 @@ class MusicArtist {
 
   int get trackCount => tracks.length;
 
+  /// Album-ordered flattening: albums sorted by [MusicSorting.compareAlbumsWithinArtist],
+  /// tracks within each album by [MusicSorting.compareTracksInAlbum].
+  List<MediaItem> get tracksInAlbumOrder {
+    return [for (final album in albums) ...album.tracks];
+  }
+
   /// Deterministic artwork source: first album's representative track.
   MediaItem? get representativeTrack {
     if (albums.isEmpty) {

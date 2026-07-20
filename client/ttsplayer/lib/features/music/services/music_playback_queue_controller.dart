@@ -6,6 +6,10 @@ import '../../../models/catalog.dart';
 import '../../../models/media_item.dart';
 import '../../../models/playback/playback_queue.dart';
 import '../../../services/playback_service.dart';
+import '../models/music_album.dart';
+import '../models/music_artist.dart';
+import '../models/music_queue_source.dart';
+import '../music_queue_seeding.dart';
 
 /// App-scoped in-memory music queue coordinating with [PlaybackService].
 class MusicPlaybackQueueController extends ChangeNotifier {
@@ -22,6 +26,7 @@ class MusicPlaybackQueueController extends ChangeNotifier {
   final PlaybackService _playback;
 
   PlaybackQueue _queue = const PlaybackQueue.empty();
+  MusicQueueSource? _queueSource;
   bool _playerRouteActive = false;
   bool _wasCompleted = false;
   int _completionAdvanceGeneration = 0;
@@ -30,6 +35,8 @@ class MusicPlaybackQueueController extends ChangeNotifier {
   PlaybackQueue get queue => _queue;
 
   MediaItem? get currentTrack => _queue.currentItem;
+
+  MusicQueueSource? get queueSource => _queueSource;
 
   bool get isEmpty => _queue.isEmpty;
 
@@ -45,8 +52,67 @@ class MusicPlaybackQueueController extends ChangeNotifier {
   void seedSingleTrack(MediaItem track) {
     if (!track.isAudio || !track.status.isPlayable) return;
     _queue = const PlaybackQueue.empty().replaceItems([track], startIndex: 0);
+    _queueSource = const MusicQueueSource.singleTrack();
     _resetCompletionGuards();
     notifyListeners();
+  }
+
+  /// Replaces the queue with an album's canonical track order.
+  ///
+  /// Returns false when no playable audio tracks remain.
+  bool seedAlbumQueue(
+    MusicAlbum album, {
+    MediaItem? startTrack,
+    int? sourceIndex,
+  }) {
+    final ordered = MusicQueueSeeding.albumTracks(album);
+    if (!MusicQueueSeeding.hasPlayableTracks(ordered)) return false;
+
+    final start = sourceIndex != null
+        ? MusicQueueSeeding.playableStartIndex(
+            ordered,
+            sourceIndex: sourceIndex,
+          )
+        : startTrack != null
+            ? MusicQueueSeeding.playableStartIndexForTrack(ordered, startTrack)
+            : 0;
+
+    _queueSource = MusicQueueSource(
+      kind: MusicQueueSourceKind.album,
+      label: album.displayTitle,
+      identityKey: album.groupKey,
+    );
+    replaceQueue(ordered, startIndex: start);
+    return true;
+  }
+
+  /// Replaces the queue with an artist's album-ordered track flattening.
+  ///
+  /// Returns false when no playable audio tracks remain.
+  bool seedArtistQueue(
+    MusicArtist artist, {
+    MediaItem? startTrack,
+    int? sourceIndex,
+  }) {
+    final ordered = MusicQueueSeeding.artistTracks(artist);
+    if (!MusicQueueSeeding.hasPlayableTracks(ordered)) return false;
+
+    final start = sourceIndex != null
+        ? MusicQueueSeeding.playableStartIndex(
+            ordered,
+            sourceIndex: sourceIndex,
+          )
+        : startTrack != null
+            ? MusicQueueSeeding.playableStartIndexForTrack(ordered, startTrack)
+            : 0;
+
+    _queueSource = MusicQueueSource(
+      kind: MusicQueueSourceKind.artist,
+      label: artist.displayName,
+      identityKey: artist.groupKey,
+    );
+    replaceQueue(ordered, startIndex: start);
+    return true;
   }
 
   /// Replaces the entire queue.
@@ -122,6 +188,7 @@ class MusicPlaybackQueueController extends ChangeNotifier {
 
   Future<void> clearQueueAndStop() async {
     _queue = const PlaybackQueue.empty();
+    _queueSource = null;
     _resetCompletionGuards();
     notifyListeners();
     await _playback.stop();
@@ -129,6 +196,7 @@ class MusicPlaybackQueueController extends ChangeNotifier {
 
   void clearQueueOnly() {
     _queue = const PlaybackQueue.empty();
+    _queueSource = null;
     _resetCompletionGuards();
     notifyListeners();
   }

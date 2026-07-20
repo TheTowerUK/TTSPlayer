@@ -9,6 +9,7 @@ import '../../../services/playback/playback_error_messages.dart';
 import '../../../services/playback_service.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/tts_app_bar.dart';
+import '../models/music_queue_source.dart';
 import '../services/music_playback_queue_controller.dart';
 import '../widgets/music_artwork_thumbnail.dart';
 
@@ -136,6 +137,7 @@ class _MusicPlayerReadyView extends StatelessWidget {
     final remaining = duration - position;
     final seekEnabled = duration > Duration.zero;
     final queue = queueController.queue;
+    final source = queueController.queueSource;
 
     final artist = _label(item.artist ?? item.albumArtist, 'Unknown Artist');
     final album = _label(item.album, 'Unknown Album');
@@ -151,11 +153,25 @@ class _MusicPlayerReadyView extends StatelessWidget {
             if (queue.length > 1)
               Padding(
                 padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                child: Text(
-                  '${queue.currentIndex + 1} of ${queue.length}',
-                  key: const Key('music_player_queue_position'),
-                  textAlign: TextAlign.center,
-                  style: AppTypography.caption,
+                child: Column(
+                  children: [
+                    Text(
+                      '${queue.currentIndex + 1} of ${queue.length}',
+                      key: const Key('music_player_queue_position'),
+                      textAlign: TextAlign.center,
+                      style: AppTypography.caption,
+                    ),
+                    if (source != null && source.hasLabel)
+                      Padding(
+                        padding: const EdgeInsets.only(top: AppSpacing.xs),
+                        child: Text(
+                          _queueSourceLabel(source),
+                          key: const Key('music_player_queue_source'),
+                          textAlign: TextAlign.center,
+                          style: AppTypography.caption,
+                        ),
+                      ),
+                  ],
                 ),
               ),
             Center(
@@ -293,6 +309,14 @@ class _MusicPlayerReadyView extends StatelessWidget {
   static String _label(String? value, String fallback) {
     final trimmed = value?.trim();
     return (trimmed == null || trimmed.isEmpty) ? fallback : trimmed;
+  }
+
+  static String _queueSourceLabel(MusicQueueSource source) {
+    return switch (source.kind) {
+      MusicQueueSourceKind.album => 'Album · ${source.label}',
+      MusicQueueSourceKind.artist => 'Artist · ${source.label}',
+      MusicQueueSourceKind.singleTrack => '',
+    };
   }
 
   static String? _yearGenreLine(MediaItem item) {
