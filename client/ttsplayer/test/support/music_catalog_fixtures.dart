@@ -181,3 +181,127 @@ MediaItem legacyVideoItem() {
     'status': 'available',
   });
 }
+
+/// Three-track album + two-album artist for M5.3 queue seeding tests.
+const String kCatalogV3QueueSeedingFixture = r'''
+{
+  "generated_at": "2026-07-20T12:00:00+00:00",
+  "total_items": 5,
+  "catalogue": {
+    "id": "QUEUE-SEED",
+    "catalogue_version": 3,
+    "supported_extensions": ["mp3"]
+  },
+  "folders": [
+    {
+      "id": "music",
+      "name": "Music",
+      "path": "Y:\\Media\\Music",
+      "item_count": 5,
+      "items": [],
+      "subfolders": [
+        {
+          "id": "artist-queue",
+          "name": "Queue Artist",
+          "path": "Y:\\Media\\Music\\Queue Artist",
+          "item_count": 5,
+          "items": [],
+          "subfolders": [
+            {
+              "id": "album-a",
+              "name": "First Album",
+              "path": "Y:\\Media\\Music\\Queue Artist\\First Album",
+              "item_count": 3,
+              "items": [
+                {
+                  "id": "qa-t1",
+                  "title": "First Track",
+                  "file_path": "Y:\\Media\\Music\\Queue Artist\\First Album\\01.mp3",
+                  "status": "available",
+                  "media_kind": "audio",
+                  "artist": "Queue Artist",
+                  "album": "First Album",
+                  "album_artist": "Queue Artist",
+                  "track_number": 1,
+                  "disc_number": 1,
+                  "year": 2020,
+                  "artist_group_key": "queue artist",
+                  "album_group_key": "queue artist|first album|y:\\\\media\\\\music\\\\queue artist\\\\first album"
+                },
+                {
+                  "id": "qa-t2",
+                  "title": "Second Track",
+                  "file_path": "Y:\\Media\\Music\\Queue Artist\\First Album\\02.mp3",
+                  "status": "available",
+                  "media_kind": "audio",
+                  "artist": "Queue Artist",
+                  "album": "First Album",
+                  "album_artist": "Queue Artist",
+                  "track_number": 2,
+                  "disc_number": 1,
+                  "year": 2020,
+                  "artist_group_key": "queue artist",
+                  "album_group_key": "queue artist|first album|y:\\\\media\\\\music\\\\queue artist\\\\first album"
+                },
+                {
+                  "id": "qa-t3",
+                  "title": "Third Track",
+                  "file_path": "Y:\\Media\\Music\\Queue Artist\\First Album\\03.mp3",
+                  "status": "available",
+                  "media_kind": "audio",
+                  "artist": "Queue Artist",
+                  "album": "First Album",
+                  "album_artist": "Queue Artist",
+                  "track_number": 3,
+                  "disc_number": 2,
+                  "year": 2020,
+                  "artist_group_key": "queue artist",
+                  "album_group_key": "queue artist|first album|y:\\\\media\\\\music\\\\queue artist\\\\first album"
+                }
+              ],
+              "subfolders": []
+            },
+            {
+              "id": "album-b",
+              "name": "Second Album",
+              "path": "Y:\\Media\\Music\\Queue Artist\\Second Album",
+              "item_count": 2,
+              "items": [
+                {
+                  "id": "qb-t1",
+                  "title": "Later One",
+                  "file_path": "Y:\\Media\\Music\\Queue Artist\\Second Album\\01.mp3",
+                  "status": "available",
+                  "media_kind": "audio",
+                  "artist": "Queue Artist",
+                  "album": "Second Album",
+                  "album_artist": "Queue Artist",
+                  "track_number": 1,
+                  "year": 2021,
+                  "artist_group_key": "queue artist",
+                  "album_group_key": "queue artist|second album|y:\\\\media\\\\music\\\\queue artist\\\\second album"
+                },
+                {
+                  "id": "qb-t2",
+                  "title": "Later Two",
+                  "file_path": "Y:\\Media\\Music\\Queue Artist\\Second Album\\02.mp3",
+                  "status": "available",
+                  "media_kind": "audio",
+                  "artist": "Queue Artist",
+                  "album": "Second Album",
+                  "album_artist": "Queue Artist",
+                  "track_number": 2,
+                  "year": 2021,
+                  "artist_group_key": "queue artist",
+                  "album_group_key": "queue artist|second album|y:\\\\media\\\\music\\\\queue artist\\\\second album"
+                }
+              ],
+              "subfolders": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+''';

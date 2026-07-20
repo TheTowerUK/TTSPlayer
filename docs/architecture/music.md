@@ -2,7 +2,7 @@
 
 
 
-**Status:** **In progress** — Phase 5.3 Step 2 complete (2026-07-20); Gate 0 complete; Phase 5.2 complete
+**Status:** **In progress** — Phase 5.3 Step 3 complete (2026-07-20); Gate 0 complete; Phase 5.2 complete
 
 **Related roadmap:** [M5 — Music](../roadmap/m5-plan.md) · [Phase 5.1 spec](../roadmap/m5-phase-5.1-music-catalogue-metadata.md)
 
@@ -651,6 +651,8 @@ No audio-specific provider type. Provider failure surfaces via existing Provider
 
 
 **Gate 0 (before 5.3 queue):** ✅ **Complete** (2026-07-20) — see [M5.3 spec](../roadmap/m5-phase-5.3-music-playback-queue.md).
+
+**M5.3 Step 3 (contextual seeding):** ✅ **Complete** (2026-07-20) — album/artist **Play** actions seed multi-track queues using projection ordering; track play in album/artist detail seeds full group at selected index; ungrouped contexts remain single-track. See [playback.md](./playback.md#m53-step-3--contextual-queue-seeding-2026-07-20).
 
 
 

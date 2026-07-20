@@ -219,7 +219,8 @@ App-level validation through `PlaybackService` and player UI (`phase_44_windows_
 |---|---|
 | Queue model | `PlaybackQueue` — ordered audio items, current index, generation |
 | Coordinator | `MusicPlaybackQueueController` — app-scoped `ChangeNotifier` |
-| One-track seed | All play actions → `seedSingleTrack()` before opening player |
+| One-track seed | Ungrouped contexts → `seedSingleTrack()` |
+| Album / artist seed | **Play album/artist** and contextual track play → `seedAlbumQueue` / `seedArtistQueue` (Step 3) |
 | Next | Advance when available; no wrap at final item |
 | Previous | Restart current if position > 4 s; else prior item or seek to 0 on first |
 | Completion | Auto-advance; duplicate completion events guarded |
@@ -228,7 +229,24 @@ App-level validation through `PlaybackService` and player UI (`phase_44_windows_
 | Catalogue replace | Reconcile by item id via `CatalogCacheCoordinator` |
 | Persistence | **Not implemented** — ADR-022 envelope deferred |
 
-| Harness | `PHASE_53_RUNTIME=1` → three-track queue runtime in `phase_53_music_player_windows_runtime_test.dart` |
+| Harness | `PHASE_53_RUNTIME=1` → queue transport + album/artist UI seeding in `phase_53_music_player_windows_runtime_test.dart` |
+
+→ [M5.3 phase spec](../roadmap/m5-phase-5.3-music-playback-queue.md)
+
+---
+
+## M5.3 Step 3 — contextual queue seeding (2026-07-20)
+
+| Concept | Implementation |
+|---|---|
+| Album order | Projection `MusicAlbum.tracks` (`compareTracksInAlbum`) |
+| Artist order | `MusicArtist.tracksInAlbumOrder` (albums by year/title/key, then album tracks) |
+| Navigation | `openMusicPlayerFromAlbum`, `openMusicPlayerFromAlbumTrack`, `openMusicPlayerFromArtist`, `openMusicPlayerFromArtistTrack` |
+| Source descriptor | `MusicQueueSource` — kind + label + identity key (in-memory only) |
+| Route guard | Pop existing `music:player:*` routes before push |
+| Empty group | Snackbar; no queue created |
+
+**Still deferred:** shuffle, repeat, queue panel, ADR-022 persistence envelope.
 
 → [M5.3 phase spec](../roadmap/m5-phase-5.3-music-playback-queue.md)
 

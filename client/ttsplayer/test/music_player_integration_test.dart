@@ -150,28 +150,35 @@ void main() {
       expect(find.byType(MusicPlayerScreen), findsOneWidget);
     });
 
-    testWidgets('album track play opens correct track', (tester) async {
+    testWidgets('album track play seeds full album queue', (tester) async {
       final service = _serviceWithStubInit();
+      final queue = MusicPlaybackQueueController(playbackService: service);
+      final queueCatalog = Catalog.fromJson(
+        jsonDecode(kCatalogV3QueueSeedingFixture) as Map<String, dynamic>,
+      );
       final albumKey = MusicLibraryService()
-          .projectionFor(catalog)
+          .projectionFor(queueCatalog)
           .albums
-          .first
+          .firstWhere((a) => a.displayTitle == 'First Album')
           .groupKey;
       await tester.pumpWidget(
         _appHarness(
-          catalog: catalog,
+          catalog: queueCatalog,
           playbackService: service,
+          queueController: queue,
           home: MusicAlbumDetailScreen(albumGroupKey: albumKey),
         ),
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const Key('music_track_play_track-complete')));
+      await tester.tap(find.byKey(const Key('music_track_play_qa-t1')));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.byType(MusicPlayerScreen), findsOneWidget);
-      expect(find.text('Come Together'), findsWidgets);
+      expect(find.text('First Track'), findsWidgets);
+      expect(queue.queue.length, 3);
+      expect(queue.currentTrack?.id, 'qa-t1');
     });
 
     testWidgets('search audio play opens MusicPlayerScreen', (tester) async {

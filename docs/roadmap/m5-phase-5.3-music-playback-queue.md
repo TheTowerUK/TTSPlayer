@@ -1,6 +1,6 @@
 # M5 Phase 5.3 — Music Playback and Queue
 
-**Status:** **In progress** — Step 2 complete (2026-07-20); Step 1 complete; Gate 0 complete
+**Status:** **In progress** — Step 3 complete (2026-07-20); Step 2 complete; Step 1 complete; Gate 0 complete
 **Milestone:** M5 — Music
 **Branch:** `m5-development`
 
@@ -90,9 +90,58 @@ No second `media_kit.Player`. No persistence. No listening-history writes.
 
 ---
 
+## Step 3 audit — ordering contracts (2026-07-20)
+
+| Area | Contract |
+|---|---|
+| **Album track order** | `MusicAlbum.tracks` from `MusicLibraryProjection` — sorted by `MusicSorting.compareTracksInAlbum`: disc (`null` → 1), track number (numbered before unnumbered), title (case-insensitive), `id` tie-breaker |
+| **Artist queue order** | `MusicArtist.tracksInAlbumOrder` — `artist.albums` sorted by `compareAlbumsWithinArtist` (year known first, title, `groupKey`), then each album's `tracks` in album order |
+| **Multi-disc** | Disc number primary key within album; missing disc treated as 1 |
+| **Unknown disc/track** | Missing disc → 1; numbered tracks sort before unnumbered; title + id tie-break |
+| **Duplicate items** | Same `MediaItem.id` may appear multiple times; queue preserves list order; selected track resolves by **object identity** first, then first matching id |
+| **Artist detail tracks list** | Browse order (`artist.tracks` via `compareTracksBrowse`) for display only; queue seeding uses `tracksInAlbumOrder`, not browse order |
+| **Navigation** | `openMusicPlayerFromAlbum*`, `openMusicPlayerFromArtist*`, `openMusicPlayerScreen` (single track); pops existing `music:player:*` routes before push |
+| **replaceQueue / start index** | `PlaybackQueue.replaceItems` filters audio-only playable items; `MusicQueueSeeding.playableStartIndex` maps source-list index to playable queue index |
+
+Queue seeding must **not** re-sort in presentation code.
+
+---
+
+## Step 3 — Album and artist queue seeding (2026-07-20)
+
+### User actions
+
+| Context | Action | Queue seeded |
+|---|---|---|
+| Album detail | **Play album** | Full album from first playable track |
+| Album detail | Track **Play** | Full album starting at selected track |
+| Artist detail | **Play artist** | Full `tracksInAlbumOrder` from first playable track |
+| Artist detail | Track **Play** | Full artist queue starting at selected track |
+| Track detail, global Tracks, Search | **Play** | Single-track queue (unchanged) |
+
+### Queue source metadata
+
+Lightweight `MusicQueueSource` (`singleTrack` \| `album` \| `artist`) with display `label` and `identityKey` — no persisted envelope, no duplicated projection objects.
+
+### Empty albums / artists
+
+No playable audio → action disabled or snackbar; **no** empty active queue.
+
+### MusicPlayerScreen
+
+Shows `N of M` and optional `Album · …` / `Artist · …` source label when queue length > 1. No queue panel, shuffle, or repeat.
+
+### Tests added
+
+- `music_queue_seeding_test.dart` — coordinator + helper semantics
+- `music_queue_seeding_presentation_test.dart` — album/artist detail + ungrouped contexts
+- Extended `music_player_integration_test.dart`, `phase_53_music_player_windows_runtime_test.dart` (Step 3 UI seeding group)
+- Fixture: `kCatalogV3QueueSeedingFixture`
+
+---
+
 ## Deferred (later M5.3 steps)
 
-- Album / artist queue seeding (“Play album”)
 - Shuffle and repeat
 - Queue panel UI
 - `MusicStateRepository` persistence (ADR-022 envelope)
@@ -103,4 +152,5 @@ No second `media_kit.Player`. No persistence. No listening-history writes.
 
 ## Related commits (Step 2)
 
-To be recorded on branch after documentation reconciliation.
+- `48b8f29` … `7899e85` — in-memory queue core (Step 2)
+- Step 3 commits — contextual album/artist seeding (this increment)

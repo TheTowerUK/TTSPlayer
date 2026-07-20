@@ -9,11 +9,15 @@ import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ttsplayer/features/music/music_library_service.dart';
 import 'package:ttsplayer/features/music/presentation/music_player_screen.dart';
+import 'package:ttsplayer/features/music/screens/music_album_detail_screen.dart';
+import 'package:ttsplayer/features/music/screens/music_artist_detail_screen.dart';
 import 'package:ttsplayer/features/music/services/music_playback_queue_controller.dart';
+import 'package:ttsplayer/models/catalog.dart';
 import 'package:ttsplayer/models/media_item.dart';
 import 'package:ttsplayer/screens/player_screen.dart';
-import 'package:ttsplayer/services/artwork/artwork_service.dart';
+import 'package:ttsplayer/services/catalog_service.dart';
 import 'package:ttsplayer/services/media_access/media_access_config.dart';
 import 'package:ttsplayer/services/media_access/media_location_resolver.dart';
 import 'package:ttsplayer/services/playback_service.dart';
@@ -221,6 +225,310 @@ void main() {
       expect(find.byIcon(Icons.shuffle), findsNothing);
     }, timeout: const Timeout(Duration(minutes: 2)));
   });
+
+  group('Phase 5.3 Step 3 — album and artist queue seeding', () {
+    late GeneratedAudioFixture albumWav1;
+    late GeneratedAudioFixture albumWav2;
+    late GeneratedAudioFixture albumWav3;
+    late GeneratedAudioFixture artistWav1;
+    late GeneratedAudioFixture artistWav2;
+    late PlaybackService service;
+    late MusicPlaybackQueueController queue;
+    late Catalog catalog;
+    late String albumGroupKey;
+    late String artistGroupKey;
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      albumWav1 = await writeMonoWavFixture(
+        duration: const Duration(seconds: 2),
+        basename: 'album_track_1',
+      );
+      albumWav2 = await writeMonoWavFixture(
+        duration: const Duration(seconds: 2),
+        basename: 'album_track_2',
+      );
+      albumWav3 = await writeMonoWavFixture(
+        duration: const Duration(seconds: 2),
+        basename: 'album_track_3',
+      );
+      artistWav1 = await writeMonoWavFixture(
+        duration: const Duration(seconds: 2),
+        basename: 'artist_b_track_1',
+      );
+      artistWav2 = await writeMonoWavFixture(
+        duration: const Duration(seconds: 2),
+        basename: 'artist_b_track_2',
+      );
+
+      catalog = Catalog.fromJson({
+        'generated_at': '2026-07-20T12:00:00+00:00',
+        'total_items': 5,
+        'catalogue': {'id': 'PHASE53-SEED', 'catalogue_version': 3},
+        'folders': [
+          {
+            'id': 'music',
+            'name': 'Music',
+            'path': r'C:\Runtime\Music',
+            'item_count': 5,
+            'items': [],
+            'subfolders': [
+              {
+                'id': 'artist',
+                'name': 'Runtime Artist',
+                'path': r'C:\Runtime\Music\Runtime Artist',
+                'item_count': 5,
+                'items': [],
+                'subfolders': [
+                  {
+                    'id': 'album-a',
+                    'name': 'Runtime Album',
+                    'path': r'C:\Runtime\Music\Runtime Artist\Runtime Album',
+                    'item_count': 3,
+                    'items': [
+                      {
+                        'id': 'album-t1',
+                        'title': 'Album Track One',
+                        'file_path': albumWav1.path,
+                        'status': 'available',
+                        'media_kind': 'audio',
+                        'artist': 'Runtime Artist',
+                        'album': 'Runtime Album',
+                        'album_artist': 'Runtime Artist',
+                        'track_number': 1,
+                        'disc_number': 1,
+                        'year': 2020,
+                        'artist_group_key': artistGroupKey,
+                        'album_group_key': albumGroupKey,
+                      },
+                      {
+                        'id': 'album-t2',
+                        'title': 'Album Track Two',
+                        'file_path': albumWav2.path,
+                        'status': 'available',
+                        'media_kind': 'audio',
+                        'artist': 'Runtime Artist',
+                        'album': 'Runtime Album',
+                        'album_artist': 'Runtime Artist',
+                        'track_number': 2,
+                        'disc_number': 1,
+                        'year': 2020,
+                        'artist_group_key': artistGroupKey,
+                        'album_group_key': albumGroupKey,
+                      },
+                      {
+                        'id': 'album-t3',
+                        'title': 'Album Track Three',
+                        'file_path': albumWav3.path,
+                        'status': 'available',
+                        'media_kind': 'audio',
+                        'artist': 'Runtime Artist',
+                        'album': 'Runtime Album',
+                        'album_artist': 'Runtime Artist',
+                        'track_number': 3,
+                        'disc_number': 1,
+                        'year': 2020,
+                        'artist_group_key': artistGroupKey,
+                        'album_group_key': albumGroupKey,
+                      },
+                    ],
+                    'subfolders': [],
+                  },
+                  {
+                    'id': 'album-b',
+                    'name': 'Runtime Album B',
+                    'path': r'C:\Runtime\Music\Runtime Artist\Runtime Album B',
+                    'item_count': 2,
+                    'items': [
+                      {
+                        'id': 'artist-b1',
+                        'title': 'Artist B Track One',
+                        'file_path': artistWav1.path,
+                        'status': 'available',
+                        'media_kind': 'audio',
+                        'artist': 'Runtime Artist',
+                        'album': 'Runtime Album B',
+                        'album_artist': 'Runtime Artist',
+                        'track_number': 1,
+                        'year': 2021,
+                        'artist_group_key': artistGroupKey,
+                        'album_group_key':
+                            r'runtime artist|runtime album b|runtime\album b',
+                      },
+                      {
+                        'id': 'artist-b2',
+                        'title': 'Artist B Track Two',
+                        'file_path': artistWav2.path,
+                        'status': 'available',
+                        'media_kind': 'audio',
+                        'artist': 'Runtime Artist',
+                        'album': 'Runtime Album B',
+                        'album_artist': 'Runtime Artist',
+                        'track_number': 2,
+                        'year': 2021,
+                        'artist_group_key': artistGroupKey,
+                        'album_group_key':
+                            r'runtime artist|runtime album b|runtime\album b',
+                      },
+                    ],
+                    'subfolders': [],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      });
+
+      final projection = MusicLibraryService().projectionFor(catalog);
+      albumGroupKey = projection.albums
+          .firstWhere((a) => a.displayTitle == 'Runtime Album')
+          .groupKey;
+      artistGroupKey = projection.artists.first.groupKey;
+
+      service = PlaybackService(
+        mediaLocationResolver: MediaLocationResolver(
+          config: MediaAccessConfig.development(),
+          isWindowsDesktop: true,
+        ),
+      );
+      queue = MusicPlaybackQueueController(playbackService: service);
+    });
+
+    tearDown(() async {
+      await service.stop();
+    });
+
+    Widget _seedHarness(Widget home) {
+      return MultiProvider(
+        providers: [
+          ...musicPlayerTestProviders(service, queueController: queue),
+          Provider<MusicLibraryService>.value(value: MusicLibraryService()),
+          ChangeNotifierProvider<CatalogService>.value(
+            value: _InlineCatalogService(catalog),
+          ),
+        ],
+        child: MaterialApp(home: home),
+      );
+    }
+
+    testWidgets('album and artist UI seeding with transport', (tester) async {
+      await tester.pumpWidget(
+        _seedHarness(MusicAlbumDetailScreen(albumGroupKey: albumGroupKey)),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('music_album_play')));
+      await tester.pump();
+      await _waitFor(() => service.isReady);
+
+      expect(queue.queue.length, 3);
+      expect(queue.currentTrack?.id, 'album-t1');
+      expect(find.text('1 of 3'), findsOneWidget);
+
+      final next = find.byKey(const Key('music_player_next'));
+      await tester.scrollUntilVisible(next, 100);
+      await tester.tap(next);
+      await _waitFor(() => service.currentItem?.id == 'album-t2');
+      await tester.pumpAndSettle();
+      expect(find.text('2 of 3'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      expect(queue.isEmpty, isTrue);
+
+      await tester.pumpWidget(
+        _seedHarness(MusicAlbumDetailScreen(albumGroupKey: albumGroupKey)),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('music_track_play_album-t2')));
+      await tester.pump();
+      await _waitFor(() => service.currentItem?.id == 'album-t2');
+      expect(queue.queue.length, 3);
+      expect(queue.queue.currentIndex, 1);
+
+      final previous = find.byKey(const Key('music_player_previous'));
+      await tester.scrollUntilVisible(previous, 100);
+      expect(tester.widget<IconButton>(previous).onPressed, isNotNull);
+      expect(tester.widget<IconButton>(next).onPressed, isNotNull);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+
+      await tester.pumpWidget(
+        _seedHarness(MusicArtistDetailScreen(artistGroupKey: artistGroupKey)),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('music_artist_play')));
+      await tester.pump();
+      await _waitFor(() => service.isReady);
+
+      expect(queue.queue.length, 5);
+      expect(queue.queue.items.map((t) => t.id), [
+        'album-t1',
+        'album-t2',
+        'album-t3',
+        'artist-b1',
+        'artist-b2',
+      ]);
+
+      await queue.next();
+      await queue.next();
+      await queue.next();
+      await queue.next();
+      await _waitFor(() => service.currentItem?.id == 'artist-b2');
+      await _waitFor(() => service.isCompleted, timeout: const Duration(seconds: 30));
+      expect(queue.currentTrack?.id, 'artist-b2');
+      expect(queue.hasNext, isFalse);
+
+      await tester.pumpWidget(
+        _seedHarness(MusicAlbumDetailScreen(albumGroupKey: albumGroupKey)),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('music_album_play')));
+      await tester.pump();
+      await _waitFor(() => service.currentItem?.id == 'album-t1');
+      expect(queue.queue.length, 3);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      expect(service.currentItem, isNull);
+      expect(queue.isEmpty, isTrue);
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getInt('position_album-t1'), isNull);
+
+      final video = MediaItem(
+        id: 'runtime-video-seed',
+        title: 'Runtime Video',
+        filePath: albumWav1.path,
+        mediaKindRaw: 'video',
+      );
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: musicPlayerTestProviders(service, queueController: queue),
+          child: MaterialApp(home: PlayerScreen(item: video, autoPlay: false)),
+        ),
+      );
+      await tester.pump();
+      expect(queue.isEmpty, isTrue);
+    }, timeout: const Timeout(Duration(minutes: 8)));
+  });
+}
+
+class _InlineCatalogService extends CatalogService {
+  _InlineCatalogService(this._catalog);
+
+  final Catalog _catalog;
+
+  @override
+  Catalog? get catalog => _catalog;
+
+  @override
+  bool get isLoading => false;
 }
 
 String _resolveLibMpvPath() {
