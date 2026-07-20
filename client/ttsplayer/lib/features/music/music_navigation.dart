@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../models/media_item.dart';
+import 'presentation/music_player_screen.dart';
 import 'screens/music_album_detail_screen.dart';
 import 'screens/music_albums_screen.dart';
 import 'screens/music_artist_detail_screen.dart';
@@ -83,6 +85,21 @@ void openMusicTrackDetailScreen(
     MaterialPageRoute<void>(
       settings: RouteSettings(name: 'music:track:$trackId'),
       builder: (_) => MusicTrackDetailScreen(trackId: trackId),
+    ),
+  );
+}
+
+void openMusicPlayerScreen(
+  BuildContext context, {
+  required MediaItem track,
+}) {
+  if (!track.isAudio || !track.status.isPlayable) return;
+
+  Navigator.push<void>(
+    context,
+    MaterialPageRoute<void>(
+      settings: RouteSettings(name: 'music:player:${track.id}'),
+      builder: (_) => MusicPlayerScreen(item: track),
     ),
   );
 }
