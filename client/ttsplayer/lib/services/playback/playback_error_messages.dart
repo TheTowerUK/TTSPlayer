@@ -15,19 +15,19 @@ class PlaybackErrorMessages {
       PlaybackErrorKind.resolverFailed =>
         'This item could not be prepared for playback. Check your media access settings.',
       PlaybackErrorKind.network =>
-        'A network error occurred while opening this video. Check your connection to the NAS.',
+        'A network error occurred while opening this media. Check your connection to the NAS.',
       PlaybackErrorKind.tls =>
         'A secure connection to the media server could not be established.',
       PlaybackErrorKind.httpNotFound =>
-        'This video could not be found on the media server.',
+        'This media could not be found on the media server.',
       PlaybackErrorKind.timeout =>
-        'This video took too long to open. Try again or check the file on your NAS.',
+        'This media took too long to open. Try again or check the file on your NAS.',
       PlaybackErrorKind.permission =>
         'Access was denied. Check that the NAS share is mounted and accessible.',
       PlaybackErrorKind.unsupportedFormat =>
-        'This video could not be played. The format may not be supported.',
+        'This media could not be played. The format may not be supported.',
       PlaybackErrorKind.unknown =>
-        'This video could not be played.',
+        'Playback failed.',
     };
   }
 }

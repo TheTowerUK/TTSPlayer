@@ -238,7 +238,7 @@ class PlaybackService extends ChangeNotifier {
 
   /// Primary message when open/initialise fails or times out.
   static const playbackFailedMessage =
-      'This video could not be opened. It may be unsupported or unavailable.';
+      'This media could not be opened. It may be unsupported or unavailable.';
 
   /// Shown beneath playback errors in the player UI.
   static const playbackFailedNote = PlaybackErrorMessages.playbackFailedNote;
@@ -488,7 +488,9 @@ class PlaybackService extends ChangeNotifier {
       }
 
       final mediaDuration = duration;
-      await _saveDuration(item.id, mediaDuration);
+      if (item.isContinueWatchingEligible) {
+        await _saveDuration(item.id, mediaDuration);
+      }
 
       if (generation != _playGeneration) {
         await _disposeController();
@@ -498,6 +500,8 @@ class PlaybackService extends ChangeNotifier {
       final Duration seekTo;
       if (startPosition != null) {
         seekTo = startPosition;
+      } else if (!item.isContinueWatchingEligible) {
+        seekTo = Duration.zero;
       } else {
         final saved = await _savedPosition(item.id);
         final remaining = mediaDuration - saved;
@@ -728,7 +732,10 @@ class PlaybackService extends ChangeNotifier {
     String itemId,
     Duration position, {
     Duration? duration,
+    MediaItem? item,
   }) async {
+    final eligible = item?.isContinueWatchingEligible ?? true;
+    if (!eligible) return;
     await _savePosition(itemId, position);
     if (duration != null) {
       await _saveDuration(itemId, duration);
@@ -815,6 +822,10 @@ class PlaybackService extends ChangeNotifier {
   Future<void> seekToPosition(Duration position) async {
     if (_forceReadyForTest) {
       _forcedPositionForTest = position;
+      if (position == Duration.zero) {
+        _forcedCompletedForTest = false;
+      }
+      notifyListeners();
       return;
     }
     if (usesMediaKit) {
@@ -869,6 +880,9 @@ class PlaybackService extends ChangeNotifier {
   // ---------------------------------------------------------------------------
 
   Future<void> _savePosition(String itemId, Duration position) async {
+    if (_currentItem != null && !_currentItem!.isContinueWatchingEligible) {
+      return;
+    }
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('$_posKeyPrefix$itemId', position.inSeconds);
     _markResumeDataChanged();
@@ -877,6 +891,10 @@ class PlaybackService extends ChangeNotifier {
 
   Future<void> _saveDuration(String itemId, Duration duration) async {
     if (duration == Duration.zero) return;
+    final item = _currentItem;
+    if (item != null && item.id == itemId && !item.isContinueWatchingEligible) {
+      return;
+    }
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('$_durKeyPrefix$itemId', duration.inSeconds);
   }
@@ -888,6 +906,10 @@ class PlaybackService extends ChangeNotifier {
   }
 
   Future<void> _clearPosition(String itemId) async {
+    final item = _currentItem;
+    if (item != null && item.id == itemId && !item.isContinueWatchingEligible) {
+      return;
+    }
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('$_posKeyPrefix$itemId');
     _markResumeDataChanged();
