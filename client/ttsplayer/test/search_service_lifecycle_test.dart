@@ -7,6 +7,8 @@ import 'package:ttsplayer/services/artwork/artwork_service.dart';
 import 'package:ttsplayer/services/catalog_cache_coordinator.dart';
 import 'package:ttsplayer/services/library/library_metadata_repository.dart';
 
+import 'support/catalog_cache_test_support.dart';
+
 Catalog _catalogWithItems({
   required String identity,
   required List<String> itemIds,
@@ -256,7 +258,7 @@ void main() {
       final search = SearchService();
       final metadata = LibraryMetadataRepository();
 
-      final coordinator = CatalogCacheCoordinator(
+      final coordinator = createTestCatalogCacheCoordinator(
         artworkService: artwork,
         searchService: search,
         libraryMetadataRepository: metadata,

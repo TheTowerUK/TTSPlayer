@@ -37,6 +37,7 @@ import 'package:ttsplayer/widgets/tts_folder_card.dart';
 import 'package:ttsplayer/widgets/tts_media_card.dart';
 
 import 'support/large_catalog_factory.dart';
+import 'support/catalog_cache_test_support.dart';
 import 'support/phase_45_runtime_baseline.dart';
 
 class _CountingArtworkService extends ArtworkService {
@@ -179,7 +180,7 @@ void main() {
       search = SearchService();
       metadata = LibraryMetadataRepository();
       await metadata.initialize();
-      coordinator = CatalogCacheCoordinator(
+      coordinator = createTestCatalogCacheCoordinator(
         artworkService: artwork,
         searchService: search,
         libraryMetadataRepository: metadata,
@@ -789,7 +790,7 @@ void main() {
         await failingMetadata.initialize();
         final localArtwork = _CountingArtworkService(fileExists: (_) => false);
         final localSearch = SearchService();
-        final localCoordinator = CatalogCacheCoordinator(
+        final localCoordinator = createTestCatalogCacheCoordinator(
           artworkService: localArtwork,
           searchService: localSearch,
           libraryMetadataRepository: failingMetadata,

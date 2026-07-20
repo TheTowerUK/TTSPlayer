@@ -17,6 +17,8 @@ import 'package:ttsplayer/services/media_access/media_access_config.dart';
 import 'package:ttsplayer/services/media_access/media_catalogue_provider.dart';
 import 'package:ttsplayer/services/media_access/media_provider_config.dart';
 
+import 'support/catalog_cache_test_support.dart';
+
 class _CountingArtworkService extends ArtworkService {
   _CountingArtworkService({super.fileExists});
 
@@ -114,7 +116,7 @@ void main() {
       final search = SearchService();
       final metadata = LibraryMetadataRepository();
 
-      final coordinator = CatalogCacheCoordinator(
+      final coordinator = createTestCatalogCacheCoordinator(
         artworkService: artwork,
         searchService: search,
         libraryMetadataRepository: metadata,
@@ -194,7 +196,7 @@ void main() {
       final metadata = LibraryMetadataRepository();
       await metadata.initialize();
 
-      final coordinator = CatalogCacheCoordinator(
+      final coordinator = createTestCatalogCacheCoordinator(
         artworkService: artwork,
         searchService: search,
         libraryMetadataRepository: metadata,

@@ -32,6 +32,7 @@ import 'package:ttsplayer/services/settings/settings_repository.dart';
 import 'package:ttsplayer/theme/app_theme.dart';
 
 import 'support/large_music_catalog_factory.dart';
+import 'support/catalog_cache_test_support.dart';
 import 'support/music_catalog_fixtures.dart';
 
 /// Windows runtime validation harness for M5 Phase 5.2 music library browsing.
@@ -220,7 +221,7 @@ void main() {
       final search = SearchService();
       final metadata = LibraryMetadataRepository();
       await metadata.initialize();
-      final coordinator = CatalogCacheCoordinator(
+      final coordinator = createTestCatalogCacheCoordinator(
         artworkService: artwork,
         searchService: search,
         libraryMetadataRepository: metadata,

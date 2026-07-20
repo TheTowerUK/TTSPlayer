@@ -26,6 +26,7 @@ import 'package:ttsplayer/widgets/tts_folder_card.dart';
 import 'package:ttsplayer/widgets/tts_media_card.dart';
 
 import 'support/large_catalog_factory.dart';
+import 'support/catalog_cache_test_support.dart';
 
 class _FakeCatalogService extends CatalogService {
   _FakeCatalogService(this._catalog);
@@ -402,7 +403,7 @@ void main() {
       final artwork = ArtworkService(fileExists: (_) => false);
       final search = SearchService();
       final metadata = LibraryMetadataRepository();
-      final coordinator = CatalogCacheCoordinator(
+      final coordinator = createTestCatalogCacheCoordinator(
         artworkService: artwork,
         searchService: search,
         libraryMetadataRepository: metadata,

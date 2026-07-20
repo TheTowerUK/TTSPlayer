@@ -30,6 +30,7 @@ import 'package:ttsplayer/services/settings/settings_repository.dart';
 import 'package:ttsplayer/theme/app_theme.dart';
 
 import 'support/large_catalog_factory.dart';
+import 'support/catalog_cache_test_support.dart';
 
 class _CountingArtworkService extends ArtworkService {
   _CountingArtworkService({super.fileExists});
@@ -93,7 +94,7 @@ void main() {
       final repo = metadata ?? LibraryMetadataRepository();
       await repo.initialize();
 
-      final coordinator = CatalogCacheCoordinator(
+      final coordinator = createTestCatalogCacheCoordinator(
         artworkService: artwork,
         searchService: search,
         libraryMetadataRepository: repo,

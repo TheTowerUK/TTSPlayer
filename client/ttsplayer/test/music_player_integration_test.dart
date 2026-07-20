@@ -25,6 +25,9 @@ import 'package:ttsplayer/services/scanner_service.dart';
 import 'package:ttsplayer/services/settings/settings_repository.dart';
 import 'package:ttsplayer/features/music/music_library_service.dart';
 
+import 'package:ttsplayer/features/music/services/music_playback_queue_controller.dart';
+import 'package:ttsplayer/services/playback_service.dart';
+
 import 'playback_service_extensions_test.dart';
 import 'support/music_catalog_fixtures.dart';
 
@@ -76,9 +79,12 @@ Widget _appHarness({
   required Catalog catalog,
   required PlaybackService playbackService,
   required Widget home,
+  MusicPlaybackQueueController? queueController,
 }) {
   SharedPreferences.setMockInitialValues({});
   final catalogService = _FakeCatalogService(catalog);
+  final queue = queueController ??
+      MusicPlaybackQueueController(playbackService: playbackService);
   return MultiProvider(
     providers: [
       ChangeNotifierProvider<SettingsRepository>(
@@ -100,6 +106,7 @@ Widget _appHarness({
       Provider<MusicLibraryService>.value(value: MusicLibraryService()),
       ChangeNotifierProvider<CatalogService>.value(value: catalogService),
       ChangeNotifierProvider<PlaybackService>.value(value: playbackService),
+      ChangeNotifierProvider<MusicPlaybackQueueController>.value(value: queue),
       ChangeNotifierProvider<ScannerService>.value(value: ScannerService()),
       ChangeNotifierProvider<ScanHistoryService>.value(
         value: ScanHistoryService(),
@@ -216,13 +223,17 @@ void main() {
       expect(service.requiresVideoSurface, isFalse);
     });
 
-    test('video replaces active music session', () async {
+    test('video replaces active music session and clears queue', () async {
       final service = _serviceWithStubInit();
+      final queue = MusicPlaybackQueueController(playbackService: service);
+      queue.replaceQueue([musicTrackComplete()]);
       await service.play(musicTrackComplete());
       expect(service.isAudioSession, isTrue);
+      expect(queue.isEmpty, isFalse);
 
       await service.play(_videoItem());
       expect(service.requiresVideoSurface, isTrue);
+      expect(queue.isEmpty, isTrue);
     });
   });
 
