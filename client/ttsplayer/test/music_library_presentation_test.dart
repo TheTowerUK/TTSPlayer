@@ -11,6 +11,7 @@ import 'package:ttsplayer/features/music/screens/music_albums_screen.dart';
 import 'package:ttsplayer/features/music/screens/music_artist_detail_screen.dart';
 import 'package:ttsplayer/features/music/screens/music_artists_screen.dart';
 import 'package:ttsplayer/features/music/screens/music_screen.dart';
+import 'package:ttsplayer/features/music/presentation/music_player_screen.dart';
 import 'package:ttsplayer/features/music/screens/music_track_detail_screen.dart';
 import 'package:ttsplayer/features/music/screens/music_tracks_screen.dart';
 import 'package:ttsplayer/features/search/search_service.dart';
@@ -154,7 +155,7 @@ void main() {
       expect(find.text('Abbey Road'), findsWidgets);
     });
 
-    testWidgets('albums list opens album detail without play controls', (tester) async {
+    testWidgets('album detail shows per-track play actions', (tester) async {
       await tester.pumpWidget(
         _musicHarness(catalog: _mixedCatalog(), child: const MusicAlbumsScreen()),
       );
@@ -166,10 +167,10 @@ void main() {
 
       expect(find.byType(MusicAlbumDetailScreen), findsOneWidget);
       expect(find.text('Come Together'), findsOneWidget);
-      expect(find.byIcon(Icons.play_arrow), findsNothing);
+      expect(find.byKey(const Key('music_track_play_track-complete')), findsOneWidget);
     });
 
-    testWidgets('tracks open read-only detail', (tester) async {
+    testWidgets('track row opens detail without starting playback', (tester) async {
       await tester.pumpWidget(
         _musicHarness(catalog: _mixedCatalog(), child: const MusicTracksScreen()),
       );
@@ -179,7 +180,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(MusicTrackDetailScreen), findsOneWidget);
-      expect(find.byIcon(Icons.play_arrow), findsNothing);
+      expect(find.byType(MusicPlayerScreen), findsNothing);
+      expect(find.byKey(const Key('music_track_play_track-complete')), findsOneWidget);
     });
 
     testWidgets('catalogue replacement rebuilds landing counts', (tester) async {

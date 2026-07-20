@@ -362,7 +362,7 @@ void main() {
       expect(find.text('Test Artist · Test Album'), findsOneWidget);
     });
 
-    testWidgets('5c audio search opens read-only track detail not video detail',
+    testWidgets('5c audio search opens track detail; play is separate action',
         (tester) async {
       final catalog = Catalog.fromJson({
         'generated_at': '2026-07-19T12:00:00+00:00',
@@ -403,12 +403,14 @@ void main() {
       );
       await tester.pumpAndSettle(const Duration(milliseconds: 200));
 
+      expect(find.byKey(const Key('search_play_audio-nav')), findsOneWidget);
+
       await tester.tap(find.byKey(const Key('search_open_audio-nav')));
       await tester.pumpAndSettle();
 
       expect(find.byType(MusicTrackDetailScreen), findsOneWidget);
       expect(find.byType(ItemDetailScreen), findsNothing);
-      expect(find.byIcon(Icons.play_arrow), findsNothing);
+      expect(find.byKey(const Key('music_track_play_audio-nav')), findsOneWidget);
     });
 
     testWidgets('7 result shows library or containing-folder context',

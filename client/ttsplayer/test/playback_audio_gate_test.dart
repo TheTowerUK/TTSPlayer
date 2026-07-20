@@ -297,6 +297,23 @@ void main() {
       expect(service.isReady, isFalse);
       expect(service.availableSubtitleTracks, isEmpty);
     });
+
+    test('audio playback does not write Continue Watching keys', () async {
+      final resolver = _StubResolver(uriForPath: (_) => wav.fileUri.toString());
+      final service = _serviceWithStubInit(resolver: resolver);
+      final item = _audioItem(id: 'a-no-cw', path: wav.path);
+
+      await service.play(item);
+      service.simulatePlaybackMetricsForTest(
+        duration: const Duration(seconds: 120),
+        position: const Duration(seconds: 30),
+      );
+      service.runPlaybackTickForTest();
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getInt('position_a-no-cw'), isNull);
+      expect(prefs.getInt('duration_a-no-cw'), isNull);
+    });
   });
 
   group('MediaLocationResolver audio paths', () {
