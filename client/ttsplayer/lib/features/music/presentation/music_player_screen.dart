@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -7,27 +9,24 @@ import '../../../services/playback/playback_error_messages.dart';
 import '../../../services/playback_service.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/tts_app_bar.dart';
+import '../services/music_playback_queue_controller.dart';
 import '../widgets/music_artwork_thumbnail.dart';
 
-/// Dedicated single-track music player (M5.3 Step 1).
-///
-/// Uses the shared [PlaybackService] — no separate media engine.
+/// Dedicated music player (M5.3) — shared [PlaybackService] + queue coordinator.
 class MusicPlayerScreen extends StatefulWidget {
-  final MediaItem item;
-
   /// Where playback begins:
-  /// - null           → start from the beginning (audio does not resume yet)
+  /// - null           → start from the beginning
   /// - Duration.zero  → start from the beginning
   /// - any other      → seek to that exact position
   final Duration? startPosition;
 
-  /// When false, [PlaybackService.play] is not invoked automatically (tests).
+  /// When false, [MusicPlaybackQueueController.playCurrent] is not invoked
+  /// automatically (tests).
   @visibleForTesting
   final bool autoPlay;
 
   const MusicPlayerScreen({
     super.key,
-    required this.item,
     this.startPosition,
     this.autoPlay = true,
   });
@@ -37,64 +36,84 @@ class MusicPlayerScreen extends StatefulWidget {
 }
 
 class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
-  late final PlaybackService _service;
+  late final PlaybackService _playback;
+  late final MusicPlaybackQueueController _queueController;
 
   @override
   void initState() {
     super.initState();
-    _service = context.read<PlaybackService>();
+    _playback = context.read<PlaybackService>();
+    _queueController = context.read<MusicPlaybackQueueController>();
+    _queueController.onPlayerRouteOpened();
     if (widget.autoPlay) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        _service.play(widget.item, startPosition: widget.startPosition);
+        _queueController.playCurrent(startPosition: widget.startPosition);
       });
     }
   }
 
   @override
   void dispose() {
-    _service.stop();
+    final controller = _queueController;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(controller.onPlayerRouteClosed());
+    });
     super.dispose();
   }
 
-  void _goBack() {
-    _service.stop();
+  Future<void> _goBack() async {
     Navigator.of(context).pop();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      key: const Key('music_player_screen'),
-      appBar: TtsAppBar(title: widget.item.title, showHome: false),
-      body: Consumer<PlaybackService>(
-        builder: (context, service, _) {
-          if (service.errorMessage != null) {
-            return _MusicPlayerErrorView(
-              kind: service.playbackErrorKind,
-              onRetry: () => service.retry(startPosition: widget.startPosition),
-              onBack: _goBack,
-            );
-          }
-
-          if (service.isInitializing || !service.isReady) {
-            return _MusicPlayerLoadingView(onGoBack: _goBack);
-          }
-
-          if (service.isCompleted) {
-            return _MusicPlayerCompletedView(
-              item: widget.item,
-              service: service,
-              onBack: _goBack,
-            );
-          }
-
-          return _MusicPlayerReadyView(
-            item: widget.item,
-            service: service,
+    return Consumer<MusicPlaybackQueueController>(
+      builder: (context, queueController, _) {
+        final track = queueController.currentTrack;
+        if (track == null) {
+          return Scaffold(
+            appBar: TtsAppBar(title: 'Music', showHome: false),
+            body: const Center(child: Text('No track in queue.')),
           );
-        },
-      ),
+        }
+
+        return Scaffold(
+          key: const Key('music_player_screen'),
+          appBar: TtsAppBar(title: track.title, showHome: false),
+          body: Consumer<PlaybackService>(
+            builder: (context, service, _) {
+              if (service.errorMessage != null) {
+                return _MusicPlayerErrorView(
+                  kind: service.playbackErrorKind,
+                  onRetry: () => queueController.retryCurrent(
+                    startPosition: widget.startPosition,
+                  ),
+                  onBack: _goBack,
+                );
+              }
+
+              if (service.isInitializing || !service.isReady) {
+                return _MusicPlayerLoadingView(onGoBack: _goBack);
+              }
+
+              if (service.isCompleted) {
+                return _MusicPlayerCompletedView(
+                  item: track,
+                  onReplay: () => queueController.replayCurrent(),
+                  onBack: _goBack,
+                );
+              }
+
+              return _MusicPlayerReadyView(
+                item: track,
+                service: service,
+                queueController: queueController,
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }
@@ -102,10 +121,12 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
 class _MusicPlayerReadyView extends StatelessWidget {
   final MediaItem item;
   final PlaybackService service;
+  final MusicPlaybackQueueController queueController;
 
   const _MusicPlayerReadyView({
     required this.item,
     required this.service,
+    required this.queueController,
   });
 
   @override
@@ -114,6 +135,7 @@ class _MusicPlayerReadyView extends StatelessWidget {
     final duration = service.duration;
     final remaining = duration - position;
     final seekEnabled = duration > Duration.zero;
+    final queue = queueController.queue;
 
     final artist = _label(item.artist ?? item.albumArtist, 'Unknown Artist');
     final album = _label(item.album, 'Unknown Album');
@@ -126,6 +148,16 @@ class _MusicPlayerReadyView extends StatelessWidget {
           key: Key('music_player_ready_${item.id}'),
           padding: const EdgeInsets.all(AppSpacing.lg),
           children: [
+            if (queue.length > 1)
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                child: Text(
+                  '${queue.currentIndex + 1} of ${queue.length}',
+                  key: const Key('music_player_queue_position'),
+                  textAlign: TextAlign.center,
+                  style: AppTypography.caption,
+                ),
+              ),
             Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 320),
@@ -205,20 +237,52 @@ class _MusicPlayerReadyView extends StatelessWidget {
               ],
             ),
             const SizedBox(height: AppSpacing.lg),
-            Center(
-              child: Semantics(
-                button: true,
-                label: service.isPlaying ? 'Pause' : 'Play',
-                child: IconButton(
-                  key: const Key('music_player_play_pause'),
-                  iconSize: AppIcons.hero,
-                  onPressed: service.togglePlayPause,
-                  icon: Icon(
-                    service.isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
-                    color: AppColors.primary,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Semantics(
+                  button: true,
+                  enabled: queueController.canGoPrevious,
+                  label: 'Previous track',
+                  child: IconButton(
+                    key: const Key('music_player_previous'),
+                    icon: const Icon(Icons.skip_previous),
+                    color: queueController.canGoPrevious
+                        ? AppColors.textPrimary
+                        : AppColors.textDisabled,
+                    onPressed:
+                        queueController.canGoPrevious ? queueController.previous : null,
                   ),
                 ),
-              ),
+                Semantics(
+                  button: true,
+                  label: service.isPlaying ? 'Pause' : 'Play',
+                  child: IconButton(
+                    key: const Key('music_player_play_pause'),
+                    iconSize: AppIcons.hero,
+                    onPressed: service.togglePlayPause,
+                    icon: Icon(
+                      service.isPlaying
+                          ? Icons.pause_circle_filled
+                          : Icons.play_circle_filled,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ),
+                Semantics(
+                  button: true,
+                  enabled: queueController.hasNext,
+                  label: 'Next track',
+                  child: IconButton(
+                    key: const Key('music_player_next'),
+                    icon: const Icon(Icons.skip_next),
+                    color: queueController.hasNext
+                        ? AppColors.textPrimary
+                        : AppColors.textDisabled,
+                    onPressed: queueController.hasNext ? queueController.next : null,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -400,12 +464,12 @@ class _MusicPlayerErrorView extends StatelessWidget {
 
 class _MusicPlayerCompletedView extends StatelessWidget {
   final MediaItem item;
-  final PlaybackService service;
+  final VoidCallback onReplay;
   final VoidCallback onBack;
 
   const _MusicPlayerCompletedView({
     required this.item,
-    required this.service,
+    required this.onReplay,
     required this.onBack,
   });
 
@@ -446,9 +510,7 @@ class _MusicPlayerCompletedView extends StatelessWidget {
                 const SizedBox(width: AppSpacing.base),
                 FilledButton.icon(
                   key: const Key('music_player_replay'),
-                  onPressed: () => service
-                      .seekTo(Duration.zero)
-                      .then((_) => service.togglePlayPause()),
+                  onPressed: onReplay,
                   icon: const Icon(Icons.replay, size: AppIcons.md),
                   label: const Text('Play Again'),
                   style: FilledButton.styleFrom(

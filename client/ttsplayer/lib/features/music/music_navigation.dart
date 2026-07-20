@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../models/media_item.dart';
+import 'services/music_playback_queue_controller.dart';
 import 'presentation/music_player_screen.dart';
 import 'screens/music_album_detail_screen.dart';
 import 'screens/music_albums_screen.dart';
@@ -95,11 +97,13 @@ void openMusicPlayerScreen(
 }) {
   if (!track.isAudio || !track.status.isPlayable) return;
 
+  context.read<MusicPlaybackQueueController>().seedSingleTrack(track);
+
   Navigator.push<void>(
     context,
     MaterialPageRoute<void>(
       settings: RouteSettings(name: 'music:player:${track.id}'),
-      builder: (_) => MusicPlayerScreen(item: track),
+      builder: (_) => const MusicPlayerScreen(),
     ),
   );
 }
