@@ -2,7 +2,7 @@
 
 
 
-**Status:** **In progress** — Phase 5.2 complete (2026-07-19); **Phase 5.3 next**
+**Status:** **In progress** — Phase 5.3 Gate 0 complete (2026-07-20); Phase 5.2 complete
 
 **Related roadmap:** [M5 — Music](../roadmap/m5-plan.md) · [Phase 5.1 spec](../roadmap/m5-phase-5.1-music-catalogue-metadata.md)
 
@@ -650,7 +650,7 @@ No audio-specific provider type. Provider failure surfaces via existing Provider
 
 
 
-**Gate 0 (before 5.3):** Verify `media_kit` audio-only playback on Windows — same channel limitations as 4.4 video audit.
+**Gate 0 (before 5.3 queue):** ✅ **Complete** (2026-07-20) — see [M5.3 spec](../roadmap/m5-phase-5.3-music-playback-queue.md).
 
 
 

@@ -179,7 +179,21 @@ App-level validation through `PlaybackService` and player UI (`phase_44_windows_
 | Fixture not configured | P4, P5, P24 (`GATE0_HTTPS_URI`, `GATE0_MULTI_AUDIO_URI`) |
 | Invalid fixture | P7–P9 (`GATE0_SUBTITLED_URI` not MKV) |
 
-**Limitation:** `flutter test` lacks the `media_kit_video` platform channel required by `PlaybackService` (`VideoController`). Gate 0 bare `Player()` still passes. Media-backed scenarios are **release/device QA follow-up** on Windows desktop (`flutter run -d windows`) with TNAS/local fixtures — not Phase 4.4 code blockers.
+**Limitation:** `flutter test` lacks the `media_kit_video` platform channel required by `PlaybackService` when a **video** session creates `VideoController`. M5.3 Gate 0 adds **audio sessions** that open `Player` without `VideoController`, enabling real `PlaybackService` audio tests in `flutter test` on Windows.
+
+---
+
+## M5.3 Gate 0 — audio session mode (2026-07-20)
+
+| Concept | Implementation |
+|---|---|
+| Session classification | `PlaybackSessionMode` from `MediaItem.isAudio` |
+| Video surface | Required only when `requiresVideoSurface` is true |
+| Audio init | `media_kit` `Player.open()` without `VideoController` |
+| Continue Watching | Unchanged — `isContinueWatchingEligible` video-only |
+| Harness | `PHASE_53_AUDIO_GATE=1` → `phase_53_audio_gate_windows_runtime_test.dart` |
+
+→ [M5.3 phase spec](../roadmap/m5-phase-5.3-music-playback-queue.md)
 
 ---
 
