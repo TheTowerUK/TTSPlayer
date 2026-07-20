@@ -429,6 +429,7 @@ class PlaybackService extends ChangeNotifier {
 
     _currentItem = item;
     _isInitializing = true;
+    _forcedCompletedForTest = false;
     _clearPlaybackError();
     _resetCapabilityState();
     _completionCleared = false;
@@ -578,6 +579,17 @@ class PlaybackService extends ChangeNotifier {
 
   Future<void> stop() async {
     _playGeneration++;
+    if (_forceReadyForTest &&
+        _mediaKitPlayer == null &&
+        _videoController == null) {
+      _currentItem = null;
+      _clearPlaybackError();
+      _resetCapabilityState();
+      _isInitializing = false;
+      clearReadySimulationForTest();
+      notifyListeners();
+      return;
+    }
     await _flushPosition();
     await _disposeController();
     _currentItem = null;
