@@ -10,14 +10,15 @@ Milestone plans, phase specifications, and planning principles for TTSPlayer.
 
 ## Active milestone
 
-**M5 — Music** — [m5-plan.md](./m5-plan.md) · Phase **5.2** next (5.1 complete 2026-07-19)
+**M5 — Music** — [m5-plan.md](./m5-plan.md) · Phase **5.3** next (5.2 complete 2026-07-19)
 
 | Sub-phase | Document | Status |
 |---|---|---|
 | 5.0 | [M5 plan](./m5-plan.md) · [Music architecture](../architecture/music.md) | ✅ Complete |
 | 5.1 | [Phase 5.1 spec](./m5-phase-5.1-music-catalogue-metadata.md) | ✅ Complete |
-| 5.2 | [M5 plan §5.2](./m5-plan.md#phase-52--music-library-experience) | **Next** |
-| 5.3–5.6 | Defined in [M5 plan](./m5-plan.md) | Planned |
+| 5.2 | [Phase 5.2 spec](./m5-phase-5.2-music-library-experience.md) | ✅ Complete |
+| 5.3 | [M5 plan §5.3](./m5-plan.md#phase-53--music-playback-and-queue) | **Next** |
+| 5.4–5.6 | Defined in [M5 plan](./m5-plan.md) | Planned |
 
 ---
 

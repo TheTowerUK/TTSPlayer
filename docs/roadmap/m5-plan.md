@@ -1,6 +1,6 @@
 # M5 — Music
 
-**Status:** **In progress** — Phase 5.2 implementation complete pending closure (2026-07-19); Phase 5.1 complete
+**Status:** **In progress** — Phase 5.2 complete (2026-07-19); **Phase 5.3 next**
 **Branch:** `m5-development`
 **Development version:** `v0.5.0` (M4 release baseline)
 **Predecessor:** M4 — tag `v0.5.0` / `m4-complete` (2026-07-19)
@@ -62,8 +62,8 @@ Implement in order unless a documented dependency allows parallel documentation 
 |---|---|---|
 | **5.0** | Planning and Architecture | ✅ Complete (2026-07-19) |
 | **5.1** | Music Catalogue and Metadata | ✅ Complete (2026-07-19) — [spec](./m5-phase-5.1-music-catalogue-metadata.md) |
-| **5.2** | Music Library Experience | **Active** — [spec](./m5-phase-5.2-music-library-experience.md) |
-| **5.3** | Music Playback and Queue | Planned |
+| **5.2** | Music Library Experience | ✅ Complete (2026-07-19) — [spec](./m5-phase-5.2-music-library-experience.md) |
+| **5.3** | Music Playback and Queue | **Next** |
 | **5.4** | Music State and Listening History | Planned |
 | **5.5** | Performance, Diagnostics and Runtime Validation | Planned |
 | **5.6** | Release and Documentation | Planned |
@@ -231,11 +231,11 @@ M5.2 delivers **read-only music browsing** over the M5.1 catalogue foundation. V
 
 ### Phase 5.2 — Music Library Experience
 
-**Status:** **Active** — implementation complete pending closure review
+**Status:** ✅ **COMPLETE** (2026-07-19)
 
 **Objective:** Deliver dedicated music browsing surfaces that reflect how users think about music (artists, albums, tracks) without breaking filesystem-driven Libraries.
 
-**Scope (implemented):**
+**Scope (delivered):**
 
 - Dashboard `MusicSection` entry when catalogue contains audio
 - **Artists**, **Albums**, **Tracks** views derived via `MusicLibraryProjection`
@@ -246,7 +246,7 @@ M5.2 delivers **read-only music browsing** over the M5.1 catalogue foundation. V
 - Album/artist artwork via existing `ArtworkService` pipeline
 - Memoised projection + virtualised lists; large-catalogue test fixture
 
-**Out of scope:**
+**Out of scope (confirmed not delivered):**
 
 - Playback, queue, shuffle, repeat (5.3)
 - Playlists, listening history, Continue Listening (5.4)
@@ -266,19 +266,37 @@ M5.2 delivers **read-only music browsing** over the M5.1 catalogue foundation. V
 - [x] Widget and service tests for primary music screens
 - [x] Opt-in Windows runtime harness (`PHASE_52_RUNTIME=1`)
 
-**Validation:**
+#### Phase 5.2 closure — Definition-of-done reconciliation (2026-07-19)
 
-- `test/music_library_service_test.dart`, `test/music_library_presentation_test.dart`
-- `test/search_presentation_test.dart` audio cases
-- `test/phase_52_windows_runtime_test.dart` (opt-in)
+| # | Criterion | Verdict | Evidence |
+|---|---|---|---|
+| 1 | Read-only music browse from dashboard | **Satisfied** | `MusicSection`, `MusicScreen` |
+| 2 | Derived artist/album/track views | **Satisfied** | `MusicLibraryProjection` |
+| 3 | Grouping by M5.1 keys | **Satisfied** | Service tests |
+| 4 | No playback or queue introduced | **Satisfied** | Code + widget tests |
+| 5 | Search music presentation | **Satisfied** | `SearchResultRow`, search tests |
+| 6 | Catalogue replacement safe | **Satisfied** | `CatalogCacheCoordinator` |
+| 7 | Tests and runtime harness | **Satisfied** | 655 suite pass; `PHASE_52_RUNTIME` |
+| 8 | ADR-022/023 remain Proposed | **Satisfied** | ADR status |
+| 9 | Documentation reconciled | **Satisfied** | Phase spec + indexes |
+| 10 | M5.3 identified as next | **Satisfied** | Handoff below |
+
+**Phase 5.2: COMPLETE.** Next M5 phase: **5.3 Music Playback and Queue**.
+
+#### Next phase handoff — M5.3 Music Playback and Queue
+
+**Gate 0:** Verify `media_kit` audio-only playback on Windows before queue implementation (see [music.md](../architecture/music.md) §19).
+
+M5.3 adds play track, play album, queue next/previous, seek, shuffle, and repeat from music browse surfaces. ADR-022 and ADR-023 should be **Accepted** when those decisions are implemented — not before.
 
 → [Phase 5.2 specification](./m5-phase-5.2-music-library-experience.md)
-
-**Next after closure:** Phase 5.3 — Music Playback and Queue
+→ [Phase 5.3 scope](#phase-53--music-playback-and-queue)
 
 ---
 
 ### Phase 5.3 — Music Playback and Queue
+
+**Status:** **Next** — depends on Phase 5.2 complete
 
 **Objective:** Audio-focused playback using the existing `PlaybackService` foundation — play track, play album, queue, next/previous, seek, shuffle, repeat.
 

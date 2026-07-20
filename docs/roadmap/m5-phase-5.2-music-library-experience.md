@@ -1,9 +1,9 @@
 # M5 Phase 5.2 — Music Library Experience
 
-**Status:** **In progress** — implementation complete pending closure review
+**Status:** ✅ **COMPLETE** (2026-07-19)
 **Milestone:** M5 — Music
 **Branch:** `m5-development`
-**Development version:** `v0.5.0-dev`
+**Closure commit base:** `4ac55a1` — implementation commits `b092ef9`…`4ac55a1`
 **Predecessor:** Phase 5.1 complete (2026-07-19) — commit `9824f4e`
 **Next phase:** [M5.3 — Music Playback and Queue](./m5-plan.md#phase-53--music-playback-and-queue)
 
@@ -257,40 +257,62 @@ Optional: `PHASE_52_LOCAL_CATALOG` for local catalogue validation (not required)
 
 ---
 
-## Definition of Done (28 criteria)
+## Definition of Done — closure reconciliation (2026-07-19)
 
-| # | Criterion | Status |
-|---|---|---|
-| 1 | Navigation/UI patterns audited | ✅ |
-| 2 | Phase 5.2 specification exists | ✅ |
-| 3 | Projections deterministic | ✅ |
-| 4 | Artists by `artist_group_key` | ✅ |
-| 5 | Albums by `album_group_key` | ✅ |
-| 6 | Track ordering deterministic | ✅ |
-| 7 | Dedicated Music entry point | ✅ |
-| 8 | Music landing implemented | ✅ |
-| 9 | Artists browser | ✅ |
-| 10 | Artist details | ✅ |
-| 11 | Albums browser | ✅ |
-| 12 | Album details | ✅ |
-| 13 | Tracks browser | ✅ |
-| 14 | Unknown/partial metadata | ✅ |
-| 15 | Artwork via existing pipeline | ✅ |
-| 16 | Search presents music safely | ✅ |
-| 17 | No playback from browse | ✅ |
-| 18 | No queue/shuffle/repeat/playlists | ✅ |
-| 19 | Catalogue replacement safe | ✅ |
-| 20 | Large catalogues responsive | ✅ (memoisation + virtualised lists) |
-| 21 | Windows keyboard/a11y validated | ✅ (harness + Semantics on search rows) |
-| 22 | Focused tests pass | ✅ |
-| 23 | Full Flutter suite passes | ✅ |
-| 24 | Opt-in runtime validation | ✅ (harness added) |
-| 25 | Video/image compatibility | ✅ |
-| 26 | Documentation reconciled | ✅ (this doc + plan + architecture) |
-| 27 | ADR-022/023 remain Proposed | ✅ |
-| 28 | M5.3 identified as next | ✅ |
+| # | Criterion | Verdict | Evidence |
+|---|---|---|---|
+| 1 | Navigation/UI patterns audited | **Satisfied** | Step 1 audit in this spec |
+| 2 | Phase 5.2 specification exists | **Satisfied** | This document |
+| 3 | Projections deterministic | **Satisfied** | `music_library_service_test.dart` — large fixture + repeat builds |
+| 4 | Artists by `artist_group_key` | **Satisfied** | `MusicLibraryProjection.build`; service test |
+| 5 | Albums by `album_group_key` | **Satisfied** | Projection + collision test |
+| 6 | Track ordering deterministic | **Satisfied** | `MusicSorting`; disc/track tests |
+| 7 | Dedicated Music entry point | **Satisfied** | `MusicSection` on dashboard |
+| 8 | Music landing implemented | **Satisfied** | `MusicScreen`; presentation test |
+| 9 | Artists browser | **Satisfied** | `MusicArtistsScreen` |
+| 10 | Artist details | **Satisfied** | `MusicArtistDetailScreen` |
+| 11 | Albums browser | **Satisfied** | `MusicAlbumsScreen` |
+| 12 | Album details | **Satisfied** | `MusicAlbumDetailScreen` |
+| 13 | Tracks browser | **Satisfied** | `MusicTracksScreen` |
+| 14 | Unknown/partial metadata | **Satisfied** | Mixed fixture; runtime R8 |
+| 15 | Artwork via existing pipeline | **Satisfied** | `MusicArtworkThumbnail` → `ArtworkService` |
+| 16 | Search presents music safely | **Satisfied** | `search_result_row.dart`; search tests 5b/5c |
+| 17 | No playback from browse | **Satisfied** | No play controls; presentation + runtime tests |
+| 18 | No queue/shuffle/repeat/playlists | **Satisfied** | Code audit; ADR-022/023 not implemented |
+| 19 | Catalogue replacement safe | **Satisfied** | `CatalogCacheCoordinator`; invalidation tests |
+| 20 | Large catalogues responsive | **Satisfied** | Memoisation; 20k-track projection test |
+| 21 | Windows keyboard/a11y validated | **Satisfied** | Search Semantics; runtime harness |
+| 22 | Focused tests pass | **Satisfied** | `music_library_*` tests (17 cases) |
+| 23 | Full Flutter suite passes | **Satisfied** | 655 passed at implementation validation |
+| 24 | Opt-in runtime validation | **Satisfied** | `phase_52_windows_runtime_test.dart` — 8 scenarios |
+| 25 | Video/image compatibility | **Satisfied** | Regression harness updates; no video path changes |
+| 26 | Documentation reconciled | **Satisfied** | This closure pass |
+| 27 | ADR-022/023 remain Proposed | **Satisfied** | ADR headers unchanged |
+| 28 | M5.3 identified as next | **Satisfied** | M5 plan handoff below |
 
-**Phase 5.2: pending closure commit after implementation report review.**
+**Phase 5.2: COMPLETE.**
+
+---
+
+## Next phase handoff — M5.3 Music Playback and Queue
+
+M5.3 adds **audio playback and queue** from the read-only browse surfaces delivered in M5.2. Users must be able to play a track and seed a queue from album browse.
+
+**Gate 0 (required before 5.3 implementation):** Verify `media_kit` audio-only playback on Windows — same channel limitations as M4.4 video audit. Document result in Phase 5.3 spec.
+
+**Expected M5.3 scope:**
+
+- Play single track and play album from music browse surfaces
+- In-memory queue with next/previous, play/pause, seek
+- Shuffle and repeat (policy per ADR-022)
+- Player surface per ADR-023 (staged hybrid recommended)
+- Video `PlayerScreen` regression unchanged
+
+**Out of scope for M5.3:** listening history, Continue Listening, playlists (M5.4); OS media session controls.
+
+→ [Phase 5.3 scope](./m5-plan.md#phase-53--music-playback-and-queue)
+→ [ADR-022](../architecture/decisions/ADR-022-music-queue-and-listening-state.md)
+→ [ADR-023](../architecture/decisions/ADR-023-music-player-surface-architecture.md)
 
 ---
 

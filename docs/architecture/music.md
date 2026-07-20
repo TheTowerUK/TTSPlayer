@@ -2,7 +2,7 @@
 
 
 
-**Status:** **In progress** — Phase 5.2 music library browsing **implemented** (2026-07-19); Phase 5.1 complete
+**Status:** **In progress** — Phase 5.2 complete (2026-07-19); **Phase 5.3 next**
 
 **Related roadmap:** [M5 — Music](../roadmap/m5-plan.md) · [Phase 5.1 spec](../roadmap/m5-phase-5.1-music-catalogue-metadata.md)
 
