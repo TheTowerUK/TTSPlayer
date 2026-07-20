@@ -197,6 +197,22 @@ App-level validation through `PlaybackService` and player UI (`phase_44_windows_
 
 ---
 
+## M5.3 Step 1 — dedicated music player (2026-07-20)
+
+| Concept | Implementation |
+|---|---|
+| Player surface | `MusicPlayerScreen` — shared `PlaybackService`, no second engine |
+| Session rule | One active session; opening music replaces video and vice versa |
+| Auto-play | `autoPlay: true` on screen entry (matches `PlayerScreen`) |
+| Route close | `dispose()` calls `stop()` — no background playback in Step 1 |
+| Progress keys | Not written for audio (`isContinueWatchingEligible` gate) |
+| Error copy | Kind-neutral `PlaybackErrorMessages` / `playbackFailedMessage` |
+| Harness | `PHASE_53_RUNTIME=1` → `phase_53_music_player_windows_runtime_test.dart` |
+
+**Deferred:** queue, shuffle, repeat, Continue Listening, listening persistence (M5.4).
+
+---
+
 ## Related documents
 
 - [M4 Phase 4.4 implementation spec](../roadmap/m4-phase-4.4-playback-improvements.md)

@@ -100,10 +100,43 @@ ADR-022 and ADR-023 remain **Proposed**.
 
 ## Next implementation steps
 
-1. Play affordance on music detail → `MusicPlayerScreen`
-2. In-memory queue (next/previous, album seed)
-3. Kind-neutral playback errors
+1. ~~Play affordance on music detail → `MusicPlayerScreen`~~ ✅ Step 1 (2026-07-20)
+2. In-memory queue (next/previous, album seed) — **Step 2**
+3. ~~Kind-neutral playback errors~~ ✅ Step 1
 4. Accept ADR-023 when music player ships; ADR-022 when queue persists
+
+---
+
+## Step 1 — Single-track playback (2026-07-20)
+
+**Status:** ✅ Implemented (not phase closure)
+
+### Audit refinements (Gate 0 → Step 1)
+
+| Area | Decision |
+|---|---|
+| `PlaybackService.sessionMode` | Derived from `currentItem`; audio sessions skip `VideoController` |
+| `requiresVideoSurface` / `isAudioSession` | UI gate for video-only chrome |
+| Audio readiness | `isReady` when `_mediaKitPlayer` initialised (no video controller) |
+| Lifecycle ownership | Shared singleton `PlaybackService`; screen `dispose()` calls `stop()` |
+| Route ownership | Dedicated `MusicPlayerScreen` — not mode-switched `PlayerScreen` |
+| Auto-play on enter | **Yes** — matches `PlayerScreen` (`autoPlay: true` default) |
+| Route close | **Stop session** — `dispose()` + explicit back both call `stop()` (no background playback until mini-player contract) |
+| Progress persistence | **Suppressed for audio** — `_savePosition` / `_saveDuration` skip non-video items; Continue Watching remains video-only |
+| Error copy | Shared `PlaybackErrorMessages` uses kind-neutral "media" wording |
+| Artwork | Reuses `MusicArtworkThumbnail` → `ArtworkService` / `ArtworkImage` (square, not stretched) |
+
+### Production deliverables
+
+- `lib/features/music/presentation/music_player_screen.dart` — single-track player UI
+- `openMusicPlayerScreen()` in `music_navigation.dart`
+- Play affordances: track detail, album/artist/all-tracks rows, search audio play icon
+- Tests: `music_player_screen_test.dart`, `music_player_integration_test.dart`
+- Runtime: `phase_53_music_player_windows_runtime_test.dart` (`PHASE_53_RUNTIME=1`)
+
+### Explicitly deferred (Step 2+)
+
+Queue model, album play-all seeding, next/previous, shuffle, repeat, listening history, Continue Listening, playlists, background/mini-player, playback-rate on music surface, M5.4 listening persistence.
 
 ---
 
@@ -114,4 +147,7 @@ cd client\ttsplayer
 flutter build windows
 $env:PHASE_53_AUDIO_GATE='1'
 flutter test test/phase_53_audio_gate_windows_runtime_test.dart --tags phase53-audio-gate
+
+$env:PHASE_53_RUNTIME='1'
+flutter test test/phase_53_music_player_windows_runtime_test.dart --tags phase53-runtime
 ```

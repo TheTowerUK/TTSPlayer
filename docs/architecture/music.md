@@ -2,7 +2,7 @@
 
 
 
-**Status:** **In progress** — Phase 5.3 Gate 0 complete (2026-07-20); Phase 5.2 complete
+**Status:** **In progress** — Phase 5.3 Step 1 complete (2026-07-20); Gate 0 complete; Phase 5.2 complete
 
 **Related roadmap:** [M5 — Music](../roadmap/m5-plan.md) · [Phase 5.1 spec](../roadmap/m5-phase-5.1-music-catalogue-metadata.md)
 
@@ -448,7 +448,7 @@ Extend existing `SearchService` — **no second index**.
 
 **Filtering:** Phase 5.2 may add music-only filter in search UI; engine remains unified.
 
-**M5.2 implemented:** `SearchResultRow` shows `Audio` kind chip and `artist · album` subtitle; `SearchScreen` routes audio hits to read-only `MusicTrackDetailScreen` (not video `ItemDetailScreen`).
+**M5.2 implemented:** `SearchResultRow` shows `Audio` kind chip and `artist · album` subtitle; `SearchScreen` routes audio hits to `MusicTrackDetailScreen` (not video `ItemDetailScreen`). **M5.3 Step 1:** separate play action opens `MusicPlayerScreen`.
 
 
 
