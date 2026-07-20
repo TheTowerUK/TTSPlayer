@@ -9,18 +9,20 @@ import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:ttsplayer/services/artwork/artwork_service.dart';
 import 'package:ttsplayer/features/music/presentation/music_player_screen.dart';
+import 'package:ttsplayer/features/music/services/music_playback_queue_controller.dart';
 import 'package:ttsplayer/models/media_item.dart';
 import 'package:ttsplayer/screens/player_screen.dart';
+import 'package:ttsplayer/services/artwork/artwork_service.dart';
 import 'package:ttsplayer/services/media_access/media_access_config.dart';
 import 'package:ttsplayer/services/media_access/media_location_resolver.dart';
 import 'package:ttsplayer/services/playback_service.dart';
 import 'package:video_player/video_player.dart';
 
 import 'support/audio_gate_fixtures.dart';
+import 'support/music_playback_test_harness.dart';
 
-/// Windows single-track music player validation (M5.3 Step 1).
+/// Windows music queue validation (M5.3 Step 2).
 ///
 /// ```powershell
 /// cd client\ttsplayer
@@ -52,128 +54,172 @@ void main() {
   final libmpv = _resolveLibMpvPath();
   MediaKit.ensureInitialized(libmpv: libmpv);
 
-  group('Phase 5.3 Step 1 — MusicPlayerScreen runtime', () {
-    late GeneratedAudioFixture wav;
+  group('Phase 5.3 Step 2 — music queue runtime', () {
+    late GeneratedAudioFixture wav1;
+    late GeneratedAudioFixture wav2;
+    late GeneratedAudioFixture wav3;
     late PlaybackService service;
-    late MediaItem track;
+    late MusicPlaybackQueueController queue;
+    late List<MediaItem> tracks;
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
-      wav = await writeMonoWavFixture(duration: const Duration(seconds: 2));
-      track = MediaItem(
-        id: 'runtime-track',
-        title: 'Runtime Track',
-        filePath: wav.path,
-        mediaKindRaw: 'audio',
-        artist: 'Runtime Artist',
-        album: 'Runtime Album',
-        year: 2026,
-        genre: 'Test',
+      wav1 = await writeMonoWavFixture(
+        duration: const Duration(seconds: 2),
+        basename: 'queue_track_1',
       );
+      wav2 = await writeMonoWavFixture(
+        duration: const Duration(seconds: 2),
+        basename: 'queue_track_2',
+      );
+      wav3 = await writeMonoWavFixture(
+        duration: const Duration(seconds: 2),
+        basename: 'queue_track_3',
+      );
+      tracks = [
+        MediaItem(
+          id: 'runtime-track-1',
+          title: 'Runtime Track One',
+          filePath: wav1.path,
+          mediaKindRaw: 'audio',
+          artist: 'Runtime Artist',
+          album: 'Runtime Album',
+        ),
+        MediaItem(
+          id: 'runtime-track-2',
+          title: 'Runtime Track Two',
+          filePath: wav2.path,
+          mediaKindRaw: 'audio',
+          artist: 'Runtime Artist',
+          album: 'Runtime Album',
+        ),
+        MediaItem(
+          id: 'runtime-track-3',
+          title: 'Runtime Track Three',
+          filePath: wav3.path,
+          mediaKindRaw: 'audio',
+          artist: 'Runtime Artist',
+          album: 'Runtime Album',
+        ),
+      ];
       service = PlaybackService(
         mediaLocationResolver: MediaLocationResolver(
           config: MediaAccessConfig.development(),
           isWindowsDesktop: true,
         ),
       );
+      queue = MusicPlaybackQueueController(playbackService: service);
     });
 
     tearDown(() async {
       await service.stop();
     });
 
-    testWidgets('single-track UI and transport', (tester) async {
+    testWidgets('three-track queue transport and lifecycle', (tester) async {
+      queue.replaceQueue(tracks);
+
       await tester.pumpWidget(
         MultiProvider(
-          providers: [
-            Provider<MediaLocationResolver>.value(
-              value: MediaLocationResolver(
-                config: MediaAccessConfig.development(),
-                isWindowsDesktop: true,
-              ),
-            ),
-            Provider<ArtworkService>.value(
-              value: ArtworkService(fileExists: (_) => false),
-            ),
-            ChangeNotifierProvider<PlaybackService>.value(value: service),
-          ],
-          child: MaterialApp(
-            home: MusicPlayerScreen(item: track),
-          ),
+          providers: musicPlayerTestProviders(service, queueController: queue),
+          child: const MaterialApp(home: MusicPlayerScreen()),
         ),
       );
       await tester.pump();
 
-      expect(find.text('Runtime Track'), findsWidgets);
-
+      queue.onPlayerRouteOpened();
+      await queue.playCurrent();
       await _waitFor(() => service.isReady);
       await tester.pumpAndSettle();
 
-      expect(find.text('Runtime Artist'), findsOneWidget);
-      expect(find.text('Runtime Album'), findsOneWidget);
-      expect(find.byType(Video), findsNothing);
-      expect(find.byType(VideoPlayer), findsNothing);
-      expect(find.byIcon(Icons.skip_next), findsNothing);
-      expect(find.byIcon(Icons.shuffle), findsNothing);
+      expect(find.text('Runtime Track One'), findsWidgets);
+      expect(find.text('1 of 3'), findsOneWidget);
 
-      final playPause = find.byKey(const Key('music_player_play_pause'));
-      await tester.scrollUntilVisible(playPause, 100);
+      final next = find.byKey(const Key('music_player_next'));
+      await tester.scrollUntilVisible(next, 100);
+      await tester.tap(next);
+      await _waitFor(() => service.currentItem?.id == 'runtime-track-2');
+      await tester.pumpAndSettle();
 
-      if (!service.isPlaying) {
-        await tester.tap(playPause);
-        await tester.pump();
-      }
-      expect(service.isPlaying, isTrue);
+      expect(find.text('Runtime Track Two'), findsWidgets);
+      expect(find.text('2 of 3'), findsOneWidget);
 
-      await service.togglePlayPause();
-      expect(service.isPlaying, isFalse);
-
-      await service.togglePlayPause();
       await service.seekToPosition(const Duration(milliseconds: 500));
       await _waitFor(() => service.position >= const Duration(milliseconds: 400));
 
+      final previous = find.byKey(const Key('music_player_previous'));
+      await tester.scrollUntilVisible(previous, 100);
+      await tester.tap(previous);
+      await _waitFor(() => service.currentItem?.id == 'runtime-track-1');
+      await tester.pumpAndSettle();
+      expect(find.text('Runtime Track One'), findsWidgets);
+
+      await queue.next();
+      await queue.next();
+      await _waitFor(() => service.currentItem?.id == 'runtime-track-3');
+      await tester.pumpAndSettle();
+      expect(find.text('Runtime Track Three'), findsWidgets);
+
       await _waitFor(() => service.isCompleted, timeout: const Duration(seconds: 30));
       await tester.pumpAndSettle();
-
       expect(find.byKey(const Key('music_player_completed')), findsOneWidget);
-      await tester.tap(find.byKey(const Key('music_player_replay')));
-      await tester.pumpAndSettle();
-      expect(service.isCompleted, isFalse);
+      expect(queue.currentTrack?.id, 'runtime-track-3');
 
       final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getInt('position_${track.id}'), isNull);
+      for (final track in tracks) {
+        expect(prefs.getInt('position_${track.id}'), isNull);
+      }
 
-      await service.stop();
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+      await Future<void>.delayed(const Duration(milliseconds: 200));
       expect(service.currentItem, isNull);
+      expect(queue.isEmpty, isTrue);
 
       final video = MediaItem(
         id: 'runtime-video',
         title: 'Runtime Video',
-        filePath: wav.path,
+        filePath: wav1.path,
         mediaKindRaw: 'video',
       );
       await tester.pumpWidget(
         MultiProvider(
-          providers: [
-            Provider<MediaLocationResolver>.value(
-              value: MediaLocationResolver(
-                config: MediaAccessConfig.development(),
-                isWindowsDesktop: true,
-              ),
-            ),
-            Provider<ArtworkService>.value(
-              value: ArtworkService(fileExists: (_) => false),
-            ),
-            ChangeNotifierProvider<PlaybackService>.value(value: service),
-          ],
-          child: MaterialApp(
-            home: PlayerScreen(item: video, autoPlay: false),
-          ),
+          providers: musicPlayerTestProviders(service, queueController: queue),
+          child: MaterialApp(home: PlayerScreen(item: video, autoPlay: false)),
         ),
       );
       await tester.pump();
       expect(find.byType(PlayerScreen), findsOneWidget);
-    }, timeout: const Timeout(Duration(minutes: 3)));
+      expect(queue.isEmpty, isTrue);
+    }, timeout: const Timeout(Duration(minutes: 5)));
+
+    testWidgets('one-item queue disables next and previous', (tester) async {
+      queue.seedSingleTrack(tracks.first);
+      queue.onPlayerRouteOpened();
+      await queue.playCurrent();
+      await _waitFor(() => service.isReady);
+
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: musicPlayerTestProviders(service, queueController: queue),
+          child: const MaterialApp(home: MusicPlayerScreen(autoPlay: false)),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final previous = tester.widget<IconButton>(
+        find.byKey(const Key('music_player_previous')),
+      );
+      final next = tester.widget<IconButton>(
+        find.byKey(const Key('music_player_next')),
+      );
+      expect(previous.onPressed, isNull);
+      expect(next.onPressed, isNull);
+      expect(find.text('1 of 3'), findsNothing);
+
+      expect(find.byType(Video), findsNothing);
+      expect(find.byType(VideoPlayer), findsNothing);
+      expect(find.byIcon(Icons.shuffle), findsNothing);
+    }, timeout: const Timeout(Duration(minutes: 2)));
   });
 }
 
