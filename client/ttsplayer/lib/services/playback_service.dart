@@ -13,6 +13,7 @@ import '../models/playback/playback_action_result.dart';
 import '../models/playback/playback_audio_track.dart';
 import '../models/playback/playback_error_kind.dart';
 import '../models/playback/playback_rate_presets.dart';
+import '../models/playback/playback_session_mode.dart';
 import '../models/playback/playback_subtitle_track.dart';
 import 'media_access/media_location_resolver.dart';
 import 'media_access/media_provider_config.dart';
@@ -259,6 +260,18 @@ class PlaybackService extends ChangeNotifier {
   VideoController? get mediaKitVideoController => _mediaKitVideoController;
 
   MediaItem? get currentItem => _currentItem;
+
+  /// Active session presentation mode derived from [currentItem] media kind.
+  PlaybackSessionMode get sessionMode {
+    final item = _currentItem;
+    if (item == null) return PlaybackSessionMode.video;
+    return playbackSessionModeFor(item);
+  }
+
+  /// Whether the UI must attach a video surface for the current session.
+  bool get requiresVideoSurface => sessionMode == PlaybackSessionMode.video;
+
+  bool get isAudioSession => sessionMode == PlaybackSessionMode.audio;
   bool get isInitializing => _isInitializing;
   String? get errorMessage => _errorMessage;
   PlaybackErrorKind? get playbackErrorKind => _playbackErrorKind;
@@ -314,7 +327,8 @@ class PlaybackService extends ChangeNotifier {
   bool get isReady =>
       _forceReadyForTest ||
       (usesMediaKit
-          ? _mediaKitPlayer != null && _mediaKitVideoController != null
+          ? _mediaKitPlayer != null &&
+              (isAudioSession || _mediaKitVideoController != null)
           : (_videoController?.value.isInitialized ?? false));
 
   Duration get duration => _forcedDurationForTest ??
@@ -346,6 +360,7 @@ class PlaybackService extends ChangeNotifier {
           : (_videoController?.value.isCompleted ?? false));
 
   double get aspectRatio {
+    if (isAudioSession) return 1.0;
     if (usesMediaKit) {
       final w = _mediaKitPlayer!.state.width ?? 0;
       final h = _mediaKitPlayer!.state.height ?? 0;
@@ -442,6 +457,7 @@ class PlaybackService extends ChangeNotifier {
       final controllerType = _controllerTypeLabel();
       _logState('Platform: ${defaultTargetPlatform.name}');
       _logState('Controller type: $controllerType');
+      _logState('Session mode: ${sessionMode.name}');
 
       _logState('Initialising...');
       _logInitProbeAnswer(testing: true);
@@ -564,6 +580,7 @@ class PlaybackService extends ChangeNotifier {
     _clearPlaybackError();
     _resetCapabilityState();
     _isInitializing = false;
+    clearReadySimulationForTest();
     notifyListeners();
   }
 
@@ -742,7 +759,11 @@ class PlaybackService extends ChangeNotifier {
     }
 
     _mediaKitPlayer = Player();
-    _mediaKitVideoController = VideoController(_mediaKitPlayer!);
+    if (requiresVideoSurface) {
+      _mediaKitVideoController = VideoController(_mediaKitPlayer!);
+    } else {
+      _mediaKitVideoController = null;
+    }
     _bindMediaKitSessionControls();
     _attachMediaKitListeners(generation);
 
@@ -826,8 +847,10 @@ class PlaybackService extends ChangeNotifier {
       player.stream.position.listen((_) => onUpdate()),
       player.stream.duration.listen((_) => onUpdate()),
       player.stream.completed.listen((_) => onUpdate()),
-      player.stream.width.listen((_) => onUpdate()),
-      player.stream.height.listen((_) => onUpdate()),
+      if (requiresVideoSurface) ...[
+        player.stream.width.listen((_) => onUpdate()),
+        player.stream.height.listen((_) => onUpdate()),
+      ],
       player.stream.tracks.listen((_) {
         if (generation != _playGeneration) return;
         _syncCapabilityStateFromControls();
@@ -911,6 +934,8 @@ class PlaybackService extends ChangeNotifier {
       _completionCleared = true;
       unawaited(_clearPosition(_currentItem!.id));
     }
+
+    if (isCompleted) return;
 
     final pos = position;
     if (isPlaying && pos > Duration.zero && _currentItem != null) {
