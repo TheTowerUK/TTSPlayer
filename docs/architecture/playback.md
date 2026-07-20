@@ -209,7 +209,28 @@ App-level validation through `PlaybackService` and player UI (`phase_44_windows_
 | Error copy | Kind-neutral `PlaybackErrorMessages` / `playbackFailedMessage` |
 | Harness | `PHASE_53_RUNTIME=1` → `phase_53_music_player_windows_runtime_test.dart` |
 
-**Deferred:** queue, shuffle, repeat, Continue Listening, listening persistence (M5.4).
+**Deferred:** shuffle, repeat, Continue Listening, listening persistence, queue panel UI (later M5.3 steps).
+
+---
+
+## M5.3 Step 2 — in-memory queue core (2026-07-20)
+
+| Concept | Implementation |
+|---|---|
+| Queue model | `PlaybackQueue` — ordered audio items, current index, generation |
+| Coordinator | `MusicPlaybackQueueController` — app-scoped `ChangeNotifier` |
+| One-track seed | All play actions → `seedSingleTrack()` before opening player |
+| Next | Advance when available; no wrap at final item |
+| Previous | Restart current if position > 4 s; else prior item or seek to 0 on first |
+| Completion | Auto-advance; duplicate completion events guarded |
+| Route close | Stop + clear queue (post-frame dispose callback) |
+| Video | Non-audio session clears music queue |
+| Catalogue replace | Reconcile by item id via `CatalogCacheCoordinator` |
+| Persistence | **Not implemented** — ADR-022 envelope deferred |
+
+| Harness | `PHASE_53_RUNTIME=1` → three-track queue runtime in `phase_53_music_player_windows_runtime_test.dart` |
+
+→ [M5.3 phase spec](../roadmap/m5-phase-5.3-music-playback-queue.md)
 
 ---
 

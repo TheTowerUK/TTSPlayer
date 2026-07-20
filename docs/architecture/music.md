@@ -2,7 +2,7 @@
 
 
 
-**Status:** **In progress** — Phase 5.3 Step 1 complete (2026-07-20); Gate 0 complete; Phase 5.2 complete
+**Status:** **In progress** — Phase 5.3 Step 2 complete (2026-07-20); Gate 0 complete; Phase 5.2 complete
 
 **Related roadmap:** [M5 — Music](../roadmap/m5-plan.md) · [Phase 5.1 spec](../roadmap/m5-phase-5.1-music-catalogue-metadata.md)
 
@@ -27,9 +27,9 @@
 - [ADR-020: Music Catalogue Schema and Media Kind](./decisions/ADR-020-music-catalogue-schema-and-media-kind.md) — **Accepted** (M5.1)
 - [ADR-021: Music Metadata Precedence and Identity](./decisions/ADR-021-music-metadata-precedence-and-identity.md) — **Accepted** (M5.1)
 
-- [ADR-022: Music Queue and Listening State](./decisions/ADR-022-music-queue-and-listening-state.md)
+- [ADR-022: Music Queue and Listening State](./decisions/ADR-022-music-queue-and-listening-state.md) — **Proposed** (in-memory queue implemented Step 2; persistence deferred)
 
-- [ADR-023: Music Player Surface Architecture](./decisions/ADR-023-music-player-surface-architecture.md)
+- [ADR-023: Music Player Surface Architecture](./decisions/ADR-023-music-player-surface-architecture.md) — **Accepted** (M5.3 Step 1–2)
 
 
 

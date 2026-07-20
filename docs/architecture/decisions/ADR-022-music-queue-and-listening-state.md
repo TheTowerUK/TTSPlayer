@@ -10,6 +10,8 @@
 
 **Authors:** M5 planning pass
 
+**Implementation note (M5.3 Step 2, 2026-07-20):** In-memory queue ordering and coordinator transport are **implemented** (`PlaybackQueue`, `MusicPlaybackQueueController`). The persistent `MusicStateRepository` envelope (favourites, recently played, continue listening, saved queue) remains **deferred** per this ADR.
+
 
 
 ---

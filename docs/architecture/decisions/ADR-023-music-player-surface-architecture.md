@@ -2,13 +2,31 @@
 
 
 
-**Status:** Proposed
+**Status:** Accepted
 
 **Date:** 2026-07-19
+
+**Accepted:** 2026-07-20 (M5.3 Step 2 validation)
 
 **Milestone:** M5 Phase 5.0 / 5.3
 
 **Authors:** M5 planning pass
+
+---
+
+## Implementation evidence (acceptance)
+
+| Requirement | Evidence |
+|---|---|
+| Shared `PlaybackService` authority | `MusicPlayerScreen` uses `PlaybackService` only; no direct `media_kit` in UI |
+| Dedicated music surface | `MusicPlayerScreen` with artwork, transport, error/replay states |
+| Video screen unchanged | `PlayerScreen` regression tests pass; no queue UI on video |
+| Single session | Video replaces music and vice versa; queue cleared on video session |
+| Route close stops playback | `onPlayerRouteClosed()` → stop + clear; widget/integration tests |
+| Audio excluded from Continue Watching | `isContinueWatchingEligible` gate; coordinator + integration tests |
+| Windows validation | `PHASE_53_RUNTIME=1` — single-track (Step 1) and three-track queue (Step 2) |
+
+Flutter suite at acceptance: **730 passed**, 12 skipped, 0 failed.
 
 
 
