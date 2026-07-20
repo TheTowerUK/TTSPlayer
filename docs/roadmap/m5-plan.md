@@ -1,6 +1,6 @@
 # M5 — Music
 
-**Status:** **In progress** — Phase 5.2 complete (2026-07-19); **Phase 5.3 next**
+**Status:** **In progress** — Phase 5.3 Gate 0 complete (2026-07-20); Phase 5.2 complete
 **Branch:** `m5-development`
 **Development version:** `v0.5.0` (M4 release baseline)
 **Predecessor:** M4 — tag `v0.5.0` / `m4-complete` (2026-07-19)
@@ -63,7 +63,7 @@ Implement in order unless a documented dependency allows parallel documentation 
 | **5.0** | Planning and Architecture | ✅ Complete (2026-07-19) |
 | **5.1** | Music Catalogue and Metadata | ✅ Complete (2026-07-19) — [spec](./m5-phase-5.1-music-catalogue-metadata.md) |
 | **5.2** | Music Library Experience | ✅ Complete (2026-07-19) — [spec](./m5-phase-5.2-music-library-experience.md) |
-| **5.3** | Music Playback and Queue | **Next** |
+| **5.3** | Music Playback and Queue | **Active** — [spec](./m5-phase-5.3-music-playback-queue.md) · Gate 0 complete |
 | **5.4** | Music State and Listening History | Planned |
 | **5.5** | Performance, Diagnostics and Runtime Validation | Planned |
 | **5.6** | Release and Documentation | Planned |
@@ -296,9 +296,19 @@ M5.3 adds play track, play album, queue next/previous, seek, shuffle, and repeat
 
 ### Phase 5.3 — Music Playback and Queue
 
-**Status:** **Next** — depends on Phase 5.2 complete
+**Status:** **Active** — Gate 0 complete (2026-07-20); queue implementation not started
 
 **Objective:** Audio-focused playback using the existing `PlaybackService` foundation — play track, play album, queue, next/previous, seek, shuffle, repeat.
+
+#### Gate 0 — Windows audio capability (complete 2026-07-20)
+
+**Verdict:** **PASSED** — shared `PlaybackService` supports audio-only sessions without mandatory `VideoController`. WAV local playback verified; HTTPS and MP3 rows optional via env/ffmpeg.
+
+**Deliverables:** `PlaybackSessionMode`, media-kind-aware init, `playback_audio_gate_test.dart`, `phase_53_audio_gate_windows_runtime_test.dart` (`PHASE_53_AUDIO_GATE=1`).
+
+**Recommendation:** Outcome A (shared service) + dedicated `MusicPlayerScreen` (ADR-023 staged hybrid). ADR-022/023 remain **Proposed**.
+
+→ [Phase 5.3 specification](./m5-phase-5.3-music-playback-queue.md)
 
 **Scope (planned):**
 
