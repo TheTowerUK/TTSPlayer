@@ -654,6 +654,8 @@ No audio-specific provider type. Provider failure surfaces via existing Provider
 
 **M5.3 Step 3 (contextual seeding):** ✅ **Complete** (2026-07-20) — album/artist **Play** actions seed multi-track queues using projection ordering; track play in album/artist detail seeds full group at selected index; ungrouped contexts remain single-track. See [playback.md](./playback.md#m53-step-3--contextual-queue-seeding-2026-07-20).
 
+**Live NAS catalogue (2026-07-21):** Music requires scanner **≥ 0.4.0** and catalogue **schema v3** (`media_kind`, optional music tags). A stale v0.3.3/v2 catalogue will not surface audio correctly — rescan and reload the app. Validated: 42,283 audio items indexed; `01 Oh Yeah.mp3` classified as audio with grouping keys. See [v0.5.0-dev release notes](../release/v0.5.0-dev.md#live-nas-catalogue--stale-v2-issue-resolved-2026-07-21).
+
 
 
 ---
