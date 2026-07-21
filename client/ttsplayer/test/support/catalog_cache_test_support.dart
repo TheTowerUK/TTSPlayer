@@ -1,4 +1,5 @@
 import 'package:ttsplayer/features/music/music_library_service.dart';
+import 'package:ttsplayer/features/music/services/music_listening_repository.dart';
 import 'package:ttsplayer/features/music/services/music_playback_queue_controller.dart';
 import 'package:ttsplayer/features/search/search_service.dart';
 import 'package:ttsplayer/services/artwork/artwork_service.dart';
@@ -11,17 +12,20 @@ CatalogCacheCoordinator createTestCatalogCacheCoordinator({
   required SearchService searchService,
   required MusicLibraryService musicLibraryService,
   required LibraryMetadataRepository libraryMetadataRepository,
+  MusicListeningRepository? musicListeningRepository,
   PlaybackService? playbackService,
   MusicPlaybackQueueController? musicPlaybackQueueController,
 }) {
   final playback = playbackService ?? PlaybackService();
   final queue = musicPlaybackQueueController ??
       MusicPlaybackQueueController(playbackService: playback);
+  final listening = musicListeningRepository ?? MusicListeningRepository();
   return CatalogCacheCoordinator(
     artworkService: artworkService,
     searchService: searchService,
     musicLibraryService: musicLibraryService,
     libraryMetadataRepository: libraryMetadataRepository,
     musicPlaybackQueueController: queue,
+    musicListeningRepository: listening,
   );
 }

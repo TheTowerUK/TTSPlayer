@@ -1,6 +1,6 @@
 # M5 Phase 5.4 — Listening History and Continue Listening
 
-**Status:** **PLANNING** — Step 3 complete (2026-07-21)
+**Status:** **PLANNING** — Step 4 complete (2026-07-21)
 **Milestone:** M5 — Music
 **Branch:** `m5-development`
 **Predecessor:** Phase 5.3 complete (2026-07-21)
@@ -108,6 +108,44 @@ Phase 5.4 adds **persistent music listening history** and user-facing **Continue
 - All writes use `MusicListeningRepository.upsert` result contract — never throw into playback listeners.
 - `lastPersistenceWarning` on coordinator surfaces most recent failure for diagnostics.
 - Later ticks/flushes retry normally.
+
+---
+
+## Step 4 — Catalogue reconciliation (2026-07-21)
+
+**Status:** ✅ **Complete**
+
+| Deliverable | Path |
+|---|---|
+| Reconciliation API | `MusicListeningRepository.validateAgainstCatalog` |
+| Result type | `MusicListeningValidationResult` |
+| Coordinator trigger | `CatalogCacheCoordinator.onCatalogReplaced` → `_validateListeningHistory` |
+| App wiring | `client/ttsplayer/lib/main.dart` — repository passed to `CatalogCacheCoordinator` |
+| Repository tests | `client/ttsplayer/test/music_listening_repository_test.dart` (8 reconciliation tests) |
+| Integration tests | `client/ttsplayer/test/catalog_cache_invalidation_test.dart`, `music_listening_coordinator_test.dart` |
+
+**Integration point:** `CatalogCacheCoordinator` only **triggers** reconciliation after successful catalogue replacement (same hook as favourites). Policy lives entirely in `MusicListeningRepository`.
+
+### Reconciliation algorithm
+
+1. Build a map of catalogue **audio** items by `MediaItem.id` (first DFS match wins on duplicates).
+2. For each stored listening record:
+   - **Absent from map:** remove record.
+   - **Present:** retain record; refresh snapshot fields (`title`, `artist`, `album`, `duration`) from catalogue item.
+   - **Never touch:** `lastPosition`, `completed`, `completedAt`, `lastPlayedAt`.
+3. Persist only when records were removed or snapshot metadata changed; single `notifyListeners` on success.
+4. No title/artist/album/path rematching — identity is `trackId` only.
+
+### Failure behaviour
+
+| Condition | Behaviour |
+|---|---|
+| No changes needed | `changed: false`, no storage write |
+| Persist succeeds | `changed: true`, `persisted: true`, in-memory updated |
+| Persist fails | In-memory history unchanged; `persistenceFailed: true`; catalogue replacement unaffected |
+| Unexpected error | Logged; empty result with warning; no throw to caller |
+
+**Validation:** 8 repository reconciliation tests + 3 coordinator/cache integration tests; full Flutter suite green.
 
 ---
 
@@ -573,7 +611,7 @@ Phase 5.4 is complete when:
 | **1** | Planning + approved decisions | `docs(m5.4): complete Phase 5.4 listening history planning` | ✅ |
 | **2** | Models + `MusicListeningRepository` + unit tests | `feat(music): add listening history repository` | ✅ |
 | **3** | `MusicListeningCoordinator` + playback hooks + unit tests | `feat(music): persist listening progress from playback` | ✅ |
-| **4** | Catalogue reconciliation in `CatalogCacheCoordinator` | `feat(music): reconcile listening history on catalogue replace` |
+| **4** | Catalogue reconciliation in `CatalogCacheCoordinator` | `feat(music): reconcile listening history on catalogue replace` | ✅ |
 | **5** | `MusicScreen` Continue Listening + Recently Played entry | `feat(music): add Continue Listening to music landing` |
 | **6** | `MusicRecentlyPlayedScreen` + navigation resume wiring | `feat(music): add Recently Played screen and resume playback` |
 | **7** | Clear history + confirmation | `feat(music): add clear listening history action` |

@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ttsplayer/features/music/music_library_service.dart';
+import 'package:ttsplayer/features/music/services/music_listening_repository.dart';
+import 'package:ttsplayer/features/music/models/music_listening_record.dart';
 import 'package:ttsplayer/features/search/models/search_filters.dart';
 import 'package:ttsplayer/features/search/search_service.dart';
 import 'package:ttsplayer/models/catalog.dart';
@@ -185,12 +187,13 @@ void main() {
   });
 
   group('CatalogService + CatalogCacheCoordinator integration', () {
-    Future<({
-      CatalogService catalogService,
-      _CountingArtworkService artwork,
-      SearchService search,
-      LibraryMetadataRepository metadata,
-    })> createWiredServices() async {
+    Future<
+        ({
+          CatalogService catalogService,
+          _CountingArtworkService artwork,
+          SearchService search,
+          LibraryMetadataRepository metadata,
+        })> createWiredServices() async {
       final artwork = _CountingArtworkService(fileExists: (_) => false);
       final search = SearchService();
       final metadata = LibraryMetadataRepository();
@@ -387,6 +390,236 @@ void main() {
 
       expect(wired.metadata.isItemFavourited('item-a'), isTrue);
       expect(wired.metadata.isItemFavourited('item-b'), isFalse);
+    });
+  });
+
+  group('CatalogCacheCoordinator listening history reconciliation', () {
+    Catalog _audioCatalogWithTracks(Map<String, String> titles) {
+      return Catalog.fromJson({
+        'generated_at': '2026-07-21T12:00:00+00:00',
+        'total_items': titles.length,
+        'catalogue': {
+          'id': 'LISTEN-${titles.length}',
+          'scanner_version': '0.4.0',
+          'catalogue_version': 3,
+        },
+        'folders': [
+          {
+            'id': 'music',
+            'name': 'Music',
+            'path': r'Y:\Media\Music',
+            'item_count': titles.length,
+            'items': [
+              for (final entry in titles.entries)
+                {
+                  'id': entry.key,
+                  'title': entry.value,
+                  'file_path': 'Y:\\Media\\Music\\${entry.key}.mp3',
+                  'status': 'available',
+                  'media_kind': 'audio',
+                  'artist': 'Artist',
+                  'album': 'Album',
+                },
+            ],
+            'subfolders': [],
+          },
+        ],
+      });
+    }
+
+    test(
+        'successful catalogue replacement triggers listening reconciliation once',
+        () async {
+      final listening = MusicListeningRepository();
+      await listening.initialize();
+      await listening.upsert(
+        MusicListeningRecord(
+          trackId: 'track-a',
+          title: 'Old',
+          artist: 'Artist',
+          album: 'Album',
+          lastPosition: const Duration(seconds: 45),
+          completed: false,
+          lastPlayedAt: DateTime.utc(2026, 7, 21),
+        ),
+      );
+      await listening.upsert(
+        MusicListeningRecord(
+          trackId: 'track-b',
+          title: 'Remove Me',
+          artist: 'Artist',
+          album: 'Album',
+          lastPosition: const Duration(seconds: 30),
+          completed: false,
+          lastPlayedAt: DateTime.utc(2026, 7, 20),
+        ),
+      );
+
+      final coordinator = createTestCatalogCacheCoordinator(
+        artworkService: _CountingArtworkService(fileExists: (_) => false),
+        searchService: SearchService(),
+        musicLibraryService: MusicLibraryService(),
+        libraryMetadataRepository: LibraryMetadataRepository(),
+        musicListeningRepository: listening,
+      );
+
+      coordinator.onCatalogReplaced(
+        _audioCatalogWithTracks({'track-a': 'Fresh Title'}),
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(listening.getByTrackId('track-a')?.title, 'Fresh Title');
+      expect(listening.getByTrackId('track-a')?.lastPosition,
+          const Duration(seconds: 45));
+      expect(listening.getByTrackId('track-b'), isNull);
+    });
+
+    test('failed catalogue load does not reconcile listening history',
+        () async {
+      final listening = MusicListeningRepository();
+      await listening.initialize();
+      await listening.upsert(
+        MusicListeningRecord(
+          trackId: 'track-a',
+          title: 'Keep',
+          artist: 'Artist',
+          album: 'Album',
+          lastPosition: const Duration(seconds: 45),
+          completed: false,
+          lastPlayedAt: DateTime.utc(2026, 7, 21),
+        ),
+      );
+
+      final metadata = LibraryMetadataRepository();
+      await metadata.initialize();
+      final coordinator = createTestCatalogCacheCoordinator(
+        artworkService: _CountingArtworkService(fileExists: (_) => false),
+        searchService: SearchService(),
+        musicLibraryService: MusicLibraryService(),
+        libraryMetadataRepository: metadata,
+        musicListeningRepository: listening,
+      );
+      final catalogService = CatalogService(
+        onCatalogReplaced: coordinator.onCatalogReplaced,
+      )..includeLegacyCataloguePaths = false;
+
+      final goodPath = await _writeCatalogFile(
+        tempDir,
+        {
+          ..._minimalCatalogJson(id: 'KEEP-LISTEN'),
+          'total_items': 1,
+          'folders': [
+            {
+              'id': 'music',
+              'name': 'Music',
+              'path': r'Y:\Media\Music',
+              'item_count': 1,
+              'items': [
+                {
+                  'id': 'track-a',
+                  'title': 'Keep',
+                  'file_path': r'Y:\Media\Music\track-a.mp3',
+                  'status': 'available',
+                  'media_kind': 'audio',
+                  'artist': 'Artist',
+                  'album': 'Album',
+                },
+              ],
+              'subfolders': [],
+            },
+          ],
+        },
+      );
+      await catalogService.loadFromFile(goodPath);
+      await Future<void>.delayed(Duration.zero);
+      expect(listening.storedRecordCount, 1);
+
+      await catalogService.loadFromFile('${tempDir.path}/missing.json');
+      await Future<void>.delayed(Duration.zero);
+
+      expect(listening.storedRecordCount, 1);
+      expect(listening.getByTrackId('track-a')?.title, 'Keep');
+    });
+
+    test('favourites reconciliation remains independent from listening history',
+        () async {
+      final metadata = LibraryMetadataRepository();
+      await metadata.initialize();
+      await metadata.addItemFavourite('item-a');
+
+      final listening = MusicListeningRepository();
+      await listening.initialize();
+      await listening.upsert(
+        MusicListeningRecord(
+          trackId: 'track-a',
+          title: 'Track',
+          artist: 'Artist',
+          album: 'Album',
+          lastPosition: const Duration(seconds: 45),
+          completed: false,
+          lastPlayedAt: DateTime.utc(2026, 7, 21),
+        ),
+      );
+
+      final coordinator = createTestCatalogCacheCoordinator(
+        artworkService: _CountingArtworkService(fileExists: (_) => false),
+        searchService: SearchService(),
+        musicLibraryService: MusicLibraryService(),
+        libraryMetadataRepository: metadata,
+        musicListeningRepository: listening,
+      );
+
+      coordinator.onCatalogReplaced(
+        Catalog.fromJson({
+          'generated_at': '2026-07-21T12:00:00+00:00',
+          'total_items': 2,
+          'catalogue': {
+            'id': 'FAV-LISTEN',
+            'scanner_version': '0.4.0',
+            'catalogue_version': 3,
+          },
+          'folders': [
+            {
+              'id': 'videos',
+              'name': 'Videos',
+              'path': r'Y:\Videos',
+              'item_count': 1,
+              'items': [
+                {
+                  'id': 'item-a',
+                  'title': 'A',
+                  'file_path': r'Y:\Videos\a.mp4',
+                  'status': 'available',
+                  'media_kind': 'video',
+                },
+              ],
+              'subfolders': [],
+            },
+            {
+              'id': 'music',
+              'name': 'Music',
+              'path': r'Y:\Media\Music',
+              'item_count': 1,
+              'items': [
+                {
+                  'id': 'track-a',
+                  'title': 'Track',
+                  'file_path': r'Y:\Media\Music\track-a.mp3',
+                  'status': 'available',
+                  'media_kind': 'audio',
+                  'artist': 'Artist',
+                  'album': 'Album',
+                },
+              ],
+              'subfolders': [],
+            },
+          ],
+        }),
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(metadata.isItemFavourited('item-a'), isTrue);
+      expect(listening.getByTrackId('track-a'), isNotNull);
     });
   });
 }

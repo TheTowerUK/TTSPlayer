@@ -3,6 +3,9 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../models/catalog.dart';
+import '../../../models/media_item.dart';
+import '../music_constants.dart';
 import '../models/music_listening_policy.dart';
 import '../models/music_listening_record.dart';
 
@@ -34,6 +37,39 @@ class MusicListeningSaveResult {
 
   final bool success;
   final String? errorMessage;
+}
+
+/// Outcome of [MusicListeningRepository.validateAgainstCatalog].
+class MusicListeningValidationResult {
+  const MusicListeningValidationResult({
+    required this.changed,
+    required this.retainedCount,
+    required this.removedCount,
+    this.metadataRefreshedCount = 0,
+    this.persisted = false,
+    this.persistenceFailed = false,
+    this.warnings = const [],
+  });
+
+  /// True when records were pruned or snapshot metadata was refreshed.
+  final bool changed;
+
+  /// Records kept after reconciliation.
+  final int retainedCount;
+
+  /// Records removed because their [MusicListeningRecord.trackId] was absent.
+  final int removedCount;
+
+  /// Retained records whose display snapshot was updated from the catalogue.
+  final int metadataRefreshedCount;
+
+  /// True when a reconciliation change was written to storage.
+  final bool persisted;
+
+  /// True when reconciliation was needed but persistence could not complete.
+  final bool persistenceFailed;
+
+  final List<String> warnings;
 }
 
 /// Loads, validates, and persists music listening history (M5.4).
@@ -154,6 +190,88 @@ class MusicListeningRepository extends ChangeNotifier {
 
   Future<MusicListeningSaveResult> clearAll() async {
     return _persist(const []);
+  }
+
+  /// Prunes records whose [MusicListeningRecord.trackId] is absent from [catalog]
+  /// audio items and refreshes snapshot metadata for retained tracks.
+  ///
+  /// Identity is [MediaItem.id] only — no title/artist/path rematching.
+  /// Persists and notifies only when storage changes.
+  Future<MusicListeningValidationResult> validateAgainstCatalog(
+    Catalog catalog,
+  ) async {
+    try {
+      final audioById = _audioItemsByTrackId(catalog);
+      final next = <MusicListeningRecord>[];
+      var removedCount = 0;
+      var metadataRefreshedCount = 0;
+
+      for (final record in _records) {
+        final item = audioById[record.trackId];
+        if (item == null) {
+          removedCount++;
+          continue;
+        }
+
+        final refreshed = _refreshSnapshot(record, item);
+        if (refreshed != record) {
+          metadataRefreshedCount++;
+        }
+        next.add(refreshed);
+      }
+
+      final changed = removedCount > 0 || metadataRefreshedCount > 0;
+      if (!changed) {
+        return MusicListeningValidationResult(
+          changed: false,
+          retainedCount: _records.length,
+          removedCount: 0,
+        );
+      }
+
+      final saveResult = await _persist(next);
+      if (!saveResult.success) {
+        return MusicListeningValidationResult(
+          changed: false,
+          retainedCount: _records.length,
+          removedCount: 0,
+          persistenceFailed: true,
+          warnings: [
+            saveResult.errorMessage ??
+                'Could not persist pruned music listening history.',
+          ],
+        );
+      }
+
+      if (kDebugMode && removedCount > 0) {
+        debugPrint(
+          '[MusicListeningRepository] pruned $removedCount listening '
+          'record(s) after catalogue replacement.',
+        );
+      }
+
+      return MusicListeningValidationResult(
+        changed: true,
+        retainedCount: next.length,
+        removedCount: removedCount,
+        metadataRefreshedCount: metadataRefreshedCount,
+        persisted: true,
+      );
+    } catch (e, stackTrace) {
+      debugPrint(
+        '[MusicListeningRepository] validateAgainstCatalog failed: $e\n'
+        '$stackTrace',
+      );
+      return MusicListeningValidationResult(
+        changed: false,
+        retainedCount: _records.length,
+        removedCount: 0,
+        persistenceFailed: true,
+        warnings: const [
+          'Catalogue listening-history validation failed unexpectedly.',
+        ],
+      );
+    }
   }
 
   /// Incomplete, resume-eligible records — most recently played first.
@@ -354,6 +472,34 @@ class MusicListeningRepository extends ChangeNotifier {
       'stateVersion': currentStateVersion,
       'records': records.map((record) => record.toJson()).toList(),
     };
+  }
+
+  static Map<String, MediaItem> _audioItemsByTrackId(Catalog catalog) {
+    final byId = <String, MediaItem>{};
+    for (final item in catalog.allItems) {
+      if (!item.isAudio) continue;
+      byId.putIfAbsent(item.id, () => item);
+    }
+    return byId;
+  }
+
+  static MusicListeningRecord _refreshSnapshot(
+    MusicListeningRecord record,
+    MediaItem item,
+  ) {
+    final catalogueDuration =
+        item.durationSeconds != null && item.durationSeconds! > 0
+            ? Duration(seconds: item.durationSeconds!)
+            : null;
+
+    return record
+        .copyWith(
+          title: item.title,
+          artist: item.artist ?? MusicConstants.unknownArtist,
+          album: item.album ?? MusicConstants.unknownAlbum,
+          duration: catalogueDuration ?? record.duration,
+        )
+        .normalized();
   }
 }
 

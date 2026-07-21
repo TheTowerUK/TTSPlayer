@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ttsplayer/features/music/models/music_listening_policy.dart';
 import 'package:ttsplayer/features/music/models/music_listening_record.dart';
 import 'package:ttsplayer/features/music/services/music_listening_repository.dart';
+import 'package:ttsplayer/models/catalog.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -40,6 +41,46 @@ void main() {
       completedAt: completed ? (completedAt ?? playedAt) : null,
       lastPlayedAt: playedAt,
     );
+  }
+
+  Catalog audioCatalog(
+    Map<String, Map<String, dynamic>> tracks, {
+    String identity = 'CAT-1',
+  }) {
+    return Catalog.fromJson({
+      'generated_at': '2026-07-21T12:00:00+00:00',
+      'total_items': tracks.length,
+      'catalogue': {
+        'id': identity,
+        'scanner_version': '0.4.0',
+        'catalogue_version': 3,
+      },
+      'folders': [
+        {
+          'id': 'music-root',
+          'name': 'Music',
+          'path': r'Y:\Media\Music',
+          'item_count': tracks.length,
+          'items': [
+            for (final entry in tracks.entries)
+              {
+                'id': entry.key,
+                'title': entry.value['title'] ?? entry.key,
+                'file_path': entry.value['file_path'] ??
+                    'Y:\\Media\\Music\\${entry.key}.mp3',
+                'status': 'available',
+                'media_kind': 'audio',
+                if (entry.value['artist'] != null)
+                  'artist': entry.value['artist'],
+                if (entry.value['album'] != null) 'album': entry.value['album'],
+                if (entry.value['duration_seconds'] != null)
+                  'duration_seconds': entry.value['duration_seconds'],
+              },
+          ],
+          'subfolders': [],
+        },
+      ],
+    });
   }
 
   group('MusicListeningRecord', () {
@@ -534,6 +575,261 @@ void main() {
 
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString(MusicListeningRepository.storageKey), corrupt);
+    });
+  });
+
+  group('MusicListeningRepository validateAgainstCatalog', () {
+    test('identical catalogue makes no changes or persistence writes',
+        () async {
+      SharedPreferences.setMockInitialValues({});
+      final repository = MusicListeningRepository();
+      await repository.initialize();
+      await repository.upsert(testRecord(trackId: trackA));
+
+      final catalog = audioCatalog({
+        trackA: {
+          'title': 'Oh Yeah',
+          'artist': 'Example Artist',
+          'album': 'Singles'
+        },
+      });
+      final first = await repository.validateAgainstCatalog(catalog);
+      final prefsAfterFirst = (await SharedPreferences.getInstance())
+          .getString(MusicListeningRepository.storageKey);
+
+      final second = await repository.validateAgainstCatalog(catalog);
+      final prefsAfterSecond = (await SharedPreferences.getInstance())
+          .getString(MusicListeningRepository.storageKey);
+
+      expect(first.changed, isFalse);
+      expect(first.persisted, isFalse);
+      expect(second.changed, isFalse);
+      expect(second.persisted, isFalse);
+      expect(prefsAfterSecond, prefsAfterFirst);
+      expect(repository.storedRecordCount, 1);
+    });
+
+    test('removed trackId is pruned', () async {
+      SharedPreferences.setMockInitialValues({});
+      final repository = MusicListeningRepository();
+      await repository.initialize();
+      await repository.upsert(testRecord(trackId: trackA));
+      await repository.upsert(testRecord(trackId: trackB));
+
+      final result = await repository.validateAgainstCatalog(
+        audioCatalog({
+          trackA: {'title': 'Kept'}
+        }),
+      );
+
+      expect(result.changed, isTrue);
+      expect(result.removedCount, 1);
+      expect(result.retainedCount, 1);
+      expect(result.persisted, isTrue);
+      expect(repository.getByTrackId(trackA), isNotNull);
+      expect(repository.getByTrackId(trackB), isNull);
+    });
+
+    test('retained record preserves listening state', () async {
+      final repository = MusicListeningRepository();
+      await repository.initialize();
+      final playedAt = utc(2026, 7, 20, 9, 30);
+      final completedAt = utc(2026, 7, 20, 10);
+      await repository.upsert(
+        testRecord(
+          trackId: trackA,
+          title: 'Old Title',
+          lastPosition: const Duration(seconds: 142),
+          completed: true,
+          completedAt: completedAt,
+          lastPlayedAt: playedAt,
+        ),
+      );
+
+      await repository.validateAgainstCatalog(
+        audioCatalog({
+          trackA: {
+            'title': 'Fresh Title',
+            'artist': 'New Artist',
+            'album': 'New Album',
+            'duration_seconds': 300,
+          },
+        }),
+      );
+
+      final record = repository.getByTrackId(trackA)!;
+      expect(record.title, 'Fresh Title');
+      expect(record.artist, 'New Artist');
+      expect(record.album, 'New Album');
+      expect(record.duration, const Duration(minutes: 5));
+      expect(record.lastPosition, Duration.zero);
+      expect(record.completed, isTrue);
+      expect(record.completedAt, completedAt);
+      expect(record.lastPlayedAt, playedAt);
+    });
+
+    test('duplicate catalogue audio ids resolve deterministically', () async {
+      final repository = MusicListeningRepository();
+      await repository.initialize();
+      await repository.upsert(testRecord(trackId: 'dup-id', title: 'Stored'));
+
+      final catalog = Catalog.fromJson({
+        'generated_at': '2026-07-21T12:00:00+00:00',
+        'total_items': 2,
+        'catalogue': {
+          'id': 'DUP',
+          'scanner_version': '0.4.0',
+          'catalogue_version': 3,
+        },
+        'folders': [
+          {
+            'id': 'music-a',
+            'name': 'A',
+            'path': r'Y:\A',
+            'item_count': 1,
+            'items': [
+              {
+                'id': 'dup-id',
+                'title': 'First Match',
+                'file_path': r'Y:\A\first.mp3',
+                'status': 'available',
+                'media_kind': 'audio',
+              },
+            ],
+            'subfolders': [],
+          },
+          {
+            'id': 'music-b',
+            'name': 'B',
+            'path': r'Y:\B',
+            'item_count': 1,
+            'items': [
+              {
+                'id': 'dup-id',
+                'title': 'Second Match',
+                'file_path': r'Y:\B\second.mp3',
+                'status': 'available',
+                'media_kind': 'audio',
+              },
+            ],
+            'subfolders': [],
+          },
+        ],
+      });
+
+      final result = await repository.validateAgainstCatalog(catalog);
+
+      expect(result.changed, isTrue);
+      expect(result.retainedCount, 1);
+      expect(repository.getByTrackId('dup-id')?.title, 'First Match');
+    });
+
+    test('does not remap pruned records by title or artist', () async {
+      final repository = MusicListeningRepository();
+      await repository.initialize();
+      await repository.upsert(
+        testRecord(
+          trackId: 'old-id',
+          title: 'Shared Title',
+          artist: 'Shared Artist',
+        ),
+      );
+
+      await repository.validateAgainstCatalog(
+        audioCatalog({
+          'new-id': {
+            'title': 'Shared Title',
+            'artist': 'Shared Artist',
+          },
+        }),
+      );
+
+      expect(repository.getByTrackId('old-id'), isNull);
+      expect(repository.getByTrackId('new-id'), isNull);
+      expect(repository.allRecords, isEmpty);
+    });
+
+    test('non-audio catalogue ids do not retain listening records', () async {
+      final repository = MusicListeningRepository();
+      await repository.initialize();
+      await repository.upsert(testRecord(trackId: trackA));
+
+      final catalog = Catalog.fromJson({
+        'generated_at': '2026-07-21T12:00:00+00:00',
+        'total_items': 1,
+        'catalogue': {
+          'id': 'VIDEO',
+          'scanner_version': '0.4.0',
+          'catalogue_version': 3,
+        },
+        'folders': [
+          {
+            'id': 'videos',
+            'name': 'Videos',
+            'path': r'Y:\Videos',
+            'item_count': 1,
+            'items': [
+              {
+                'id': trackA,
+                'title': 'Same Id Video',
+                'file_path': r'Y:\Videos\clip.mp4',
+                'status': 'available',
+                'media_kind': 'video',
+              },
+            ],
+            'subfolders': [],
+          },
+        ],
+      });
+
+      final result = await repository.validateAgainstCatalog(catalog);
+
+      expect(result.removedCount, 1);
+      expect(repository.allRecords, isEmpty);
+    });
+
+    test('persistence failure leaves in-memory history unchanged', () async {
+      final repository = MusicListeningRepository();
+      await repository.initialize();
+      await repository.upsert(testRecord(trackId: trackA));
+      await repository.upsert(testRecord(trackId: trackB));
+
+      repository.simulatePersistFailure = true;
+      final result = await repository.validateAgainstCatalog(
+        audioCatalog({
+          trackA: {'title': 'Kept'}
+        }),
+      );
+
+      expect(result.changed, isFalse);
+      expect(result.persistenceFailed, isTrue);
+      expect(result.persisted, isFalse);
+      expect(repository.storedRecordCount, 2);
+      expect(repository.getByTrackId(trackB), isNotNull);
+    });
+
+    test('video Continue Watching keys remain unchanged during reconciliation',
+        () async {
+      const videoId = 'video-1';
+      SharedPreferences.setMockInitialValues({
+        'position_$videoId': 90,
+        'duration_$videoId': 3600,
+      });
+
+      final repository = MusicListeningRepository();
+      await repository.initialize();
+      await repository.upsert(testRecord(trackId: trackA));
+      await repository.upsert(testRecord(trackId: trackB));
+
+      await repository.validateAgainstCatalog(
+        audioCatalog({
+          trackA: {'title': 'Kept'}
+        }),
+      );
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getInt('position_$videoId'), 90);
+      expect(prefs.getInt('duration_$videoId'), 3600);
     });
   });
 }

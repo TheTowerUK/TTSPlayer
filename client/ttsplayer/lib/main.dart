@@ -81,6 +81,7 @@ Future<void> main() async {
     musicLibraryService: musicLibraryService,
     libraryMetadataRepository: libraryMetadataRepository,
     musicPlaybackQueueController: musicPlaybackQueueController,
+    musicListeningRepository: musicListeningRepository,
   );
 
   final catalogService = CatalogService(

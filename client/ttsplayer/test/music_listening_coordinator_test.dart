@@ -6,6 +6,7 @@ import 'package:ttsplayer/features/music/services/music_listening_repository.dar
 import 'package:ttsplayer/features/music/services/music_playback_queue_controller.dart';
 import 'package:ttsplayer/models/media_item.dart';
 import 'package:ttsplayer/services/playback_service.dart';
+import 'package:ttsplayer/models/catalog.dart';
 
 import 'playback_service_extensions_test.dart';
 
@@ -798,6 +799,86 @@ void main() {
             coordinator.accumulatedListeningForTest('track-b'), Duration.zero);
       }
 
+      coordinator.dispose();
+    });
+
+    test(
+        'catalogue reconciliation retains active track without stopping session',
+        () async {
+      SharedPreferences.setMockInitialValues({});
+      final playback = _stubPlaybackService();
+      final repository = MusicListeningRepository();
+      await repository.initialize();
+      final queue = MusicPlaybackQueueController(playbackService: playback);
+      var now = DateTime.utc(2026, 7, 21, 12);
+      final coordinator = MusicListeningCoordinator(
+        repository: repository,
+        playbackService: playback,
+        queueController: queue,
+        now: () => now,
+      );
+      queue.pendingListeningWriteDrain = coordinator.drainPendingWrites;
+      coordinator.attach();
+
+      final track = _track('track-a', title: 'Old Title');
+      queue.seedSingleTrack(track);
+      await _primeAudioPlayback(playback, queue, track, coordinator);
+
+      for (var i = 1; i <= 16; i++) {
+        now = now.add(const Duration(seconds: 1));
+        await _tick(
+          coordinator,
+          playback,
+          position: Duration(seconds: i),
+        );
+      }
+
+      await repository.validateAgainstCatalog(
+        Catalog.fromJson({
+          'generated_at': '2026-07-21T12:00:00+00:00',
+          'total_items': 1,
+          'catalogue': {
+            'id': 'RECON',
+            'scanner_version': '0.4.0',
+            'catalogue_version': 3,
+          },
+          'folders': [
+            {
+              'id': 'music',
+              'name': 'Music',
+              'path': r'Y:\Media\Music',
+              'item_count': 1,
+              'items': [
+                {
+                  'id': 'track-a',
+                  'title': 'Fresh Title',
+                  'file_path': r'Y:\Media\Music\track-a.mp3',
+                  'status': 'available',
+                  'media_kind': 'audio',
+                  'artist': 'Artist',
+                  'album': 'Album',
+                },
+              ],
+              'subfolders': [],
+            },
+          ],
+        }),
+      );
+
+      await _tick(
+        coordinator,
+        playback,
+        position: const Duration(seconds: 18),
+      );
+      await coordinator.waitForIdleForTest();
+
+      expect(
+        coordinator.accumulatedListeningForTest('track-a'),
+        greaterThan(const Duration(seconds: 15)),
+      );
+      expect(repository.getByTrackId('track-a')?.title, 'Fresh Title');
+      expect(repository.getByTrackId('track-a')?.lastPosition.inSeconds,
+          greaterThanOrEqualTo(15));
       coordinator.dispose();
     });
   });
