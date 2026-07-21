@@ -1,6 +1,6 @@
 # M5 Phase 5.4 — Listening History and Continue Listening
 
-**Status:** **PLANNING**
+**Status:** **PLANNING** — Step 2 complete (2026-07-21)
 **Milestone:** M5 — Music
 **Branch:** `m5-development`
 **Predecessor:** Phase 5.3 complete (2026-07-21)
@@ -26,6 +26,39 @@ Phase 5.4 adds **persistent music listening history** and user-facing **Continue
 | ADR-022 (listening state envelope) | **Partially Accepted** at 5.4 closure — listening history only; queue/favourites deferred |
 | `LibraryMetadataRepository` prune pattern (ADR-007) | ✅ Reuse lifecycle |
 | `CatalogCacheCoordinator` | ✅ Extension point for reconciliation |
+
+---
+
+## Step 2 — Model and repository (2026-07-21)
+
+**Status:** ✅ **Complete**
+
+| Deliverable | Path |
+|---|---|
+| Policy constants | `client/ttsplayer/lib/features/music/models/music_listening_policy.dart` |
+| Immutable record | `client/ttsplayer/lib/features/music/models/music_listening_record.dart` |
+| Repository | `client/ttsplayer/lib/features/music/services/music_listening_repository.dart` |
+| Unit tests | `client/ttsplayer/test/music_listening_repository_test.dart` |
+
+**Storage key:** `ttsplayer_music_listening_v1` — envelope `{ stateVersion: 1, records: [...] }`.
+
+**Corruption and version recovery:**
+
+| Condition | In-memory result | Warning | Source blob on read |
+|---|---|---|---|
+| Missing / empty key | Empty history | — | — |
+| Invalid JSON | Empty history | Yes | Unchanged |
+| Unsupported or missing `stateVersion` | Empty history | Yes (identifies version) | Unchanged |
+| Supported v1, malformed record | Valid siblings retained | Per skipped record | Unchanged |
+| Supported v1, valid envelope | Records loaded | Only if records skipped | Unchanged |
+
+**Retention:** 100 stored records (newest by `lastPlayedAt`); `recentlyPlayed(limit: 20)` default query cap; Continue Listening query uses 30 s / 2 min near-end rules via `MusicListeningPolicy`.
+
+**Completed replay rule:** On normalization, completed records store `lastPosition: 0`; callers use `replayPosition` (always zero when completed).
+
+**Not yet wired:** playback coordinator, UI, catalogue reconciliation, diagnostics, `main.dart` provider registration.
+
+**Validation:** 35 unit tests; full Flutter suite **784 passed**, 11 skipped.
 
 ---
 
@@ -220,10 +253,18 @@ Each record is an **immutable** value object. Updates replace the entire record 
 ## Persistence and versioning design
 
 - **Storage:** `shared_preferences` string at `ttsplayer_music_listening_v1`
-- **Pattern:** Mirror `LibraryMetadataRepository` — `initialize`, `load`, `save`, `fromJsonWithRecovery`, corrupt → defaults + warning
-- **Version field:** `stateVersion: 1`; unknown future versions load known fields only
+- **Pattern:** Mirror `LibraryMetadataRepository` — `initialize`, `load`, defensive decode, `ChangeNotifier`
+- **Version field:** `stateVersion: 1` — records deserialize **only** when `stateVersion == currentStateVersion`
 - **Write failure:** Return `success: false`; log debug; **never throw** to playback layer
 - **Isolation:** No shared keys with video resume, settings, or library metadata
+
+| Condition | In-memory result | Warning | Source blob on read |
+|---|---|---|---|
+| Missing / empty key | Empty history | — | — |
+| Invalid JSON | Empty history | Yes | Unchanged |
+| Unsupported or missing `stateVersion` | Empty history | Yes (identifies version) | Unchanged |
+| Supported v1, malformed record | Valid siblings retained | Per skipped record | Unchanged |
+| Supported v1, valid envelope | Records loaded | Only if records skipped | Unchanged |
 
 ---
 
@@ -478,10 +519,10 @@ Phase 5.4 is complete when:
 
 ## Implementation steps and proposed commit sequence
 
-| Step | Deliverable | Proposed commit prefix |
-|---|---|---|
-| **1** | Models + `MusicListeningRepository` + unit tests | `feat(music): add listening history repository` |
-| **2** | `MusicListeningCoordinator` + playback hooks + unit tests | `feat(music): persist listening progress from playback` |
+| Step | Deliverable | Proposed commit prefix | Status |
+|---|---|---|---|
+| **1** | Models + `MusicListeningRepository` + unit tests | `feat(music): add listening history repository` | ✅ |
+| **2** | `MusicListeningCoordinator` + playback hooks + unit tests | `feat(music): persist listening progress from playback` | |
 | **3** | Catalogue reconciliation in `CatalogCacheCoordinator` | `feat(music): reconcile listening history on catalogue replace` |
 | **4** | `MusicScreen` Continue Listening + Recently Played entry | `feat(music): add Continue Listening to music landing` |
 | **5** | `MusicRecentlyPlayedScreen` + navigation resume wiring | `feat(music): add Recently Played screen and resume playback` |

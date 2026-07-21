@@ -1,0 +1,539 @@
+import 'dart:convert';
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ttsplayer/features/music/models/music_listening_policy.dart';
+import 'package:ttsplayer/features/music/models/music_listening_record.dart';
+import 'package:ttsplayer/features/music/services/music_listening_repository.dart';
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  const trackA = 'track-a';
+  const trackB = 'track-b';
+  const trackC = 'track-c';
+
+  DateTime utc(int year, int month, int day, [int hour = 12, int minute = 0]) {
+    return DateTime.utc(year, month, day, hour, minute);
+  }
+
+  MusicListeningRecord testRecord({
+    String trackId = trackA,
+    String title = 'Oh Yeah',
+    String artist = 'Example Artist',
+    String album = 'Singles',
+    Duration? duration = const Duration(minutes: 5),
+    Duration lastPosition = const Duration(seconds: 45),
+    bool completed = false,
+    DateTime? completedAt,
+    DateTime? lastPlayedAt,
+  }) {
+    final playedAt = lastPlayedAt ?? utc(2026, 7, 21);
+    return MusicListeningRecord(
+      trackId: trackId,
+      title: title,
+      artist: artist,
+      album: album,
+      duration: duration,
+      lastPosition: lastPosition,
+      completed: completed,
+      completedAt: completed ? (completedAt ?? playedAt) : null,
+      lastPlayedAt: playedAt,
+    );
+  }
+
+  group('MusicListeningRecord', () {
+    test('constructs with required fields', () {
+      final record = testRecord();
+      expect(record.trackId, trackA);
+      expect(record.title, 'Oh Yeah');
+      expect(record.replayPosition, const Duration(seconds: 45));
+    });
+
+    test('round-trips through JSON', () {
+      final original = testRecord(
+        lastPosition: const Duration(seconds: 90),
+        completedAt: utc(2026, 7, 21, 13),
+      );
+      final restored = MusicListeningRecord.fromJsonWithRecovery(
+        original.toJson(),
+      );
+
+      expect(restored, original.normalized());
+    });
+
+    test('copyWith updates fields immutably', () {
+      final original = testRecord();
+      final updated =
+          original.copyWith(lastPosition: const Duration(seconds: 60));
+
+      expect(original.lastPosition, const Duration(seconds: 45));
+      expect(updated.lastPosition, const Duration(seconds: 60));
+    });
+
+    test('equality and hashCode match normalized values', () {
+      final a = testRecord(lastPlayedAt: utc(2026, 7, 21, 10));
+      final b = testRecord(lastPlayedAt: utc(2026, 7, 21, 10));
+
+      expect(a, equals(b));
+      expect(a.hashCode, b.hashCode);
+    });
+
+    test('nullable duration survives JSON round trip', () {
+      final record = testRecord(duration: null);
+      final restored =
+          MusicListeningRecord.fromJsonWithRecovery(record.toJson());
+
+      expect(restored?.duration, isNull);
+    });
+
+    test('negative position clamps to zero', () {
+      final normalized =
+          testRecord(lastPosition: const Duration(seconds: -5)).normalized();
+
+      expect(normalized.lastPosition, Duration.zero);
+    });
+
+    test('negative duration clamps to null', () {
+      final normalized =
+          testRecord(duration: const Duration(seconds: -1)).normalized();
+
+      expect(normalized.duration, isNull);
+    });
+
+    test('position greater than duration clamps to duration', () {
+      final normalized = testRecord(
+        duration: const Duration(minutes: 3),
+        lastPosition: const Duration(minutes: 4),
+      ).normalized();
+
+      expect(normalized.lastPosition, const Duration(minutes: 3));
+    });
+
+    test('completed clears completedAt when false', () {
+      final normalized = testRecord(
+        completed: false,
+        completedAt: utc(2026, 7, 21, 14),
+      ).normalized();
+
+      expect(normalized.completed, isFalse);
+      expect(normalized.completedAt, isNull);
+    });
+
+    test('completed sets lastPosition to zero and replayPosition to zero', () {
+      final normalized = testRecord(
+        completed: true,
+        lastPosition: const Duration(minutes: 4),
+      ).normalized();
+
+      expect(normalized.lastPosition, Duration.zero);
+      expect(normalized.replayPosition, Duration.zero);
+      expect(normalized.completedAt, isNotNull);
+    });
+
+    test('incomplete replayPosition returns lastPosition', () {
+      final record = testRecord(lastPosition: const Duration(seconds: 75));
+
+      expect(record.replayPosition, const Duration(seconds: 75));
+    });
+
+    test('fromJsonWithRecovery skips malformed records', () {
+      final warnings = <String>[];
+      final record = MusicListeningRecord.fromJsonWithRecovery(
+        {'trackId': '', 'lastPlayedAt': 'bad'},
+        warnings: warnings,
+      );
+
+      expect(record, isNull);
+      expect(warnings, isNotEmpty);
+    });
+  });
+
+  group('MusicListeningRepository', () {
+    setUp(() {
+      SharedPreferences.setMockInitialValues({});
+    });
+
+    test('missing storage returns empty history', () async {
+      final repository = MusicListeningRepository();
+      final result = await repository.initialize();
+
+      expect(result.source, MusicListeningLoadSource.defaults);
+      expect(repository.allRecords, isEmpty);
+      expect(repository.isLoaded, isTrue);
+    });
+
+    test('valid envelope loads', () async {
+      SharedPreferences.setMockInitialValues({
+        MusicListeningRepository.storageKey: jsonEncode({
+          'stateVersion': 1,
+          'records': [testRecord().toJson()],
+        }),
+      });
+
+      final repository = MusicListeningRepository();
+      final result = await repository.load();
+
+      expect(result.source, MusicListeningLoadSource.envelope);
+      expect(repository.allRecords, hasLength(1));
+      expect(repository.getByTrackId(trackA)?.title, 'Oh Yeah');
+    });
+
+    test('invalid JSON recovers to empty history', () async {
+      SharedPreferences.setMockInitialValues({
+        MusicListeningRepository.storageKey: '{not json',
+      });
+
+      final repository = MusicListeningRepository();
+      final result = await repository.load();
+
+      expect(result.source, MusicListeningLoadSource.defaults);
+      expect(repository.allRecords, isEmpty);
+      expect(result.recoveryWarnings, isNotEmpty);
+    });
+
+    test('unsupported stateVersion returns empty history', () async {
+      SharedPreferences.setMockInitialValues({
+        MusicListeningRepository.storageKey: jsonEncode({
+          'stateVersion': 99,
+          'records': [testRecord(trackId: trackB).toJson()],
+        }),
+      });
+
+      final repository = MusicListeningRepository();
+      final result = await repository.load();
+
+      expect(result.source, MusicListeningLoadSource.defaults);
+      expect(repository.allRecords, isEmpty);
+      expect(
+        result.recoveryWarnings,
+        contains(
+          'Unsupported stateVersion 99; stored music listening history was not loaded.',
+        ),
+      );
+    });
+
+    test('unsupported envelope remains unchanged in storage after load',
+        () async {
+      final raw = jsonEncode({
+        'stateVersion': 99,
+        'records': [testRecord(trackId: trackB).toJson()],
+      });
+      SharedPreferences.setMockInitialValues({
+        MusicListeningRepository.storageKey: raw,
+      });
+
+      final repository = MusicListeningRepository();
+      await repository.initialize();
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString(MusicListeningRepository.storageKey), raw);
+    });
+
+    test('missing stateVersion returns empty history with warning', () async {
+      SharedPreferences.setMockInitialValues({
+        MusicListeningRepository.storageKey: jsonEncode({
+          'records': [testRecord(trackId: trackB).toJson()],
+        }),
+      });
+
+      final repository = MusicListeningRepository();
+      final result = await repository.load();
+
+      expect(result.source, MusicListeningLoadSource.defaults);
+      expect(repository.allRecords, isEmpty);
+      expect(
+        result.recoveryWarnings,
+        contains(
+          'Missing stateVersion; stored music listening history was not loaded.',
+        ),
+      );
+    });
+
+    test('supported v1 malformed records are skipped while valid remain',
+        () async {
+      SharedPreferences.setMockInitialValues({
+        MusicListeningRepository.storageKey: jsonEncode({
+          'stateVersion': 1,
+          'records': [
+            {'trackId': '', 'lastPlayedAt': '2026-07-21T12:00:00.000Z'},
+            testRecord(trackId: trackB).toJson(),
+          ],
+        }),
+      });
+
+      final repository = MusicListeningRepository();
+      final result = await repository.load();
+
+      expect(result.recoveryWarnings, isNotEmpty);
+      expect(repository.allRecords, hasLength(1));
+      expect(repository.getByTrackId(trackB), isNotNull);
+    });
+
+    test('upsert creates a record', () async {
+      final repository = MusicListeningRepository();
+      await repository.initialize();
+
+      final result = await repository.upsert(testRecord());
+
+      expect(result.success, isTrue);
+      expect(repository.allRecords, hasLength(1));
+    });
+
+    test('upsert updates existing trackId without duplication', () async {
+      final repository = MusicListeningRepository();
+      await repository.initialize();
+
+      await repository.upsert(
+        testRecord(lastPosition: const Duration(seconds: 40)),
+      );
+      await repository.upsert(
+        testRecord(
+          lastPosition: const Duration(seconds: 55),
+          lastPlayedAt: utc(2026, 7, 21, 13),
+        ),
+      );
+
+      expect(repository.allRecords, hasLength(1));
+      expect(
+        repository.getByTrackId(trackA)?.lastPosition,
+        const Duration(seconds: 55),
+      );
+    });
+
+    test('orders by lastPlayedAt descending', () async {
+      final repository = MusicListeningRepository();
+      await repository.initialize();
+
+      await repository.upsert(
+        testRecord(trackId: trackA, lastPlayedAt: utc(2026, 7, 21, 10)),
+      );
+      await repository.upsert(
+        testRecord(trackId: trackB, lastPlayedAt: utc(2026, 7, 21, 12)),
+      );
+      await repository.upsert(
+        testRecord(trackId: trackC, lastPlayedAt: utc(2026, 7, 21, 11)),
+      );
+
+      expect(
+        repository.allRecords.map((record) => record.trackId).toList(),
+        [trackB, trackC, trackA],
+      );
+    });
+
+    test('uses deterministic tie ordering by trackId', () async {
+      final at = utc(2026, 7, 21, 12);
+      final records = [
+        testRecord(trackId: 'track-z', lastPlayedAt: at),
+        testRecord(trackId: 'track-a', lastPlayedAt: at),
+        testRecord(trackId: 'track-m', lastPlayedAt: at),
+      ];
+
+      records.sort(MusicListeningRepository.compareRecords);
+
+      expect(
+        records.map((record) => record.trackId).toList(),
+        ['track-a', 'track-m', 'track-z'],
+      );
+    });
+
+    test('remove deletes one record', () async {
+      final repository = MusicListeningRepository();
+      await repository.initialize();
+
+      await repository.upsert(testRecord(trackId: trackA));
+      await repository.upsert(testRecord(trackId: trackB));
+      await repository.remove(trackA);
+
+      expect(repository.allRecords, hasLength(1));
+      expect(repository.getByTrackId(trackB), isNotNull);
+    });
+
+    test('clear removes all records', () async {
+      final repository = MusicListeningRepository();
+      await repository.initialize();
+
+      await repository.upsert(testRecord(trackId: trackA));
+      await repository.upsert(testRecord(trackId: trackB));
+      await repository.clearAll();
+
+      expect(repository.allRecords, isEmpty);
+    });
+
+    test('continueListening excludes completed records', () async {
+      final repository = MusicListeningRepository();
+      await repository.initialize();
+
+      await repository.upsert(
+        testRecord(
+          trackId: trackA,
+          completed: true,
+          lastPosition: Duration.zero,
+        ),
+      );
+      await repository.upsert(
+        testRecord(
+          trackId: trackB,
+          lastPosition: const Duration(seconds: 45),
+        ),
+      );
+
+      expect(repository.continueListening(), hasLength(1));
+      expect(repository.continueListening().single.trackId, trackB);
+    });
+
+    test('continueListening excludes records below 30 seconds', () async {
+      final repository = MusicListeningRepository();
+      await repository.initialize();
+
+      await repository.upsert(
+        testRecord(
+          trackId: trackA,
+          lastPosition: const Duration(seconds: 20),
+        ),
+      );
+      await repository.upsert(
+        testRecord(
+          trackId: trackB,
+          lastPosition: const Duration(seconds: 45),
+        ),
+      );
+
+      expect(repository.continueListening(), hasLength(1));
+      expect(repository.continueListening().single.trackId, trackB);
+    });
+
+    test('continueListening excludes near-end incomplete records', () async {
+      final repository = MusicListeningRepository();
+      await repository.initialize();
+
+      await repository.upsert(
+        testRecord(
+          trackId: trackA,
+          duration: const Duration(minutes: 5),
+          lastPosition: const Duration(minutes: 4, seconds: 30),
+        ),
+      );
+
+      expect(repository.continueListening(), isEmpty);
+    });
+
+    test('recentlyPlayed includes completed and incomplete records', () async {
+      final repository = MusicListeningRepository();
+      await repository.initialize();
+
+      await repository.upsert(
+        testRecord(
+            trackId: trackA, completed: true, lastPosition: Duration.zero),
+      );
+      await repository.upsert(
+        testRecord(trackId: trackB, lastPosition: const Duration(seconds: 20)),
+      );
+
+      expect(repository.recentlyPlayed(limit: 10), hasLength(2));
+    });
+
+    test('recentlyPlayed default query cap is 20', () async {
+      final repository = MusicListeningRepository();
+      await repository.initialize();
+
+      for (var i = 0; i < 25; i++) {
+        await repository.upsert(
+          testRecord(
+            trackId: 'track-$i',
+            lastPlayedAt: utc(2026, 7, 21, 12, i),
+          ),
+        );
+      }
+
+      expect(repository.recentlyPlayed(), hasLength(20));
+      expect(repository.storedRecordCount, 25);
+    });
+
+    test('retention cap keeps 100 newest records', () async {
+      final repository = MusicListeningRepository();
+      await repository.initialize();
+
+      for (var i = 0; i < 105; i++) {
+        await repository.upsert(
+          testRecord(
+            trackId: 'track-$i',
+            lastPlayedAt: utc(2026, 1, 1, 0, i),
+          ),
+        );
+      }
+
+      expect(repository.storedRecordCount, 100);
+      expect(repository.getByTrackId('track-0'), isNull);
+      expect(repository.getByTrackId('track-4'), isNull);
+      expect(repository.getByTrackId('track-104'), isNotNull);
+    });
+
+    test('save and reload round trip', () async {
+      SharedPreferences.setMockInitialValues({});
+      final repository = MusicListeningRepository();
+      await repository.initialize();
+      await repository
+          .upsert(testRecord(lastPosition: const Duration(seconds: 88)));
+
+      final reloaded = MusicListeningRepository();
+      await reloaded.load();
+
+      expect(
+        reloaded.getByTrackId(trackA)?.lastPosition,
+        const Duration(seconds: 88),
+      );
+    });
+
+    test('storage failure returns unsuccessful result without throwing',
+        () async {
+      final repository = MusicListeningRepository();
+      await repository.initialize();
+      repository.simulatePersistFailure = true;
+
+      final result = await repository.upsert(testRecord());
+
+      expect(result.success, isFalse);
+      expect(result.errorMessage, isNotNull);
+    });
+
+    test('video keys remain untouched when music history mutates', () async {
+      const videoItemId = 'video-item-1';
+      SharedPreferences.setMockInitialValues({
+        'position_$videoItemId': 120,
+        'duration_$videoItemId': 3600,
+      });
+
+      final repository = MusicListeningRepository();
+      await repository.initialize();
+      await repository.upsert(testRecord());
+      await repository.upsert(
+        testRecord(
+          trackId: trackB,
+          lastPosition: const Duration(seconds: 50),
+          lastPlayedAt: utc(2026, 7, 21, 13),
+        ),
+      );
+      await repository.remove(trackA);
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getInt('position_$videoItemId'), 120);
+      expect(prefs.getInt('duration_$videoItemId'), 3600);
+      expect(prefs.containsKey(MusicListeningRepository.storageKey), isTrue);
+      expect(prefs.getString('position_$trackA'), isNull);
+    });
+
+    test('corrupt envelope does not overwrite storage on read', () async {
+      const corrupt = '{bad json';
+      SharedPreferences.setMockInitialValues({
+        MusicListeningRepository.storageKey: corrupt,
+      });
+
+      final repository = MusicListeningRepository();
+      await repository.load();
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString(MusicListeningRepository.storageKey), corrupt);
+    });
+  });
+}

@@ -32,7 +32,7 @@
 
 **M5.3 (2026-07-20):** In-memory queue ordering, coordinator transport, and contextual album/artist queue seeding implemented.
 
-**M5.4 planning (2026-07-21):** Listening history uses **`MusicListeningRepository`** with immutable **`MusicListeningRecord`** values keyed by catalogue `trackId`. Thresholds: 15 s to create record; 30 s to offer resume; completed tracks restart from 0. Retention: 100 stored / 20 UI cap. Continue Listening on **Music landing only** — main dashboard video Continue Watching unchanged.
+**M5.4 Step 2 (2026-07-21):** `MusicListeningRepository` and `MusicListeningRecord` implemented with unit tests. Persistence-only — not yet wired to playback, UI, or catalogue reconciliation.
 
 ---
 
