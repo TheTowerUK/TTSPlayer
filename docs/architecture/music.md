@@ -2,7 +2,7 @@
 
 
 
-**Status:** **In progress** — Phase 5.3 Step 3 complete (2026-07-20); Gate 0 complete; Phase 5.2 complete
+**Status:** **In progress** — Phase 5.4 planning (2026-07-21); Phase 5.3 complete
 
 **Related roadmap:** [M5 — Music](../roadmap/m5-plan.md) · [Phase 5.1 spec](../roadmap/m5-phase-5.1-music-catalogue-metadata.md)
 
@@ -27,7 +27,7 @@
 - [ADR-020: Music Catalogue Schema and Media Kind](./decisions/ADR-020-music-catalogue-schema-and-media-kind.md) — **Accepted** (M5.1)
 - [ADR-021: Music Metadata Precedence and Identity](./decisions/ADR-021-music-metadata-precedence-and-identity.md) — **Accepted** (M5.1)
 
-- [ADR-022: Music Queue and Listening State](./decisions/ADR-022-music-queue-and-listening-state.md) — **Proposed** (in-memory queue implemented Step 2; persistence deferred)
+- [ADR-022: Music Queue and Listening State](./decisions/ADR-022-music-queue-and-listening-state.md) — **Partially Accepted** (M5.4 listening history; queue/favourites deferred)
 
 - [ADR-023: Music Player Surface Architecture](./decisions/ADR-023-music-player-surface-architecture.md) — **Accepted** (M5.3 Step 1–2)
 
@@ -396,29 +396,24 @@ Separate from `catalog.json` and separate from video resume keys where policies 
 
 
 
-| State | Storage (proposed) | Owner |
-
-|---|---|---|
-
-| Video resume | `shared_preferences` `position_*` | `PlaybackService` (existing) |
-
-| Video Continue Watching | Derived from video resume | Dashboard (existing) |
-
-| Music favourites | `LibraryMetadataRepository` extension or `MusicStateRepository` | Repository |
-
-| Recently played music | App-managed list (cap N) | Repository |
-
-| Continue Listening | Per-track position keys `music_position_*` | Repository + service |
-
-| Queue | Persisted envelope (ADR-022) | Repository |
-
-| Play counts | Deferred | — |
-
-| Playlists | Deferred | — |
+| State | Storage | Owner | Status |
+|---|---|---|---|
+| Video resume | `shared_preferences` `position_*`, `duration_*` | `PlaybackService` | ✅ Implemented (M4) |
+| Video Continue Watching | Derived from video resume | Dashboard | ✅ Implemented |
+| Music listening history | `ttsplayer_music_listening_v1` | `MusicListeningRepository` (5.4) | **Planned** |
+| Music Continue Listening | Derived from listening history | `MusicScreen` only (not dashboard) | **Planned (5.4)** |
+| Music Recently Played | Same envelope | `MusicScreen` / dedicated screen | **Planned (5.4)** |
+| Music favourites | `LibraryMetadataRepository` or future extension | Repository | Deferred |
+| Queue persistence | ADR-022 envelope | Repository | **Deferred outside 5.4** — no serialization/restoration in this phase |
+| Play counts / playlists | — | — | Deferred |
 
 
 
-**Prune on catalogue replace:** Same lifecycle as favourites — remove entries whose track ids absent from new catalogue.
+**Isolation rule:** Audio items set `isContinueWatchingEligible => false`. Music progress must never write video `position_*` keys. See [Phase 5.4 spec](../roadmap/m5-phase-5.4-listening-history-continue-listening.md).
+
+
+
+**Prune on catalogue replace:** Same lifecycle as favourites — `CatalogCacheCoordinator` invokes repository `validateAgainstCatalog`; remove entries whose track ids are absent from the new catalogue.
 
 
 
