@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -136,6 +137,15 @@ Widget _listeningHarness({
 Future<void> _pumpListeningUi(WidgetTester tester) async {
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 100));
+}
+
+Future<void> _openClearHistoryMenu(WidgetTester tester) async {
+  await tester.tap(find.byKey(const Key('music_recently_played_menu')));
+  await _pumpListeningUi(tester);
+  await tester.tap(
+    find.byKey(const Key('music_clear_listening_history_menu_item')),
+  );
+  await _pumpListeningUi(tester);
 }
 
 PlaybackService _serviceWithStubInit() {
@@ -574,6 +584,248 @@ void main() {
       final screen =
           tester.widget<MusicPlayerScreen>(find.byType(MusicPlayerScreen));
       expect(screen.startPosition, Duration.zero);
+    });
+  });
+
+  group('Clear listening history', () {
+    testWidgets('menu appears when history exists', (tester) async {
+      final repository = MusicListeningRepository();
+      await repository.initialize();
+      await repository.upsert(
+        _record(
+            trackId: 'track-complete',
+            lastPosition: const Duration(seconds: 60)),
+      );
+
+      await tester.pumpWidget(
+        _listeningHarness(
+          catalog: _mixedCatalog(),
+          repository: repository,
+          child: const MusicRecentlyPlayedScreen(),
+        ),
+      );
+      await _pumpListeningUi(tester);
+
+      expect(
+          find.byKey(const Key('music_recently_played_menu')), findsOneWidget);
+    });
+
+    testWidgets('menu hidden when history empty', (tester) async {
+      final repository = MusicListeningRepository();
+      await repository.initialize();
+
+      await tester.pumpWidget(
+        _listeningHarness(
+          catalog: _mixedCatalog(),
+          repository: repository,
+          child: const MusicRecentlyPlayedScreen(),
+        ),
+      );
+      await _pumpListeningUi(tester);
+
+      expect(find.byKey(const Key('music_recently_played_menu')), findsNothing);
+    });
+
+    testWidgets('menu hidden while repository loading', (tester) async {
+      final repository = MusicListeningRepository(
+        initialRecords: [_record(trackId: 'track-complete')],
+      );
+
+      await tester.pumpWidget(
+        _listeningHarness(
+          catalog: _mixedCatalog(),
+          repository: repository,
+          child: const MusicRecentlyPlayedScreen(),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byKey(const Key('music_recently_played_menu')), findsNothing);
+    });
+
+    testWidgets('menu opens confirmation dialog with scope text',
+        (tester) async {
+      final repository = MusicListeningRepository();
+      await repository.initialize();
+      await repository.upsert(_record(trackId: 'track-complete'));
+
+      await tester.pumpWidget(
+        _listeningHarness(
+          catalog: _mixedCatalog(),
+          repository: repository,
+          child: const MusicRecentlyPlayedScreen(),
+        ),
+      );
+      await _pumpListeningUi(tester);
+      await _openClearHistoryMenu(tester);
+
+      expect(
+        find.byKey(const Key('music_clear_listening_history_dialog')),
+        findsOneWidget,
+      );
+      expect(find.text('Clear listening history?'), findsOneWidget);
+      expect(find.textContaining('Continue Listening'), findsOneWidget);
+      expect(find.textContaining('video watch history'), findsOneWidget);
+    });
+
+    testWidgets('Cancel preserves history', (tester) async {
+      final repository = MusicListeningRepository();
+      await repository.initialize();
+      await repository.upsert(_record(trackId: 'track-complete'));
+
+      await tester.pumpWidget(
+        _listeningHarness(
+          catalog: _mixedCatalog(),
+          repository: repository,
+          child: const MusicRecentlyPlayedScreen(),
+        ),
+      );
+      await _pumpListeningUi(tester);
+      await _openClearHistoryMenu(tester);
+
+      await tester.tap(find.text('Cancel'));
+      await _pumpListeningUi(tester);
+
+      expect(repository.storedRecordCount, 1);
+      expect(find.byType(MusicRecentlyPlayedScreen), findsOneWidget);
+    });
+
+    testWidgets('Escape dismisses dialog without clearing', (tester) async {
+      final repository = MusicListeningRepository();
+      await repository.initialize();
+      await repository.upsert(_record(trackId: 'track-complete'));
+
+      await tester.pumpWidget(
+        _listeningHarness(
+          catalog: _mixedCatalog(),
+          repository: repository,
+          child: const MusicRecentlyPlayedScreen(),
+        ),
+      );
+      await _pumpListeningUi(tester);
+      await _openClearHistoryMenu(tester);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await _pumpListeningUi(tester);
+
+      expect(repository.storedRecordCount, 1);
+    });
+
+    testWidgets('Clear removes rows and shows success message', (tester) async {
+      final repository = MusicListeningRepository();
+      await repository.initialize();
+      await repository.upsert(_record(trackId: 'track-complete'));
+
+      await tester.pumpWidget(
+        _listeningHarness(
+          catalog: _mixedCatalog(),
+          repository: repository,
+          child: const MusicRecentlyPlayedScreen(),
+        ),
+      );
+      await _pumpListeningUi(tester);
+      await _openClearHistoryMenu(tester);
+
+      await tester
+          .tap(find.byKey(const Key('confirm_clear_listening_history')));
+      await _pumpListeningUi(tester);
+      await _pumpListeningUi(tester);
+
+      expect(repository.storedRecordCount, 0);
+      expect(
+          find.byKey(const Key('music_recently_played_empty')), findsOneWidget);
+      expect(
+        find.byKey(const Key('music_clear_listening_history_success')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('failure preserves rows and shows failure message',
+        (tester) async {
+      final repository = MusicListeningRepository();
+      await repository.initialize();
+      await repository.upsert(_record(trackId: 'track-complete'));
+      repository.simulatePersistFailure = true;
+
+      await tester.pumpWidget(
+        _listeningHarness(
+          catalog: _mixedCatalog(),
+          repository: repository,
+          child: const MusicRecentlyPlayedScreen(),
+        ),
+      );
+      await _pumpListeningUi(tester);
+      await _openClearHistoryMenu(tester);
+
+      await tester
+          .tap(find.byKey(const Key('confirm_clear_listening_history')));
+      await _pumpListeningUi(tester);
+
+      expect(repository.storedRecordCount, 1);
+      expect(
+          find.byKey(const Key('music_recently_played_list')), findsOneWidget);
+      expect(
+        find.byKey(const Key('music_clear_listening_history_failure')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('Music landing updates after clear', (tester) async {
+      final repository = MusicListeningRepository();
+      await repository.initialize();
+      await repository.upsert(
+        _record(
+          trackId: 'track-complete',
+          lastPosition: const Duration(minutes: 2),
+          duration: const Duration(minutes: 10),
+        ),
+      );
+
+      await tester.pumpWidget(
+        _listeningHarness(
+          catalog: _mixedCatalog(),
+          repository: repository,
+          child: const MusicRecentlyPlayedScreen(),
+        ),
+      );
+      await _pumpListeningUi(tester);
+      await _openClearHistoryMenu(tester);
+      await tester
+          .tap(find.byKey(const Key('confirm_clear_listening_history')));
+      await _pumpListeningUi(tester);
+
+      await tester.pumpWidget(
+        _listeningHarness(
+          catalog: _mixedCatalog(),
+          repository: repository,
+          child: const MusicScreen(),
+        ),
+      );
+      await _pumpListeningUi(tester);
+
+      expect(find.byKey(const Key('music_continue_listening_section')),
+          findsNothing);
+      expect(
+          find.byKey(const Key('music_recently_played_tile')), findsOneWidget);
+      expect(find.textContaining('0 tracks in history'), findsOneWidget);
+    });
+
+    testWidgets('MusicScreen landing has no clear action', (tester) async {
+      final repository = MusicListeningRepository();
+      await repository.initialize();
+      await repository.upsert(_record(trackId: 'track-complete'));
+
+      await tester.pumpWidget(
+        _listeningHarness(
+          catalog: _mixedCatalog(),
+          repository: repository,
+          child: const MusicScreen(),
+        ),
+      );
+      await _pumpListeningUi(tester);
+
+      expect(find.text('Clear listening history'), findsNothing);
+      expect(find.byKey(const Key('music_recently_played_menu')), findsNothing);
     });
   });
 

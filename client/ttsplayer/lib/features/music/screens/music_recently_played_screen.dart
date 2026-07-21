@@ -11,16 +11,53 @@ import '../music_listening_presentation.dart';
 import '../music_navigation.dart';
 import '../models/music_listening_policy.dart';
 import '../services/music_listening_repository.dart';
+import '../widgets/clear_listening_history_dialog.dart';
 import '../widgets/music_artwork_thumbnail.dart';
 
 /// Full Recently Played list for music listening history (M5.4).
-class MusicRecentlyPlayedScreen extends StatelessWidget {
+class MusicRecentlyPlayedScreen extends StatefulWidget {
   const MusicRecentlyPlayedScreen({super.key});
+
+  @override
+  State<MusicRecentlyPlayedScreen> createState() =>
+      _MusicRecentlyPlayedScreenState();
+}
+
+class _MusicRecentlyPlayedScreenState extends State<MusicRecentlyPlayedScreen> {
+  Future<void> _confirmClearHistory() async {
+    final result = await showDialog<ClearListeningHistoryDialogResult>(
+      context: context,
+      builder: (_) => const ClearListeningHistoryDialog(),
+    );
+    if (!mounted || result == null) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    switch (result) {
+      case ClearListeningHistoryDialogResult.cleared:
+        messenger.showSnackBar(
+          const SnackBar(
+            key: Key('music_clear_listening_history_success'),
+            content: Text('Listening history cleared.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      case ClearListeningHistoryDialogResult.failed:
+        messenger.showSnackBar(
+          const SnackBar(
+            key: Key('music_clear_listening_history_failure'),
+            content: Text("Couldn't clear listening history. Try again."),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      case ClearListeningHistoryDialogResult.cancelled:
+        break;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const TtsAppBar(title: 'Recently Played'),
+      appBar: _RecentlyPlayedAppBar(onClearHistory: _confirmClearHistory),
       body: Consumer2<CatalogService, MusicListeningRepository>(
         builder: (context, catalogService, listeningRepository, _) {
           if (!listeningRepository.isLoaded) {
@@ -63,6 +100,50 @@ class MusicRecentlyPlayedScreen extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+}
+
+class _RecentlyPlayedAppBar extends StatelessWidget implements PreferredSizeWidget {
+  const _RecentlyPlayedAppBar({required this.onClearHistory});
+
+  final VoidCallback onClearHistory;
+
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<MusicListeningRepository>(
+      builder: (context, listeningRepository, _) {
+        final canClear = listeningRepository.isLoaded &&
+            listeningRepository.storedRecordCount > 0;
+
+        return TtsAppBar(
+          title: 'Recently Played',
+          extraActions: [
+            if (canClear)
+              PopupMenuButton<String>(
+                key: const Key('music_recently_played_menu'),
+                tooltip: 'Recently played options',
+                onSelected: (value) {
+                  if (value == 'clear') {
+                    onClearHistory();
+                  }
+                },
+                itemBuilder: (context) {
+                  return [
+                    const PopupMenuItem<String>(
+                      key: Key('music_clear_listening_history_menu_item'),
+                      value: 'clear',
+                      child: Text('Clear listening history'),
+                    ),
+                  ];
+                },
+              ),
+          ],
+        );
+      },
     );
   }
 }

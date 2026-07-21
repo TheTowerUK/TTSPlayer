@@ -882,4 +882,106 @@ void main() {
       coordinator.dispose();
     });
   });
+
+  group('MusicListeningCoordinator clear history', () {
+    test('clearAll while paused does not immediately recreate a record',
+        () async {
+      SharedPreferences.setMockInitialValues({});
+      final playback = _stubPlaybackService();
+      final repository = MusicListeningRepository();
+      await repository.initialize();
+      final queue = MusicPlaybackQueueController(playbackService: playback);
+      final coordinator = MusicListeningCoordinator(
+        repository: repository,
+        playbackService: playback,
+        queueController: queue,
+      );
+      queue.pendingListeningWriteDrain = coordinator.drainPendingWrites;
+      coordinator.attach();
+
+      final track = _track('track-a');
+      await repository.upsert(
+        MusicListeningRecord(
+          trackId: track.id,
+          title: track.title,
+          artist: 'Artist',
+          album: 'Album',
+          duration: const Duration(minutes: 4),
+          lastPosition: const Duration(seconds: 60),
+          completed: false,
+          lastPlayedAt: DateTime.utc(2026, 7, 21),
+        ),
+      );
+
+      queue.seedSingleTrack(track);
+      await _primeAudioPlayback(
+        playback,
+        queue,
+        track,
+        coordinator,
+        position: const Duration(seconds: 60),
+        playing: false,
+      );
+
+      expect(repository.storedRecordCount, 1);
+
+      final clearResult = await repository.clearAll();
+      expect(clearResult.outcome, MusicListeningClearOutcome.cleared);
+      expect(repository.storedRecordCount, 0);
+
+      await coordinator.waitForIdleForTest();
+      expect(repository.storedRecordCount, 0);
+
+      coordinator.dispose();
+    });
+
+    test('clearAll during playback does not stop playback or change queue',
+        () async {
+      SharedPreferences.setMockInitialValues({});
+      final playback = _stubPlaybackService();
+      final repository = MusicListeningRepository();
+      await repository.initialize();
+      final queue = MusicPlaybackQueueController(playbackService: playback);
+      final coordinator = MusicListeningCoordinator(
+        repository: repository,
+        playbackService: playback,
+        queueController: queue,
+      );
+      queue.pendingListeningWriteDrain = coordinator.drainPendingWrites;
+      coordinator.attach();
+
+      final track = _track('track-a');
+      queue.seedSingleTrack(track);
+      await _primeAudioPlayback(
+        playback,
+        queue,
+        track,
+        coordinator,
+        position: const Duration(seconds: 30),
+        playing: true,
+      );
+
+      await repository.upsert(
+        MusicListeningRecord(
+          trackId: track.id,
+          title: track.title,
+          artist: 'Artist',
+          album: 'Album',
+          duration: const Duration(minutes: 4),
+          lastPosition: const Duration(seconds: 30),
+          completed: false,
+          lastPlayedAt: DateTime.utc(2026, 7, 21),
+        ),
+      );
+
+      final clearResult = await repository.clearAll();
+      expect(clearResult.outcome, MusicListeningClearOutcome.cleared);
+
+      expect(playback.isPlaying, isTrue);
+      expect(queue.currentTrack?.id, track.id);
+      expect(playback.position, const Duration(seconds: 30));
+
+      coordinator.dispose();
+    });
+  });
 }

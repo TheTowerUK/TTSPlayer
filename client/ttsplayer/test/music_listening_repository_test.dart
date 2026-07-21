@@ -6,6 +6,7 @@ import 'package:ttsplayer/features/music/models/music_listening_policy.dart';
 import 'package:ttsplayer/features/music/models/music_listening_record.dart';
 import 'package:ttsplayer/features/music/services/music_listening_repository.dart';
 import 'package:ttsplayer/models/catalog.dart';
+import 'package:ttsplayer/services/library/library_metadata_repository.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -396,9 +397,129 @@ void main() {
 
       await repository.upsert(testRecord(trackId: trackA));
       await repository.upsert(testRecord(trackId: trackB));
+      final result = await repository.clearAll();
+
+      expect(result.outcome, MusicListeningClearOutcome.cleared);
+      expect(result.success, isTrue);
+      expect(result.changed, isTrue);
+      expect(repository.allRecords, isEmpty);
+
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(MusicListeningRepository.storageKey);
+      expect(raw, isNotNull);
+      final envelope = jsonDecode(raw!) as Map<String, dynamic>;
+      expect(envelope['stateVersion'],
+          MusicListeningRepository.currentStateVersion);
+      expect(envelope['records'], isEmpty);
+    });
+
+    test('clearAll notifies listeners once on success', () async {
+      final repository = MusicListeningRepository();
+      await repository.initialize();
+      await repository.upsert(testRecord(trackId: trackA));
+
+      var notifyCount = 0;
+      repository.addListener(() => notifyCount++);
+
+      final result = await repository.clearAll();
+      expect(result.outcome, MusicListeningClearOutcome.cleared);
+      expect(notifyCount, 1);
+    });
+
+    test('clearAll on empty history is a no-op', () async {
+      final repository = MusicListeningRepository();
+      await repository.initialize();
+
+      var notifyCount = 0;
+      repository.addListener(() => notifyCount++);
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.containsKey(MusicListeningRepository.storageKey), isFalse);
+
+      final result = await repository.clearAll();
+      expect(result.outcome, MusicListeningClearOutcome.alreadyEmpty);
+      expect(result.success, isTrue);
+      expect(result.changed, isFalse);
+      expect(notifyCount, 0);
+      expect(prefs.containsKey(MusicListeningRepository.storageKey), isFalse);
+    });
+
+    test('clearAll failure preserves in-memory records', () async {
+      final repository = MusicListeningRepository();
+      await repository.initialize();
+      await repository.upsert(testRecord(trackId: trackA));
+      await repository.upsert(testRecord(trackId: trackB));
+
+      repository.simulatePersistFailure = true;
+      final result = await repository.clearAll();
+
+      expect(result.outcome, MusicListeningClearOutcome.persistenceFailed);
+      expect(result.success, isFalse);
+      expect(repository.storedRecordCount, 2);
+    });
+
+    test('clearAll succeeds after prior failure', () async {
+      final repository = MusicListeningRepository();
+      await repository.initialize();
+      await repository.upsert(testRecord(trackId: trackA));
+
+      repository.simulatePersistFailure = true;
+      expect(
+        (await repository.clearAll()).outcome,
+        MusicListeningClearOutcome.persistenceFailed,
+      );
+      expect(repository.storedRecordCount, 1);
+
+      repository.simulatePersistFailure = false;
+      final retry = await repository.clearAll();
+      expect(retry.outcome, MusicListeningClearOutcome.cleared);
+      expect(repository.allRecords, isEmpty);
+    });
+
+    test('clearAll leaves video Continue Watching keys unchanged', () async {
+      const videoId = 'video-1';
+      SharedPreferences.setMockInitialValues({
+        'position_$videoId': 120,
+        'duration_$videoId': 3600,
+      });
+
+      final repository = MusicListeningRepository();
+      await repository.initialize();
+      await repository.upsert(testRecord(trackId: trackA));
+
+      final result = await repository.clearAll();
+      expect(result.outcome, MusicListeningClearOutcome.cleared);
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getInt('position_$videoId'), 120);
+      expect(prefs.getInt('duration_$videoId'), 3600);
+    });
+
+    test('clearAll leaves library metadata favourites unchanged', () async {
+      const favItemId = 'fav-item-1';
+      SharedPreferences.setMockInitialValues({
+        LibraryMetadataRepository.storageKey: jsonEncode({
+          'metadataVersion': 1,
+          'favourites': {
+            'items': [
+              {
+                'id': favItemId,
+                'favouritedAt': '2026-07-13T09:00:00+00:00',
+              },
+            ],
+            'folders': [],
+          },
+        }),
+      });
+
+      final repository = MusicListeningRepository();
+      await repository.initialize();
+      await repository.upsert(testRecord(trackId: trackA));
       await repository.clearAll();
 
-      expect(repository.allRecords, isEmpty);
+      final metadata = LibraryMetadataRepository();
+      await metadata.initialize();
+      expect(metadata.isItemFavourited(favItemId), isTrue);
     });
 
     test('continueListening excludes completed records', () async {

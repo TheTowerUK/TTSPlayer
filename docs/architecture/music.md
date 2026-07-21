@@ -423,6 +423,8 @@ Separate from `catalog.json` and separate from video resume keys where policies 
 
 **Implementation (Step 5):** Presentation consumes `MusicListeningRepository` via `Consumer2` on `MusicScreen` and `MusicRecentlyPlayedScreen`. `music_listening_presentation.dart` resolves catalogue items strictly by `trackId` (`MusicLibraryProjection.findTrackById`); snapshot fields are display fallback only. `openMusicPlayerFromListeningRecord` seeds album queue when the track maps to a projection album, otherwise a one-track queue; start position comes from `historyPlaybackStartPosition`. Stale records are hidden from Continue Listening and disabled on Recently Played. No dashboard Continue Listening; video Continue Watching unchanged.
 
+**Implementation (Step 6):** `MusicListeningRepository.clearAll()` returns `MusicListeningClearResult` — persists an empty versioned envelope before mutating in-memory state; `alreadyEmpty` is a no-op without notification; persistence failure preserves records. UI: Recently Played AppBar menu → `ClearListeningHistoryDialog` → snackbar acknowledgement. Clearing does not stop playback, alter queues, or touch video resume keys / favourites. The coordinator may recreate history on a later normal flush while a track is playing.
+
 
 ---
 

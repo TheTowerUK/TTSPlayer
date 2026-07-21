@@ -1,6 +1,6 @@
 # M5 Phase 5.4 — Listening History and Continue Listening
 
-**Status:** **PLANNING** — Step 5 complete (2026-07-21)
+**Status:** **PLANNING** — Step 6 complete (2026-07-21)
 **Milestone:** M5 — Music
 **Branch:** `m5-development`
 **Predecessor:** Phase 5.3 complete (2026-07-21)
@@ -214,6 +214,59 @@ Snapshot `title` / `artist` / `album` are display fallback only.
 - [ ] Existing album/artist/folder navigation remains intact
 
 **Validation:** 16 widget/navigation tests; full Flutter suite **828 passed**, 11 skipped, 0 failed. No clear-history UI, diagnostics, or dashboard changes in this step.
+
+---
+
+## Step 6 — Clear listening history (2026-07-21)
+
+**Status:** ✅ **Complete**
+
+| Deliverable | Path |
+|---|---|
+| Clear result type | `MusicListeningClearResult` / `MusicListeningClearOutcome` in `music_listening_repository.dart` |
+| Repository API | `MusicListeningRepository.clearAll()` |
+| Confirmation dialog | `client/ttsplayer/lib/features/music/widgets/clear_listening_history_dialog.dart` |
+| UI entry point | `MusicRecentlyPlayedScreen` AppBar overflow menu |
+| Repository tests | `client/ttsplayer/test/music_listening_repository_test.dart` (7 clear tests) |
+| UI + coordinator tests | `music_listening_presentation_test.dart`, `music_listening_coordinator_test.dart` |
+
+### UI placement
+
+**Recently Played screen only** — AppBar `PopupMenuButton` (`music_recently_played_menu`) with **Clear listening history**. Hidden when repository is loading or `storedRecordCount == 0`. Not on Music landing, dashboard, or Settings.
+
+### Confirmation dialog
+
+- **Title:** Clear listening history?
+- **Body:** Removes Continue Listening and Recently Played entries; music files, queues, favourites, and video watch history unaffected.
+- **Actions:** Cancel | Clear (destructive `AppColors.error` fill)
+- Cancel / Escape / dismiss → no change
+- Clear disabled with progress indicator while persistence runs
+
+### Repository clear semantics
+
+| Outcome | Behaviour |
+|---|---|
+| `cleared` | Empty versioned envelope persisted; in-memory records cleared; `notifyListeners()` once |
+| `alreadyEmpty` | No persistence write; no notification |
+| `persistenceFailed` | In-memory records unchanged; failure result returned (not thrown) |
+
+### Active playback after clear
+
+Clearing history does **not** stop playback, change queue, or reset coordinator session state. The coordinator does not observe repository clears. While paused, clear does not immediately recreate a record. During active playback, a record may be written again only on a subsequent coordinator flush under existing 15 s / 5 s throttle rules (`hadExistingRecord` on the in-memory session).
+
+### Manual QA checklist (Step 6 — prepared, not signed off)
+
+- [ ] Recently Played offers Clear listening history when records exist
+- [ ] Confirmation wording clearly explains scope
+- [ ] Cancel and Escape preserve history
+- [ ] Confirm clears Continue Listening and Recently Played
+- [ ] Recently Played navigation remains available
+- [ ] Active music continues playing; queue intact
+- [ ] Failure shows safe message and preserves records
+- [ ] Keyboard navigation and focus work on Windows
+- [ ] Video Continue Watching data unchanged
+
+**Validation:** 18 new/extended tests; full Flutter suite **846 passed**, 11 skipped, 0 failed.
 
 ---
 
@@ -681,12 +734,11 @@ Phase 5.4 is complete when:
 | **3** | `MusicListeningCoordinator` + playback hooks + unit tests | `feat(music): persist listening progress from playback` | ✅ |
 | **4** | Catalogue reconciliation in `CatalogCacheCoordinator` | `feat(music): reconcile listening history on catalogue replace` | ✅ |
 | **5** | `MusicScreen` Continue Listening + Recently Played UI + resume navigation | `feat(music): add Continue Listening and Recently Played UI` | ✅ |
-| **6** | `MusicRecentlyPlayedScreen` + navigation resume wiring | *(delivered in Step 5)* | ✅ |
-| **7** | Clear history + confirmation | `feat(music): add clear listening history action` |
-| **8** | Diagnostics summary fields | `feat(diagnostics): add music listening summary counts` |
-| **9** | Integration + widget tests | `test(music): cover listening history and Continue Listening` |
-| **10** | Windows runtime harness `PHASE_54_RUNTIME` | `test(music): add Phase 5.4 Windows runtime harness` |
-| **11** | Documentation + ADR-022 update + phase closure | `docs(m5.4): close listening history phase` |
+| **6** | Clear listening history + confirmation | `feat(music): add clear listening history action` | ✅ |
+| **7** | Diagnostics summary fields | `feat(diagnostics): add music listening summary counts` |
+| **8** | Integration + widget tests | `test(music): cover listening history and Continue Listening` |
+| **9** | Windows runtime harness `PHASE_54_RUNTIME` | `test(music): add Phase 5.4 Windows runtime harness` |
+| **10** | Documentation + ADR-022 update + phase closure | `docs(m5.4): close listening history phase` |
 
 Do not combine unrelated steps. README.md remains unstaged.
 

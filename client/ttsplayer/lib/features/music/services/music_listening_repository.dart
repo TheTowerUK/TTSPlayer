@@ -39,6 +39,35 @@ class MusicListeningSaveResult {
   final String? errorMessage;
 }
 
+/// Outcome category for [MusicListeningRepository.clearAll].
+enum MusicListeningClearOutcome {
+  /// History was persisted as empty and in-memory records were cleared.
+  cleared,
+
+  /// No records were stored; no persistence or notification.
+  alreadyEmpty,
+
+  /// Persistence failed; in-memory records unchanged.
+  persistenceFailed,
+}
+
+/// Outcome of [MusicListeningRepository.clearAll].
+class MusicListeningClearResult {
+  const MusicListeningClearResult({
+    required this.outcome,
+    this.errorMessage,
+  });
+
+  final MusicListeningClearOutcome outcome;
+  final String? errorMessage;
+
+  bool get success =>
+      outcome == MusicListeningClearOutcome.cleared ||
+      outcome == MusicListeningClearOutcome.alreadyEmpty;
+
+  bool get changed => outcome == MusicListeningClearOutcome.cleared;
+}
+
 /// Outcome of [MusicListeningRepository.validateAgainstCatalog].
 class MusicListeningValidationResult {
   const MusicListeningValidationResult({
@@ -188,8 +217,28 @@ class MusicListeningRepository extends ChangeNotifier {
     return _persist(next);
   }
 
-  Future<MusicListeningSaveResult> clearAll() async {
-    return _persist(const []);
+  /// Removes all listening records after successful persistence.
+  ///
+  /// Returns [MusicListeningClearOutcome.alreadyEmpty] without writing when
+  /// history is already empty.
+  Future<MusicListeningClearResult> clearAll() async {
+    if (_records.isEmpty) {
+      return const MusicListeningClearResult(
+        outcome: MusicListeningClearOutcome.alreadyEmpty,
+      );
+    }
+
+    final saveResult = await _persist(const []);
+    if (!saveResult.success) {
+      return MusicListeningClearResult(
+        outcome: MusicListeningClearOutcome.persistenceFailed,
+        errorMessage: saveResult.errorMessage,
+      );
+    }
+
+    return const MusicListeningClearResult(
+      outcome: MusicListeningClearOutcome.cleared,
+    );
   }
 
   /// Prunes records whose [MusicListeningRecord.trackId] is absent from [catalog]
