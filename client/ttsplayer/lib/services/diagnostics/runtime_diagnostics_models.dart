@@ -194,6 +194,39 @@ class PlaybackDiagnostics {
   final String? sessionItemId;
 }
 
+/// Music listening history aggregates — counts and flags only (M5.4 Step 7).
+class MusicListeningDiagnostics {
+  const MusicListeningDiagnostics({
+    required this.status,
+    this.repositoryLoaded,
+    this.storedRecordCount,
+    this.continueListeningCount,
+    this.recentlyPlayedCount,
+    this.completedRecordCount,
+    this.incompleteRecordCount,
+    this.recoveryWarningPresent,
+    this.coordinatorAttached,
+    this.sessionActive,
+    this.pendingWrite,
+    this.persistenceWarningPresent,
+    this.lastPersistenceWarningSummary,
+  });
+
+  final DiagnosticSectionStatus status;
+  final bool? repositoryLoaded;
+  final int? storedRecordCount;
+  final int? continueListeningCount;
+  final int? recentlyPlayedCount;
+  final int? completedRecordCount;
+  final int? incompleteRecordCount;
+  final bool? recoveryWarningPresent;
+  final bool? coordinatorAttached;
+  final bool? sessionActive;
+  final bool? pendingWrite;
+  final bool? persistenceWarningPresent;
+  final String? lastPersistenceWarningSummary;
+}
+
 /// User library metadata aggregates — no item names or ids.
 class LibraryDiagnostics {
   const LibraryDiagnostics({
@@ -227,6 +260,7 @@ class RuntimeDiagnosticsSnapshot {
     required this.cache,
     required this.search,
     required this.playback,
+    this.musicListening,
     this.library,
   });
 
@@ -237,5 +271,6 @@ class RuntimeDiagnosticsSnapshot {
   final CacheDiagnostics cache;
   final SearchDiagnostics search;
   final PlaybackDiagnostics playback;
+  final MusicListeningDiagnostics? musicListening;
   final LibraryDiagnostics? library;
 }

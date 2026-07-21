@@ -271,6 +271,79 @@ String formatDiagnosticsExport(RuntimeDiagnosticsSnapshot snapshot) {
     _writeLine(buffer, 'Session item id', playback.sessionItemId);
   });
 
+  final musicListening = snapshot.musicListening;
+  _writeSection(buffer, 'Music Listening', () {
+    if (musicListening == null) {
+      _writeLine(buffer, 'Status', 'Unavailable');
+      return;
+    }
+    _writeLine(
+      buffer,
+      'Status',
+      _sectionStatusLabel(musicListening.status),
+    );
+    _writeLine(
+      buffer,
+      'Repository loaded',
+      _formatBool(musicListening.repositoryLoaded),
+    );
+    _writeLine(
+      buffer,
+      'Stored records',
+      _formatInt(musicListening.storedRecordCount),
+    );
+    _writeLine(
+      buffer,
+      'Continue listening',
+      _formatInt(musicListening.continueListeningCount),
+    );
+    _writeLine(
+      buffer,
+      'Recently played',
+      _formatInt(musicListening.recentlyPlayedCount),
+    );
+    _writeLine(
+      buffer,
+      'Completed records',
+      _formatInt(musicListening.completedRecordCount),
+    );
+    _writeLine(
+      buffer,
+      'Incomplete records',
+      _formatInt(musicListening.incompleteRecordCount),
+    );
+    _writeLine(
+      buffer,
+      'Recovery warning present',
+      _formatBool(musicListening.recoveryWarningPresent),
+    );
+    _writeLine(
+      buffer,
+      'Coordinator attached',
+      _formatBool(musicListening.coordinatorAttached),
+    );
+    _writeLine(
+      buffer,
+      'Active session',
+      _formatBool(musicListening.sessionActive),
+    );
+    _writeLine(
+      buffer,
+      'Pending write',
+      _formatBool(musicListening.pendingWrite),
+    );
+    _writeLine(
+      buffer,
+      'Persistence warning present',
+      _formatBool(musicListening.persistenceWarningPresent),
+    );
+    _writeLine(
+      buffer,
+      'Last persistence warning',
+      musicListening.lastPersistenceWarningSummary,
+    );
+  });
+
   final library = snapshot.library;
   _writeSection(buffer, 'Library', () {
     if (library == null) {

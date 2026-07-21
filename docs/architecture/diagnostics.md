@@ -95,7 +95,7 @@ Duplicate Refresh/Copy operations share an in-flight guard.
 
 ---
 
-## Seven sections (stable order)
+## Eight sections (stable order)
 
 | # | Section | Primary sources |
 |---|---|---|
@@ -105,9 +105,30 @@ Duplicate Refresh/Copy operations share an in-flight guard.
 | 4 | Cache | `ArtworkService` counters, Flutter `ImageCache` bytes |
 | 5 | Search | `SearchService` index lifecycle |
 | 6 | Playback | `PlaybackService`, `playback_platform.dart` |
-| 7 | Library | `LibraryMetadataRepository` favourite counts |
+| 7 | Music Listening | `MusicListeningRepository`, `MusicListeningCoordinator` (M5.4 Step 7) |
+| 8 | Library | `LibraryMetadataRepository` favourite counts |
 
 Each section carries `DiagnosticSectionStatus` (`complete`, `partial`, `unavailable`). Nullable fields mean unavailable; `false` and `0` retain distinct semantics.
+
+### Music Listening section (M5.4 Step 7)
+
+| Field | Source | Redaction |
+|---|---|---|
+| `repositoryLoaded` | `MusicListeningRepository.isLoaded` | bool |
+| `storedRecordCount` | Repository aggregate | count |
+| `continueListeningCount` | Resume-eligible records | count |
+| `recentlyPlayedCount` | Default Recently Played cap | count |
+| `completedRecordCount` / `incompleteRecordCount` | Repository aggregates | counts |
+| `recoveryWarningPresent` | Envelope parse recovery | bool (not message text) |
+| `coordinatorAttached` / `sessionActive` / `pendingWrite` | Coordinator observables | bool |
+| `persistenceWarningPresent` | Coordinator flag | bool |
+| `lastPersistenceWarningSummary` | Generic safe text via `_safeErrorSummary` | no paths |
+
+**Never exported:** track IDs, titles, artists, albums, file paths, URLs, artwork paths, per-record timestamps, raw preference payloads.
+
+**Read-only:** diagnostics capture does not load, persist, clear, or reconcile listening history.
+
+Snapshot type: `MusicListeningDiagnostics` on `RuntimeDiagnosticsSnapshot.musicListening` (nullable when repository not loaded or not wired).
 
 ---
 
@@ -135,6 +156,7 @@ Diagnostics operations (open, refresh, copy) do **not**:
 - Change playback state or rate
 - Save or reset Settings
 - Reset diagnostic counters
+- Load, persist, clear, or reconcile music listening history (M5.4 Step 7)
 
 Verified by integration tests, clipboard tests, and Windows runtime harness D5–D6 non-mutation audit.
 

@@ -40,7 +40,9 @@
 
 **M5.4 Step 5 (2026-07-21):** Continue Listening and Recently Played UI on `MusicScreen`; `MusicRecentlyPlayedScreen`; resume/replay via `openMusicPlayerFromListeningRecord` with album-or-single queue seeding and `historyPlaybackStartPosition`. Presentation depends on `MusicListeningRepository` queries only. Clear history, diagnostics, and queue persistence remain deferred. Status stays **Partially Accepted**.
 
-**M5.4 Step 6 (2026-07-21):** `MusicListeningRepository.clearAll()` with `MusicListeningClearResult`; Recently Played overflow menu and confirmation dialog. Successful clear persists empty envelope before in-memory update; playback and queues unchanged. Diagnostics and queue persistence remain deferred. Status stays **Partially Accepted**.
+**M5.4 Step 6 (2026-07-21):** `MusicListeningRepository.clearAll()` with `MusicListeningClearResult`; Recently Played overflow menu and confirmation dialog. Successful clear persists empty envelope before in-memory update; playback and queues unchanged. Queue persistence remains deferred. Status stays **Partially Accepted**.
+
+**M5.4 Step 7 (2026-07-21):** Music listening diagnostics section — `MusicListeningDiagnostics` with aggregate counts and coordinator session flags; no record-level metadata in export. Diagnostics capture is read-only (no load/persist/clear/reconcile). Queue persistence remains deferred. Status stays **Partially Accepted**.
 
 ---
 

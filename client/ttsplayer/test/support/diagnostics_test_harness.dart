@@ -5,6 +5,10 @@ import 'package:ttsplayer/features/settings/diagnostics_clipboard.dart';
 import 'package:ttsplayer/features/settings/diagnostics_screen.dart';
 import 'package:ttsplayer/theme/app_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ttsplayer/features/music/models/music_listening_record.dart';
+import 'package:ttsplayer/features/music/services/music_listening_coordinator.dart';
+import 'package:ttsplayer/features/music/services/music_listening_repository.dart';
+import 'package:ttsplayer/features/music/services/music_playback_queue_controller.dart';
 import 'package:ttsplayer/features/search/search_service.dart';
 import 'package:ttsplayer/models/catalog.dart';
 import 'package:ttsplayer/models/catalogue_provider_snapshot.dart';
@@ -106,8 +110,8 @@ class StubCatalogService extends CatalogService {
     this.lastRefresh,
     this.lastLoad,
     this.catalogPathValue,
-  }) : _stubSnapshot = stubSnapshot ?? diagnosticsProviderSnapshot(),
-       _stubCatalog = stubCatalog;
+  })  : _stubSnapshot = stubSnapshot ?? diagnosticsProviderSnapshot(),
+        _stubCatalog = stubCatalog;
 
   Catalog? _stubCatalog;
   final CatalogueProviderSnapshot _stubSnapshot;
@@ -170,6 +174,61 @@ class ThrowingSearchService extends SearchService {
   bool get hasIndex => throw StateError('search unavailable');
 }
 
+class ThrowingMusicListeningRepository extends MusicListeningRepository {
+  ThrowingMusicListeningRepository({super.initialRecords});
+
+  bool throwOnDiagnosticsRead = false;
+
+  @override
+  int get storedRecordCount {
+    if (throwOnDiagnosticsRead) {
+      throw StateError('music listening unavailable');
+    }
+    return super.storedRecordCount;
+  }
+}
+
+class ThrowingSessionMusicListeningCoordinator
+    extends MusicListeningCoordinator {
+  ThrowingSessionMusicListeningCoordinator({
+    required super.repository,
+    required super.playbackService,
+    required super.queueController,
+  });
+
+  @override
+  bool get sessionActive => throw StateError('coordinator session unavailable');
+}
+
+Future<MusicListeningRepository> initializedMusicListeningRepository({
+  List<MusicListeningRecord>? initialRecords,
+}) async {
+  SharedPreferences.setMockInitialValues({});
+  final repository = MusicListeningRepository();
+  await repository.initialize();
+  for (final record in initialRecords ?? const <MusicListeningRecord>[]) {
+    await repository.upsert(record);
+  }
+  return repository;
+}
+
+MusicListeningCoordinator musicListeningCoordinatorHarness({
+  required MusicListeningRepository repository,
+  PlaybackService? playbackService,
+  MusicPlaybackQueueController? queueController,
+}) {
+  final playback = playbackService ?? PlaybackService();
+  final queue = queueController ??
+      MusicPlaybackQueueController(playbackService: playback);
+  final coordinator = MusicListeningCoordinator(
+    repository: repository,
+    playbackService: playback,
+    queueController: queue,
+  );
+  coordinator.attach();
+  return coordinator;
+}
+
 Future<DiagnosticsService> buildDiagnosticsHarness({
   Catalog? catalog,
   CatalogueProviderSnapshot? providerSnapshot,
@@ -178,6 +237,9 @@ Future<DiagnosticsService> buildDiagnosticsHarness({
   PlaybackService? playbackService,
   LibraryMetadataRepository? libraryMetadataRepository,
   MediaProviderConfigService? configService,
+  MusicListeningRepository? musicListeningRepository,
+  MusicListeningCoordinator? musicListeningCoordinator,
+  bool withInitializedMusicListening = false,
   DateTime? applicationStartedAt,
   Future<PackageInfo> Function()? packageInfoLoader,
   bool Function()? imageCacheAvailableProvider,
@@ -203,6 +265,11 @@ Future<DiagnosticsService> buildDiagnosticsHarness({
     await config.load();
   }
 
+  MusicListeningRepository? musicRepo = musicListeningRepository;
+  if (withInitializedMusicListening && musicRepo == null) {
+    musicRepo = await initializedMusicListeningRepository();
+  }
+
   return DiagnosticsService(
     catalogService: StubCatalogService(
       stubCatalog: catalog,
@@ -214,6 +281,8 @@ Future<DiagnosticsService> buildDiagnosticsHarness({
     playbackService: playbackService ?? PlaybackService(),
     mediaProviderConfigService: config,
     libraryMetadataRepository: metadata,
+    musicListeningRepository: musicRepo,
+    musicListeningCoordinator: musicListeningCoordinator,
     applicationStartedAt:
         applicationStartedAt ?? DateTime.utc(2026, 7, 16, 9, 0),
     packageInfoLoader: packageInfoLoader,
@@ -246,10 +315,12 @@ RuntimeDiagnosticsSnapshot minimalSnapshot({
   DateTime? capturedAt,
   SearchDiagnostics? search,
   PlaybackDiagnostics? playback,
+  MusicListeningDiagnostics? musicListening,
   LibraryDiagnostics? library,
   ProviderDiagnostics? provider,
   CacheDiagnostics? cache,
   bool omitLibrary = false,
+  bool omitMusicListening = false,
 }) {
   final at = capturedAt ?? DateTime.utc(2026, 7, 16, 12);
   return RuntimeDiagnosticsSnapshot(
@@ -294,6 +365,23 @@ RuntimeDiagnosticsSnapshot minimalSnapshot({
           engineLabel: 'media_kit',
           hasActiveSession: false,
         ),
+    musicListening: omitMusicListening
+        ? null
+        : (musicListening ??
+            const MusicListeningDiagnostics(
+              status: DiagnosticSectionStatus.complete,
+              repositoryLoaded: true,
+              storedRecordCount: 0,
+              continueListeningCount: 0,
+              recentlyPlayedCount: 0,
+              completedRecordCount: 0,
+              incompleteRecordCount: 0,
+              recoveryWarningPresent: false,
+              coordinatorAttached: true,
+              sessionActive: false,
+              pendingWrite: false,
+              persistenceWarningPresent: false,
+            )),
     library: omitLibrary
         ? null
         : (library ??
@@ -315,6 +403,8 @@ class FakeDiagnosticsService extends DiagnosticsService {
     required super.mediaProviderConfigService,
     required super.libraryMetadataRepository,
     required super.applicationStartedAt,
+    super.musicListeningRepository,
+    super.musicListeningCoordinator,
   });
 
   int captureCount = 0;

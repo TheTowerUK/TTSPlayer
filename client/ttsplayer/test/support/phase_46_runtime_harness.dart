@@ -193,8 +193,8 @@ class Phase46RuntimeContext {
     final search = SearchService();
     final playback = PlaybackService();
     final applicationStartedAt = DateTime.now().toUtc().subtract(
-      const Duration(minutes: 2),
-    );
+          const Duration(minutes: 2),
+        );
     final diagnostics = ObservedDiagnosticsService(
       catalogService: catalogService,
       artworkService: artwork,
@@ -367,6 +367,7 @@ void phase46AssertExportHeadings(String export) {
     '=== Cache ===',
     '=== Search ===',
     '=== Playback ===',
+    '=== Music Listening ===',
     '=== Library ===',
   ]) {
     expect(export, contains(heading));

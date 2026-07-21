@@ -43,6 +43,15 @@ class MusicListeningCoordinator extends ChangeNotifier {
 
   bool get isAttached => _attached;
 
+  /// Whether a music listening session is currently being tracked.
+  bool get sessionActive => _session != null;
+
+  /// Whether a listening-history write is in flight.
+  bool get pendingWrite => _inFlightWrite != null;
+
+  /// Whether the most recent persistence attempt failed.
+  bool get persistenceWarningPresent => _lastPersistenceWarning != null;
+
   /// Subscribes to playback and queue lifecycle events.
   void attach() {
     if (_attached || _disposed) return;

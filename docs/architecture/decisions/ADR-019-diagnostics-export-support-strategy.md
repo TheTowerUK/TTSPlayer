@@ -53,6 +53,9 @@ App: 0.5.0-dev (build 42) — windows
 === Playback ===
 ...
 
+=== Music Listening ===
+...
+
 === Library ===
 ...
 ```

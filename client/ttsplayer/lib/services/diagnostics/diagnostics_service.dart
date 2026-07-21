@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import '../../features/music/services/music_listening_coordinator.dart';
+import '../../features/music/services/music_listening_repository.dart';
 import '../../features/search/search_service.dart';
 import '../../models/catalogue_provider_snapshot.dart';
 import '../../models/media_folder.dart';
@@ -33,6 +35,8 @@ class DiagnosticsService {
     required MediaProviderConfigService mediaProviderConfigService,
     required LibraryMetadataRepository libraryMetadataRepository,
     required DateTime applicationStartedAt,
+    MusicListeningRepository? musicListeningRepository,
+    MusicListeningCoordinator? musicListeningCoordinator,
     Future<PackageInfo> Function()? packageInfoLoader,
     String Function()? platformNameProvider,
     bool Function()? imageCacheAvailableProvider,
@@ -42,6 +46,8 @@ class DiagnosticsService {
         _playbackService = playbackService,
         _mediaProviderConfigService = mediaProviderConfigService,
         _libraryMetadataRepository = libraryMetadataRepository,
+        _musicListeningRepository = musicListeningRepository,
+        _musicListeningCoordinator = musicListeningCoordinator,
         _applicationStartedAt = applicationStartedAt,
         _packageInfoLoader = packageInfoLoader ?? PackageInfo.fromPlatform,
         _platformNameProvider = platformNameProvider ?? _defaultPlatformName,
@@ -54,6 +60,8 @@ class DiagnosticsService {
   final PlaybackService _playbackService;
   final MediaProviderConfigService _mediaProviderConfigService;
   final LibraryMetadataRepository _libraryMetadataRepository;
+  final MusicListeningRepository? _musicListeningRepository;
+  final MusicListeningCoordinator? _musicListeningCoordinator;
   final DateTime _applicationStartedAt;
   final Future<PackageInfo> Function() _packageInfoLoader;
   final String Function() _platformNameProvider;
@@ -73,6 +81,7 @@ class DiagnosticsService {
     final cache = _captureCache();
     final search = _captureSearch(catalogue);
     final playback = _capturePlayback();
+    final musicListening = _captureMusicListening();
     final library = _captureLibrary(catalogue);
 
     return RuntimeDiagnosticsSnapshot(
@@ -83,6 +92,7 @@ class DiagnosticsService {
       cache: cache,
       search: search,
       playback: playback,
+      musicListening: musicListening,
       library: library,
     );
   }
@@ -92,7 +102,8 @@ class DiagnosticsService {
     return formatDiagnosticsExport(snapshot);
   }
 
-  Future<ApplicationDiagnostics> _captureApplication(DateTime capturedAt) async {
+  Future<ApplicationDiagnostics> _captureApplication(
+      DateTime capturedAt) async {
     try {
       _cachedPackageInfo ??= await _packageInfoLoader();
       final info = _cachedPackageInfo!;
@@ -120,8 +131,7 @@ class DiagnosticsService {
       final rows = snapshot.providers
           .map(
             (record) => ProviderAttemptDiagnostics(
-              providerKindLabel:
-                  providerKindLabel(record.definition.kind.name),
+              providerKindLabel: providerKindLabel(record.definition.kind.name),
               healthLabel: record.health.name,
               isActive: record.isActive,
               lastErrorSummary: _safeErrorSummary(record.lastError),
@@ -137,8 +147,7 @@ class DiagnosticsService {
         activeProviderKindLabel: active == null
             ? 'Unavailable'
             : providerKindLabel(active.kind.name),
-        activeSourceCategoryLabel:
-            _activeSourceCategoryLabel(snapshot, active),
+        activeSourceCategoryLabel: _activeSourceCategoryLabel(snapshot, active),
         configuredProviderCount: config.catalogueProviders.length,
         isUsingFallback: _catalogService.isUsingFallback,
         isDegradedLoad: snapshot.isDegradedLoad,
@@ -178,7 +187,8 @@ class DiagnosticsService {
         lastSuccessfulReplacementAt: _catalogService.lastCatalogueLoadAt,
       );
     } catch (_) {
-      return const CatalogueDiagnostics(status: DiagnosticSectionStatus.unavailable);
+      return const CatalogueDiagnostics(
+          status: DiagnosticSectionStatus.unavailable);
     }
   }
 
@@ -204,7 +214,8 @@ class DiagnosticsService {
         imageCacheLiveImageCount: liveImageCount,
       );
     } catch (_) {
-      return const CacheDiagnostics(status: DiagnosticSectionStatus.unavailable);
+      return const CacheDiagnostics(
+          status: DiagnosticSectionStatus.unavailable);
     }
   }
 
@@ -212,9 +223,8 @@ class DiagnosticsService {
     try {
       final indexedIdentity = _searchService.catalogueIdentity;
       final activeIdentity = _catalogService.catalog?.catalogueIdentity;
-      final bool? matchesActive = activeIdentity == null
-          ? null
-          : indexedIdentity == activeIdentity;
+      final bool? matchesActive =
+          activeIdentity == null ? null : indexedIdentity == activeIdentity;
 
       return SearchDiagnostics(
         status: DiagnosticSectionStatus.complete,
@@ -227,7 +237,8 @@ class DiagnosticsService {
         lastBuildFailureCategory: null,
       );
     } catch (_) {
-      return const SearchDiagnostics(status: DiagnosticSectionStatus.unavailable);
+      return const SearchDiagnostics(
+          status: DiagnosticSectionStatus.unavailable);
     }
   }
 
@@ -235,9 +246,8 @@ class DiagnosticsService {
     try {
       final hasSession = _playbackService.currentItem != null;
       final errorKind = _playbackService.playbackErrorKind;
-      final sessionItemId = hasSession
-          ? redactIdentity(_playbackService.currentItem!.id)
-          : null;
+      final sessionItemId =
+          hasSession ? redactIdentity(_playbackService.currentItem!.id) : null;
 
       return PlaybackDiagnostics(
         status: DiagnosticSectionStatus.complete,
@@ -257,24 +267,77 @@ class DiagnosticsService {
         playbackRate: hasSession ? _playbackService.playbackRate : null,
         errorKind: errorKind,
         errorMessageSummary: _safeErrorSummary(_playbackService.errorMessage),
-        retryAvailable:
-            hasSession ? errorKind != null : null,
-        audioTrackCount: hasSession
-            ? _playbackService.availableAudioTracks.length
-            : null,
-        subtitleTrackCount: hasSession
-            ? _playbackService.availableSubtitleTracks.length
-            : null,
-        hasAudioTrackSelected: hasSession
-            ? _playbackService.selectedAudioTrackId != null
-            : null,
+        retryAvailable: hasSession ? errorKind != null : null,
+        audioTrackCount:
+            hasSession ? _playbackService.availableAudioTracks.length : null,
+        subtitleTrackCount:
+            hasSession ? _playbackService.availableSubtitleTracks.length : null,
+        hasAudioTrackSelected:
+            hasSession ? _playbackService.selectedAudioTrackId != null : null,
         hasSubtitleTrackSelected: hasSession
             ? _playbackService.selectedSubtitleTrackId != null
             : null,
         sessionItemId: sessionItemId,
       );
     } catch (_) {
-      return const PlaybackDiagnostics(status: DiagnosticSectionStatus.unavailable);
+      return const PlaybackDiagnostics(
+          status: DiagnosticSectionStatus.unavailable);
+    }
+  }
+
+  MusicListeningDiagnostics? _captureMusicListening() {
+    final repository = _musicListeningRepository;
+    if (repository == null) {
+      return null;
+    }
+
+    try {
+      if (!repository.isLoaded) {
+        return null;
+      }
+
+      var status = DiagnosticSectionStatus.complete;
+      bool? coordinatorAttached;
+      bool? sessionActive;
+      bool? pendingWrite;
+      bool? persistenceWarningPresent;
+      String? lastPersistenceWarningSummary;
+
+      final coordinator = _musicListeningCoordinator;
+      if (coordinator != null) {
+        try {
+          coordinatorAttached = coordinator.isAttached;
+          sessionActive = coordinator.sessionActive;
+          pendingWrite = coordinator.pendingWrite;
+          persistenceWarningPresent = coordinator.persistenceWarningPresent;
+          lastPersistenceWarningSummary = _safeErrorSummary(
+            coordinator.lastPersistenceWarning,
+          );
+        } catch (_) {
+          status = DiagnosticSectionStatus.partial;
+        }
+      }
+
+      return MusicListeningDiagnostics(
+        status: status,
+        repositoryLoaded: true,
+        storedRecordCount: repository.storedRecordCount,
+        continueListeningCount: repository.continueListeningCount,
+        recentlyPlayedCount: repository.recentlyPlayedVisibleCount,
+        completedRecordCount: repository.completedRecordCount,
+        incompleteRecordCount: repository.incompleteRecordCount,
+        recoveryWarningPresent: repository.recoveryWarningPresent,
+        coordinatorAttached: coordinatorAttached,
+        sessionActive: sessionActive,
+        pendingWrite: pendingWrite,
+        persistenceWarningPresent: persistenceWarningPresent,
+        lastPersistenceWarningSummary: lastPersistenceWarningSummary,
+      );
+    } catch (_) {
+      return const MusicListeningDiagnostics(
+        status: DiagnosticSectionStatus.unavailable,
+        repositoryLoaded: false,
+      );
     }
   }
 
@@ -296,7 +359,8 @@ class DiagnosticsService {
         continueWatchingCount: null,
       );
     } catch (_) {
-      return const LibraryDiagnostics(status: DiagnosticSectionStatus.unavailable);
+      return const LibraryDiagnostics(
+          status: DiagnosticSectionStatus.unavailable);
     }
   }
 

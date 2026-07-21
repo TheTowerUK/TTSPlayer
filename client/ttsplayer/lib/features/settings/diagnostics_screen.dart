@@ -92,8 +92,7 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
         if (_snapshot == null) {
           _screenError = 'Diagnostics could not be collected.';
         } else {
-          _refreshMessage =
-              'Refresh failed. Showing the previous snapshot.';
+          _refreshMessage = 'Refresh failed. Showing the previous snapshot.';
         }
       });
     }
@@ -270,6 +269,8 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
                 const SizedBox(height: AppSpacing.section),
                 _buildPlaybackSection(snapshot),
                 const SizedBox(height: AppSpacing.section),
+                _buildMusicListeningSection(snapshot),
+                const SizedBox(height: AppSpacing.section),
                 _buildLibrarySection(snapshot),
                 const SizedBox(height: AppSpacing.section),
                 Tooltip(
@@ -350,7 +351,8 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
       ),
       DiagnosticsValueRow(
         label: 'Active provider kind',
-        value: DiagnosticsFormatters.textValue(provider.activeProviderKindLabel),
+        value:
+            DiagnosticsFormatters.textValue(provider.activeProviderKindLabel),
       ),
       DiagnosticsValueRow(
         label: 'Active source',
@@ -564,7 +566,8 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
         ),
         DiagnosticsValueRow(
           label: 'Indexed identity',
-          value: DiagnosticsFormatters.textValue(search.indexedCatalogueIdentity),
+          value:
+              DiagnosticsFormatters.textValue(search.indexedCatalogueIdentity),
         ),
         DiagnosticsValueRow(
           label: 'Indexed items',
@@ -572,13 +575,15 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
         ),
         DiagnosticsValueRow(
           label: 'Matches active catalogue',
-          value: DiagnosticsFormatters.boolValue(search.indexMatchesActiveCatalogue),
+          value: DiagnosticsFormatters.boolValue(
+              search.indexMatchesActiveCatalogue),
         ),
         DiagnosticsValueRow(
           label: 'Last build failure',
           value: search.lastBuildFailureCategory == null
               ? DiagnosticsFormatters.notApplicable()
-              : DiagnosticsFormatters.textValue(search.lastBuildFailureCategory),
+              : DiagnosticsFormatters.textValue(
+                  search.lastBuildFailureCategory),
         ),
       ],
     );
@@ -599,11 +604,13 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
         ),
         DiagnosticsValueRow(
           label: 'Platform supported',
-          value: DiagnosticsFormatters.boolValue(playback.playbackPlatformSupported),
+          value: DiagnosticsFormatters.boolValue(
+              playback.playbackPlatformSupported),
         ),
         DiagnosticsValueRow(
           label: 'Speed settings supported',
-          value: DiagnosticsFormatters.boolValue(playback.speedSettingsSupported),
+          value:
+              DiagnosticsFormatters.boolValue(playback.speedSettingsSupported),
         ),
         DiagnosticsValueRow(
           label: 'Active session',
@@ -648,7 +655,8 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
         DiagnosticsValueRow(
           label: 'Can select subtitles',
           value: hasSession
-              ? DiagnosticsFormatters.boolValue(playback.canSelectSubtitleTracks)
+              ? DiagnosticsFormatters.boolValue(
+                  playback.canSelectSubtitleTracks)
               : DiagnosticsFormatters.notApplicable(),
         ),
         DiagnosticsValueRow(
@@ -692,8 +700,100 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
         DiagnosticsValueRow(
           label: 'Subtitle selected',
           value: hasSession
-              ? DiagnosticsFormatters.boolValue(playback.hasSubtitleTrackSelected)
+              ? DiagnosticsFormatters.boolValue(
+                  playback.hasSubtitleTrackSelected)
               : DiagnosticsFormatters.notApplicable(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMusicListeningSection(RuntimeDiagnosticsSnapshot snapshot) {
+    final musicListening = snapshot.musicListening;
+    if (musicListening == null) {
+      return const DiagnosticsSection(
+        sectionKey: Key('diagnostics_section_music_listening'),
+        title: 'Music Listening',
+        status: DiagnosticSectionStatus.unavailable,
+        children: [
+          DiagnosticsValueRow(
+            label: 'Availability',
+            value: 'Unavailable',
+          ),
+        ],
+      );
+    }
+
+    return DiagnosticsSection(
+      sectionKey: const Key('diagnostics_section_music_listening'),
+      title: 'Music Listening',
+      status: musicListening.status,
+      children: [
+        DiagnosticsValueRow(
+          label: 'Repository loaded',
+          value:
+              DiagnosticsFormatters.boolValue(musicListening.repositoryLoaded),
+          valueKey: const Key('diagnostics_music_listening_loaded'),
+        ),
+        DiagnosticsValueRow(
+          label: 'Stored records',
+          value:
+              DiagnosticsFormatters.intValue(musicListening.storedRecordCount),
+          valueKey: const Key('diagnostics_music_listening_stored'),
+        ),
+        DiagnosticsValueRow(
+          label: 'Continue listening',
+          value: DiagnosticsFormatters.intValue(
+            musicListening.continueListeningCount,
+          ),
+          valueKey: const Key('diagnostics_music_listening_continue'),
+        ),
+        DiagnosticsValueRow(
+          label: 'Recently played',
+          value: DiagnosticsFormatters.intValue(
+              musicListening.recentlyPlayedCount),
+        ),
+        DiagnosticsValueRow(
+          label: 'Completed records',
+          value: DiagnosticsFormatters.intValue(
+              musicListening.completedRecordCount),
+        ),
+        DiagnosticsValueRow(
+          label: 'Incomplete records',
+          value: DiagnosticsFormatters.intValue(
+              musicListening.incompleteRecordCount),
+        ),
+        DiagnosticsValueRow(
+          label: 'Recovery warning present',
+          value: DiagnosticsFormatters.boolValue(
+            musicListening.recoveryWarningPresent,
+          ),
+        ),
+        DiagnosticsValueRow(
+          label: 'Coordinator attached',
+          value: DiagnosticsFormatters.boolValue(
+              musicListening.coordinatorAttached),
+        ),
+        DiagnosticsValueRow(
+          label: 'Active session',
+          value: DiagnosticsFormatters.boolValue(musicListening.sessionActive),
+          valueKey: const Key('diagnostics_music_listening_session'),
+        ),
+        DiagnosticsValueRow(
+          label: 'Pending write',
+          value: DiagnosticsFormatters.boolValue(musicListening.pendingWrite),
+        ),
+        DiagnosticsValueRow(
+          label: 'Persistence warning present',
+          value: DiagnosticsFormatters.boolValue(
+            musicListening.persistenceWarningPresent,
+          ),
+        ),
+        DiagnosticsValueRow(
+          label: 'Last persistence warning',
+          value: DiagnosticsFormatters.textValue(
+            musicListening.lastPersistenceWarningSummary,
+          ),
         ),
       ],
     );

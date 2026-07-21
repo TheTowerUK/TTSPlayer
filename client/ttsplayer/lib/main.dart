@@ -96,6 +96,8 @@ Future<void> main() async {
     playbackService: playbackService,
     mediaProviderConfigService: providerConfigService,
     libraryMetadataRepository: libraryMetadataRepository,
+    musicListeningRepository: musicListeningRepository,
+    musicListeningCoordinator: musicListeningCoordinator,
     applicationStartedAt: applicationStartedAt,
   );
 

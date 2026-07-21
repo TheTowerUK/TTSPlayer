@@ -66,6 +66,7 @@ void main() {
       expect(find.text('Cache'), findsOneWidget);
       expect(find.text('Search'), findsOneWidget);
       expect(find.text('Playback'), findsOneWidget);
+      expect(find.text('Music Listening'), findsOneWidget);
       expect(find.text('Library'), findsOneWidget);
       expect(find.textContaining('Instance of'), findsNothing);
     });
@@ -79,7 +80,8 @@ void main() {
 
       expect(find.byKey(const Key('diagnostics_app_version')), findsOneWidget);
       expect(find.textContaining('0.5.0-dev'), findsWidgets);
-      expect(find.byKey(const Key('diagnostics_catalogue_libraries')), findsOneWidget);
+      expect(find.byKey(const Key('diagnostics_catalogue_libraries')),
+          findsOneWidget);
       expect(find.text('1'), findsWidgets);
     });
 
@@ -88,7 +90,8 @@ void main() {
       await _pumpDiagnostics(tester, service);
       await tester.pumpAndSettle();
 
-      expect(find.byKey(const Key('diagnostics_search_has_index')), findsOneWidget);
+      expect(find.byKey(const Key('diagnostics_search_has_index')),
+          findsOneWidget);
       expect(find.text('No'), findsWidgets);
     });
 
@@ -111,12 +114,14 @@ void main() {
       expect(find.text('5'), findsWidgets);
     });
 
-    testWidgets('playback inactive uses not applicable session fields', (tester) async {
+    testWidgets('playback inactive uses not applicable session fields',
+        (tester) async {
       final service = await _fakeService();
       await _pumpDiagnostics(tester, service);
       await tester.pumpAndSettle();
 
-      expect(find.byKey(const Key('diagnostics_playback_active')), findsOneWidget);
+      expect(
+          find.byKey(const Key('diagnostics_playback_active')), findsOneWidget);
       expect(find.text('Inactive'), findsOneWidget);
       expect(find.text('Not applicable'), findsWidgets);
     });
@@ -126,7 +131,8 @@ void main() {
       await _pumpDiagnostics(tester, service);
       await tester.pumpAndSettle();
 
-      expect(find.byKey(const Key('diagnostics_library_favourites')), findsOneWidget);
+      expect(find.byKey(const Key('diagnostics_library_favourites')),
+          findsOneWidget);
       final favourites = tester.widget<SelectableText>(
         find.byKey(const Key('diagnostics_library_favourites')),
       );
@@ -150,20 +156,24 @@ void main() {
       expect(find.textContaining('Partial'), findsWidgets);
     });
 
-    testWidgets('unavailable library section still renders others', (tester) async {
+    testWidgets('unavailable library section still renders others',
+        (tester) async {
       final service = await _fakeService()
         ..snapshotFactory = (_) => minimalSnapshot(omitLibrary: true);
 
       await _pumpDiagnostics(tester, service);
       await tester.pumpAndSettle();
 
-      expect(find.byKey(const Key('diagnostics_section_library')), findsOneWidget);
-      expect(find.byKey(const Key('diagnostics_section_application')), findsOneWidget);
+      expect(
+          find.byKey(const Key('diagnostics_section_library')), findsOneWidget);
+      expect(find.byKey(const Key('diagnostics_section_application')),
+          findsOneWidget);
     });
   });
 
   group('refresh', () {
-    testWidgets('refresh captures new snapshot and updates captured time', (tester) async {
+    testWidgets('refresh captures new snapshot and updates captured time',
+        (tester) async {
       final service = await _fakeService()
         ..snapshotFactory = (count) => minimalSnapshot(
               capturedAt: DateTime.utc(2026, 7, 16, 10, 0, count),
@@ -202,12 +212,14 @@ void main() {
       await tester.tap(find.byKey(const Key('refresh_diagnostics')));
       await tester.pumpAndSettle();
 
-      expect(find.byKey(const Key('diagnostics_refresh_error')), findsOneWidget);
+      expect(
+          find.byKey(const Key('diagnostics_refresh_error')), findsOneWidget);
       expect(find.byKey(const Key('diagnostics_app_version')), findsOneWidget);
       expect(find.textContaining('StateError'), findsNothing);
     });
 
-    testWidgets('duplicate refresh taps do not overlap captures', (tester) async {
+    testWidgets('duplicate refresh taps do not overlap captures',
+        (tester) async {
       final service = await _fakeService()
         ..captureDelay = const Duration(milliseconds: 200);
 
@@ -225,7 +237,8 @@ void main() {
   });
 
   group('redaction regression', () {
-    testWidgets('does not show sensitive path or URL fragments', (tester) async {
+    testWidgets('does not show sensitive path or URL fragments',
+        (tester) async {
       final service = await _fakeService()
         ..snapshotFactory = (_) => minimalSnapshot(
               provider: const ProviderDiagnostics(
@@ -259,7 +272,8 @@ void main() {
     });
 
     testWidgets('initial capture failure shows retry', (tester) async {
-      final service = await _fakeService()..throwOnCapture = StateError('fail');
+      final service = await _fakeService()
+        ..throwOnCapture = StateError('fail');
 
       await _pumpDiagnostics(tester, service);
       await tester.pumpAndSettle();
@@ -274,7 +288,8 @@ void main() {
       final search = SearchService();
       final service = FakeDiagnosticsService(
         catalogService: StubCatalogService(
-          stubCatalog: diagnosticsCatalog(identity: 'REV-NOINDEX', itemCount: 2),
+          stubCatalog:
+              diagnosticsCatalog(identity: 'REV-NOINDEX', itemCount: 2),
         ),
         artworkService: ArtworkService(fileExists: (_) => true),
         searchService: search,

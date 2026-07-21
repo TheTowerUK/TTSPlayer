@@ -1,6 +1,6 @@
 # M5 Phase 5.4 — Listening History and Continue Listening
 
-**Status:** **PLANNING** — Step 6 complete (2026-07-21)
+**Status:** **PLANNING** — Step 7 complete (2026-07-21)
 **Milestone:** M5 — Music
 **Branch:** `m5-development`
 **Predecessor:** Phase 5.3 complete (2026-07-21)
@@ -267,6 +267,75 @@ Clearing history does **not** stop playback, change queue, or reset coordinator 
 - [ ] Video Continue Watching data unchanged
 
 **Validation:** 18 new/extended tests; full Flutter suite **846 passed**, 11 skipped, 0 failed.
+
+---
+
+## Step 7 — Diagnostics integration (2026-07-21)
+
+**Status:** ✅ **Complete**
+
+| Deliverable | Path |
+|---|---|
+| Snapshot DTO | `MusicListeningDiagnostics` in `runtime_diagnostics_models.dart` |
+| Capture | `DiagnosticsService._captureMusicListening()` |
+| Export formatter | `=== Music Listening ===` block in `diagnostics_export_formatter.dart` |
+| UI section | `DiagnosticsScreen._buildMusicListeningSection()` |
+| Repository aggregates | count getters on `MusicListeningRepository` |
+| Coordinator observables | `sessionActive`, `pendingWrite`, `persistenceWarningPresent` |
+| Tests | `client/ttsplayer/test/diagnostics_music_listening_test.dart` (+ harness/heading updates) |
+
+### Section placement
+
+**Section 7 of 8** — after **Playback**, before **Library**. Export heading: `=== Music Listening ===`.
+
+### Diagnostics fields (counts and booleans only)
+
+| Field | Source |
+|---|---|
+| `repositoryLoaded` | `MusicListeningRepository.isLoaded` (section null when false) |
+| `storedRecordCount` | `storedRecordCount` |
+| `continueListeningCount` | `continueListeningCount` (full query, no UI cap) |
+| `recentlyPlayedCount` | `recentlyPlayedVisibleCount` (default query cap) |
+| `completedRecordCount` | `completedRecordCount` |
+| `incompleteRecordCount` | `incompleteRecordCount` |
+| `recoveryWarningPresent` | `recoveryWarningPresent` |
+| `coordinatorAttached` | `MusicListeningCoordinator.isAttached` |
+| `sessionActive` | `sessionActive` |
+| `pendingWrite` | `pendingWrite` |
+| `persistenceWarningPresent` | `persistenceWarningPresent` |
+| `lastPersistenceWarningSummary` | `lastPersistenceWarning` via `_safeErrorSummary` |
+
+**Omitted:** `lastReconciliationFailurePresent` — repository does not retain reconciliation failure history between runs; diagnostics report current state only.
+
+### Privacy / redaction
+
+Never exported: track IDs, titles, artists, albums, paths, URLs, artwork paths, per-record timestamps, raw SharedPreferences payloads, or full exception text that may embed paths. Generic persistence warning text only (`Could not save music listening history.`).
+
+### Failure isolation
+
+| Failure | Behaviour |
+|---|---|
+| Repository not loaded | Section null → UI/export show Availability/Status Unavailable |
+| Repository read throws | Section `unavailable`; other sections complete |
+| Coordinator read throws | Section `partial`; repository counts remain |
+| Other sections unaffected | Provider, Catalogue, Cache, Search, Playback, Library still render |
+
+### Read-only guarantees
+
+Diagnostics capture does **not** call `initialize`, `load`, `upsert`, `clearAll`, `validateAgainstCatalog`, coordinator flush, or read SharedPreferences directly.
+
+### Manual QA checklist (Step 7 — prepared, not signed off)
+
+- [ ] Settings → Diagnostics displays Music Listening
+- [ ] Counts match current listening state
+- [ ] Clearing history updates counts after refresh
+- [ ] Active playback session state updates after refresh
+- [ ] Copy diagnostics contains Music Listening section once
+- [ ] No track titles, artists, album names, IDs, paths, or URLs appear
+- [ ] Music diagnostics failure does not break other sections
+- [ ] Copy-to-clipboard flow remains usable
+
+**Validation:** 14 new tests in `diagnostics_music_listening_test.dart`; full Flutter suite **860 passed**, 11 skipped, 0 failed.
 
 ---
 

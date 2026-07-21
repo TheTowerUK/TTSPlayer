@@ -425,6 +425,8 @@ Separate from `catalog.json` and separate from video resume keys where policies 
 
 **Implementation (Step 6):** `MusicListeningRepository.clearAll()` returns `MusicListeningClearResult` — persists an empty versioned envelope before mutating in-memory state; `alreadyEmpty` is a no-op without notification; persistence failure preserves records. UI: Recently Played AppBar menu → `ClearListeningHistoryDialog` → snackbar acknowledgement. Clearing does not stop playback, alter queues, or touch video resume keys / favourites. The coordinator may recreate history on a later normal flush while a track is playing.
 
+**Implementation (Step 7):** Diagnostics integration via `MusicListeningDiagnostics` (M4 Phase 4.6 patterns). `DiagnosticsService` reads aggregate counts and coordinator flags only — no record-level metadata, no SharedPreferences access, no load/persist/clear/reconcile side effects. Section appears after Playback and before Library in screen and export order.
+
 
 ---
 

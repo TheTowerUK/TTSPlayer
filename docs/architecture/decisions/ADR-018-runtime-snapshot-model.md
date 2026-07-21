@@ -31,6 +31,7 @@ Immutable value object with:
 | `cache` | `CacheDiagnostics` | Required |
 | `search` | `SearchDiagnostics` | Required |
 | `playback` | `PlaybackDiagnostics` | Required |
+| `musicListening` | `MusicListeningDiagnostics?` | Null when listening repository not loaded (M5.4 Step 7) |
 | `library` | `LibraryDiagnostics?` | Null when metadata repo unavailable |
 
 Factory: `DiagnosticsService.captureSnapshot()` — no persistence, no streaming updates. UI may rebuild on navigation or manual refresh.
@@ -136,6 +137,7 @@ Centralize in `DiagnosticsService` or `diagnostics_redaction.dart`:
 - Truncate catalogue/search identities
 - Strip path-like substrings from error messages if they slip through
 - Omit `file_path` fields entirely at mapping time — never read from `MediaItem`
+- **M5.4 Step 7:** Music listening diagnostics expose counts and booleans only — never track IDs, titles, artists, albums, paths, URLs, or per-record timestamps
 
 ---
 

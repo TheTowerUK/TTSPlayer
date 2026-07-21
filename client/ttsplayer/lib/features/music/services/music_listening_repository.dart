@@ -126,6 +126,23 @@ class MusicListeningRepository extends ChangeNotifier {
 
   int get storedRecordCount => _records.length;
 
+  /// Completed records in storage (diagnostics aggregate only).
+  int get completedRecordCount =>
+      _records.where((record) => record.completed).length;
+
+  /// Incomplete records in storage (diagnostics aggregate only).
+  int get incompleteRecordCount =>
+      _records.where((record) => !record.completed).length;
+
+  /// Resume-eligible records (full query, no UI cap).
+  int get continueListeningCount => continueListening().length;
+
+  /// Records visible under the default Recently Played query cap.
+  int get recentlyPlayedVisibleCount => recentlyPlayed().length;
+
+  /// True when the last load reported envelope recovery warnings.
+  bool get recoveryWarningPresent => _lastRecoveryWarnings.isNotEmpty;
+
   /// All records ordered by [MusicListeningRecord.lastPlayedAt] descending.
   List<MusicListeningRecord> get allRecords =>
       List<MusicListeningRecord>.unmodifiable(_records);
