@@ -14,6 +14,7 @@ import 'package:ttsplayer/features/music/screens/music_screen.dart';
 import 'package:ttsplayer/features/music/presentation/music_player_screen.dart';
 import 'package:ttsplayer/features/music/screens/music_track_detail_screen.dart';
 import 'package:ttsplayer/features/music/screens/music_tracks_screen.dart';
+import 'package:ttsplayer/features/music/services/music_listening_repository.dart';
 import 'package:ttsplayer/features/search/search_service.dart';
 import 'package:ttsplayer/models/catalog.dart';
 import 'package:ttsplayer/services/artwork/artwork_service.dart';
@@ -50,10 +51,12 @@ class _FakeCatalogService extends CatalogService {
 Widget _musicHarness({
   required Catalog catalog,
   required Widget child,
+  MusicListeningRepository? listeningRepository,
 }) {
   SharedPreferences.setMockInitialValues({});
   final catalogService = _FakeCatalogService(catalog);
   final settings = SettingsRepository();
+  final listening = listeningRepository ?? MusicListeningRepository();
   return MultiProvider(
     providers: [
       ChangeNotifierProvider<SettingsRepository>.value(value: settings),
@@ -73,6 +76,7 @@ Widget _musicHarness({
       Provider<MusicLibraryService>.value(value: MusicLibraryService()),
       ChangeNotifierProvider<CatalogService>.value(value: catalogService),
       ChangeNotifierProvider<PlaybackService>.value(value: PlaybackService()),
+      ChangeNotifierProvider<MusicListeningRepository>.value(value: listening),
       ChangeNotifierProvider<ScannerService>.value(value: ScannerService()),
       ChangeNotifierProvider<ScanHistoryService>.value(
         value: ScanHistoryService(),
@@ -143,7 +147,8 @@ void main() {
   group('Music navigation', () {
     testWidgets('artists list opens artist detail', (tester) async {
       await tester.pumpWidget(
-        _musicHarness(catalog: _mixedCatalog(), child: const MusicArtistsScreen()),
+        _musicHarness(
+            catalog: _mixedCatalog(), child: const MusicArtistsScreen()),
       );
       await tester.pumpAndSettle();
 
@@ -157,7 +162,8 @@ void main() {
 
     testWidgets('album detail shows per-track play actions', (tester) async {
       await tester.pumpWidget(
-        _musicHarness(catalog: _mixedCatalog(), child: const MusicAlbumsScreen()),
+        _musicHarness(
+            catalog: _mixedCatalog(), child: const MusicAlbumsScreen()),
       );
       await tester.pumpAndSettle();
 
@@ -167,12 +173,15 @@ void main() {
 
       expect(find.byType(MusicAlbumDetailScreen), findsOneWidget);
       expect(find.text('Come Together'), findsOneWidget);
-      expect(find.byKey(const Key('music_track_play_track-complete')), findsOneWidget);
+      expect(find.byKey(const Key('music_track_play_track-complete')),
+          findsOneWidget);
     });
 
-    testWidgets('track row opens detail without starting playback', (tester) async {
+    testWidgets('track row opens detail without starting playback',
+        (tester) async {
       await tester.pumpWidget(
-        _musicHarness(catalog: _mixedCatalog(), child: const MusicTracksScreen()),
+        _musicHarness(
+            catalog: _mixedCatalog(), child: const MusicTracksScreen()),
       );
       await tester.pumpAndSettle();
 
@@ -181,10 +190,12 @@ void main() {
 
       expect(find.byType(MusicTrackDetailScreen), findsOneWidget);
       expect(find.byType(MusicPlayerScreen), findsNothing);
-      expect(find.byKey(const Key('music_track_play_track-complete')), findsOneWidget);
+      expect(find.byKey(const Key('music_track_play_track-complete')),
+          findsOneWidget);
     });
 
-    testWidgets('catalogue replacement rebuilds landing counts', (tester) async {
+    testWidgets('catalogue replacement rebuilds landing counts',
+        (tester) async {
       final catalogService = _FakeCatalogService(_mixedCatalog());
       await tester.pumpWidget(
         MultiProvider(
@@ -207,8 +218,13 @@ void main() {
             Provider<SearchService>.value(value: SearchService()),
             Provider<MusicLibraryService>.value(value: MusicLibraryService()),
             ChangeNotifierProvider<CatalogService>.value(value: catalogService),
-            ChangeNotifierProvider<PlaybackService>.value(value: PlaybackService()),
-            ChangeNotifierProvider<ScannerService>.value(value: ScannerService()),
+            ChangeNotifierProvider<PlaybackService>.value(
+                value: PlaybackService()),
+            ChangeNotifierProvider<MusicListeningRepository>.value(
+              value: MusicListeningRepository(),
+            ),
+            ChangeNotifierProvider<ScannerService>.value(
+                value: ScannerService()),
             ChangeNotifierProvider<ScanHistoryService>.value(
               value: ScanHistoryService(),
             ),

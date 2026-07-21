@@ -400,9 +400,9 @@ Separate from `catalog.json` and separate from video resume keys where policies 
 |---|---|---|---|
 | Video resume | `shared_preferences` `position_*`, `duration_*` | `PlaybackService` | ✅ Implemented (M4) |
 | Video Continue Watching | Derived from video resume | Dashboard | ✅ Implemented |
-| Music listening history | `ttsplayer_music_listening_v1` | `MusicListeningRepository` + `MusicListeningCoordinator` | ✅ Step 4 (persistence + playback + catalogue reconcile); UI deferred |
-| Music Continue Listening | Derived from listening history | `MusicScreen` only (not dashboard) | Repository queries ready; UI deferred |
-| Music Recently Played | Same envelope | `MusicScreen` / dedicated screen | Repository queries ready; UI deferred |
+| Music listening history | `ttsplayer_music_listening_v1` | `MusicListeningRepository` + `MusicListeningCoordinator` | ✅ Step 5 (persistence + playback + reconcile + UI) |
+| Music Continue Listening | Derived from listening history | `MusicScreen` only (not dashboard) | ✅ Step 5 — `ContinueListeningSection` |
+| Music Recently Played | Same envelope | `MusicRecentlyPlayedScreen` + landing nav tile | ✅ Step 5 |
 | Music favourites | `LibraryMetadataRepository` or future extension | Repository | Deferred |
 | Queue persistence | ADR-022 envelope | Repository | **Deferred outside 5.4** — no serialization/restoration in this phase |
 | Play counts / playlists | — | — | Deferred |
@@ -421,6 +421,7 @@ Separate from `catalog.json` and separate from video resume keys where policies 
 
 **Implementation (Step 4):** `MusicListeningRepository.validateAgainstCatalog(Catalog)` owns reconciliation policy. `CatalogCacheCoordinator` triggers it after successful replacement only; failures are logged and never block catalogue loading. Returns `MusicListeningValidationResult` with retained/removed counts and persistence status. Listening state (`lastPosition`, `completed`, timestamps) is never reset on reconcile.
 
+**Implementation (Step 5):** Presentation consumes `MusicListeningRepository` via `Consumer2` on `MusicScreen` and `MusicRecentlyPlayedScreen`. `music_listening_presentation.dart` resolves catalogue items strictly by `trackId` (`MusicLibraryProjection.findTrackById`); snapshot fields are display fallback only. `openMusicPlayerFromListeningRecord` seeds album queue when the track maps to a projection album, otherwise a one-track queue; start position comes from `historyPlaybackStartPosition`. Stale records are hidden from Continue Listening and disabled on Recently Played. No dashboard Continue Listening; video Continue Watching unchanged.
 
 
 ---

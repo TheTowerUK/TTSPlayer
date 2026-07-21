@@ -36,7 +36,9 @@
 
 **M5.4 Step 3 (2026-07-21):** `MusicListeningCoordinator` wired to `PlaybackService` and `MusicPlaybackQueueController` in `main.dart`. Observes audio playback lifecycle; persists via `MusicListeningRepository` only. Video resume keys unchanged. Queue persistence and UI remain deferred.
 
-**M5.4 Step 4 (2026-07-21):** `MusicListeningRepository.validateAgainstCatalog` integrated into `CatalogCacheCoordinator.onCatalogReplaced`. Prunes records by `trackId` only; refreshes snapshot metadata for retained tracks; never resets listening state. Queue persistence and UI remain deferred.
+**M5.4 Step 4 (2026-07-21):** `MusicListeningRepository.validateAgainstCatalog` integrated into `CatalogCacheCoordinator.onCatalogReplaced`. Prunes records by `trackId` only; refreshes snapshot metadata for retained tracks; never resets listening state. Queue persistence remains deferred.
+
+**M5.4 Step 5 (2026-07-21):** Continue Listening and Recently Played UI on `MusicScreen`; `MusicRecentlyPlayedScreen`; resume/replay via `openMusicPlayerFromListeningRecord` with album-or-single queue seeding and `historyPlaybackStartPosition`. Presentation depends on `MusicListeningRepository` queries only. Clear history, diagnostics, and queue persistence remain deferred. Status stays **Partially Accepted**.
 
 ---
 

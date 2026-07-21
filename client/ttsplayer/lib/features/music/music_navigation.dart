@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/media_item.dart';
+import '../../services/catalog_service.dart';
+import 'music_library_service.dart';
+import 'music_listening_presentation.dart';
 import 'models/music_album.dart';
 import 'models/music_artist.dart';
+import 'models/music_listening_record.dart';
 import 'music_queue_seeding.dart';
 import 'presentation/music_player_screen.dart';
 import 'services/music_playback_queue_controller.dart';
@@ -11,6 +15,7 @@ import 'screens/music_album_detail_screen.dart';
 import 'screens/music_albums_screen.dart';
 import 'screens/music_artist_detail_screen.dart';
 import 'screens/music_artists_screen.dart';
+import 'screens/music_recently_played_screen.dart';
 import 'screens/music_screen.dart';
 import 'screens/music_track_detail_screen.dart';
 import 'screens/music_tracks_screen.dart';
@@ -51,6 +56,16 @@ void openMusicTracksScreen(BuildContext context) {
     MaterialPageRoute<void>(
       settings: const RouteSettings(name: 'music:tracks'),
       builder: (_) => const MusicTracksScreen(),
+    ),
+  );
+}
+
+void openMusicRecentlyPlayedScreen(BuildContext context) {
+  Navigator.push<void>(
+    context,
+    MaterialPageRoute<void>(
+      settings: const RouteSettings(name: 'music:recently-played'),
+      builder: (_) => const MusicRecentlyPlayedScreen(),
     ),
   );
 }
@@ -102,13 +117,17 @@ void _popExistingMusicPlayerRoutes(BuildContext context) {
   });
 }
 
-void _pushMusicPlayerScreen(BuildContext context, {required String trackId}) {
+void _pushMusicPlayerScreen(
+  BuildContext context, {
+  required String trackId,
+  Duration? startPosition,
+}) {
   _popExistingMusicPlayerRoutes(context);
   Navigator.push<void>(
     context,
     MaterialPageRoute<void>(
       settings: RouteSettings(name: 'music:player:$trackId'),
-      builder: (_) => const MusicPlayerScreen(),
+      builder: (_) => MusicPlayerScreen(startPosition: startPosition),
     ),
   );
 }
@@ -131,6 +150,42 @@ void openMusicPlayerScreen(
 
   context.read<MusicPlaybackQueueController>().seedSingleTrack(track);
   _pushMusicPlayerScreen(context, trackId: track.id);
+}
+
+/// Seeds queue context from listening history and opens the player.
+///
+/// Album queue when [trackId] resolves inside a projection album; otherwise
+/// a one-track queue. Identity is strict [MusicListeningRecord.trackId] lookup.
+bool openMusicPlayerFromListeningRecord(
+  BuildContext context, {
+  required MusicListeningRecord record,
+}) {
+  final catalog = context.read<CatalogService>().catalog;
+  if (catalog == null) return false;
+
+  final projection = context.read<MusicLibraryService>().projectionFor(catalog);
+  final track = projection.findTrackById(record.trackId);
+  if (track == null || !track.isAudio || !track.status.isPlayable) {
+    return false;
+  }
+
+  final controller = context.read<MusicPlaybackQueueController>();
+  final album = findAlbumContainingTrack(projection, track.id);
+  if (album != null) {
+    if (!controller.seedAlbumQueue(album, startTrack: track)) {
+      _showNoPlayableTracksMessage(context);
+      return false;
+    }
+  } else {
+    controller.seedSingleTrack(track);
+  }
+
+  _pushMusicPlayerScreen(
+    context,
+    trackId: track.id,
+    startPosition: historyPlaybackStartPosition(record),
+  );
+  return true;
 }
 
 /// Seeds the full album queue from the first playable track.

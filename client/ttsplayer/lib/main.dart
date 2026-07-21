@@ -127,6 +127,9 @@ Future<void> main() async {
         ChangeNotifierProvider<MusicListeningCoordinator>.value(
           value: musicListeningCoordinator,
         ),
+        ChangeNotifierProvider<MusicListeningRepository>.value(
+          value: musicListeningRepository,
+        ),
         Provider<DiagnosticsService>.value(value: diagnosticsService),
         ChangeNotifierProvider(create: (_) => ScannerService()),
         ChangeNotifierProvider(create: (_) => ScanHistoryService()),

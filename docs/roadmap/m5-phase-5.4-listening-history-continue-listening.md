@@ -1,6 +1,6 @@
 # M5 Phase 5.4 — Listening History and Continue Listening
 
-**Status:** **PLANNING** — Step 4 complete (2026-07-21)
+**Status:** **PLANNING** — Step 5 complete (2026-07-21)
 **Milestone:** M5 — Music
 **Branch:** `m5-development`
 **Predecessor:** Phase 5.3 complete (2026-07-21)
@@ -146,6 +146,74 @@ Phase 5.4 adds **persistent music listening history** and user-facing **Continue
 | Unexpected error | Logged; empty result with warning; no throw to caller |
 
 **Validation:** 8 repository reconciliation tests + 3 coordinator/cache integration tests; full Flutter suite green.
+
+---
+
+## Step 5 — Continue Listening and Recently Played UI (2026-07-21)
+
+**Status:** ✅ **Complete**
+
+| Deliverable | Path |
+|---|---|
+| Presentation helpers | `client/ttsplayer/lib/features/music/music_listening_presentation.dart` |
+| Continue Listening carousel | `client/ttsplayer/lib/features/music/widgets/continue_listening_section.dart` |
+| Recently Played screen | `client/ttsplayer/lib/features/music/screens/music_recently_played_screen.dart` |
+| Music landing integration | `client/ttsplayer/lib/features/music/screens/music_screen.dart` |
+| History resume navigation | `client/ttsplayer/lib/features/music/music_navigation.dart` — `openMusicPlayerFromListeningRecord`, `openMusicRecentlyPlayedScreen` |
+| Repository provider | `client/ttsplayer/lib/main.dart` — `ChangeNotifierProvider<MusicListeningRepository>` |
+| Widget / navigation tests | `client/ttsplayer/test/music_listening_presentation_test.dart` (16 tests) |
+
+### Music landing placement
+
+On `MusicScreen`, after the catalogue summary line and **before** Artists / Albums / Tracks nav tiles:
+
+1. **Continue Listening** — horizontal carousel (hidden when no eligible playable records; no empty-state panel).
+2. **Recently Played** — always-visible nav tile (`music_recently_played_tile`) with history count when loaded.
+
+**Not** on the main dashboard — video Continue Watching unchanged.
+
+### Queue-seeding from history
+
+`openMusicPlayerFromListeningRecord` resolves the track strictly by `MusicListeningRecord.trackId`:
+
+1. If the track appears in a projection album → `seedAlbumQueue(album, startTrack: track)`.
+2. Otherwise → `seedSingleTrack(track)`.
+
+No artist-queue inference; no snapshot metadata rematching.
+
+### Resume / replay start position
+
+`historyPlaybackStartPosition(record)` in the presentation layer:
+
+| Record state | Start position |
+|---|---|
+| `completed == true` | `Duration.zero` |
+| Incomplete, `lastPosition < 30 s` | `Duration.zero` |
+| Incomplete, resume-eligible | `record.lastPosition` |
+
+### Stale / missing catalogue items
+
+| Surface | Behaviour |
+|---|---|
+| Continue Listening | Omitted via `resolvePlayableListeningEntries` (strict `trackId` lookup) |
+| Recently Played | Row shown; tile disabled; no play affordance |
+| Navigation | `openMusicPlayerFromListeningRecord` returns `false`; no playback from snapshot |
+
+Snapshot `title` / `artist` / `album` are display fallback only.
+
+### Manual QA checklist (Step 5 — prepared, not signed off)
+
+- [ ] Music landing shows Continue Listening after a resumable track exists
+- [ ] Completed tracks do not appear in Continue Listening
+- [ ] Recently Played remains accessible with completed-only history
+- [ ] Resume opens at saved position
+- [ ] Completed replay starts at zero
+- [ ] Missing catalogue item is safe (disabled row / hidden carousel card)
+- [ ] Long titles and metadata do not overflow
+- [ ] Windows mouse and keyboard activation work
+- [ ] Existing album/artist/folder navigation remains intact
+
+**Validation:** 16 widget/navigation tests; full Flutter suite **828 passed**, 11 skipped, 0 failed. No clear-history UI, diagnostics, or dashboard changes in this step.
 
 ---
 
@@ -612,8 +680,8 @@ Phase 5.4 is complete when:
 | **2** | Models + `MusicListeningRepository` + unit tests | `feat(music): add listening history repository` | ✅ |
 | **3** | `MusicListeningCoordinator` + playback hooks + unit tests | `feat(music): persist listening progress from playback` | ✅ |
 | **4** | Catalogue reconciliation in `CatalogCacheCoordinator` | `feat(music): reconcile listening history on catalogue replace` | ✅ |
-| **5** | `MusicScreen` Continue Listening + Recently Played entry | `feat(music): add Continue Listening to music landing` |
-| **6** | `MusicRecentlyPlayedScreen` + navigation resume wiring | `feat(music): add Recently Played screen and resume playback` |
+| **5** | `MusicScreen` Continue Listening + Recently Played UI + resume navigation | `feat(music): add Continue Listening and Recently Played UI` | ✅ |
+| **6** | `MusicRecentlyPlayedScreen` + navigation resume wiring | *(delivered in Step 5)* | ✅ |
 | **7** | Clear history + confirmation | `feat(music): add clear listening history action` |
 | **8** | Diagnostics summary fields | `feat(diagnostics): add music listening summary counts` |
 | **9** | Integration + widget tests | `test(music): cover listening history and Continue Listening` |

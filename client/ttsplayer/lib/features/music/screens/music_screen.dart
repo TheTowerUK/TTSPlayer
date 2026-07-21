@@ -3,11 +3,15 @@ import 'package:provider/provider.dart';
 
 import '../../../services/catalog_service.dart';
 import '../music_library_service.dart';
+import '../models/music_listening_policy.dart';
+import '../music_navigation.dart';
+import '../services/music_listening_repository.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/empty_state.dart';
 import '../../../widgets/loading_card.dart';
 import '../../../widgets/tts_app_bar.dart';
-import '../music_navigation.dart';
+import '../music_listening_presentation.dart';
+import '../widgets/continue_listening_section.dart';
 import '../widgets/music_nav_tile.dart';
 
 /// Read-only music landing — browse artists, albums, and tracks (M5.2).
@@ -18,8 +22,8 @@ class MusicScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: const TtsAppBar(title: 'Music'),
-      body: Consumer<CatalogService>(
-        builder: (context, catalogService, _) {
+      body: Consumer2<CatalogService, MusicListeningRepository>(
+        builder: (context, catalogService, listeningRepository, _) {
           if (catalogService.isLoading && catalogService.catalog == null) {
             return const LoadingCard(message: 'Loading music…');
           }
@@ -33,17 +37,27 @@ class MusicScreen extends StatelessWidget {
             );
           }
 
-          final projection = context
-              .read<MusicLibraryService>()
-              .projectionFor(catalog);
+          final projection =
+              context.read<MusicLibraryService>().projectionFor(catalog);
 
           if (projection.isEmpty) {
             return const EmptyState(
               icon: Icons.library_music_outlined,
               title: 'No music in this catalogue.',
-              subtitle: 'Scan a library that contains audio files to browse music here.',
+              subtitle:
+                  'Scan a library that contains audio files to browse music here.',
             );
           }
+
+          final continueEntries = listeningRepository.isLoaded
+              ? resolvePlayableListeningEntries(
+                  listeningRepository.continueListening(
+                    limit:
+                        MusicListeningPolicy.defaultContinueListeningQueryCap,
+                  ),
+                  projection,
+                )
+              : const <MusicListeningListEntry>[];
 
           return ListView(
             key: const Key('music_landing'),
@@ -55,7 +69,21 @@ class MusicScreen extends StatelessWidget {
                 '${projection.trackCount} tracks',
                 style: AppTypography.cardSubtitle,
               ),
+              if (continueEntries.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.section),
+                ContinueListeningSection(entries: continueEntries),
+              ],
               const SizedBox(height: AppSpacing.section),
+              MusicNavTile(
+                key: const Key('music_recently_played_tile'),
+                icon: Icons.history,
+                title: 'Recently Played',
+                subtitle: listeningRepository.isLoaded
+                    ? '${listeningRepository.storedRecordCount} tracks in history'
+                    : 'Listening history',
+                onTap: () => openMusicRecentlyPlayedScreen(context),
+              ),
+              const SizedBox(height: AppSpacing.base),
               MusicNavTile(
                 icon: Icons.person_outline,
                 title: 'Artists',
