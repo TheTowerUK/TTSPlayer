@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import '../../../models/catalog.dart';
 import '../../../models/media_item.dart';
 import '../../../utils/media_kind_inference.dart';
@@ -48,6 +50,16 @@ class MusicLibraryProjection {
     }
     return null;
   }
+
+  /// Production artist grouping for tests and runtime fixtures.
+  @visibleForTesting
+  static String artistGroupKeyForItem(MediaItem item) =>
+      _effectiveArtistGroupKey(item);
+
+  /// Production album grouping for tests and runtime fixtures.
+  @visibleForTesting
+  static String albumGroupKeyForItem(MediaItem item) =>
+      _effectiveAlbumGroupKey(item);
 
   factory MusicLibraryProjection.build(Catalog catalog) {
     final audioItems = catalog.allItems.where((item) => item.isAudio).toList()
