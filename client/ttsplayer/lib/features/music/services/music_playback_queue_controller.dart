@@ -15,7 +15,9 @@ import '../music_queue_seeding.dart';
 class MusicPlaybackQueueController extends ChangeNotifier {
   MusicPlaybackQueueController({
     required PlaybackService playbackService,
-  }) : _playback = playbackService {
+    Future<void> Function()? pendingListeningWriteDrain,
+  })  : _playback = playbackService,
+        _pendingListeningWriteDrain = pendingListeningWriteDrain {
     _playback.addListener(_onPlaybackChanged);
   }
 
@@ -24,6 +26,12 @@ class MusicPlaybackQueueController extends ChangeNotifier {
   static const previousRestartThreshold = Duration(seconds: 4);
 
   final PlaybackService _playback;
+  Future<void> Function()? _pendingListeningWriteDrain;
+
+  /// Optional hook so natural completion can flush listening history before advance.
+  set pendingListeningWriteDrain(Future<void> Function()? drain) {
+    _pendingListeningWriteDrain = drain;
+  }
 
   PlaybackQueue _queue = const PlaybackQueue.empty();
   MusicQueueSource? _queueSource;
@@ -117,7 +125,8 @@ class MusicPlaybackQueueController extends ChangeNotifier {
 
   /// Replaces the entire queue.
   void replaceQueue(List<MediaItem> items, {int startIndex = 0}) {
-    _queue = const PlaybackQueue.empty().replaceItems(items, startIndex: startIndex);
+    _queue =
+        const PlaybackQueue.empty().replaceItems(items, startIndex: startIndex);
     _resetCompletionGuards();
     notifyListeners();
   }
@@ -260,6 +269,11 @@ class MusicPlaybackQueueController extends ChangeNotifier {
     final generation = ++_completionAdvanceGeneration;
     _advanceInFlight = true;
     try {
+      final drain = _pendingListeningWriteDrain;
+      if (drain != null) {
+        await drain();
+      }
+
       if (!_queue.hasNext) return;
 
       _queue = _queue.advanceToNext();

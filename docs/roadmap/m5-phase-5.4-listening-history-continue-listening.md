@@ -1,6 +1,6 @@
 # M5 Phase 5.4 — Listening History and Continue Listening
 
-**Status:** **PLANNING** — Step 2 complete (2026-07-21)
+**Status:** **PLANNING** — Step 3 complete (2026-07-21)
 **Milestone:** M5 — Music
 **Branch:** `m5-development`
 **Predecessor:** Phase 5.3 complete (2026-07-21)
@@ -56,9 +56,58 @@ Phase 5.4 adds **persistent music listening history** and user-facing **Continue
 
 **Completed replay rule:** On normalization, completed records store `lastPosition: 0`; callers use `replayPosition` (always zero when completed).
 
-**Not yet wired:** playback coordinator, UI, catalogue reconciliation, diagnostics, `main.dart` provider registration.
+**Not yet wired:** UI, catalogue reconciliation, diagnostics.
 
 **Validation:** 35 unit tests; full Flutter suite **784 passed**, 11 skipped.
+
+---
+
+## Step 3 — Music Listening Coordinator (2026-07-21)
+
+**Status:** ✅ **Complete**
+
+| Deliverable | Path |
+|---|---|
+| Policy constants (threshold + throttle) | `client/ttsplayer/lib/features/music/models/music_listening_policy.dart` |
+| Coordinator | `client/ttsplayer/lib/features/music/services/music_listening_coordinator.dart` |
+| App wiring | `client/ttsplayer/lib/main.dart` — `MusicListeningCoordinator` created after queue controller, registered in `MultiProvider`, `attach()` on startup |
+| Unit + integration tests | `client/ttsplayer/test/music_listening_coordinator_test.dart` (16 tests) |
+
+**Integration point:** `MusicListeningCoordinator` listens to **`PlaybackService`** and **`MusicPlaybackQueueController`** as `ChangeNotifier`s. No hooks inside `PlaybackService` video persistence, queue controller logic, repository, or UI widgets.
+
+**Not yet wired:** Continue Listening UI, Recently Played UI, catalogue reconciliation, diagnostics, app lifecycle observer (coordinator exposes `onAppLifecyclePaused()` for future shell wiring).
+
+**Validation:** 16 coordinator tests; full Flutter suite **800 passed**, 11 skipped.
+
+### Event lifecycle and flush table (implemented)
+
+| Event | Source | Flush | Creates sub-15 s record? | Notes |
+|---|---|---|---|---|
+| Position tick while playing | `PlaybackService` | Throttled (5 s) | No — requires 15 s accumulated listening | Position delta capped per tick; paused/buffering excluded |
+| Pause | `PlaybackService` (`isPlaying` false) | Immediate (`force`) | No unless threshold already met or existing record advanced | |
+| Stop | `PlaybackService` via queue `clearQueueAndStop` | Immediate | No unless eligible | |
+| Route close | `MusicPlaybackQueueController.onPlayerRouteClosed` → queue cleared + stop | Immediate | No unless eligible | |
+| Track change (next/previous/replace) | `MusicPlaybackQueueController` | Previous track flushed before new session | No unless eligible | `_beginSession` resets accumulator |
+| Queue cleared | `MusicPlaybackQueueController` | Immediate | No unless eligible | |
+| Natural completion | `PlaybackService.isCompleted` | Immediate; `completed=true`, `lastPosition=0` | N/A | Session cleared; queue auto-advance awaits `drainPendingWrites()` |
+| Retry | `playCurrent` / playback re-init | Prior progress preserved via existing record or in-session max | No unless eligible | |
+| App lifecycle pause | `onAppLifecyclePaused()` (future shell) | Immediate | No unless eligible | Not wired in 5.4 Step 3 |
+| Coordinator dispose | `dispose()` | No further writes | — | Listeners removed |
+
+### Completed-track replay semantics (implemented)
+
+| Phase | Behaviour |
+|---|---|
+| Open completed track at position 0 | Record stays `completed=true`; `completedAt` preserved |
+| Meaningful replay &lt; 15 s then pause/exit | Still completed; no Continue Listening eligibility |
+| Meaningful replay ≥ 15 s | Upsert as incomplete; `completedAt` cleared; `lastPosition` from session max |
+| Continue Listening after re-open | Requires `lastPosition >= 30 s` per `MusicListeningPolicy.minResumePosition` |
+
+### Persistence failure isolation
+
+- All writes use `MusicListeningRepository.upsert` result contract — never throw into playback listeners.
+- `lastPersistenceWarning` on coordinator surfaces most recent failure for diagnostics.
+- Later ticks/flushes retry normally.
 
 ---
 
@@ -521,16 +570,17 @@ Phase 5.4 is complete when:
 
 | Step | Deliverable | Proposed commit prefix | Status |
 |---|---|---|---|
-| **1** | Models + `MusicListeningRepository` + unit tests | `feat(music): add listening history repository` | ✅ |
-| **2** | `MusicListeningCoordinator` + playback hooks + unit tests | `feat(music): persist listening progress from playback` | |
-| **3** | Catalogue reconciliation in `CatalogCacheCoordinator` | `feat(music): reconcile listening history on catalogue replace` |
-| **4** | `MusicScreen` Continue Listening + Recently Played entry | `feat(music): add Continue Listening to music landing` |
-| **5** | `MusicRecentlyPlayedScreen` + navigation resume wiring | `feat(music): add Recently Played screen and resume playback` |
-| **6** | Clear history + confirmation | `feat(music): add clear listening history action` |
-| **7** | Diagnostics summary fields | `feat(diagnostics): add music listening summary counts` |
-| **8** | Integration + widget tests | `test(music): cover listening history and Continue Listening` |
-| **9** | Windows runtime harness `PHASE_54_RUNTIME` | `test(music): add Phase 5.4 Windows runtime harness` |
-| **10** | Documentation + ADR-022 update + phase closure | `docs(m5.4): close listening history phase` |
+| **1** | Planning + approved decisions | `docs(m5.4): complete Phase 5.4 listening history planning` | ✅ |
+| **2** | Models + `MusicListeningRepository` + unit tests | `feat(music): add listening history repository` | ✅ |
+| **3** | `MusicListeningCoordinator` + playback hooks + unit tests | `feat(music): persist listening progress from playback` | ✅ |
+| **4** | Catalogue reconciliation in `CatalogCacheCoordinator` | `feat(music): reconcile listening history on catalogue replace` |
+| **5** | `MusicScreen` Continue Listening + Recently Played entry | `feat(music): add Continue Listening to music landing` |
+| **6** | `MusicRecentlyPlayedScreen` + navigation resume wiring | `feat(music): add Recently Played screen and resume playback` |
+| **7** | Clear history + confirmation | `feat(music): add clear listening history action` |
+| **8** | Diagnostics summary fields | `feat(diagnostics): add music listening summary counts` |
+| **9** | Integration + widget tests | `test(music): cover listening history and Continue Listening` |
+| **10** | Windows runtime harness `PHASE_54_RUNTIME` | `test(music): add Phase 5.4 Windows runtime harness` |
+| **11** | Documentation + ADR-022 update + phase closure | `docs(m5.4): close listening history phase` |
 
 Do not combine unrelated steps. README.md remains unstaged.
 

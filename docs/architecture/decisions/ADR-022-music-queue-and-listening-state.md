@@ -32,7 +32,9 @@
 
 **M5.3 (2026-07-20):** In-memory queue ordering, coordinator transport, and contextual album/artist queue seeding implemented.
 
-**M5.4 Step 2 (2026-07-21):** `MusicListeningRepository` and `MusicListeningRecord` implemented with unit tests. Persistence-only — not yet wired to playback, UI, or catalogue reconciliation.
+**M5.4 Step 2 (2026-07-21):** `MusicListeningRepository` and `MusicListeningRecord` implemented with unit tests. Persistence-only — not yet wired to UI or catalogue reconciliation.
+
+**M5.4 Step 3 (2026-07-21):** `MusicListeningCoordinator` wired to `PlaybackService` and `MusicPlaybackQueueController` in `main.dart`. Observes audio playback lifecycle; persists via `MusicListeningRepository` only. Video resume keys unchanged. Queue persistence, UI, and catalogue reconciliation remain deferred.
 
 ---
 

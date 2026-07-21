@@ -8,6 +8,8 @@ import 'package:provider/provider.dart';
 
 import 'features/dashboard/dashboard_screen.dart';
 import 'features/music/music_library_service.dart';
+import 'features/music/services/music_listening_coordinator.dart';
+import 'features/music/services/music_listening_repository.dart';
 import 'features/music/services/music_playback_queue_controller.dart';
 import 'features/search/search_service.dart';
 import 'navigation/app_navigator.dart';
@@ -52,6 +54,9 @@ Future<void> main() async {
   final libraryMetadataRepository = LibraryMetadataRepository();
   await libraryMetadataRepository.initialize();
 
+  final musicListeningRepository = MusicListeningRepository();
+  await musicListeningRepository.initialize();
+
   final playbackService = PlaybackService(
     mediaLocationResolver: mediaLocationResolver,
     defaultPlaybackRateProvider: () => settingsRepository.defaultPlaybackRate,
@@ -60,6 +65,15 @@ Future<void> main() async {
   final musicPlaybackQueueController = MusicPlaybackQueueController(
     playbackService: playbackService,
   );
+
+  final musicListeningCoordinator = MusicListeningCoordinator(
+    repository: musicListeningRepository,
+    playbackService: playbackService,
+    queueController: musicPlaybackQueueController,
+  );
+  musicPlaybackQueueController.pendingListeningWriteDrain =
+      musicListeningCoordinator.drainPendingWrites;
+  musicListeningCoordinator.attach();
 
   final catalogCacheCoordinator = CatalogCacheCoordinator(
     artworkService: artworkService,
@@ -108,6 +122,9 @@ Future<void> main() async {
         ),
         ChangeNotifierProvider<MusicPlaybackQueueController>.value(
           value: musicPlaybackQueueController,
+        ),
+        ChangeNotifierProvider<MusicListeningCoordinator>.value(
+          value: musicListeningCoordinator,
         ),
         Provider<DiagnosticsService>.value(value: diagnosticsService),
         ChangeNotifierProvider(create: (_) => ScannerService()),

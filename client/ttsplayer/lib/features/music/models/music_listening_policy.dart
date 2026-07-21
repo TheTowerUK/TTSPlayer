@@ -1,8 +1,11 @@
-/// Query and retention constants for music listening history (M5.4).
-///
-/// The 15-second history-creation threshold is enforced by
-/// [MusicListeningCoordinator] in a later step — not here.
+/// Query, retention, and coordinator constants for music listening history (M5.4).
 abstract final class MusicListeningPolicy {
+  /// Minimum meaningful playback before a new history record is created.
+  static const minListenThreshold = Duration(seconds: 15);
+
+  /// Minimum interval between in-progress persistence writes during playback.
+  static const persistInterval = Duration(seconds: 5);
+
   /// Maximum records persisted in [MusicListeningRepository].
   static const maxStoredRecords = 100;
 

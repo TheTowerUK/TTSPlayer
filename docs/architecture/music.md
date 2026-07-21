@@ -400,9 +400,9 @@ Separate from `catalog.json` and separate from video resume keys where policies 
 |---|---|---|---|
 | Video resume | `shared_preferences` `position_*`, `duration_*` | `PlaybackService` | ✅ Implemented (M4) |
 | Video Continue Watching | Derived from video resume | Dashboard | ✅ Implemented |
-| Music listening history | `ttsplayer_music_listening_v1` | `MusicListeningRepository` | ✅ Step 2 (persistence); coordinator/UI deferred |
-| Music Continue Listening | Derived from listening history | `MusicScreen` only (not dashboard) | Step 2 queries ready; UI deferred |
-| Music Recently Played | Same envelope | `MusicScreen` / dedicated screen | Step 2 queries ready; UI deferred |
+| Music listening history | `ttsplayer_music_listening_v1` | `MusicListeningRepository` + `MusicListeningCoordinator` | ✅ Step 3 (persistence + playback wiring); UI deferred |
+| Music Continue Listening | Derived from listening history | `MusicScreen` only (not dashboard) | Repository queries ready; UI deferred |
+| Music Recently Played | Same envelope | `MusicScreen` / dedicated screen | Repository queries ready; UI deferred |
 | Music favourites | `LibraryMetadataRepository` or future extension | Repository | Deferred |
 | Queue persistence | ADR-022 envelope | Repository | **Deferred outside 5.4** — no serialization/restoration in this phase |
 | Play counts / playlists | — | — | Deferred |
@@ -413,9 +413,11 @@ Separate from `catalog.json` and separate from video resume keys where policies 
 
 
 
-**Prune on catalogue replace:** Same lifecycle as favourites — `CatalogCacheCoordinator` will invoke `MusicListeningRepository.validateAgainstCatalog` (Step 3+); remove entries whose track ids are absent from the new catalogue.
+**Prune on catalogue replace:** Same lifecycle as favourites — `CatalogCacheCoordinator` will invoke `MusicListeningRepository.validateAgainstCatalog` (Step 4+); remove entries whose track ids are absent from the new catalogue.
 
 **Implementation (Step 2):** `MusicListeningRecord` is an immutable value type (`trackId` identity; display snapshots only). `MusicListeningRepository` mirrors `LibraryMetadataRepository` patterns — `SharedPreferences`, versioned envelope, defensive decode, `ChangeNotifier`, `simulatePersistFailure` for tests. Records load only when `stateVersion == 1`; unsupported or missing versions recover to empty history with a warning and leave the stored blob unchanged on read. No video key access.
+
+**Implementation (Step 3):** `MusicListeningCoordinator` owns playback lifecycle observation — 15 s creation threshold, 5 s write throttle, flush on pause/stop/track change/completion/route close. Wired in `main.dart` after `MusicPlaybackQueueController`; listens to `PlaybackService` + queue controller; writes only through `MusicListeningRepository`. `MusicPlaybackQueueController.pendingListeningWriteDrain` awaits coordinator writes before natural-completion auto-advance. Dependency direction: coordinator → repository; coordinator → playback/queue (read-only observation). Does not modify video `position_*` / `duration_*` keys. Exposes `lastPersistenceWarning`, `drainPendingWrites()`, and `onAppLifecyclePaused()` for future diagnostics/shell integration.
 
 
 
