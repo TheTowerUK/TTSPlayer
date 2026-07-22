@@ -172,6 +172,20 @@ Separate from:
 
 Generation tokens prevent stale debounced/throttled writes from overwriting newer immediate snapshots. Timing policy lives in the coordinator — not the repository.
 
+### Step 3 catalogue reconciliation (implemented)
+
+| Rule | Behaviour |
+|---|---|
+| Integration | `CatalogCacheCoordinator.onCatalogReplaced` → `MusicPlaybackSessionRepository.validateAgainstCatalog` |
+| Identity | Playable audio `trackId` only — video/image/non-playable IDs removed |
+| Order | Surviving IDs keep persisted relative order |
+| Active survives | Preserve `activeTrackId` and `playbackPosition` |
+| Active removed | First surviving ID becomes active; position reset to zero |
+| Queue empty | Persist canonical empty session |
+| No-change | Equivalent reconciled session → no storage write |
+| Failure | Catalogue replacement continues; in-memory session unchanged on persist failure |
+| Live queue | **Not** hydrated — persisted repository only (Step 4 restores on startup) |
+
 ### Startup sequence (planned)
 
 ```
@@ -427,7 +441,7 @@ Phase 5.5 is complete when:
 |---|---|---|
 | **1** | Repository audit + model/envelope + unit tests | `feat(music): add playback session repository` |
 | **2** | Session coordinator persistence hooks | `feat(music): persist playback session` *(complete)* |
-| **3** | Catalogue reconciliation integration | `feat(music): reconcile playback session on catalogue replace` |
+| **3** | Catalogue reconciliation integration | `feat(music): reconcile playback session after catalogue update` *(complete)* |
 | **4** | Cold-start restore in `main.dart` | `feat(music): restore music queue on startup` |
 | **5** | Diagnostics integration | `feat(diagnostics): add playback session summary counts` |
 | **6** | Integration test suite | `test(music): add playback session integration suite` |

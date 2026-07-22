@@ -22,6 +22,7 @@ import 'package:ttsplayer/features/music/screens/music_screen.dart';
 import 'package:ttsplayer/features/music/services/music_listening_coordinator.dart';
 import 'package:ttsplayer/features/music/services/music_listening_repository.dart';
 import 'package:ttsplayer/features/music/services/music_playback_queue_controller.dart';
+import 'package:ttsplayer/features/music/services/music_playback_session_repository.dart';
 import 'package:ttsplayer/features/search/search_service.dart';
 import 'package:ttsplayer/features/settings/diagnostics_screen.dart';
 import 'package:ttsplayer/features/settings/settings_screen.dart';
@@ -167,8 +168,7 @@ class Phase54RuntimeContext {
   final Phase54ResolvedAudioFixture audioFixture;
   final Directory tempCatalogDir;
 
-  MusicLibraryProjection get projection =>
-      musicLibrary.projectionFor(catalog);
+  MusicLibraryProjection get projection => musicLibrary.projectionFor(catalog);
 
   MediaItem track(String id) =>
       catalog.allItems.firstWhere((item) => item.id == id);
@@ -285,6 +285,7 @@ class Phase54RuntimeContext {
       libraryMetadataRepository: metadata,
       musicPlaybackQueueController: queue,
       musicListeningRepository: repository,
+      musicPlaybackSessionRepository: MusicPlaybackSessionRepository(),
     );
 
     final catalogService = CatalogService(
@@ -730,7 +731,8 @@ Future<void> phase54ConfigureViewport(WidgetTester tester) async {
   addTearDown(tester.view.resetPhysicalSize);
 }
 
-Future<void> phase54PumpMusicScreen(WidgetTester tester, Phase54RuntimeContext ctx) async {
+Future<void> phase54PumpMusicScreen(
+    WidgetTester tester, Phase54RuntimeContext ctx) async {
   await tester.pumpWidget(ctx.musicApp(home: const MusicScreen()));
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 100));
@@ -854,10 +856,10 @@ Future<Phase54OptionalLocalCatalogResult> phase54TryOptionalLocalCatalog(
     await Future<void>.delayed(Duration.zero);
     final catalog = ctx.catalogService.catalog;
     if (catalog == null) {
-      return Phase54OptionalLocalCatalogResult.failed('catalog null after load');
+      return Phase54OptionalLocalCatalogResult.failed(
+          'catalog null after load');
     }
-    final audioCount =
-        catalog.allItems.where((item) => item.isAudio).length;
+    final audioCount = catalog.allItems.where((item) => item.isAudio).length;
     if (ctx.repository.storedRecordCount != beforeCount) {
       return Phase54OptionalLocalCatalogResult.failed(
         'history mutated unexpectedly',
@@ -884,7 +886,8 @@ class Phase54OptionalLocalCatalogResult {
   factory Phase54OptionalLocalCatalogResult.failed(String reason) =>
       Phase54OptionalLocalCatalogResult._('failed', reason);
 
-  factory Phase54OptionalLocalCatalogResult.loaded({required bool noAudioItems}) {
+  factory Phase54OptionalLocalCatalogResult.loaded(
+      {required bool noAudioItems}) {
     return Phase54OptionalLocalCatalogResult._(
       'loaded',
       noAudioItems ? 'no audio items' : 'audio items present',

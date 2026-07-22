@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../models/catalog.dart';
+import '../../../models/media_item.dart';
 import '../models/music_playback_session.dart';
 
 /// Where persisted playback session state was loaded from.
@@ -59,10 +61,32 @@ class MusicPlaybackSessionClearResult {
   bool get changed => outcome == MusicPlaybackSessionClearOutcome.cleared;
 }
 
-/// Loads and persists music playback session state (M5.5 Step 1).
-///
-/// Persistence-only — playback, catalogue reconciliation, and diagnostics
-/// wiring arrive in later steps.
+/// Outcome of [MusicPlaybackSessionRepository.validateAgainstCatalog].
+class MusicPlaybackSessionValidationResult {
+  const MusicPlaybackSessionValidationResult({
+    required this.changed,
+    required this.originalCount,
+    required this.retainedCount,
+    required this.removedCount,
+    this.activeTrackRetained = false,
+    this.sessionCleared = false,
+    this.persisted = false,
+    this.persistenceFailed = false,
+    this.warnings = const [],
+  });
+
+  final bool changed;
+  final int originalCount;
+  final int retainedCount;
+  final int removedCount;
+  final bool activeTrackRetained;
+  final bool sessionCleared;
+  final bool persisted;
+  final bool persistenceFailed;
+  final List<String> warnings;
+}
+
+/// Loads and persists music playback session state (M5.5).
 class MusicPlaybackSessionRepository extends ChangeNotifier {
   MusicPlaybackSessionRepository({MusicPlaybackSession? initialSession})
       : _session = (initialSession ?? _emptySession()).normalized();
@@ -164,6 +188,152 @@ class MusicPlaybackSessionRepository extends ChangeNotifier {
     return const MusicPlaybackSessionClearResult(
       outcome: MusicPlaybackSessionClearOutcome.cleared,
     );
+  }
+
+  /// Prunes queue IDs absent from playable audio items in [catalog].
+  ///
+  /// Identity is [MediaItem.id] only. Persists and notifies only when the
+  /// reconciled session differs from the current in-memory session.
+  Future<MusicPlaybackSessionValidationResult> validateAgainstCatalog(
+    Catalog catalog,
+  ) async {
+    try {
+      if (_session.isEmpty) {
+        return const MusicPlaybackSessionValidationResult(
+          changed: false,
+          originalCount: 0,
+          retainedCount: 0,
+          removedCount: 0,
+        );
+      }
+
+      final originalCount = _session.queueTrackIds.length;
+      final reconciled = reconcileSession(_session, catalog);
+      final removedCount = originalCount - reconciled.queueTrackIds.length;
+      final activeSurvived = _session.activeTrackId != null &&
+          reconciled.activeTrackId == _session.activeTrackId;
+
+      if (reconciled == _session) {
+        return MusicPlaybackSessionValidationResult(
+          changed: false,
+          originalCount: originalCount,
+          retainedCount: reconciled.queueTrackIds.length,
+          removedCount: 0,
+          activeTrackRetained: activeSurvived,
+          sessionCleared: reconciled.isEmpty,
+        );
+      }
+
+      final saveResult = reconciled.isEmpty
+          ? await _persistEmptyAfterReconcile()
+          : await _persist(reconciled);
+
+      if (!saveResult.success) {
+        return MusicPlaybackSessionValidationResult(
+          changed: false,
+          originalCount: originalCount,
+          retainedCount: _session.queueTrackIds.length,
+          removedCount: 0,
+          activeTrackRetained: _session.activeTrackId != null &&
+              reconciled.activeTrackId == _session.activeTrackId,
+          sessionCleared: _session.isEmpty,
+          persistenceFailed: true,
+          warnings: [
+            saveResult.errorMessage ??
+                'Could not persist reconciled music playback session.',
+          ],
+        );
+      }
+
+      if (kDebugMode && removedCount > 0) {
+        debugPrint(
+          '[MusicPlaybackSessionRepository] pruned $removedCount playback '
+          'session track(s) after catalogue replacement.',
+        );
+      }
+
+      return MusicPlaybackSessionValidationResult(
+        changed: true,
+        originalCount: originalCount,
+        retainedCount: reconciled.queueTrackIds.length,
+        removedCount: removedCount,
+        activeTrackRetained: activeSurvived,
+        sessionCleared: reconciled.isEmpty,
+        persisted: true,
+      );
+    } catch (e, stackTrace) {
+      debugPrint(
+        '[MusicPlaybackSessionRepository] validateAgainstCatalog failed: '
+        '$e\n$stackTrace',
+      );
+      return MusicPlaybackSessionValidationResult(
+        changed: false,
+        originalCount: _session.queueTrackIds.length,
+        retainedCount: _session.queueTrackIds.length,
+        removedCount: 0,
+        persistenceFailed: true,
+        warnings: const [
+          'Catalogue playback-session validation failed unexpectedly.',
+        ],
+      );
+    }
+  }
+
+  /// Reconciles [source] against playable audio items in [catalog].
+  @visibleForTesting
+  static MusicPlaybackSession reconcileSession(
+    MusicPlaybackSession source,
+    Catalog catalog,
+  ) {
+    final playableById = _playableAudioByTrackId(catalog);
+    if (source.isEmpty) {
+      return source.normalized(updatedAtOverride: source.updatedAt);
+    }
+
+    final retained = <String>[];
+    for (final trackId in source.queueTrackIds) {
+      if (playableById.containsKey(trackId)) {
+        retained.add(trackId);
+      }
+    }
+
+    if (retained.isEmpty) {
+      return MusicPlaybackSession(
+        queueTrackIds: const [],
+        activeTrackId: null,
+        playbackPosition: Duration.zero,
+        updatedAt: source.updatedAt,
+      ).normalized(updatedAtOverride: source.updatedAt);
+    }
+
+    final activeSurvived =
+        source.activeTrackId != null && retained.contains(source.activeTrackId);
+
+    if (activeSurvived) {
+      return source
+          .copyWith(queueTrackIds: retained)
+          .normalized(updatedAtOverride: source.updatedAt);
+    }
+
+    return MusicPlaybackSession(
+      queueTrackIds: retained,
+      activeTrackId: retained.first,
+      playbackPosition: Duration.zero,
+      updatedAt: source.updatedAt,
+    ).normalized(updatedAtOverride: source.updatedAt);
+  }
+
+  Future<MusicPlaybackSessionSaveResult> _persistEmptyAfterReconcile() async {
+    return _persist(_emptySession().normalized());
+  }
+
+  static Map<String, MediaItem> _playableAudioByTrackId(Catalog catalog) {
+    final byId = <String, MediaItem>{};
+    for (final item in catalog.allItems) {
+      if (!item.isAudio || !item.status.isPlayable) continue;
+      byId.putIfAbsent(item.id, () => item);
+    }
+    return byId;
   }
 
   MusicPlaybackSessionLoadResult _completeLoad(

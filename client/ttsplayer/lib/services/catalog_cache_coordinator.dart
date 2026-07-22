@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import '../features/music/music_library_service.dart';
 import '../features/music/services/music_listening_repository.dart';
 import '../features/music/services/music_playback_queue_controller.dart';
+import '../features/music/services/music_playback_session_repository.dart';
 import '../features/search/search_service.dart';
 import '../models/catalog.dart';
 import 'artwork/artwork_service.dart';
@@ -20,12 +21,14 @@ class CatalogCacheCoordinator {
     required LibraryMetadataRepository libraryMetadataRepository,
     required MusicPlaybackQueueController musicPlaybackQueueController,
     required MusicListeningRepository musicListeningRepository,
+    required MusicPlaybackSessionRepository musicPlaybackSessionRepository,
   })  : _artworkService = artworkService,
         _searchService = searchService,
         _musicLibraryService = musicLibraryService,
         _libraryMetadataRepository = libraryMetadataRepository,
         _musicPlaybackQueueController = musicPlaybackQueueController,
-        _musicListeningRepository = musicListeningRepository;
+        _musicListeningRepository = musicListeningRepository,
+        _musicPlaybackSessionRepository = musicPlaybackSessionRepository;
 
   final ArtworkService _artworkService;
   final SearchService _searchService;
@@ -33,8 +36,10 @@ class CatalogCacheCoordinator {
   final LibraryMetadataRepository _libraryMetadataRepository;
   final MusicPlaybackQueueController _musicPlaybackQueueController;
   final MusicListeningRepository _musicListeningRepository;
+  final MusicPlaybackSessionRepository _musicPlaybackSessionRepository;
 
-  /// Runs artwork, search, music projection, favourites, listening history, and queue reconciliation.
+  /// Runs artwork, search, music projection, favourites, listening history,
+  /// playback session, and live queue reconciliation.
   void onCatalogReplaced(Catalog catalog) {
     _artworkService.clearCache();
     _searchService.onCatalogReplaced(catalog);
@@ -42,6 +47,7 @@ class CatalogCacheCoordinator {
     unawaited(_musicPlaybackQueueController.reconcileWithCatalog(catalog));
     unawaited(_validateLibraryMetadata(catalog));
     unawaited(_validateListeningHistory(catalog));
+    unawaited(_validatePlaybackSession(catalog));
   }
 
   Future<void> _validateLibraryMetadata(Catalog catalog) async {
@@ -61,6 +67,17 @@ class CatalogCacheCoordinator {
       debugPrint(
         '[CatalogCacheCoordinator] listening validateAgainstCatalog failed: '
         '$e\n$stackTrace',
+      );
+    }
+  }
+
+  Future<void> _validatePlaybackSession(Catalog catalog) async {
+    try {
+      await _musicPlaybackSessionRepository.validateAgainstCatalog(catalog);
+    } catch (e, stackTrace) {
+      debugPrint(
+        '[CatalogCacheCoordinator] playback session validateAgainstCatalog '
+        'failed: $e\n$stackTrace',
       );
     }
   }
