@@ -131,6 +131,52 @@ class MusicPlaybackQueueController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Appends a playable audio track to the end of the queue.
+  void addTrack(MediaItem track) {
+    if (!track.isAudio || !track.status.isPlayable) return;
+    if (_queue.isEmpty) {
+      seedSingleTrack(track);
+      return;
+    }
+    replaceQueue(
+      [..._queue.items, track],
+      startIndex: _queue.currentIndex,
+    );
+  }
+
+  /// Removes the first occurrence of [trackId] from the queue.
+  void removeTrack(String trackId) {
+    if (_queue.isEmpty) return;
+
+    final index = _queue.items.indexWhere((item) => item.id == trackId);
+    if (index < 0) return;
+
+    final items = [..._queue.items]..removeAt(index);
+    if (items.isEmpty) {
+      clearQueueOnly();
+      return;
+    }
+
+    var startIndex = _queue.currentIndex;
+    if (index < startIndex) {
+      startIndex--;
+    } else if (index == startIndex) {
+      startIndex = startIndex.clamp(0, items.length - 1);
+    }
+
+    replaceQueue(items, startIndex: startIndex);
+  }
+
+  /// Moves the current index to [trackId] without starting playback.
+  void selectTrack(String trackId) {
+    if (_queue.isEmpty) return;
+    final index = _queue.items.indexWhere((item) => item.id == trackId);
+    if (index < 0) return;
+    _queue = _queue.withCurrentIndex(index);
+    _resetCompletionGuards();
+    notifyListeners();
+  }
+
   void onPlayerRouteOpened() {
     _playerRouteActive = true;
   }

@@ -11,6 +11,8 @@ import 'features/music/music_library_service.dart';
 import 'features/music/services/music_listening_coordinator.dart';
 import 'features/music/services/music_listening_repository.dart';
 import 'features/music/services/music_playback_queue_controller.dart';
+import 'features/music/services/music_playback_session_coordinator.dart';
+import 'features/music/services/music_playback_session_repository.dart';
 import 'features/search/search_service.dart';
 import 'navigation/app_navigator.dart';
 import 'services/artwork/artwork_service.dart';
@@ -57,6 +59,9 @@ Future<void> main() async {
   final musicListeningRepository = MusicListeningRepository();
   await musicListeningRepository.initialize();
 
+  final musicPlaybackSessionRepository = MusicPlaybackSessionRepository();
+  await musicPlaybackSessionRepository.initialize();
+
   final playbackService = PlaybackService(
     mediaLocationResolver: mediaLocationResolver,
     defaultPlaybackRateProvider: () => settingsRepository.defaultPlaybackRate,
@@ -74,6 +79,13 @@ Future<void> main() async {
   musicPlaybackQueueController.pendingListeningWriteDrain =
       musicListeningCoordinator.drainPendingWrites;
   musicListeningCoordinator.attach();
+
+  final musicPlaybackSessionCoordinator = MusicPlaybackSessionCoordinator(
+    repository: musicPlaybackSessionRepository,
+    playbackService: playbackService,
+    queueController: musicPlaybackQueueController,
+  );
+  musicPlaybackSessionCoordinator.attach();
 
   final catalogCacheCoordinator = CatalogCacheCoordinator(
     artworkService: artworkService,
@@ -128,6 +140,12 @@ Future<void> main() async {
         ),
         ChangeNotifierProvider<MusicListeningCoordinator>.value(
           value: musicListeningCoordinator,
+        ),
+        ChangeNotifierProvider<MusicPlaybackSessionRepository>.value(
+          value: musicPlaybackSessionRepository,
+        ),
+        ChangeNotifierProvider<MusicPlaybackSessionCoordinator>.value(
+          value: musicPlaybackSessionCoordinator,
         ),
         ChangeNotifierProvider<MusicListeningRepository>.value(
           value: musicListeningRepository,

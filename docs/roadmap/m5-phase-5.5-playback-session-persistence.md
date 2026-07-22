@@ -121,7 +121,7 @@ Persist and restore the user's **active music queue session** locally so that:
 |---|---|
 | `MusicPlaybackSession` | Immutable value type: queue track IDs, active track ID, position, updated timestamp |
 | `MusicPlaybackSessionRepository` | Load/save/clear envelope; `ChangeNotifier` (catalogue reconcile in Step 3) |
-| `MusicPlaybackSessionCoordinator` *(optional)* | Debounce orchestration between queue controller and repository — evaluate during Step 1 audit; may inline in controller if simpler |
+| `MusicPlaybackSessionCoordinator` | Observes queue + playback; debounced queue writes; throttled position writes *(Step 2)* |
 | `MusicPlaybackQueueController` | Invoke persist on mutation; call restore after catalogue ready; existing `reconcileWithCatalog` delegates to repository policy |
 | `CatalogCacheCoordinator` | Trigger session validation after successful catalogue replace (parallel to listening history) |
 | `DiagnosticsService` | Read aggregate session flags/counts only |
@@ -160,6 +160,17 @@ Separate from:
 | `session.updatedAt` | Last persistence timestamp |
 
 **Step 1 scope:** identity fields only — no titles, artwork, queue-source labels, or `wasPlaying`. Those may be evaluated in later integration steps if needed.
+
+### Step 2 coordinator timing (implemented)
+
+| Policy | Value | Behaviour |
+|---|---|---|
+| Queue mutation debounce | 250 ms | Coalesces rapid `replaceQueue` / add / remove changes |
+| Position throttle | 5 s | Periodic position snapshots while playing |
+| Seek detection | > 2 s jump | Immediate position persist (not counted as periodic throttle) |
+| Immediate flush | — | Active-track change, pause, stop-with-queue, seek, clear, dispose |
+
+Generation tokens prevent stale debounced/throttled writes from overwriting newer immediate snapshots. Timing policy lives in the coordinator — not the repository.
 
 ### Startup sequence (planned)
 
@@ -415,7 +426,7 @@ Phase 5.5 is complete when:
 | Step | Deliverable | Proposed commit prefix |
 |---|---|---|
 | **1** | Repository audit + model/envelope + unit tests | `feat(music): add playback session repository` |
-| **2** | Queue controller persist/restore hooks | `feat(music): persist music queue session` |
+| **2** | Session coordinator persistence hooks | `feat(music): persist playback session` *(complete)* |
 | **3** | Catalogue reconciliation integration | `feat(music): reconcile playback session on catalogue replace` |
 | **4** | Cold-start restore in `main.dart` | `feat(music): restore music queue on startup` |
 | **5** | Diagnostics integration | `feat(diagnostics): add playback session summary counts` |
