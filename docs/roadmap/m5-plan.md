@@ -64,8 +64,8 @@ Implement in order unless a documented dependency allows parallel documentation 
 | **5.1** | Music Catalogue and Metadata | ✅ Complete (2026-07-19) — [spec](./m5-phase-5.1-music-catalogue-metadata.md) |
 | **5.2** | Music Library Experience | ✅ Complete (2026-07-19) — [spec](./m5-phase-5.2-music-library-experience.md) |
 | **5.3** | Music Playback and Queue | ✅ Complete (2026-07-21) — [spec](./m5-phase-5.3-music-playback-queue.md) |
-| **5.4** | Music State and Listening History | **Active (planning)** — [spec](./m5-phase-5.4-listening-history-continue-listening.md) |
-| **5.5** | Performance, Diagnostics and Runtime Validation | Planned |
+| **5.4** | Music State and Listening History | ✅ Complete (2026-07-22) — [spec](./m5-phase-5.4-listening-history-continue-listening.md) · [closure](./m5-phase-5.4-closure-report.md) |
+| **5.5** | Performance, Diagnostics and Runtime Validation | **Next** |
 | **5.6** | Release and Documentation | Planned |
 
 ---
@@ -347,7 +347,7 @@ M5.3 adds play track, play album, queue next/previous, seek, shuffle, and repeat
 
 ### Phase 5.4 — Music State and Listening History
 
-**Status:** **PLANNING** — [Phase 5.4 spec](./m5-phase-5.4-listening-history-continue-listening.md)
+**Status:** ✅ **COMPLETE** (2026-07-22) — [Phase 5.4 spec](./m5-phase-5.4-listening-history-continue-listening.md) · [Closure report](./m5-phase-5.4-closure-report.md)
 
 **Objective:** Persistent music listening history and Continue Listening / Recently Played — isolated from video Continue Watching.
 
@@ -477,7 +477,7 @@ M5 is complete when:
 |---|---|---|
 | [ADR-020](../architecture/decisions/ADR-020-music-catalogue-schema-and-media-kind.md) | Music Catalogue Schema and Media Kind | **Accepted** (M5.1) |
 | [ADR-021](../architecture/decisions/ADR-021-music-metadata-precedence-and-identity.md) | Music Metadata Precedence and Identity | **Accepted** (M5.1) |
-| [ADR-022](../architecture/decisions/ADR-022-music-queue-and-listening-state.md) | Music Queue and Listening State | **Partially Accepted** (M5.4 — listening history) |
+| [ADR-022](../architecture/decisions/ADR-022-music-queue-and-listening-state.md) | Music Queue and Listening State | **Partially Accepted** (M5.4 listening history complete; queue persistence deferred) |
 | [ADR-023](../architecture/decisions/ADR-023-music-player-surface-architecture.md) | Music Player Surface Architecture | **Accepted** (M5.3) |
 
 No additional ADRs proposed for M5.0. Settings changes (e.g. music default shuffle) can extend ADR-011 in Phase 5.3 spec if needed.

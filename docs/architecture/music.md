@@ -2,7 +2,7 @@
 
 
 
-**Status:** **In progress** — Phase 5.4 planning (2026-07-21); Phase 5.3 complete
+**Status:** **In progress** — Phase 5.4 planning (2026-07-21); Phase 5.3 complete; **Phase 5.4 complete (2026-07-22)**
 
 **Related roadmap:** [M5 — Music](../roadmap/m5-plan.md) · [Phase 5.1 spec](../roadmap/m5-phase-5.1-music-catalogue-metadata.md)
 
@@ -430,6 +430,8 @@ Separate from `catalog.json` and separate from video resume keys where policies 
 **Implementation (Step 8):** Integration suite `phase_54_listening_history_integration_test.dart` validates end-to-end listening lifecycle (I1–I16) using production components with `Phase54TestClock` and playback stubs. Cross-instance persistence reload, catalogue reconciliation via `CatalogCacheCoordinator`, history launch navigation, and regression guards for video CW keys, favourites, search, and dashboard boundaries.
 
 **Runtime validation (Step 9):** Opt-in Windows harness `PHASE_54_RUNTIME=1` exercises production `MusicListeningRepository`, coordinator, queue, diagnostics, and `CatalogService` paths. Threshold scenarios use `Phase54TestClock` + `mediaKitInitOverride` (documented test boundary); R5 validates real libmpv playback separately. Confirms diagnostics export includes **Music Listening** as the eighth section (after Playback, before Library) with count-only redaction.
+
+**Closure (Step 10, 2026-07-22):** Phase 5.4 complete — [closure report](../roadmap/m5-phase-5.4-closure-report.md). ADR-022 remains **Partially Accepted** (queue persistence deferred). Release binary smoke passed; full validation **898 passed** / 12 skipped (default suite).
 
 
 ---

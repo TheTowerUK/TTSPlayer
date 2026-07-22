@@ -1,6 +1,6 @@
 # Diagnostics and Supportability (M4 Phase 4.6)
 
-**Status:** **Implemented / Accepted** — Phase 4.6 closed (2026-07-17)  
+**Status:** **Implemented / Accepted** — Phase 4.6 closed (2026-07-17); M5.4 Music Listening section added (2026-07-21); Phase 5.4 closed (2026-07-22)
 **Related roadmap phase:** [M4 Phase 4.6 — Diagnostics and Supportability](../roadmap/m4-phase-4.6-diagnostics-supportability.md)
 
 → [Provider management](./provider-management.md)  

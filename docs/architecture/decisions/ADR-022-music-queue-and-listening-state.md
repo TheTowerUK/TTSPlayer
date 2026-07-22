@@ -44,6 +44,12 @@
 
 **M5.4 Step 7 (2026-07-21):** Music listening diagnostics section — `MusicListeningDiagnostics` with aggregate counts and coordinator session flags; no record-level metadata in export. Diagnostics capture is read-only (no load/persist/clear/reconcile). Queue persistence remains deferred. Status stays **Partially Accepted**.
 
+**M5.4 Step 8 (2026-07-21):** Integration suite `phase_54_listening_history_integration_test.dart` — 38 tests (I1–I16) validating cross-component listening lifecycle, persistence reload, navigation, UI, failure injection, and regression guards (video CW, favourites, dashboard). Queue persistence remains deferred. Status stays **Partially Accepted**.
+
+**M5.4 Step 9 (2026-07-22):** Windows runtime harness (`PHASE_54_RUNTIME=1`) — 20 automated scenarios including real libmpv playback (R5), catalogue replace/failure, clear-history UI, diagnostics privacy, persistence restart. Queue persistence remains deferred. Status stays **Partially Accepted**.
+
+**M5.4 closure (2026-07-22):** Phase 5.4 complete — listening history, Continue Listening, Recently Played, reconciliation, clear history, and diagnostics shipped and validated. **Queue persistence across app restart** remains the sole open ADR-022 acceptance criterion. Status remains **Partially Accepted** until Phase 5.5+ delivers queue serialization/restoration or the ADR is formally amended.
+
 ---
 
 ## Context
