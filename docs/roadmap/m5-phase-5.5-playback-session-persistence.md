@@ -119,8 +119,8 @@ Persist and restore the user's **active music queue session** locally so that:
 
 | Component | Responsibility |
 |---|---|
-| `MusicPlaybackSessionRecord` | Immutable value type: track IDs, index, position, source descriptor, timestamps |
-| `MusicPlaybackSessionRepository` | Load/save/clear envelope; `validateAgainstCatalog`; `ChangeNotifier` |
+| `MusicPlaybackSession` | Immutable value type: queue track IDs, active track ID, position, updated timestamp |
+| `MusicPlaybackSessionRepository` | Load/save/clear envelope; `ChangeNotifier` (catalogue reconcile in Step 3) |
 | `MusicPlaybackSessionCoordinator` *(optional)* | Debounce orchestration between queue controller and repository — evaluate during Step 1 audit; may inline in controller if simpler |
 | `MusicPlaybackQueueController` | Invoke persist on mutation; call restore after catalogue ready; existing `reconcileWithCatalog` delegates to repository policy |
 | `CatalogCacheCoordinator` | Trigger session validation after successful catalogue replace (parallel to listening history) |
@@ -138,31 +138,28 @@ Separate from:
 - `position_*` / `duration_*` (video resume)
 - `ttsplayer_library_metadata_v1` (favourites)
 
-### Envelope shape (proposed v1)
+### Envelope shape (implemented v1 — Step 1)
 
 ```json
 {
   "stateVersion": 1,
-  "savedAt": "ISO-8601",
-  "trackIds": ["id-a", "id-b", "id-c"],
-  "currentIndex": 1,
-  "positionSeconds": 142,
-  "wasPlaying": false,
-  "queueSource": {
-    "kind": "album",
-    "identityKey": "<album_group_key>",
-    "label": "Display label snapshot"
+  "session": {
+    "queueTrackIds": ["id-a", "id-b", "id-c"],
+    "activeTrackId": "id-b",
+    "playbackPositionMs": 142000,
+    "updatedAt": "ISO-8601"
   }
 }
 ```
 
 | Field | Notes |
 |---|---|
-| `trackIds` | Ordered catalogue IDs only — not file paths |
-| `currentIndex` | Clamped on restore |
-| `positionSeconds` | Current track position at last persist; `0` when unknown |
-| `wasPlaying` | Informational; **does not** trigger auto-play on restore |
-| `queueSource` | Optional snapshot for diagnostics/display; restore uses `trackIds` + catalogue as authority |
+| `session.queueTrackIds` | Ordered catalogue IDs only — not file paths; blank/duplicate IDs normalised on load/save |
+| `session.activeTrackId` | Current track identity; falls back to first queue item when absent from queue |
+| `session.playbackPositionMs` | Current track position at last persist; `0` when queue empty or no active track |
+| `session.updatedAt` | Last persistence timestamp |
+
+**Step 1 scope:** identity fields only — no titles, artwork, queue-source labels, or `wasPlaying`. Those may be evaluated in later integration steps if needed.
 
 ### Startup sequence (planned)
 
