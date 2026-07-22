@@ -250,6 +250,51 @@ class LibraryDiagnostics {
   final int? continueWatchingCount;
 }
 
+/// Music playback session aggregates — counts and flags only (M5.5 Step 5).
+class MusicPlaybackSessionDiagnostics {
+  const MusicPlaybackSessionDiagnostics({
+    required this.status,
+    this.stateVersion,
+    this.repositoryLoaded,
+    this.persistedSessionPresent,
+    this.persistedQueueCount,
+    this.liveQueueCount,
+    this.activeTrackPresent,
+    this.storedPositionAvailable,
+    this.restoredOnColdStart,
+    this.persistenceEnabled,
+    this.pendingQueueDebounce,
+    this.pendingWrite,
+    this.recoveryWarningPresent,
+    this.persistenceWarningPresent,
+    this.lastPersistenceWarningSummary,
+    this.lastReconciliationRemovedCount,
+    this.lastRestorationRestoredCount,
+    this.lastRestorationUnresolvedCount,
+    this.coordinatorAttached,
+  });
+
+  final DiagnosticSectionStatus status;
+  final int? stateVersion;
+  final bool? repositoryLoaded;
+  final bool? persistedSessionPresent;
+  final int? persistedQueueCount;
+  final int? liveQueueCount;
+  final bool? activeTrackPresent;
+  final bool? storedPositionAvailable;
+  final bool? restoredOnColdStart;
+  final bool? persistenceEnabled;
+  final bool? pendingQueueDebounce;
+  final bool? pendingWrite;
+  final bool? recoveryWarningPresent;
+  final bool? persistenceWarningPresent;
+  final String? lastPersistenceWarningSummary;
+  final int? lastReconciliationRemovedCount;
+  final int? lastRestorationRestoredCount;
+  final int? lastRestorationUnresolvedCount;
+  final bool? coordinatorAttached;
+}
+
 /// Immutable point-in-time diagnostics snapshot (ADR-018).
 class RuntimeDiagnosticsSnapshot {
   const RuntimeDiagnosticsSnapshot({
@@ -261,6 +306,7 @@ class RuntimeDiagnosticsSnapshot {
     required this.search,
     required this.playback,
     this.musicListening,
+    this.musicPlaybackSession,
     this.library,
   });
 
@@ -272,5 +318,6 @@ class RuntimeDiagnosticsSnapshot {
   final SearchDiagnostics search;
   final PlaybackDiagnostics playback;
   final MusicListeningDiagnostics? musicListening;
+  final MusicPlaybackSessionDiagnostics? musicPlaybackSession;
   final LibraryDiagnostics? library;
 }

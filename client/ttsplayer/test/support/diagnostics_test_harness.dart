@@ -9,6 +9,9 @@ import 'package:ttsplayer/features/music/models/music_listening_record.dart';
 import 'package:ttsplayer/features/music/services/music_listening_coordinator.dart';
 import 'package:ttsplayer/features/music/services/music_listening_repository.dart';
 import 'package:ttsplayer/features/music/services/music_playback_queue_controller.dart';
+import 'package:ttsplayer/features/music/services/music_playback_session_coordinator.dart';
+import 'package:ttsplayer/features/music/services/music_playback_session_repository.dart';
+import 'package:ttsplayer/features/music/services/music_playback_session_restorer.dart';
 import 'package:ttsplayer/features/search/search_service.dart';
 import 'package:ttsplayer/models/catalog.dart';
 import 'package:ttsplayer/models/catalogue_provider_snapshot.dart';
@@ -229,6 +232,39 @@ MusicListeningCoordinator musicListeningCoordinatorHarness({
   return coordinator;
 }
 
+Future<MusicPlaybackSessionRepository>
+    initializedMusicPlaybackSessionRepository({
+  Map<String, Object>? initialPrefs,
+}) async {
+  SharedPreferences.setMockInitialValues(initialPrefs ?? {});
+  final repository = MusicPlaybackSessionRepository();
+  await repository.initialize();
+  return repository;
+}
+
+MusicPlaybackSessionCoordinator musicPlaybackSessionCoordinatorHarness({
+  required MusicPlaybackSessionRepository repository,
+  PlaybackService? playbackService,
+  MusicPlaybackQueueController? queueController,
+  bool attach = true,
+  bool deferPersistence = false,
+}) {
+  final playback = playbackService ?? PlaybackService();
+  final queue = queueController ??
+      MusicPlaybackQueueController(playbackService: playback);
+  final coordinator = MusicPlaybackSessionCoordinator(
+    repository: repository,
+    playbackService: playback,
+    queueController: queue,
+    queueMutationDebounce: const Duration(milliseconds: 50),
+  );
+  if (attach) {
+    coordinator.attach(
+        deferPersistenceUntilColdStartComplete: deferPersistence);
+  }
+  return coordinator;
+}
+
 Future<DiagnosticsService> buildDiagnosticsHarness({
   Catalog? catalog,
   CatalogueProviderSnapshot? providerSnapshot,
@@ -239,13 +275,19 @@ Future<DiagnosticsService> buildDiagnosticsHarness({
   MediaProviderConfigService? configService,
   MusicListeningRepository? musicListeningRepository,
   MusicListeningCoordinator? musicListeningCoordinator,
+  MusicPlaybackSessionRepository? musicPlaybackSessionRepository,
+  MusicPlaybackSessionCoordinator? musicPlaybackSessionCoordinator,
+  MusicPlaybackQueueController? musicPlaybackQueueController,
+  MusicPlaybackSessionRestorer? musicPlaybackSessionRestorer,
+  bool withInitializedMusicPlaybackSession = false,
   bool withInitializedMusicListening = false,
   DateTime? applicationStartedAt,
   Future<PackageInfo> Function()? packageInfoLoader,
   bool Function()? imageCacheAvailableProvider,
   bool withInitializedLibrary = true,
+  Map<String, Object>? initialPrefs,
 }) async {
-  SharedPreferences.setMockInitialValues({});
+  SharedPreferences.setMockInitialValues(initialPrefs ?? {});
   PackageInfo.setMockInitialValues(
     appName: 'TTSPlayer',
     packageName: 'ttsplayer',
@@ -270,6 +312,11 @@ Future<DiagnosticsService> buildDiagnosticsHarness({
     musicRepo = await initializedMusicListeningRepository();
   }
 
+  MusicPlaybackSessionRepository? sessionRepo = musicPlaybackSessionRepository;
+  if (withInitializedMusicPlaybackSession && sessionRepo == null) {
+    sessionRepo = await initializedMusicPlaybackSessionRepository();
+  }
+
   return DiagnosticsService(
     catalogService: StubCatalogService(
       stubCatalog: catalog,
@@ -283,6 +330,10 @@ Future<DiagnosticsService> buildDiagnosticsHarness({
     libraryMetadataRepository: metadata,
     musicListeningRepository: musicRepo,
     musicListeningCoordinator: musicListeningCoordinator,
+    musicPlaybackSessionRepository: sessionRepo,
+    musicPlaybackSessionCoordinator: musicPlaybackSessionCoordinator,
+    musicPlaybackQueueController: musicPlaybackQueueController,
+    musicPlaybackSessionRestorer: musicPlaybackSessionRestorer,
     applicationStartedAt:
         applicationStartedAt ?? DateTime.utc(2026, 7, 16, 9, 0),
     packageInfoLoader: packageInfoLoader,
@@ -316,11 +367,13 @@ RuntimeDiagnosticsSnapshot minimalSnapshot({
   SearchDiagnostics? search,
   PlaybackDiagnostics? playback,
   MusicListeningDiagnostics? musicListening,
+  MusicPlaybackSessionDiagnostics? musicPlaybackSession,
   LibraryDiagnostics? library,
   ProviderDiagnostics? provider,
   CacheDiagnostics? cache,
   bool omitLibrary = false,
   bool omitMusicListening = false,
+  bool omitMusicPlaybackSession = false,
 }) {
   final at = capturedAt ?? DateTime.utc(2026, 7, 16, 12);
   return RuntimeDiagnosticsSnapshot(
@@ -381,6 +434,26 @@ RuntimeDiagnosticsSnapshot minimalSnapshot({
               sessionActive: false,
               pendingWrite: false,
               persistenceWarningPresent: false,
+            )),
+    musicPlaybackSession: omitMusicPlaybackSession
+        ? null
+        : (musicPlaybackSession ??
+            const MusicPlaybackSessionDiagnostics(
+              status: DiagnosticSectionStatus.complete,
+              stateVersion: 1,
+              repositoryLoaded: true,
+              persistedSessionPresent: false,
+              persistedQueueCount: 0,
+              liveQueueCount: 0,
+              activeTrackPresent: false,
+              storedPositionAvailable: false,
+              restoredOnColdStart: false,
+              persistenceEnabled: true,
+              pendingQueueDebounce: false,
+              pendingWrite: false,
+              recoveryWarningPresent: false,
+              persistenceWarningPresent: false,
+              coordinatorAttached: true,
             )),
     library: omitLibrary
         ? null

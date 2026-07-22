@@ -344,6 +344,109 @@ String formatDiagnosticsExport(RuntimeDiagnosticsSnapshot snapshot) {
     );
   });
 
+  final musicPlaybackSession = snapshot.musicPlaybackSession;
+  _writeSection(buffer, 'Music Playback Session', () {
+    if (musicPlaybackSession == null) {
+      _writeLine(buffer, 'Status', 'Unavailable');
+      return;
+    }
+    _writeLine(
+      buffer,
+      'Status',
+      _sectionStatusLabel(musicPlaybackSession.status),
+    );
+    _writeLine(
+      buffer,
+      'State version',
+      _formatInt(musicPlaybackSession.stateVersion),
+    );
+    _writeLine(
+      buffer,
+      'Repository loaded',
+      _formatBool(musicPlaybackSession.repositoryLoaded),
+    );
+    _writeLine(
+      buffer,
+      'Persisted session present',
+      _formatBool(musicPlaybackSession.persistedSessionPresent),
+    );
+    _writeLine(
+      buffer,
+      'Persisted queue items',
+      _formatInt(musicPlaybackSession.persistedQueueCount),
+    );
+    _writeLine(
+      buffer,
+      'Live queue items',
+      _formatInt(musicPlaybackSession.liveQueueCount),
+    );
+    _writeLine(
+      buffer,
+      'Active track selected',
+      _formatBool(musicPlaybackSession.activeTrackPresent),
+    );
+    _writeLine(
+      buffer,
+      'Stored position available',
+      _formatBool(musicPlaybackSession.storedPositionAvailable),
+    );
+    _writeLine(
+      buffer,
+      'Restored on cold start',
+      _formatBool(musicPlaybackSession.restoredOnColdStart),
+    );
+    _writeLine(
+      buffer,
+      'Persistence enabled',
+      _formatBool(musicPlaybackSession.persistenceEnabled),
+    );
+    _writeLine(
+      buffer,
+      'Pending queue debounce',
+      _formatBool(musicPlaybackSession.pendingQueueDebounce),
+    );
+    _writeLine(
+      buffer,
+      'Pending write',
+      _formatBool(musicPlaybackSession.pendingWrite),
+    );
+    _writeLine(
+      buffer,
+      'Recovery warning present',
+      _formatBool(musicPlaybackSession.recoveryWarningPresent),
+    );
+    _writeLine(
+      buffer,
+      'Persistence warning present',
+      _formatBool(musicPlaybackSession.persistenceWarningPresent),
+    );
+    _writeLine(
+      buffer,
+      'Last persistence warning',
+      musicPlaybackSession.lastPersistenceWarningSummary,
+    );
+    _writeLine(
+      buffer,
+      'Last reconciliation removed',
+      _formatInt(musicPlaybackSession.lastReconciliationRemovedCount),
+    );
+    _writeLine(
+      buffer,
+      'Last restoration restored',
+      _formatInt(musicPlaybackSession.lastRestorationRestoredCount),
+    );
+    _writeLine(
+      buffer,
+      'Last restoration unresolved',
+      _formatInt(musicPlaybackSession.lastRestorationUnresolvedCount),
+    );
+    _writeLine(
+      buffer,
+      'Coordinator attached',
+      _formatBool(musicPlaybackSession.coordinatorAttached),
+    );
+  });
+
   final library = snapshot.library;
   _writeSection(buffer, 'Library', () {
     if (library == null) {

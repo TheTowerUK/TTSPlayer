@@ -29,6 +29,7 @@ import 'services/scan_history_service.dart';
 import 'services/scanner_service.dart';
 import 'theme/app_theme.dart';
 import 'widgets/artwork/artwork_image.dart';
+import 'widgets/music_playback_session_lifecycle_observer.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -119,6 +120,10 @@ Future<void> main() async {
     libraryMetadataRepository: libraryMetadataRepository,
     musicListeningRepository: musicListeningRepository,
     musicListeningCoordinator: musicListeningCoordinator,
+    musicPlaybackSessionRepository: musicPlaybackSessionRepository,
+    musicPlaybackSessionCoordinator: musicPlaybackSessionCoordinator,
+    musicPlaybackQueueController: musicPlaybackQueueController,
+    musicPlaybackSessionRestorer: musicPlaybackSessionRestorer,
     applicationStartedAt: applicationStartedAt,
   );
 
@@ -176,13 +181,16 @@ class TTSPlayerApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'TTSPlayer',
-      navigatorKey: rootNavigatorKey,
-      navigatorObservers: [routeObserver],
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.dark,
-      home: const DashboardScreen(),
+    return MusicPlaybackSessionLifecycleObserver(
+      coordinator: context.read<MusicPlaybackSessionCoordinator>(),
+      child: MaterialApp(
+        title: 'TTSPlayer',
+        navigatorKey: rootNavigatorKey,
+        navigatorObservers: [routeObserver],
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.dark,
+        home: const DashboardScreen(),
+      ),
     );
   }
 }

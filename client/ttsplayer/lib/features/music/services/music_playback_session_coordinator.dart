@@ -73,9 +73,16 @@ class MusicPlaybackSessionCoordinator extends ChangeNotifier {
     _coldStartPersistenceEnabled = true;
   }
 
+  bool get persistenceEnabled =>
+      _attached && _coldStartPersistenceEnabled && !_disposed;
+
+  bool get pendingQueueDebounce => _queueDebounceTimer?.isActive ?? false;
+
+  bool get pendingWrite => _inFlightWrite != null;
+
   /// Flushes the current session snapshot on app lifecycle pause when wired.
   Future<void> onAppLifecyclePaused() async {
-    if (_disposed) return;
+    if (_disposed || !persistenceEnabled) return;
     await _persistImmediate(reason: _PersistReason.lifecycle);
   }
 
@@ -257,6 +264,15 @@ class MusicPlaybackSessionCoordinator extends ChangeNotifier {
     final snapshot = _buildSnapshot();
     if (_disposed || generation != _snapshotGeneration) return;
 
+    if (_isEquivalentSnapshot(snapshot, _repository.session)) {
+      _lastPersistedGeneration = generation;
+      _lastPersistenceWarning = null;
+      if (reason == _PersistReason.throttledPosition) {
+        _lastPositionPersistAt = _now();
+      }
+      return;
+    }
+
     if (!force && reason == _PersistReason.throttledPosition) {
       final now = _now();
       if (_lastPositionPersistAt != null &&
@@ -295,6 +311,24 @@ class MusicPlaybackSessionCoordinator extends ChangeNotifier {
         _inFlightWrite = null;
       }
     }
+  }
+
+  static bool _isEquivalentSnapshot(
+    MusicPlaybackSession candidate,
+    MusicPlaybackSession persisted,
+  ) {
+    return candidate.queueTrackIds.length == persisted.queueTrackIds.length &&
+        candidate.activeTrackId == persisted.activeTrackId &&
+        candidate.playbackPosition == persisted.playbackPosition &&
+        _listEquals(candidate.queueTrackIds, persisted.queueTrackIds);
+  }
+
+  static bool _listEquals(List<String> a, List<String> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
   }
 
   MusicPlaybackSession _buildSnapshot() {

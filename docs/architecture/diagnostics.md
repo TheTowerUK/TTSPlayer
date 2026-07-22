@@ -95,7 +95,7 @@ Duplicate Refresh/Copy operations share an in-flight guard.
 
 ---
 
-## Eight sections (stable order)
+## Nine sections (stable order)
 
 | # | Section | Primary sources |
 |---|---|---|
@@ -106,7 +106,8 @@ Duplicate Refresh/Copy operations share an in-flight guard.
 | 5 | Search | `SearchService` index lifecycle |
 | 6 | Playback | `PlaybackService`, `playback_platform.dart` |
 | 7 | Music Listening | `MusicListeningRepository`, `MusicListeningCoordinator` (M5.4 Step 7) |
-| 8 | Library | `LibraryMetadataRepository` favourite counts |
+| 8 | Music Playback Session | `MusicPlaybackSessionRepository`, coordinator, queue, restorer (M5.5 Step 5) |
+| 9 | Library | `LibraryMetadataRepository` favourite counts |
 
 Each section carries `DiagnosticSectionStatus` (`complete`, `partial`, `unavailable`). Nullable fields mean unavailable; `false` and `0` retain distinct semantics.
 
@@ -129,6 +130,29 @@ Each section carries `DiagnosticSectionStatus` (`complete`, `partial`, `unavaila
 **Read-only:** diagnostics capture does not load, persist, clear, or reconcile listening history.
 
 Snapshot type: `MusicListeningDiagnostics` on `RuntimeDiagnosticsSnapshot.musicListening` (nullable when repository not loaded or not wired).
+
+### Music Playback Session section (M5.5 Step 5)
+
+| Field | Source | Redaction |
+|---|---|---|
+| `stateVersion` | Repository envelope version | int |
+| `repositoryLoaded` | `MusicPlaybackSessionRepository.isLoaded` | bool |
+| `persistedSessionPresent` / `persistedQueueCount` | Repository aggregates | bool / count |
+| `liveQueueCount` | `MusicPlaybackQueueController` item count | count |
+| `activeTrackPresent` | Live queue has current track | bool |
+| `storedPositionAvailable` | Persisted or deferred restore position | bool |
+| `restoredOnColdStart` | Restorer outcome aggregate | bool |
+| `persistenceEnabled` / `pendingQueueDebounce` / `pendingWrite` | Coordinator observables | bool |
+| `recoveryWarningPresent` | Repository parse recovery | bool |
+| `persistenceWarningPresent` | Coordinator flag | bool |
+| `lastPersistenceWarningSummary` | Safe text via `_safeErrorSummary` | no paths |
+| Reconciliation/restoration counts | Last validation/restore results | counts |
+
+**Never exported:** track IDs, titles, artists, albums, file paths, URIs, raw JSON envelope, queue contents.
+
+**Read-only:** diagnostics capture does not load, persist, clear, reconcile, or restore playback sessions.
+
+Snapshot type: `MusicPlaybackSessionDiagnostics` on `RuntimeDiagnosticsSnapshot.musicPlaybackSession` (nullable when repository not loaded or not wired).
 
 ---
 

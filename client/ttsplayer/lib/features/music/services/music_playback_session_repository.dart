@@ -98,6 +98,7 @@ class MusicPlaybackSessionRepository extends ChangeNotifier {
   bool _isLoaded = false;
   MusicPlaybackSessionLoadSource? _lastLoadSource;
   List<String> _lastRecoveryWarnings = const [];
+  MusicPlaybackSessionValidationResult? _lastValidationResult;
 
   /// When true, [save] / persistence writes fail (tests only).
   @visibleForTesting
@@ -114,6 +115,9 @@ class MusicPlaybackSessionRepository extends ChangeNotifier {
   bool get hasPersistedSession => !_session.isEmpty;
 
   bool get recoveryWarningPresent => _lastRecoveryWarnings.isNotEmpty;
+
+  MusicPlaybackSessionValidationResult? get lastValidationResult =>
+      _lastValidationResult;
 
   /// Loads persisted session once at startup. Safe to call multiple times.
   Future<MusicPlaybackSessionLoadResult> initialize() async {
@@ -199,11 +203,13 @@ class MusicPlaybackSessionRepository extends ChangeNotifier {
   ) async {
     try {
       if (_session.isEmpty) {
-        return const MusicPlaybackSessionValidationResult(
-          changed: false,
-          originalCount: 0,
-          retainedCount: 0,
-          removedCount: 0,
+        return _completeValidation(
+          const MusicPlaybackSessionValidationResult(
+            changed: false,
+            originalCount: 0,
+            retainedCount: 0,
+            removedCount: 0,
+          ),
         );
       }
 
@@ -214,13 +220,15 @@ class MusicPlaybackSessionRepository extends ChangeNotifier {
           reconciled.activeTrackId == _session.activeTrackId;
 
       if (reconciled == _session) {
-        return MusicPlaybackSessionValidationResult(
-          changed: false,
-          originalCount: originalCount,
-          retainedCount: reconciled.queueTrackIds.length,
-          removedCount: 0,
-          activeTrackRetained: activeSurvived,
-          sessionCleared: reconciled.isEmpty,
+        return _completeValidation(
+          MusicPlaybackSessionValidationResult(
+            changed: false,
+            originalCount: originalCount,
+            retainedCount: reconciled.queueTrackIds.length,
+            removedCount: 0,
+            activeTrackRetained: activeSurvived,
+            sessionCleared: reconciled.isEmpty,
+          ),
         );
       }
 
@@ -229,19 +237,21 @@ class MusicPlaybackSessionRepository extends ChangeNotifier {
           : await _persist(reconciled);
 
       if (!saveResult.success) {
-        return MusicPlaybackSessionValidationResult(
-          changed: false,
-          originalCount: originalCount,
-          retainedCount: _session.queueTrackIds.length,
-          removedCount: 0,
-          activeTrackRetained: _session.activeTrackId != null &&
-              reconciled.activeTrackId == _session.activeTrackId,
-          sessionCleared: _session.isEmpty,
-          persistenceFailed: true,
-          warnings: [
-            saveResult.errorMessage ??
-                'Could not persist reconciled music playback session.',
-          ],
+        return _completeValidation(
+          MusicPlaybackSessionValidationResult(
+            changed: false,
+            originalCount: originalCount,
+            retainedCount: _session.queueTrackIds.length,
+            removedCount: 0,
+            activeTrackRetained: _session.activeTrackId != null &&
+                reconciled.activeTrackId == _session.activeTrackId,
+            sessionCleared: _session.isEmpty,
+            persistenceFailed: true,
+            warnings: [
+              saveResult.errorMessage ??
+                  'Could not persist reconciled music playback session.',
+            ],
+          ),
         );
       }
 
@@ -252,31 +262,42 @@ class MusicPlaybackSessionRepository extends ChangeNotifier {
         );
       }
 
-      return MusicPlaybackSessionValidationResult(
-        changed: true,
-        originalCount: originalCount,
-        retainedCount: reconciled.queueTrackIds.length,
-        removedCount: removedCount,
-        activeTrackRetained: activeSurvived,
-        sessionCleared: reconciled.isEmpty,
-        persisted: true,
+      return _completeValidation(
+        MusicPlaybackSessionValidationResult(
+          changed: true,
+          originalCount: originalCount,
+          retainedCount: reconciled.queueTrackIds.length,
+          removedCount: removedCount,
+          activeTrackRetained: activeSurvived,
+          sessionCleared: reconciled.isEmpty,
+          persisted: true,
+        ),
       );
     } catch (e, stackTrace) {
       debugPrint(
         '[MusicPlaybackSessionRepository] validateAgainstCatalog failed: '
         '$e\n$stackTrace',
       );
-      return MusicPlaybackSessionValidationResult(
-        changed: false,
-        originalCount: _session.queueTrackIds.length,
-        retainedCount: _session.queueTrackIds.length,
-        removedCount: 0,
-        persistenceFailed: true,
-        warnings: const [
-          'Catalogue playback-session validation failed unexpectedly.',
-        ],
+      return _completeValidation(
+        MusicPlaybackSessionValidationResult(
+          changed: false,
+          originalCount: _session.queueTrackIds.length,
+          retainedCount: _session.queueTrackIds.length,
+          removedCount: 0,
+          persistenceFailed: true,
+          warnings: const [
+            'Catalogue playback-session validation failed unexpectedly.',
+          ],
+        ),
       );
     }
+  }
+
+  MusicPlaybackSessionValidationResult _completeValidation(
+    MusicPlaybackSessionValidationResult result,
+  ) {
+    _lastValidationResult = result;
+    return result;
   }
 
   /// Reconciles [source] against playable audio items in [catalog].

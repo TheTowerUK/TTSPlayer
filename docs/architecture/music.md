@@ -435,6 +435,8 @@ Separate from `catalog.json` and separate from video resume keys where policies 
 
 **Implementation (Phase 5.5 Step 4, 2026-07-22):** `MusicPlaybackSessionRestorer` hydrates `MusicPlaybackQueueController` after catalogue load via `DashboardScreen` bootstrap. Persisted session reconciles through `MusicPlaybackSessionRepository.validateAgainstCatalog` before track resolution against catalogue + `MusicLibraryProjection`. `MusicPlaybackQueueController.restoreSession` replaces the queue atomically and stores `restoredStartPosition` for deferred seek on the next user-initiated `playCurrent` — no autoplay or navigation. `MusicPlaybackSessionCoordinator` defers persistence until `enablePersistenceAfterColdStartRestore` to avoid overwriting stored state with an empty startup queue. Runtime catalogue replacement continues to reconcile the persisted envelope only (Step 3); it does not rehydrate the live queue.
 
+**Implementation (Phase 5.5 Step 5, 2026-07-22):** `MusicPlaybackSessionLifecycleObserver` wraps the application shell and flushes session state on background lifecycle transitions via `MusicPlaybackSessionCoordinator.onAppLifecyclePaused()`. Duplicate events within one background transition are suppressed until `AppLifecycleState.resumed`. Lifecycle writes are blocked until cold-start restore enables persistence. Aggregate playback-session diagnostics are exposed through `DiagnosticsService` and the plain-text export as section **Music Playback Session** — counts and flags only.
+
 
 ---
 

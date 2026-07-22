@@ -203,6 +203,18 @@ Generation tokens prevent stale debounced/throttled writes from overwriting newe
 | Runtime catalogue replace | Does **not** rehydrate from persisted session (Step 3 repository reconcile only) |
 | Failure | Non-fatal — empty queue, warning logged, app continues |
 
+### Step 5 lifecycle persistence and diagnostics (implemented)
+
+| Rule | Behaviour |
+|---|---|
+| Lifecycle owner | `MusicPlaybackSessionLifecycleObserver` wrapping `TTSPlayerApp` |
+| Qualifying states | `inactive`, `paused`, `detached`, `hidden` |
+| Duplicate protection | One flush per background transition until `resumed` |
+| Pre-restore guard | No lifecycle persist while `persistenceEnabled` is false |
+| Persistence path | `onAppLifecyclePaused()` → immediate coordinator snapshot |
+| Diagnostics | `MusicPlaybackSessionDiagnostics` on snapshot + export section |
+| Redaction | Counts and booleans only — no track IDs, titles, paths, or raw JSON |
+
 ### Startup sequence (implemented)
 
 ```
@@ -464,7 +476,7 @@ Phase 5.5 is complete when:
 | **2** | Session coordinator persistence hooks | `feat(music): persist playback session` *(complete)* |
 | **3** | Catalogue reconciliation integration | `feat(music): reconcile playback session after catalogue update` *(complete)* |
 | **4** | Cold-start restore in `main.dart` | `feat(music): restore playback session on startup` *(complete)* |
-| **5** | Diagnostics integration | `feat(diagnostics): add playback session summary counts` |
+| **5** | Diagnostics integration | `feat(music): wire session lifecycle and diagnostics` *(complete)* |
 | **6** | Integration test suite | `test(music): add playback session integration suite` |
 | **7** | Windows runtime harness | `test(music): add Phase 5.5 Windows runtime harness` |
 | **8** | Integration validation + regression | `test(music): validate playback session regression` |

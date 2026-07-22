@@ -271,6 +271,8 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
                 const SizedBox(height: AppSpacing.section),
                 _buildMusicListeningSection(snapshot),
                 const SizedBox(height: AppSpacing.section),
+                _buildMusicPlaybackSessionSection(snapshot),
+                const SizedBox(height: AppSpacing.section),
                 _buildLibrarySection(snapshot),
                 const SizedBox(height: AppSpacing.section),
                 Tooltip(
@@ -794,6 +796,120 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
           value: DiagnosticsFormatters.textValue(
             musicListening.lastPersistenceWarningSummary,
           ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMusicPlaybackSessionSection(
+      RuntimeDiagnosticsSnapshot snapshot) {
+    final session = snapshot.musicPlaybackSession;
+    if (session == null) {
+      return const DiagnosticsSection(
+        sectionKey: Key('diagnostics_section_music_playback_session'),
+        title: 'Music Playback Session',
+        status: DiagnosticSectionStatus.unavailable,
+        children: [
+          DiagnosticsValueRow(
+            label: 'Availability',
+            value: 'Unavailable',
+          ),
+        ],
+      );
+    }
+
+    return DiagnosticsSection(
+      sectionKey: const Key('diagnostics_section_music_playback_session'),
+      title: 'Music Playback Session',
+      status: session.status,
+      children: [
+        DiagnosticsValueRow(
+          label: 'State version',
+          value: DiagnosticsFormatters.intValue(session.stateVersion),
+        ),
+        DiagnosticsValueRow(
+          label: 'Repository loaded',
+          value: DiagnosticsFormatters.boolValue(session.repositoryLoaded),
+          valueKey: const Key('diagnostics_music_playback_session_loaded'),
+        ),
+        DiagnosticsValueRow(
+          label: 'Persisted session present',
+          value:
+              DiagnosticsFormatters.boolValue(session.persistedSessionPresent),
+        ),
+        DiagnosticsValueRow(
+          label: 'Persisted queue items',
+          value: DiagnosticsFormatters.intValue(session.persistedQueueCount),
+          valueKey: const Key('diagnostics_music_playback_session_persisted'),
+        ),
+        DiagnosticsValueRow(
+          label: 'Live queue items',
+          value: DiagnosticsFormatters.intValue(session.liveQueueCount),
+          valueKey: const Key('diagnostics_music_playback_session_live'),
+        ),
+        DiagnosticsValueRow(
+          label: 'Active track selected',
+          value: DiagnosticsFormatters.boolValue(session.activeTrackPresent),
+        ),
+        DiagnosticsValueRow(
+          label: 'Stored position available',
+          value:
+              DiagnosticsFormatters.boolValue(session.storedPositionAvailable),
+        ),
+        DiagnosticsValueRow(
+          label: 'Restored on cold start',
+          value: DiagnosticsFormatters.boolValue(session.restoredOnColdStart),
+        ),
+        DiagnosticsValueRow(
+          label: 'Persistence enabled',
+          value: DiagnosticsFormatters.boolValue(session.persistenceEnabled),
+        ),
+        DiagnosticsValueRow(
+          label: 'Pending queue debounce',
+          value: DiagnosticsFormatters.boolValue(session.pendingQueueDebounce),
+        ),
+        DiagnosticsValueRow(
+          label: 'Pending write',
+          value: DiagnosticsFormatters.boolValue(session.pendingWrite),
+        ),
+        DiagnosticsValueRow(
+          label: 'Recovery warning present',
+          value:
+              DiagnosticsFormatters.boolValue(session.recoveryWarningPresent),
+        ),
+        DiagnosticsValueRow(
+          label: 'Persistence warning present',
+          value: DiagnosticsFormatters.boolValue(
+            session.persistenceWarningPresent,
+          ),
+        ),
+        DiagnosticsValueRow(
+          label: 'Last persistence warning',
+          value: DiagnosticsFormatters.textValue(
+            session.lastPersistenceWarningSummary,
+          ),
+        ),
+        DiagnosticsValueRow(
+          label: 'Last reconciliation removed',
+          value: DiagnosticsFormatters.intValue(
+            session.lastReconciliationRemovedCount,
+          ),
+        ),
+        DiagnosticsValueRow(
+          label: 'Last restoration restored',
+          value: DiagnosticsFormatters.intValue(
+            session.lastRestorationRestoredCount,
+          ),
+        ),
+        DiagnosticsValueRow(
+          label: 'Last restoration unresolved',
+          value: DiagnosticsFormatters.intValue(
+            session.lastRestorationUnresolvedCount,
+          ),
+        ),
+        DiagnosticsValueRow(
+          label: 'Coordinator attached',
+          value: DiagnosticsFormatters.boolValue(session.coordinatorAttached),
         ),
       ],
     );

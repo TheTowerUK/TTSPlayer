@@ -6,6 +6,10 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../features/music/services/music_listening_coordinator.dart';
 import '../../features/music/services/music_listening_repository.dart';
+import '../../features/music/services/music_playback_queue_controller.dart';
+import '../../features/music/services/music_playback_session_coordinator.dart';
+import '../../features/music/services/music_playback_session_repository.dart';
+import '../../features/music/services/music_playback_session_restorer.dart';
 import '../../features/search/search_service.dart';
 import '../../models/catalogue_provider_snapshot.dart';
 import '../../models/media_folder.dart';
@@ -37,6 +41,10 @@ class DiagnosticsService {
     required DateTime applicationStartedAt,
     MusicListeningRepository? musicListeningRepository,
     MusicListeningCoordinator? musicListeningCoordinator,
+    MusicPlaybackSessionRepository? musicPlaybackSessionRepository,
+    MusicPlaybackSessionCoordinator? musicPlaybackSessionCoordinator,
+    MusicPlaybackQueueController? musicPlaybackQueueController,
+    MusicPlaybackSessionRestorer? musicPlaybackSessionRestorer,
     Future<PackageInfo> Function()? packageInfoLoader,
     String Function()? platformNameProvider,
     bool Function()? imageCacheAvailableProvider,
@@ -48,6 +56,10 @@ class DiagnosticsService {
         _libraryMetadataRepository = libraryMetadataRepository,
         _musicListeningRepository = musicListeningRepository,
         _musicListeningCoordinator = musicListeningCoordinator,
+        _musicPlaybackSessionRepository = musicPlaybackSessionRepository,
+        _musicPlaybackSessionCoordinator = musicPlaybackSessionCoordinator,
+        _musicPlaybackQueueController = musicPlaybackQueueController,
+        _musicPlaybackSessionRestorer = musicPlaybackSessionRestorer,
         _applicationStartedAt = applicationStartedAt,
         _packageInfoLoader = packageInfoLoader ?? PackageInfo.fromPlatform,
         _platformNameProvider = platformNameProvider ?? _defaultPlatformName,
@@ -62,6 +74,10 @@ class DiagnosticsService {
   final LibraryMetadataRepository _libraryMetadataRepository;
   final MusicListeningRepository? _musicListeningRepository;
   final MusicListeningCoordinator? _musicListeningCoordinator;
+  final MusicPlaybackSessionRepository? _musicPlaybackSessionRepository;
+  final MusicPlaybackSessionCoordinator? _musicPlaybackSessionCoordinator;
+  final MusicPlaybackQueueController? _musicPlaybackQueueController;
+  final MusicPlaybackSessionRestorer? _musicPlaybackSessionRestorer;
   final DateTime _applicationStartedAt;
   final Future<PackageInfo> Function() _packageInfoLoader;
   final String Function() _platformNameProvider;
@@ -82,6 +98,7 @@ class DiagnosticsService {
     final search = _captureSearch(catalogue);
     final playback = _capturePlayback();
     final musicListening = _captureMusicListening();
+    final musicPlaybackSession = _captureMusicPlaybackSession();
     final library = _captureLibrary(catalogue);
 
     return RuntimeDiagnosticsSnapshot(
@@ -93,6 +110,7 @@ class DiagnosticsService {
       search: search,
       playback: playback,
       musicListening: musicListening,
+      musicPlaybackSession: musicPlaybackSession,
       library: library,
     );
   }
@@ -335,6 +353,86 @@ class DiagnosticsService {
       );
     } catch (_) {
       return const MusicListeningDiagnostics(
+        status: DiagnosticSectionStatus.unavailable,
+        repositoryLoaded: false,
+      );
+    }
+  }
+
+  MusicPlaybackSessionDiagnostics? _captureMusicPlaybackSession() {
+    final repository = _musicPlaybackSessionRepository;
+    if (repository == null) {
+      return null;
+    }
+
+    try {
+      if (!repository.isLoaded) {
+        return null;
+      }
+
+      var status = DiagnosticSectionStatus.complete;
+      bool? coordinatorAttached;
+      bool? persistenceEnabled;
+      bool? pendingQueueDebounce;
+      bool? pendingWrite;
+      bool? persistenceWarningPresent;
+      String? lastPersistenceWarningSummary;
+
+      final coordinator = _musicPlaybackSessionCoordinator;
+      if (coordinator != null) {
+        try {
+          coordinatorAttached = coordinator.isAttached;
+          persistenceEnabled = coordinator.persistenceEnabled;
+          pendingQueueDebounce = coordinator.pendingQueueDebounce;
+          pendingWrite = coordinator.pendingWrite;
+          persistenceWarningPresent = coordinator.persistenceWarningPresent;
+          lastPersistenceWarningSummary = _safeErrorSummary(
+            coordinator.lastPersistenceWarning,
+          );
+        } catch (_) {
+          status = DiagnosticSectionStatus.partial;
+        }
+      }
+
+      final queue = _musicPlaybackQueueController;
+      final liveQueueCount = queue?.queue.items.length;
+      final activeTrackPresent = queue?.currentTrack != null;
+      final restoredPosition = queue?.restoredStartPosition;
+      final persistedSession = repository.session;
+      final storedPositionAvailable =
+          persistedSession.playbackPosition > Duration.zero ||
+              (restoredPosition != null && restoredPosition > Duration.zero);
+
+      final restorer = _musicPlaybackSessionRestorer;
+      final lastRestore = restorer?.lastRestoreResult;
+      final restoredOnColdStart = restorer?.coldStartRestoreAttempted == true &&
+          (lastRestore?.restoredQueueCount ?? 0) > 0;
+
+      final lastValidation = repository.lastValidationResult;
+
+      return MusicPlaybackSessionDiagnostics(
+        status: status,
+        stateVersion: MusicPlaybackSessionRepository.currentStateVersion,
+        repositoryLoaded: true,
+        persistedSessionPresent: repository.hasPersistedSession,
+        persistedQueueCount: repository.persistedTrackCount,
+        liveQueueCount: liveQueueCount,
+        activeTrackPresent: activeTrackPresent,
+        storedPositionAvailable: storedPositionAvailable,
+        restoredOnColdStart: restoredOnColdStart,
+        persistenceEnabled: persistenceEnabled,
+        pendingQueueDebounce: pendingQueueDebounce,
+        pendingWrite: pendingWrite,
+        recoveryWarningPresent: repository.recoveryWarningPresent,
+        persistenceWarningPresent: persistenceWarningPresent,
+        lastPersistenceWarningSummary: lastPersistenceWarningSummary,
+        lastReconciliationRemovedCount: lastValidation?.removedCount,
+        lastRestorationRestoredCount: lastRestore?.restoredQueueCount,
+        lastRestorationUnresolvedCount: lastRestore?.unresolvedCount,
+        coordinatorAttached: coordinatorAttached,
+      );
+    } catch (_) {
+      return const MusicPlaybackSessionDiagnostics(
         status: DiagnosticSectionStatus.unavailable,
         repositoryLoaded: false,
       );

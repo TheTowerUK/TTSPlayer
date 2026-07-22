@@ -1,6 +1,9 @@
 // Smoke test — verifies the app starts without throwing.
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:ttsplayer/features/music/services/music_playback_queue_controller.dart';
+import 'package:ttsplayer/features/music/services/music_playback_session_coordinator.dart';
+import 'package:ttsplayer/features/music/services/music_playback_session_repository.dart';
 import 'package:ttsplayer/main.dart';
 import 'package:ttsplayer/services/artwork/artwork_service.dart';
 import 'package:ttsplayer/services/catalog_service.dart';
@@ -28,6 +31,20 @@ void main() {
             create: (context) => PlaybackService(
               mediaLocationResolver: context.read<MediaLocationResolver>(),
             ),
+          ),
+          ChangeNotifierProvider(
+            create: (context) {
+              final playback = context.read<PlaybackService>();
+              final repository = MusicPlaybackSessionRepository();
+              final queue = MusicPlaybackQueueController(
+                playbackService: playback,
+              );
+              return MusicPlaybackSessionCoordinator(
+                repository: repository,
+                playbackService: playback,
+                queueController: queue,
+              );
+            },
           ),
           ChangeNotifierProvider(create: (_) => ScannerService()),
           ChangeNotifierProvider(create: (_) => ScanHistoryService()),

@@ -34,12 +34,16 @@ class MusicPlaybackSessionRestorer {
   final MusicPlaybackSessionCoordinator _coordinator;
 
   bool _coldStartRestoreAttempted = false;
+  MusicPlaybackSessionRestoreResult? _lastRestoreResult;
 
   /// When true, [restoreOnColdStart] throws before mutating the queue (tests).
   @visibleForTesting
   bool simulateQueueRestoreFailure = false;
 
   bool get coldStartRestoreAttempted => _coldStartRestoreAttempted;
+
+  MusicPlaybackSessionRestoreResult? get lastRestoreResult =>
+      _lastRestoreResult;
 
   /// Restores the reconciled persisted session after catalogue load.
   ///
@@ -48,14 +52,16 @@ class MusicPlaybackSessionRestorer {
     Catalog catalog,
   ) async {
     if (_coldStartRestoreAttempted) {
-      return MusicPlaybackSessionRestoreResult(
-        persistedQueueCount: _repository.session.queueTrackIds.length,
-        restoredQueueCount: _queue.queue.items.length,
-        unresolvedCount: 0,
-        restoredActiveTrackId: _queue.currentTrack?.id,
-        restoredPosition: _queue.restoredStartPosition ?? Duration.zero,
-        queueEmpty: _queue.isEmpty,
-        skipped: true,
+      return _completeRestore(
+        MusicPlaybackSessionRestoreResult(
+          persistedQueueCount: _repository.session.queueTrackIds.length,
+          restoredQueueCount: _queue.queue.items.length,
+          unresolvedCount: 0,
+          restoredActiveTrackId: _queue.currentTrack?.id,
+          restoredPosition: _queue.restoredStartPosition ?? Duration.zero,
+          queueEmpty: _queue.isEmpty,
+          skipped: true,
+        ),
       );
     }
     _coldStartRestoreAttempted = true;
@@ -77,12 +83,14 @@ class MusicPlaybackSessionRestorer {
       if (session.isEmpty) {
         _queue.clearQueueOnly();
         _completeColdStart();
-        return MusicPlaybackSessionRestoreResult(
-          persistedQueueCount: persistedCount,
-          restoredQueueCount: 0,
-          unresolvedCount: 0,
-          queueEmpty: true,
-          warnings: recoveryWarnings,
+        return _completeRestore(
+          MusicPlaybackSessionRestoreResult(
+            persistedQueueCount: persistedCount,
+            restoredQueueCount: 0,
+            unresolvedCount: 0,
+            queueEmpty: true,
+            warnings: recoveryWarnings,
+          ),
         );
       }
 
@@ -98,12 +106,14 @@ class MusicPlaybackSessionRestorer {
       if (resolvedItems.isEmpty) {
         _queue.clearQueueOnly();
         _completeColdStart();
-        return MusicPlaybackSessionRestoreResult(
-          persistedQueueCount: persistedCount,
-          restoredQueueCount: 0,
-          unresolvedCount: unresolvedCount,
-          queueEmpty: true,
-          warnings: recoveryWarnings,
+        return _completeRestore(
+          MusicPlaybackSessionRestoreResult(
+            persistedQueueCount: persistedCount,
+            restoredQueueCount: 0,
+            unresolvedCount: unresolvedCount,
+            queueEmpty: true,
+            warnings: recoveryWarnings,
+          ),
         );
       }
 
@@ -141,26 +151,30 @@ class MusicPlaybackSessionRestorer {
         );
         _queue.clearQueueOnly();
         _completeColdStart();
-        return MusicPlaybackSessionRestoreResult(
-          persistedQueueCount: persistedCount,
-          restoredQueueCount: 0,
-          unresolvedCount: unresolvedCount,
-          queueEmpty: true,
-          warnings: const ['Could not restore music playback queue.'],
+        return _completeRestore(
+          MusicPlaybackSessionRestoreResult(
+            persistedQueueCount: persistedCount,
+            restoredQueueCount: 0,
+            unresolvedCount: unresolvedCount,
+            queueEmpty: true,
+            warnings: const ['Could not restore music playback queue.'],
+          ),
         );
       }
 
       assert(_playback.currentItem == null && !_playback.isPlaying);
 
       _completeColdStart();
-      return MusicPlaybackSessionRestoreResult(
-        persistedQueueCount: persistedCount,
-        restoredQueueCount: resolvedItems.length,
-        unresolvedCount: unresolvedCount,
-        restoredActiveTrackId: activeId,
-        activeTrackFellBack: activeFellBack,
-        restoredPosition: position,
-        warnings: recoveryWarnings,
+      return _completeRestore(
+        MusicPlaybackSessionRestoreResult(
+          persistedQueueCount: persistedCount,
+          restoredQueueCount: resolvedItems.length,
+          unresolvedCount: unresolvedCount,
+          restoredActiveTrackId: activeId,
+          activeTrackFellBack: activeFellBack,
+          restoredPosition: position,
+          warnings: recoveryWarnings,
+        ),
       );
     } catch (e, stackTrace) {
       debugPrint(
@@ -169,14 +183,23 @@ class MusicPlaybackSessionRestorer {
       );
       _queue.clearQueueOnly();
       _completeColdStart();
-      return const MusicPlaybackSessionRestoreResult(
-        persistedQueueCount: 0,
-        restoredQueueCount: 0,
-        unresolvedCount: 0,
-        queueEmpty: true,
-        warnings: ['Music playback session restoration failed unexpectedly.'],
+      return _completeRestore(
+        const MusicPlaybackSessionRestoreResult(
+          persistedQueueCount: 0,
+          restoredQueueCount: 0,
+          unresolvedCount: 0,
+          queueEmpty: true,
+          warnings: ['Music playback session restoration failed unexpectedly.'],
+        ),
       );
     }
+  }
+
+  MusicPlaybackSessionRestoreResult _completeRestore(
+    MusicPlaybackSessionRestoreResult result,
+  ) {
+    _lastRestoreResult = result;
+    return result;
   }
 
   void _completeColdStart() {
