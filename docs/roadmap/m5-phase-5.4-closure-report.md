@@ -71,7 +71,7 @@ Phase 5.4 delivers persistent music listening history, Continue Listening on the
 | 7 | `8c441ec` | `feat(music): integrate listening history into diagnostics` |
 | 8 | `ba717da` | `test(music): add Phase 5.4 listening history integration suite` |
 | 9 | `227c9bc` | `test(music): add Phase 5.4 Windows runtime harness` |
-| 10 | *(pending)* | `docs(m5.4): close listening history phase` |
+| 10 | `26b96dc` | `docs(m5.4): close listening history phase` |
 
 ---
 
