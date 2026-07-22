@@ -429,6 +429,8 @@ Separate from `catalog.json` and separate from video resume keys where policies 
 
 **Implementation (Step 8):** Integration suite `phase_54_listening_history_integration_test.dart` validates end-to-end listening lifecycle (I1–I16) using production components with `Phase54TestClock` and playback stubs. Cross-instance persistence reload, catalogue reconciliation via `CatalogCacheCoordinator`, history launch navigation, and regression guards for video CW keys, favourites, search, and dashboard boundaries.
 
+**Runtime validation (Step 9):** Opt-in Windows harness `PHASE_54_RUNTIME=1` exercises production `MusicListeningRepository`, coordinator, queue, diagnostics, and `CatalogService` paths. Threshold scenarios use `Phase54TestClock` + `mediaKitInitOverride` (documented test boundary); R5 validates real libmpv playback separately. Confirms diagnostics export includes **Music Listening** as the eighth section (after Playback, before Library) with count-only redaction.
+
 
 ---
 
@@ -652,7 +654,7 @@ No audio-specific provider type. Provider failure surfaces via existing Provider
 
 | Integration | Catalogue replace → state prune |
 
-| Windows runtime | `PHASE_51_RUNTIME` … `PHASE_55_RUNTIME` opt-in gates (mirrors M4); **5.2:** `PHASE_52_RUNTIME=1` → `test/phase_52_windows_runtime_test.dart` |
+| Windows runtime | `PHASE_51_RUNTIME` … `PHASE_55_RUNTIME` opt-in gates (mirrors M4); **5.2:** `PHASE_52_RUNTIME=1` → `test/phase_52_windows_runtime_test.dart`; **5.4:** `PHASE_54_RUNTIME=1` → `test/phase_54_listening_history_windows_runtime_test.dart` |
 
 | Manual QA | Play local + HTTPS audio; video regression checklist in 5.6 |
 

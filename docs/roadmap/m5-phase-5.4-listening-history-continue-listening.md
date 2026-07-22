@@ -1,6 +1,6 @@
 # M5 Phase 5.4 — Listening History and Continue Listening
 
-**Status:** **PLANNING** — Step 8 complete (2026-07-21)
+**Status:** **PLANNING** — Step 9 complete (2026-07-22)
 **Milestone:** M5 — Music
 **Branch:** `m5-development`
 **Predecessor:** Phase 5.3 complete (2026-07-21)
@@ -386,11 +386,114 @@ Diagnostics capture does **not** call `initialize`, `load`, `upsert`, `clearAll`
 - Dashboard excludes music Continue Listening
 - Queue next/previous unchanged after listening writes
 
-### Manual-only (Step 9 — Windows runtime)
+**Validation:** 38 new integration tests; full Flutter suite **898 passed**, 12 skipped (includes 1 opt-in runtime placeholder), 0 failed.
 
-Real libmpv playback, wall-clock listening, Release build R1–R9 matrix — not executed in Step 8.
+---
 
-**Validation:** 38 new integration tests; full Flutter suite **898 passed**, 11 skipped, 0 failed.
+## Step 9 — Windows runtime validation (2026-07-22)
+
+**Status:** ✅ **Complete** (runtime harness; Step 10 closure pending)
+
+| Deliverable | Path |
+|---|---|
+| Runtime suite | `client/ttsplayer/test/phase_54_listening_history_windows_runtime_test.dart` (20 tests when opted in) |
+| Runtime harness | `client/ttsplayer/test/support/phase_54_listening_history_runtime_harness.dart` |
+| Runtime baseline | `client/ttsplayer/test/support/phase_54_listening_history_runtime_baseline.dart` |
+| Reused support | `phase_54_listening_history_support.dart` (`Phase54TestClock`, fixtures) |
+
+### Opt-in gate
+
+| Variable | Purpose |
+|---|---|
+| `PHASE_54_RUNTIME=1` | Required to execute runtime suite |
+| `PHASE_54_AUDIO_FILE` | Optional override for real playback (supported audio extension required) |
+| `PHASE_54_LOCAL_CATALOG` | Optional local `catalog.json` load (R13) |
+| `LIBMPV_LIBRARY_PATH` | Optional libmpv DLL override |
+
+**Tag:** `phase54-runtime`
+
+**Commands:**
+
+```powershell
+cd client\ttsplayer
+flutter build windows --release
+$env:PHASE_54_RUNTIME='1'
+flutter test test/phase_54_listening_history_windows_runtime_test.dart --tags phase54-runtime
+Remove-Item Env:PHASE_54_RUNTIME -ErrorAction SilentlyContinue
+```
+
+Without `PHASE_54_RUNTIME`, the suite emits one clean skip — CI/default `flutter test` remains deterministic (**898 passed**, 12 skipped).
+
+### Runtime environment (2026-07-22)
+
+| Field | Value |
+|---|---|
+| OS | Windows 11 Pro, build 26200 |
+| Dart | 3.12.2 |
+| Flutter | 3.44.4 (stable) |
+| App version | 0.5.0-dev (test mock) |
+| Release binary | `build\windows\x64\runner\Release\ttsplayer.exe` (build ~37 s) |
+| Catalogue identity | `PHASE54-RUNTIME` (generated v3 fixture: 3 album tracks + 1 root track) |
+| Repository key | `ttsplayer_music_listening_v1` / stateVersion 1 |
+| Real audio fixture | `generated_mono_wav` (runtime temp; no committed media) |
+
+### Scenario matrix (R1–R13)
+
+| ID | Scenario | Classification | Result |
+|---|---|---|---|
+| R1 | Startup + production wiring + diagnostics capture | **Automated** | ✅ Pass |
+| R2 | Empty-history baseline + Recently Played tile | **Automated** | ✅ Pass |
+| R3 | 15 s meaningful-listening creation (deterministic clock/events) | **Automated** | ✅ Pass |
+| R4 | Continue Listening threshold + resume position | **Automated** | ✅ Pass |
+| R5 | Real Windows libmpv playback (play/pause/position) | **Automated** | ✅ Pass (`generated_mono_wav`) |
+| R6 | Pause/transition flush across queue tracks | **Automated** | ✅ Pass |
+| R7 | Completion removes CL; RP retains; replay at zero | **Automated** | ✅ Pass |
+| R8 | Catalogue replacement retains ID, refreshes metadata, prunes removed ID | **Automated** | ✅ Pass |
+| R9 | Failed catalogue refresh preserves history | **Automated** | ✅ Pass |
+| R10 | Clear history via production UI (Cancel + Clear) | **Automated** | ✅ Pass |
+| R11 | Diagnostics section order + export privacy (`FakeClipboardWriter`) | **Automated** | ✅ Pass |
+| R12 | Persistence restart reloads history | **Automated** | ✅ Pass |
+| R13 | Optional local catalogue (`PHASE_54_LOCAL_CATALOG`) | **Optional automated** | ⏭ Skipped (unset) |
+
+**UI runtime (within suite):** Continue Listening carousel, Recently Played replay semantics, clear dialog — **Automated** ✅
+
+**Failure/recovery (within suite):** malformed JSON, unsupported stateVersion, stale track ID — **Automated** ✅
+
+### Faked environment boundaries (documented)
+
+| Boundary | Why | Used in |
+|---|---|---|
+| `mediaKitInitOverride` + session fakes | Deterministic coordinator threshold tests without 15–45 s wall-clock waits | R3, R4, R6, R7, R8, R10, R12, UI |
+| `Phase54TestClock` | Coordinator throttle intervals | Same as above |
+| `FakeClipboardWriter` | Clipboard cannot be automated natively in widget tests | R11 export (via production `DiagnosticsExportCoordinator`) |
+| Real `PlaybackService` (no override) | Native libmpv validation | R5 only |
+
+All other services are production implementations wired like `main.dart`.
+
+### Informational metrics (not gates)
+
+| Metric | Observed |
+|---|---|
+| Repository init | 0 ms |
+| R1 diagnostics capture | 5 ms |
+| R5 playback startup | ~283–296 ms |
+| R8 catalogue reconcile | 3–5 ms |
+| Suite duration (opt-in run) | ~8 s |
+
+### Manual checks outstanding (Step 10)
+
+| Check | Status |
+|---|---|
+| Wall-clock 15 s / 30 s thresholds | **Not performed** in Step 9 |
+| 5 s throttle write coalescing (wall clock) | **Not performed** |
+| Release binary smoke (launch `ttsplayer.exe` manually) | **Not performed** |
+| Keyboard focus on Continue Listening carousel | **Not performed** |
+| Long-title / artwork failure layout | **Not performed** |
+| High-DPI layout | **Not performed** |
+| External clipboard paste verification | **Not performed** (export validated via `FakeClipboardWriter`) |
+| Optional local catalogue (R13) | **Skipped** — `PHASE_54_LOCAL_CATALOG` unset |
+
+**Validation:** Release build succeeded; opted-in runtime **20 passed**, 0 failed; default suite **898 passed**, 12 skipped; integration suite **38 passed**; `flutter analyze` — no new errors (pre-existing infos/warnings only).
 
 ---
 
@@ -788,7 +891,11 @@ Fixtures: extend `kCatalogV3QueueSeedingFixture`; dedicated listening history JS
 
 ## Windows runtime validation matrix
 
-Opt-in: `PHASE_54_RUNTIME=1` → `test/phase_54_music_listening_windows_runtime_test.dart`
+Opt-in: `PHASE_54_RUNTIME=1` → `test/phase_54_listening_history_windows_runtime_test.dart` (tag: `phase54-runtime`)
+
+Step 9 executed the R1–R13 matrix on Windows (2026-07-22). See [Step 9 — Windows runtime validation](#step-9--windows-runtime-validation-2026-07-22) for full results.
+
+Legacy manual matrix (superseded by R1–R13 harness):
 
 | # | Scenario | Pass criteria |
 |---|---|---|
@@ -860,8 +967,8 @@ Phase 5.4 is complete when:
 | **5** | `MusicScreen` Continue Listening + Recently Played UI + resume navigation | `feat(music): add Continue Listening and Recently Played UI` | ✅ |
 | **6** | Clear listening history + confirmation | `feat(music): add clear listening history action` | ✅ |
 | **7** | Diagnostics summary fields | `feat(diagnostics): add music listening summary counts` |
-| **8** | Integration + widget tests | `test(music): cover listening history and Continue Listening` |
-| **9** | Windows runtime harness `PHASE_54_RUNTIME` | `test(music): add Phase 5.4 Windows runtime harness` |
+| **8** | Integration + widget tests | `test(music): cover listening history and Continue Listening` | ✅ |
+| **9** | Windows runtime harness `PHASE_54_RUNTIME` | `test(music): add Phase 5.4 Windows runtime harness` | ✅ |
 | **10** | Documentation + ADR-022 update + phase closure | `docs(m5.4): close listening history phase` |
 
 Do not combine unrelated steps. README.md remains unstaged.
