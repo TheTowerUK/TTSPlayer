@@ -427,6 +427,8 @@ Separate from `catalog.json` and separate from video resume keys where policies 
 
 **Implementation (Step 7):** Diagnostics integration via `MusicListeningDiagnostics` (M4 Phase 4.6 patterns). `DiagnosticsService` reads aggregate counts and coordinator flags only — no record-level metadata, no SharedPreferences access, no load/persist/clear/reconcile side effects. Section appears after Playback and before Library in screen and export order.
 
+**Implementation (Step 8):** Integration suite `phase_54_listening_history_integration_test.dart` validates end-to-end listening lifecycle (I1–I16) using production components with `Phase54TestClock` and playback stubs. Cross-instance persistence reload, catalogue reconciliation via `CatalogCacheCoordinator`, history launch navigation, and regression guards for video CW keys, favourites, search, and dashboard boundaries.
+
 
 ---
 

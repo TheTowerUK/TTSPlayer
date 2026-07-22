@@ -1,6 +1,6 @@
 # M5 Phase 5.4 — Listening History and Continue Listening
 
-**Status:** **PLANNING** — Step 7 complete (2026-07-21)
+**Status:** **PLANNING** — Step 8 complete (2026-07-21)
 **Milestone:** M5 — Music
 **Branch:** `m5-development`
 **Predecessor:** Phase 5.3 complete (2026-07-21)
@@ -336,6 +336,61 @@ Diagnostics capture does **not** call `initialize`, `load`, `upsert`, `clearAll`
 - [ ] Copy-to-clipboard flow remains usable
 
 **Validation:** 14 new tests in `diagnostics_music_listening_test.dart`; full Flutter suite **860 passed**, 11 skipped, 0 failed.
+
+---
+
+## Step 8 — Integration and regression validation (2026-07-21)
+
+**Status:** ✅ **Complete**
+
+| Deliverable | Path |
+|---|---|
+| Integration suite | `client/ttsplayer/test/phase_54_listening_history_integration_test.dart` (38 tests) |
+| Shared harness | `client/ttsplayer/test/support/phase_54_listening_history_support.dart` |
+| Deterministic clock | `Phase54TestClock` — injected into `MusicListeningCoordinator` (no wall-clock waits) |
+| Production stack | `Phase54ListeningStack` — repository, coordinator, queue, playback stub, `CatalogCacheCoordinator` |
+
+### Scenario matrix (I1–I16)
+
+| ID | Scenario | Classification |
+|---|---|---|
+| I1 | Cold start + diagnostics zero counts | **Automated** (integration) |
+| I2 | Below 15 s creation threshold | **Automated** (integration + existing coordinator unit) |
+| I3 | Creation threshold + no duplicates | **Automated** (integration + existing coordinator unit) |
+| I4 | Sub-30 s excluded from Continue Listening | **Automated** (integration + existing repository/presentation unit) |
+| I5 | Resumable position + launch `startPosition` | **Automated** (integration widget + existing unit) |
+| I6 | Seek-only protection | **Automated** (integration + existing coordinator unit) |
+| I7 | Pause flush | **Automated** (integration + existing coordinator unit) |
+| I8 | Track transition flush | **Automated** (integration + existing coordinator unit) |
+| I9 | Completion CL off / RP on | **Automated** (integration + existing unit) |
+| I10 | Completed replay semantics | **Automated** (integration + existing coordinator unit) |
+| I11 | Catalogue metadata refresh + active playback | **Automated** (integration + existing catalog_cache unit) |
+| I12 | Catalogue prune stale trackId | **Automated** (integration + existing unit) |
+| I13 | Failed catalogue load skips reconcile | **Automated** (integration + existing catalog_cache unit) |
+| I14 | Clear history + diagnostics zero | **Automated** (integration + existing unit) |
+| I15 | Clear during playback + later recreation | **Automated** (integration + existing coordinator unit) |
+| I16 | Diagnostics export privacy | **Automated** (integration + existing diagnostics unit) |
+
+### Faked environment boundaries
+
+- `FakePlaybackSessionControls` + `mediaKitInitOverride` (no native engine)
+- `Phase54TestClock` (coordinator throttle/intervals)
+- `SharedPreferences.setMockInitialValues` (persistence)
+- Temp catalog JSON files for `CatalogService.loadFromFile` (I13 only)
+
+### Regression evidence (integration suite)
+
+- Video Continue Watching keys unchanged during audio listening
+- Favourites survive listening mutations
+- Diagnostics capture does not build search index
+- Dashboard excludes music Continue Listening
+- Queue next/previous unchanged after listening writes
+
+### Manual-only (Step 9 — Windows runtime)
+
+Real libmpv playback, wall-clock listening, Release build R1–R9 matrix — not executed in Step 8.
+
+**Validation:** 38 new integration tests; full Flutter suite **898 passed**, 11 skipped, 0 failed.
 
 ---
 
