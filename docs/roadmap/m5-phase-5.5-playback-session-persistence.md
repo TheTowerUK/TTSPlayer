@@ -186,15 +186,36 @@ Generation tokens prevent stale debounced/throttled writes from overwriting newe
 | Failure | Catalogue replacement continues; in-memory session unchanged on persist failure |
 | Live queue | **Not** hydrated — persisted repository only (Step 4 restores on startup) |
 
-### Startup sequence (planned)
+### Step 4 cold-start restoration (implemented)
+
+| Rule | Behaviour |
+|---|---|
+| Owner | `MusicPlaybackSessionRestorer` — orchestrates reconcile + resolve + queue hydrate |
+| Trigger | `DashboardScreen` after `CatalogService.loadOnStartup` succeeds |
+| Startup order | Init session repo → load catalogue → reconcile persisted session → music projection → restore live queue → attach session coordinator |
+| Resolution | Playable audio `trackId` via catalogue + `MusicLibraryProjection` |
+| Active survives | Select persisted active track; retain deferred position |
+| Active removed | First restored track; position zero |
+| Position | Stored on queue as `restoredStartPosition`; applied on next `playCurrent` — no engine prepare at startup |
+| Near-end | Positions within `ResumeInfo.nearEndWindow` of known duration reset to zero |
+| No autoplay | Queue + selection only; playback engine untouched until user presses Play |
+| Persistence suppression | Coordinator attaches with deferred persistence; `enablePersistenceAfterColdStartRestore` syncs snapshot without write |
+| Runtime catalogue replace | Does **not** rehydrate from persisted session (Step 3 repository reconcile only) |
+| Failure | Non-fatal — empty queue, warning logged, app continues |
+
+### Startup sequence (implemented)
 
 ```
 main()
   → initialize repositories (settings, metadata, listening, session)
-  → load catalogue (CatalogService)
-  → sessionRepository.restoreAgainstCatalog(catalog)  // prune stale, hydrate controller
-  → attach coordinators / queue controller
-  → user opens MusicPlayerScreen → playCurrent(startPosition: restored)
+  → create queue controller + session coordinator (not attached)
+  → runApp
+
+DashboardScreen.initState
+  → CatalogService.loadOnStartup
+  → MusicPlaybackSessionRestorer.restoreOnColdStart(catalog)
+  → session coordinator attach + enable persistence (no redundant write)
+  → user opens MusicPlayerScreen → playCurrent applies restoredStartPosition
 ```
 
 Restore runs **after** catalogue is available and **before** user-initiated playback. Exact wiring order to be validated in Step 1 repository audit against `main.dart` dependency graph.
@@ -442,7 +463,7 @@ Phase 5.5 is complete when:
 | **1** | Repository audit + model/envelope + unit tests | `feat(music): add playback session repository` |
 | **2** | Session coordinator persistence hooks | `feat(music): persist playback session` *(complete)* |
 | **3** | Catalogue reconciliation integration | `feat(music): reconcile playback session after catalogue update` *(complete)* |
-| **4** | Cold-start restore in `main.dart` | `feat(music): restore music queue on startup` |
+| **4** | Cold-start restore in `main.dart` | `feat(music): restore playback session on startup` *(complete)* |
 | **5** | Diagnostics integration | `feat(diagnostics): add playback session summary counts` |
 | **6** | Integration test suite | `test(music): add playback session integration suite` |
 | **7** | Windows runtime harness | `test(music): add Phase 5.5 Windows runtime harness` |

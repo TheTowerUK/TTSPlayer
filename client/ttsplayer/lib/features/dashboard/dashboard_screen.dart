@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../../features/music/services/music_playback_session_restorer.dart';
 import '../../features/search/search_navigation.dart';
 import '../../features/library_manager/library_manager_screen.dart';
 import '../../navigation/app_navigator.dart';
@@ -55,6 +56,13 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
       await catalogService.loadOnStartup(
         providerConfig: configService.config,
       );
+      if (!mounted) return;
+      final catalog = catalogService.catalog;
+      if (catalog != null) {
+        await context.read<MusicPlaybackSessionRestorer>().restoreOnColdStart(
+              catalog,
+            );
+      }
       if (!mounted) return;
       await _reloadDashboardData();
     });
@@ -118,7 +126,8 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
     setState(() {
       _config = config;
       _buildGeneration++;
-      _lastResumeDataVersion = context.read<PlaybackService>().resumeDataVersion;
+      _lastResumeDataVersion =
+          context.read<PlaybackService>().resumeDataVersion;
       _snapshotFuture = _dashboardService.build(
         catalog: catalog,
         sourceKind: catalogService.catalogueSourceKind,
@@ -198,164 +207,166 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
         autofocus: true,
         child: Scaffold(
           appBar: TtsAppBar(
-        title: 'TTSPlayer',
-        showHome: false,
-        extraActions: [
-          IconButton(
-            icon: const Icon(Icons.manage_search_outlined),
-            tooltip: 'Library Manager',
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const LibraryManagerScreen(),
+            title: 'TTSPlayer',
+            showHome: false,
+            extraActions: [
+              IconButton(
+                icon: const Icon(Icons.manage_search_outlined),
+                tooltip: 'Library Manager',
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const LibraryManagerScreen(),
+                  ),
+                ),
               ),
-            ),
-          ),
-          Consumer<ScannerService>(
-            builder: (context, scanner, _) {
-              if (scanner.isScanning) {
-                return const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                  child: SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: AppColors.textMedium,
-                    ),
-                  ),
-                );
-              }
-              return Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.refresh_outlined),
-                    tooltip: 'Rescan',
-                    onPressed: _startScan,
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.folder_open_outlined),
-                    tooltip: 'Open catalog file',
-                    onPressed: _showSourceDialog,
-                  ),
-                ],
-              );
-            },
-          ),
-        ],
+              Consumer<ScannerService>(
+                builder: (context, scanner, _) {
+                  if (scanner.isScanning) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppColors.textMedium,
+                        ),
+                      ),
+                    );
+                  }
+                  return Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.refresh_outlined),
+                        tooltip: 'Rescan',
+                        onPressed: _startScan,
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.folder_open_outlined),
+                        tooltip: 'Open catalog file',
+                        onPressed: _showSourceDialog,
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ],
           ),
           body: Consumer2<CatalogService, ScannerService>(
             builder: (context, catalogService, scannerService, _) {
-          if (catalogService.isLoading && catalogService.catalog == null) {
-            return const LoadingCard(message: 'Loading Library…');
-          }
-
-          final catalog = catalogService.catalog;
-          if (catalog == null) {
-            if (catalogService.errorMessage != null) {
-              return _BlockingError(
-                message: catalogService.errorMessage!,
-                onRetry: () async {
-                  await catalogService.refreshCatalogue();
-                  if (mounted) _reloadDashboardData();
-                },
-              );
-            }
-            return const EmptyState(
-              icon: Icons.folder_open_outlined,
-              title: 'No catalogue loaded.',
-              subtitle: 'Tap the folder icon in the AppBar to choose a source.',
-            );
-          }
-
-          return FutureBuilder<DashboardSnapshot>(
-            key: ValueKey(_buildGeneration),
-            future: _snapshotFuture,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState != ConnectionState.done) {
-                return const LoadingCard(message: 'Preparing dashboard…');
+              if (catalogService.isLoading && catalogService.catalog == null) {
+                return const LoadingCard(message: 'Loading Library…');
               }
-              final data = snapshot.data;
-              if (data == null) {
+
+              final catalog = catalogService.catalog;
+              if (catalog == null) {
+                if (catalogService.errorMessage != null) {
+                  return _BlockingError(
+                    message: catalogService.errorMessage!,
+                    onRetry: () async {
+                      await catalogService.refreshCatalogue();
+                      if (mounted) _reloadDashboardData();
+                    },
+                  );
+                }
                 return const EmptyState(
-                  icon: Icons.dashboard_outlined,
-                  title: 'Dashboard unavailable.',
-                  subtitle: 'Could not assemble dashboard data.',
+                  icon: Icons.folder_open_outlined,
+                  title: 'No catalogue loaded.',
+                  subtitle:
+                      'Tap the folder icon in the AppBar to choose a source.',
                 );
               }
 
-              return Scrollbar(
-                controller: _scrollController,
-                thumbVisibility: true,
-                child: CustomScrollView(
-                  controller: _scrollController,
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  slivers: [
-                    SliverToBoxAdapter(
-                      child: DashboardBanners(
-                        catalogService: catalogService,
-                        scannerError: scannerService.errorMessage,
-                        onDismissScannerError: scannerService.clearError,
-                        onRetryScanner: () {
-                          scannerService.runScan(catalogService).then((_) {
-                            if (mounted) _reloadDashboardData();
-                          });
-                        },
-                        onRetryCatalogue: () async {
-                          await catalogService.refreshCatalogue();
-                          if (mounted) _reloadDashboardData();
-                        },
-                      ),
+              return FutureBuilder<DashboardSnapshot>(
+                key: ValueKey(_buildGeneration),
+                future: _snapshotFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState != ConnectionState.done) {
+                    return const LoadingCard(message: 'Preparing dashboard…');
+                  }
+                  final data = snapshot.data;
+                  if (data == null) {
+                    return const EmptyState(
+                      icon: Icons.dashboard_outlined,
+                      title: 'Dashboard unavailable.',
+                      subtitle: 'Could not assemble dashboard data.',
+                    );
+                  }
+
+                  return Scrollbar(
+                    controller: _scrollController,
+                    thumbVisibility: true,
+                    child: CustomScrollView(
+                      controller: _scrollController,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      slivers: [
+                        SliverToBoxAdapter(
+                          child: DashboardBanners(
+                            catalogService: catalogService,
+                            scannerError: scannerService.errorMessage,
+                            onDismissScannerError: scannerService.clearError,
+                            onRetryScanner: () {
+                              scannerService.runScan(catalogService).then((_) {
+                                if (mounted) _reloadDashboardData();
+                              });
+                            },
+                            onRetryCatalogue: () async {
+                              await catalogService.refreshCatalogue();
+                              if (mounted) _reloadDashboardData();
+                            },
+                          ),
+                        ),
+                        SliverPadding(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSpacing.base,
+                          ),
+                          sliver: SliverList(
+                            delegate: SliverChildListDelegate([
+                              DashboardWelcomeHeader(
+                                catalog: data.catalog,
+                                sourceKind: data.sourceKind,
+                                catalogPath: data.catalogPath,
+                              ),
+                              const SizedBox(height: AppSpacing.md),
+                              DashboardOverviewPanel(catalog: data.catalog),
+                              const SizedBox(height: AppSpacing.section),
+                              DashboardQuickSearchBar(
+                                onTap: () =>
+                                    openSearchScreen(context, autofocus: true),
+                              ),
+                              const SizedBox(height: AppSpacing.section),
+                              ContinueWatchingSection(
+                                entries: data.continueWatching,
+                              ),
+                              const SizedBox(height: AppSpacing.section),
+                              FavouritesSection(catalog: data.catalog),
+                              const SizedBox(height: AppSpacing.section),
+                              RecentlyAddedSection(entries: data.recentlyAdded),
+                              const SizedBox(height: AppSpacing.section),
+                              const MusicSection(),
+                              const SizedBox(height: AppSpacing.section),
+                              FeaturedFoldersSection(
+                                  folders: data.featuredFolders),
+                              const SizedBox(height: AppSpacing.section),
+                              LibrariesSection(libraries: data.libraries),
+                              const SizedBox(height: AppSpacing.section),
+                              RecentActivitySection(
+                                entries: data.recentActivity,
+                              ),
+                              const SizedBox(height: AppSpacing.section),
+                              const ProviderStatusSection(),
+                              const SizedBox(height: AppSpacing.section),
+                            ]),
+                          ),
+                        ),
+                      ],
                     ),
-                    SliverPadding(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: AppSpacing.base,
-                      ),
-                      sliver: SliverList(
-                        delegate: SliverChildListDelegate([
-                          DashboardWelcomeHeader(
-                            catalog: data.catalog,
-                            sourceKind: data.sourceKind,
-                            catalogPath: data.catalogPath,
-                          ),
-                          const SizedBox(height: AppSpacing.md),
-                          DashboardOverviewPanel(catalog: data.catalog),
-                          const SizedBox(height: AppSpacing.section),
-                          DashboardQuickSearchBar(
-                            onTap: () =>
-                                openSearchScreen(context, autofocus: true),
-                          ),
-                          const SizedBox(height: AppSpacing.section),
-                          ContinueWatchingSection(
-                            entries: data.continueWatching,
-                          ),
-                          const SizedBox(height: AppSpacing.section),
-                          FavouritesSection(catalog: data.catalog),
-                          const SizedBox(height: AppSpacing.section),
-                          RecentlyAddedSection(entries: data.recentlyAdded),
-                          const SizedBox(height: AppSpacing.section),
-                          const MusicSection(),
-                          const SizedBox(height: AppSpacing.section),
-                          FeaturedFoldersSection(folders: data.featuredFolders),
-                          const SizedBox(height: AppSpacing.section),
-                          LibrariesSection(libraries: data.libraries),
-                          const SizedBox(height: AppSpacing.section),
-                          RecentActivitySection(
-                            entries: data.recentActivity,
-                          ),
-                          const SizedBox(height: AppSpacing.section),
-                          const ProviderStatusSection(),
-                          const SizedBox(height: AppSpacing.section),
-                        ]),
-                      ),
-                    ),
-                  ],
-                ),
+                  );
+                },
               );
             },
-          );
-        },
           ),
         ),
       ),
@@ -380,7 +391,8 @@ class _BlockingError extends StatelessWidget {
             const Icon(Icons.error_outline,
                 size: AppIcons.folderLarge, color: AppColors.error),
             const SizedBox(height: AppSpacing.base),
-            Text(message, textAlign: TextAlign.center, style: AppTypography.body),
+            Text(message,
+                textAlign: TextAlign.center, style: AppTypography.body),
             const SizedBox(height: AppSpacing.xl),
             FilledButton.icon(
               onPressed: onRetry,

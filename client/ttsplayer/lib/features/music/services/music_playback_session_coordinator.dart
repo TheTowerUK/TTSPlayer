@@ -41,6 +41,7 @@ class MusicPlaybackSessionCoordinator extends ChangeNotifier {
   int _lastPersistedGeneration = 0;
   bool _attached = false;
   bool _disposed = false;
+  bool _coldStartPersistenceEnabled = true;
   bool _wasPlaying = false;
   Duration? _lastObservedPosition;
   DateTime? _lastPositionPersistAt;
@@ -55,11 +56,21 @@ class MusicPlaybackSessionCoordinator extends ChangeNotifier {
   bool get persistenceWarningPresent => _lastPersistenceWarning != null;
 
   /// Subscribes to queue and playback lifecycle events.
-  void attach() {
+  void attach({bool deferPersistenceUntilColdStartComplete = false}) {
     if (_attached || _disposed) return;
     _queue.addListener(_onQueueChanged);
     _playback.addListener(_onPlaybackChanged);
     _attached = true;
+    _coldStartPersistenceEnabled = !deferPersistenceUntilColdStartComplete;
+  }
+
+  /// Enables persistence after cold-start restore without rewriting storage.
+  void enablePersistenceAfterColdStartRestore({Duration? restoredPosition}) {
+    _lastObservedActiveTrackId = _queue.currentTrack?.id;
+    _lastObservedPosition = restoredPosition ?? Duration.zero;
+    _snapshotGeneration++;
+    _lastPersistedGeneration = _snapshotGeneration;
+    _coldStartPersistenceEnabled = true;
   }
 
   /// Flushes the current session snapshot on app lifecycle pause when wired.
@@ -80,7 +91,7 @@ class MusicPlaybackSessionCoordinator extends ChangeNotifier {
   }
 
   void _onQueueChanged() {
-    if (_disposed || !_attached) return;
+    if (_disposed || !_attached || !_coldStartPersistenceEnabled) return;
 
     if (_queue.isEmpty) {
       _lastObservedActiveTrackId = null;
@@ -107,7 +118,7 @@ class MusicPlaybackSessionCoordinator extends ChangeNotifier {
   }
 
   void _onPlaybackChanged() {
-    if (_disposed || !_attached) return;
+    if (_disposed || !_attached || !_coldStartPersistenceEnabled) return;
 
     if (_queue.isEmpty) {
       _wasPlaying = false;

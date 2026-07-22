@@ -12,6 +12,7 @@ import 'features/music/services/music_listening_coordinator.dart';
 import 'features/music/services/music_listening_repository.dart';
 import 'features/music/services/music_playback_queue_controller.dart';
 import 'features/music/services/music_playback_session_coordinator.dart';
+import 'features/music/services/music_playback_session_restorer.dart';
 import 'features/music/services/music_playback_session_repository.dart';
 import 'features/search/search_service.dart';
 import 'navigation/app_navigator.dart';
@@ -85,7 +86,14 @@ Future<void> main() async {
     playbackService: playbackService,
     queueController: musicPlaybackQueueController,
   );
-  musicPlaybackSessionCoordinator.attach();
+
+  final musicPlaybackSessionRestorer = MusicPlaybackSessionRestorer(
+    repository: musicPlaybackSessionRepository,
+    queueController: musicPlaybackQueueController,
+    musicLibraryService: musicLibraryService,
+    playbackService: playbackService,
+    sessionCoordinator: musicPlaybackSessionCoordinator,
+  );
 
   final catalogCacheCoordinator = CatalogCacheCoordinator(
     artworkService: artworkService,
@@ -147,6 +155,9 @@ Future<void> main() async {
         ),
         ChangeNotifierProvider<MusicPlaybackSessionCoordinator>.value(
           value: musicPlaybackSessionCoordinator,
+        ),
+        Provider<MusicPlaybackSessionRestorer>.value(
+          value: musicPlaybackSessionRestorer,
         ),
         ChangeNotifierProvider<MusicListeningRepository>.value(
           value: musicListeningRepository,

@@ -433,6 +433,8 @@ Separate from `catalog.json` and separate from video resume keys where policies 
 
 **Closure (Step 10, 2026-07-22):** Phase 5.4 complete — [closure report](../roadmap/m5-phase-5.4-closure-report.md). ADR-022 remains **Partially Accepted** (queue persistence deferred). Release binary smoke passed; full validation **898 passed** / 12 skipped (default suite).
 
+**Implementation (Phase 5.5 Step 4, 2026-07-22):** `MusicPlaybackSessionRestorer` hydrates `MusicPlaybackQueueController` after catalogue load via `DashboardScreen` bootstrap. Persisted session reconciles through `MusicPlaybackSessionRepository.validateAgainstCatalog` before track resolution against catalogue + `MusicLibraryProjection`. `MusicPlaybackQueueController.restoreSession` replaces the queue atomically and stores `restoredStartPosition` for deferred seek on the next user-initiated `playCurrent` — no autoplay or navigation. `MusicPlaybackSessionCoordinator` defers persistence until `enablePersistenceAfterColdStartRestore` to avoid overwriting stored state with an empty startup queue. Runtime catalogue replacement continues to reconcile the persisted envelope only (Step 3); it does not rehydrate the live queue.
+
 
 ---
 

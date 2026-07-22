@@ -35,6 +35,7 @@ class MusicPlaybackQueueController extends ChangeNotifier {
 
   PlaybackQueue _queue = const PlaybackQueue.empty();
   MusicQueueSource? _queueSource;
+  Duration? _restoredStartPosition;
   bool _playerRouteActive = false;
   bool _wasCompleted = false;
   int _completionAdvanceGeneration = 0;
@@ -123,6 +124,57 @@ class MusicPlaybackQueueController extends ChangeNotifier {
     return true;
   }
 
+  /// Replaces the entire queue atomically for cold-start restoration.
+  ///
+  /// Does not start playback. [position] is applied when [playCurrent] runs next.
+  void restoreSession({
+    required List<MediaItem> items,
+    required String? activeTrackId,
+    required Duration position,
+  }) {
+    if (simulateRestoreFailureForTest) {
+      throw StateError('Simulated queue restore failure.');
+    }
+
+    if (items.isEmpty) {
+      _restoredStartPosition = null;
+      clearQueueOnly();
+      return;
+    }
+
+    final playable = [
+      for (final item in items)
+        if (item.isAudio && item.status.isPlayable) item,
+    ];
+    if (playable.isEmpty) {
+      _restoredStartPosition = null;
+      clearQueueOnly();
+      return;
+    }
+
+    final activeIndex = activeTrackId == null
+        ? 0
+        : playable.indexWhere((item) => item.id == activeTrackId);
+    final startIndex = activeIndex >= 0 ? activeIndex : 0;
+    final restoredPosition = activeIndex >= 0
+        ? (position.isNegative ? Duration.zero : position)
+        : Duration.zero;
+
+    _queueSource = null;
+    _queue = const PlaybackQueue.empty()
+        .replaceItems(playable, startIndex: startIndex);
+    _restoredStartPosition = restoredPosition;
+    _resetCompletionGuards();
+    notifyListeners();
+  }
+
+  /// Intended resume position for the restored active track (cleared on play).
+  Duration? get restoredStartPosition => _restoredStartPosition;
+
+  /// When true, [restoreSession] throws (tests only).
+  @visibleForTesting
+  bool simulateRestoreFailureForTest = false;
+
   /// Replaces the entire queue.
   void replaceQueue(List<MediaItem> items, {int startIndex = 0}) {
     _queue =
@@ -191,7 +243,9 @@ class MusicPlaybackQueueController extends ChangeNotifier {
     final item = _queue.currentItem;
     if (item == null) return;
     _resetCompletionGuards();
-    await _playback.play(item, startPosition: startPosition);
+    final effectiveStart = startPosition ?? _restoredStartPosition;
+    _restoredStartPosition = null;
+    await _playback.play(item, startPosition: effectiveStart);
   }
 
   Future<void> retryCurrent({Duration? startPosition}) async {
@@ -244,6 +298,7 @@ class MusicPlaybackQueueController extends ChangeNotifier {
   Future<void> clearQueueAndStop() async {
     _queue = const PlaybackQueue.empty();
     _queueSource = null;
+    _restoredStartPosition = null;
     _resetCompletionGuards();
     notifyListeners();
     await _playback.stop();
@@ -252,6 +307,7 @@ class MusicPlaybackQueueController extends ChangeNotifier {
   void clearQueueOnly() {
     _queue = const PlaybackQueue.empty();
     _queueSource = null;
+    _restoredStartPosition = null;
     _resetCompletionGuards();
     notifyListeners();
   }

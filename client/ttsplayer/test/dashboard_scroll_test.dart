@@ -3,6 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ttsplayer/features/dashboard/dashboard_screen.dart';
+import 'package:ttsplayer/features/music/services/music_playback_queue_controller.dart';
+import 'package:ttsplayer/features/music/services/music_playback_session_coordinator.dart';
+import 'package:ttsplayer/features/music/services/music_playback_session_repository.dart';
+import 'package:ttsplayer/features/music/services/music_playback_session_restorer.dart';
 import 'package:ttsplayer/features/music/music_library_service.dart';
 import 'package:ttsplayer/features/search/search_service.dart';
 import 'package:ttsplayer/models/catalog.dart';
@@ -77,6 +81,29 @@ Catalog _tallDashboardCatalog() {
 }
 
 Widget _dashboardHarness(Catalog catalog) {
+  final playbackService = PlaybackService(
+    mediaLocationResolver: MediaLocationResolver(
+      config: MediaProviderConfig.defaults().mediaAccess,
+      isWindowsDesktop: false,
+    ),
+  );
+  final sessionRepository = MusicPlaybackSessionRepository();
+  final queueController = MusicPlaybackQueueController(
+    playbackService: playbackService,
+  );
+  final sessionCoordinator = MusicPlaybackSessionCoordinator(
+    repository: sessionRepository,
+    playbackService: playbackService,
+    queueController: queueController,
+  );
+  final sessionRestorer = MusicPlaybackSessionRestorer(
+    repository: sessionRepository,
+    queueController: queueController,
+    musicLibraryService: MusicLibraryService(),
+    playbackService: playbackService,
+    sessionCoordinator: sessionCoordinator,
+  );
+
   return MultiProvider(
     providers: [
       ChangeNotifierProvider(create: (_) => MediaProviderConfigService()),
@@ -95,11 +122,17 @@ Widget _dashboardHarness(Catalog catalog) {
       ChangeNotifierProvider<CatalogService>.value(
         value: _FakeCatalogService(catalog),
       ),
-      ChangeNotifierProvider(
-        create: (context) => PlaybackService(
-          mediaLocationResolver: context.read<MediaLocationResolver>(),
-        ),
+      ChangeNotifierProvider<PlaybackService>.value(value: playbackService),
+      ChangeNotifierProvider<MusicPlaybackQueueController>.value(
+        value: queueController,
       ),
+      ChangeNotifierProvider<MusicPlaybackSessionRepository>.value(
+        value: sessionRepository,
+      ),
+      ChangeNotifierProvider<MusicPlaybackSessionCoordinator>.value(
+        value: sessionCoordinator,
+      ),
+      Provider<MusicPlaybackSessionRestorer>.value(value: sessionRestorer),
       ChangeNotifierProvider(create: (_) => ScannerService()),
       ChangeNotifierProvider<ScanHistoryService>.value(
         value: _FakeScanHistoryService(),
@@ -132,6 +165,30 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
+    final catalog = _tallDashboardCatalog();
+    final playbackService = PlaybackService(
+      mediaLocationResolver: MediaLocationResolver(
+        config: MediaProviderConfig.defaults().mediaAccess,
+        isWindowsDesktop: false,
+      ),
+    );
+    final sessionRepository = MusicPlaybackSessionRepository();
+    final queueController = MusicPlaybackQueueController(
+      playbackService: playbackService,
+    );
+    final sessionCoordinator = MusicPlaybackSessionCoordinator(
+      repository: sessionRepository,
+      playbackService: playbackService,
+      queueController: queueController,
+    );
+    final sessionRestorer = MusicPlaybackSessionRestorer(
+      repository: sessionRepository,
+      queueController: queueController,
+      musicLibraryService: MusicLibraryService(),
+      playbackService: playbackService,
+      sessionCoordinator: sessionCoordinator,
+    );
+
     await tester.pumpWidget(
       MultiProvider(
         providers: [
@@ -149,13 +206,19 @@ void main() {
           Provider(create: (_) => SearchService()),
           Provider(create: (_) => MusicLibraryService()),
           ChangeNotifierProvider<CatalogService>.value(
-            value: _FakeCatalogService(_tallDashboardCatalog()),
+            value: _FakeCatalogService(catalog),
           ),
-          ChangeNotifierProvider(
-            create: (context) => PlaybackService(
-              mediaLocationResolver: context.read<MediaLocationResolver>(),
-            ),
+          ChangeNotifierProvider<PlaybackService>.value(value: playbackService),
+          ChangeNotifierProvider<MusicPlaybackQueueController>.value(
+            value: queueController,
           ),
+          ChangeNotifierProvider<MusicPlaybackSessionRepository>.value(
+            value: sessionRepository,
+          ),
+          ChangeNotifierProvider<MusicPlaybackSessionCoordinator>.value(
+            value: sessionCoordinator,
+          ),
+          Provider<MusicPlaybackSessionRestorer>.value(value: sessionRestorer),
           ChangeNotifierProvider(create: (_) => ScannerService()),
           ChangeNotifierProvider<ScanHistoryService>.value(
             value: _FakeScanHistoryService(),
