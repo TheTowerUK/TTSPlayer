@@ -90,7 +90,7 @@ Sprint checkpoints: `m3-sprint-3`, `m3-complete`. Sprint 4 delivered Featured Fo
 
 ## M5 — Music
 
-**Status:** In progress — Phase 5.5 complete; **Phase 5.6 next**
+**Status:** In progress — Phase 5.5 complete; **Phase 5.6 next** (performance / scale / UX hardening)
 **Branch:** `m5-development`
 **Baseline:** `v0.5.0`
 
@@ -104,10 +104,10 @@ Sprint checkpoints: `m3-sprint-3`, `m3-complete`. Sprint 4 delivered Featured Fo
 | **5.3** | Music Playback and Queue | ✅ Complete (2026-07-21) |
 | **5.4** | Music State and Listening History | ✅ Complete (2026-07-22) |
 | **5.5** | Playback Session Persistence | ✅ Complete (2026-07-23) — [spec](docs/roadmap/m5-phase-5.5-playback-session-persistence.md) · [closure](docs/roadmap/m5-phase-5.5-closure-report.md) |
-| **5.6** | Release and Documentation | **Next** |
+| **5.6** | Music Library Performance, Scale and UX Hardening | **Next** — [spec](docs/roadmap/m5-phase-5.6-music-performance-and-ux-hardening.md) |
 
 → [M5 plan](docs/roadmap/m5-plan.md)
-→ [Phase 5.5 spec](docs/roadmap/m5-phase-5.5-playback-session-persistence.md)
+→ [Phase 5.6 spec](docs/roadmap/m5-phase-5.6-music-performance-and-ux-hardening.md)
 → [Phase 5.5 closure](docs/roadmap/m5-phase-5.5-closure-report.md)
 → [Music architecture](docs/architecture/music.md)
 → [ADR-020–023](docs/architecture/decisions/README.md#m5--music)

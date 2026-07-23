@@ -1,0 +1,460 @@
+# M5 Phase 5.6 — Music Library Performance, Scale and UX Hardening
+
+**Status:** **PLANNING** — specification locked (2026-07-23)
+**Milestone:** M5 — Music
+**Branch:** `m5-development`
+**Predecessor:** Phase 5.5 complete (2026-07-23) — ADR-022 **Accepted**
+
+→ [M5 plan](./m5-plan.md)
+→ [Phase 5.5 closure](./m5-phase-5.5-closure-report.md)
+→ [Music architecture](../architecture/music.md#13-cache-and-performance-implications)
+→ [ADR-022](../architecture/decisions/ADR-022-music-queue-and-listening-state.md) — Accepted (no change required for 5.6 planning)
+
+---
+
+## Executive Summary
+
+Phase 5.6 hardens the existing music experience against **realistic library scale** before broader feature work (playlists, favourites redesign, shuffle/repeat persistence).
+
+Live NAS catalogue context (validated M5.3/5.5 era):
+
+| Metric | Approx. value |
+|---|---|
+| Total media items | 121,819 |
+| Audio items | 42,283 |
+| Folders | 23,042 |
+
+The phase establishes measurable baselines, removes avoidable repeated computation and rebuilds, improves loading/empty/error/artwork-fallback behaviour, and validates large-library behaviour with deterministic fixtures (and optional live catalogue). It does **not** expand music feature scope.
+
+**Scope realignment note:** The original [M5 plan](./m5-plan.md) listed Phase 5.6 as “Release and Documentation.” That release-closure work remains required for M5 milestone completion but is **deferred** until after this performance/UX hardening pass. Performance/scale work deferred from the original Phase 5.5 title is **absorbed here**.
+
+This commit is **planning-only**. No production code or tests are modified until Step 2.
+
+---
+
+## Objective
+
+Ensure the music library remains responsive, predictable, and visually stable against a large mixed-media catalogue by:
+
+1. Establishing measurable performance baselines for projection, browsing, filtering, search, and navigation.
+2. Removing avoidable repeated computation and unnecessary widget rebuilding.
+3. Improving loading, empty, error, and artwork-fallback behaviour.
+4. Validating large-library performance with representative and (optional) live catalogue data.
+5. Preserving all Phase 5.1–5.5 functional behaviour (playback, listening history, session persistence, mixed-media isolation).
+
+---
+
+## Scope
+
+### 1. Performance baseline
+
+Deterministic baselines for:
+
+| Area | Operations |
+|---|---|
+| Projection | Catalogue→music projection; artist/album/track grouping; list/detail construction |
+| Discovery | Search filtering; sorting; Continue Listening / Recently Played projection |
+| UI | Initial music-screen render; artist/album/track navigation |
+| Session | Queue hydration from large catalogue; playback-session reconciliation |
+
+Each baseline records: fixture size, item counts, elapsed duration, operation classification, informational target, and blocking threshold **only where justified**.
+
+Measurements are **informational by default**. Avoid fragile micro-benchmarks that fail on normal CI timing variance.
+
+### 2. Large-catalogue fixtures
+
+Deterministic generated fixtures representing at least:
+
+| Fixture | Target scale |
+|---|---|
+| Small | ~1,000 audio tracks |
+| Medium | ~10,000 audio tracks |
+| Large | ~40,000 audio tracks |
+
+Required variation: artists, album artists, albums, discs, track numbers, years, missing/fallback metadata, duplicate titles, compilations, artwork presence/absence, mixed audio/video/image entries.
+
+Fixtures must be **generated or compact** — do not commit large media files or oversized catalogue JSON.
+
+Optional live path: `PHASE_56_LOCAL_CATALOG`. Default automated suite must not depend on NAS availability.
+
+**Existing starting point:** `test/support/large_music_catalog_factory.dart` (currently ~20k-track default). Step 2 extends/replaces this with explicit 1k/10k/40k profiles and richer metadata variation.
+
+### 3. Projection efficiency
+
+Review `MusicLibraryProjection`, `MusicLibraryService`, and consumers for repeated work:
+
+- Repeated catalogue scans, media-kind checks, normalization, group-key generation
+- Repeated sorting, list copying, map construction, track-ID lookup
+- Projection rebuild during navigation; unnecessary mutable↔immutable conversion
+
+**Preferred ownership:**
+
+```text
+Catalogue loaded or replaced
+        ↓
+Music projection built once
+        ↓
+Indexed artist/album/track structures retained
+        ↓
+Music screens consume stable projections
+```
+
+**Current baseline (pre-optimisation):** `MusicLibraryService` already memoises by `catalogueIdentity` and invalidates on replace. Linear `findTrackById` / `findArtistByGroupKey` / `findAlbumByGroupKey` scans remain. Optimise only against measured repeated work — no blind rewrites.
+
+### 4. Search and filtering
+
+Validate music search at scale over approved fields: title, artist, album artist (where applicable), album.
+
+Review: debounce, normalization, case-insensitive matching, diacritics, whitespace, empty queries, rapid query replacement, stale-result prevention, ordering, result limits / incremental rendering if needed.
+
+Do **not** introduce FTS, DB indexing, or a new search engine unless in-memory behaviour is proven inadequate and an ADR documents the decision.
+
+### 5. Widget rebuild and navigation
+
+Measure and reduce unnecessary rebuilds across music home, artist/album lists and detail, track rows, Continue Listening, Recently Played, queue surfaces, artwork widgets.
+
+Check: projection rebuild inside `build()`, per-frame sorting/derived lists, overly broad listenables, playback-state rebuild of unrelated rows, unstable keys, scroll loss, navigation-triggered duplicate catalogue work.
+
+Use focused widget instrumentation or test counters. No production logging that leaks media identity.
+
+### 6. List rendering and scrolling
+
+Ensure large lists use appropriate lazy rendering (artists, albums, tracks, queue, search, Recently Played, Continue Listening).
+
+Required: no eager full-list widget construction; stable row keys; no duplicates; scroll retention where expected; no prolonged freeze on first paint; artwork must not block scrolling; Windows mouse-wheel and keyboard remain correct.
+
+Add virtualisation/pagination only if Flutter lazy lists are insufficient.
+
+### 7. Artwork handling
+
+Harden: embedded/catalogue/folder artwork; missing/corrupt/unsupported; repeated references; cache reuse; placeholder and layout stability; no stretched album art.
+
+Respect existing global image-cache policy. Do not add a second unrelated artwork cache without an ADR.
+
+### 8. Loading, empty, and failure states
+
+Deterministic behaviour for: catalogue loading; empty library; no artists/albums; empty album/artist; no search results; catalogue load failure; malformed metadata; unavailable artwork; queue unavailable; partially restored playback session.
+
+No blank screens or indefinite progress indicators. Errors remain actionable and consistent with existing patterns.
+
+### 9. Mixed-media isolation
+
+At scale: video/image items never appear as tracks; mixed folders do not corrupt album grouping; unknown kinds fail safely; video Continue Watching and image browsing unchanged; catalogue diagnostics remain correct.
+
+### 10. Performance diagnostics
+
+Extend diagnostics **only where useful**, with aggregate redacted fields such as:
+
+- total audio / artist / album counts
+- projection available; projection build duration; last projection warning present
+- live catalogue item count
+- search result count only if a stable diagnostic owner exists
+
+**Never export:** titles, artists, albums, track IDs, paths, URIs, search queries, raw catalogue entries.
+
+### 11. Runtime validation
+
+Opt-in Windows harness:
+
+| Gate | Value |
+|---|---|
+| Tag | `phase56-runtime` |
+| Env | `PHASE_56_RUNTIME=1` |
+| Optional live | `PHASE_56_LOCAL_CATALOG` |
+
+Validate representative large-library navigation and performance using production projection/UI where practical. Unset live path → skip without failing deterministic scenarios.
+
+---
+
+## Out of Scope
+
+| Item | Notes |
+|---|---|
+| Playlists / playlist persistence | Post-5.6 |
+| Favourites / favourites redesign | Post-5.6 |
+| Shuffle / repeat (modes or persistence) | Post-5.6 |
+| Queue persistence redesign | 5.5 complete — no redesign |
+| Autoplay / restore prior playing state | Forbidden |
+| Lyrics, equaliser, gapless, crossfade | Out |
+| Smart recommendations / cloud music | Out |
+| Metadata editing / enrichment / art downloads | Out |
+| Database migration | Out unless ADR-justified |
+| Mobile-specific music UI | Out |
+| Video queue persistence | Out |
+| Major dashboard / visual redesign | Out |
+| M5 release tagging / version bump | Deferred release-closure phase |
+
+---
+
+## Architecture Principles
+
+### Build once, consume many times
+
+```text
+Catalogue generation N
+        ↓
+Music projection generation N
+        ↓
+Stable indexed structures
+        ↓
+Multiple UI consumers
+```
+
+### Catalogue remains authoritative
+
+Projection is derived state — never a second catalogue or independent metadata truth.
+
+### Stable identity
+
+- Media item: `trackId`
+- Artist grouping: normalized artist key
+- Album grouping: normalized album-artist/artist + album key
+
+Performance work must not silently alter grouping semantics (ADR-021).
+
+### Playback isolation
+
+UI/projection optimisation must not change queue order, transport, listening-history writes, playback-session persistence, deferred restored position, or the no-autoplay guarantee.
+
+### Evidence before optimisation
+
+Every material optimisation documents: observed issue → previous behaviour → change → measured result → regression coverage.
+
+### ADR threshold
+
+No ADR for routine implementation detail. A new ADR is required only for substantial changes such as:
+
+- Long-lived projection caching beyond current identity memoisation
+- Background-isolate projection
+- Persistent / database-backed music indexing or search
+- A second artwork-cache architecture
+
+---
+
+## Current Architecture Snapshot (Step 1 audit)
+
+| Component | Path | Notes for 5.6 |
+|---|---|---|
+| `MusicLibraryService` | `lib/features/music/music_library_service.dart` | Memoises by `catalogueIdentity`; `invalidate()` on replace |
+| `MusicLibraryProjection` | `lib/features/music/models/music_library_projection.dart` | Build once per identity; linear find* helpers |
+| Search | `SearchService` + music presentation | Unified index; music fields already indexed |
+| Artwork | `ArtworkService` + Flutter `ImageCache` | Existing LRU / budget policy |
+| Listening / session | Phase 5.4 / 5.5 repositories | Preserve; include large-catalogue reconcile scenarios |
+| Large fixture starter | `test/support/large_music_catalog_factory.dart` | Extend for 1k/10k/40k + metadata variation |
+
+---
+
+## Baseline Scenario Matrix (MP1–MP18)
+
+### Projection
+
+| ID | Scenario |
+|---|---|
+| MP1 | 1,000-track projection |
+| MP2 | 10,000-track projection |
+| MP3 | 40,000-track projection |
+| MP4 | Mixed-media projection |
+| MP5 | Missing metadata projection |
+| MP6 | Compilation grouping |
+| MP7 | Repeated projection consistency |
+| MP8 | Catalogue-generation replacement |
+
+### Search and filtering
+
+| ID | Scenario |
+|---|---|
+| MP9 | Empty-query behaviour |
+| MP10 | Title search |
+| MP11 | Artist search |
+| MP12 | Album search |
+| MP13 | Rapid query replacement |
+| MP14 | No-results behaviour |
+
+### Rendering and navigation
+
+| ID | Scenario |
+|---|---|
+| MP15 | Artist list initial render |
+| MP16 | Album list initial render |
+| MP17 | Large track-list scrolling |
+| MP18 | Navigation and scroll-state retention |
+
+Additional runtime scenarios may cover artwork, diagnostics, queue hydration, session reconciliation, and optional live catalogue validation.
+
+---
+
+## Performance Measurement Policy
+
+### Informational metrics (default)
+
+- Elapsed milliseconds
+- Item / group counts
+- Items per millisecond (where meaningful)
+- Relative improvement vs recorded Step 2 baseline
+
+### Hard thresholds
+
+Adopt only when: environment is controlled; threshold maps to a real usability need; CI variance will not cause false failures; target is documented here after Step 2.
+
+**Suggested Windows workstation targets (non-binding until Step 2):**
+
+| Scale | Expectation |
+|---|---|
+| 1,000-track projection | Effectively immediate |
+| 10,000-track projection | No visible prolonged block |
+| 40,000-track projection | Completes within a user-tolerable startup/loading interval |
+| Search query update | No prolonged UI freeze |
+| Visible list interaction | Smooth for normal mouse-wheel and keyboard use |
+
+Exact numeric thresholds are **recorded after Step 2**, not invented in planning.
+
+### Regression gates
+
+| Gate type | Policy |
+|---|---|
+| Correctness | Always blocking |
+| Performance | Blocking only when regression is material, baseline is repeatable, and allowed variance is documented |
+
+---
+
+## Testing Strategy
+
+| Layer | Focus |
+|---|---|
+| Unit | Projection correctness at each size; grouping identity; ordering; duplicates; mixed-media exclusion; missing metadata; search normalization; rapid query; catalogue replace; lookup indexes; diagnostics aggregates |
+| Widget | Lazy rows; loading/empty/error/no-results; scroll retention; stable keys; navigation; playback rebuild isolation; artwork placeholders |
+| Performance | Deterministic generated catalogues; separate correctness vs informational timing vs approved hard gates |
+| Regression | Projection, screens, search, artwork, queue, listening history, playback session, dashboard, diagnostics, mixed-media |
+| Runtime | Release build; 40k projection; navigation; search; artwork fallback; queue from large library; session restore; diagnostics redaction; optional live catalogue |
+
+Full default `flutter test` must pass without NAS or `PHASE_56_RUNTIME`.
+
+---
+
+## Implementation Steps
+
+| Step | Deliverable | Proposed commit |
+|---|---|---|
+| **1** | Planning + baseline definition (this document) | `docs(m5.6): plan music performance and UX hardening` |
+| **2** | Large fixtures + measurement harness; initial baselines | `test(music): add large-library performance baselines` |
+| **3** | Projection/indexing optimisation from measured issues | `perf(music): optimise library projection` |
+| **4** | Search + list rendering hardening | `perf(music): harden search and library rendering` |
+| **5** | Artwork + loading/empty/error + mixed-media states | `fix(music): harden artwork and library states` |
+| **6a** | Windows runtime harness | `test(music): validate large-library runtime` |
+| **6b** | Docs closure + release-note update | `docs(m5.6): close music performance hardening phase` |
+
+Do not combine unrelated steps. `README.md` remains unstaged if locally modified.
+
+---
+
+## Definition of Done
+
+Phase 5.6 is complete when:
+
+1. Deterministic 1k, 10k, and ≈40k audio fixtures exist.
+2. Projection baselines are recorded.
+3. Projection correctness passes at all supported fixture sizes.
+4. Repeated catalogue scans in normal music navigation are eliminated or justified.
+5. Artist, album, and track lookup remain correct.
+6. Search remains correct and responsive at large-library scale.
+7. Rapid query replacement cannot publish stale results.
+8. Large music lists render lazily.
+9. Music navigation does not unnecessarily rebuild the full projection.
+10. Scroll behaviour is stable.
+11. Artwork fallback is stable.
+12. Artwork loading does not block list interaction.
+13. Loading, empty, no-result, and failure states are covered.
+14. Mixed-media isolation remains correct.
+15. Queue creation from large libraries remains correct.
+16. Playback-session restoration remains correct.
+17. Listening history remains correct.
+18. Diagnostics remain redacted.
+19. Focused test suites pass.
+20. Full Flutter test suite passes.
+21. Windows runtime harness passes.
+22. Windows Release build succeeds.
+23. Optional live-catalogue results are documented when available.
+24. Performance results and tolerances are documented.
+25. Architecture and roadmap documents are current.
+26. README remains outside Phase 5.6 commits.
+
+Any failed mandatory item blocks closure.
+
+---
+
+## Risks
+
+| Risk | Mitigation |
+|---|---|
+| Premature optimisation | Baseline first; optimise only observed repeated work; before/after evidence |
+| Timing-test instability | Informational reporting by default; generous tolerances; correctness separate from timing |
+| Projection cache staleness | Catalogue-generation ownership; atomic replace; replacement tests |
+| Excessive memory from indexing | Index IDs/references; avoid duplicating metadata; drop obsolete projections |
+| UI coupling | Keep grouping/indexing below UI; widgets consume stable models |
+| Scope creep into features | Hard exclusions list; reject playlists/favourites/shuffle in reviews |
+| Original 5.6 release work drift | Explicit deferral; M5 milestone DoD still requires release closure after 5.6 |
+
+---
+
+## Deferred Scope After Phase 5.6
+
+- Playlists; favourites redesign
+- Shuffle and repeat modes / persistence
+- Advanced queue editing; lyrics; advanced metadata; smart recommendations
+- Mobile music experience
+- Persistent database indexing (only if future scale requires ADR)
+- Video queue persistence
+- **M5 release and documentation closure** (original Phase 5.6 title) — after performance hardening
+
+These are not prerequisites for Phase 5.6 completion.
+
+---
+
+## Documentation Updates (this step and later)
+
+| Document | Step 1 | Closure |
+|---|---|---|
+| This roadmap | Create | Mark complete |
+| [m5-plan.md](./m5-plan.md) | Realign 5.6 scope | Status ✅ |
+| [music.md](../architecture/music.md) | Pointer / planning note | Performance results |
+| [diagnostics.md](../architecture/diagnostics.md) | — | Only if metrics added |
+| Active M5 release notes | Progress entry | Completion entry |
+| [MILESTONES.md](../../MILESTONES.md) · roadmap indexes | Phase 5.6 next / planning | Complete; next = release closure |
+| Phase 5.6 closure report | — | Publish at Step 6 |
+
+---
+
+## Approved Planning Decisions (2026-07-23)
+
+| Decision | Resolution |
+|---|---|
+| Phase 5.6 primary scope | Music library performance, scale, and UX hardening |
+| Original 5.6 release/docs scope | Deferred until after this phase |
+| Feature expansion | Explicitly out of scope |
+| Measurement policy | Informational first; hard gates only after Step 2 baselines |
+| Fixture strategy | Generated 1k/10k/≈40k; optional live via env; no large assets in git |
+| First implementation activity | Step 2 — fixtures and measurement harness (no production optimisation unless required for measurement) |
+
+---
+
+## Open Questions (resolve in Step 2)
+
+1. Exact track counts for 1k/10k/40k profiles (artist×album×track dimensions).
+2. Whether projection build should expose a timed diagnostic field in Step 5/6 or remain test-only.
+3. Whether linear `findTrackById` becomes a map index in Step 3 (evidence-gated).
+4. Numeric Windows workstation thresholds after first baseline run.
+5. Naming of the post-5.6 M5 release-closure phase (retain as “5.6b/5.7” vs unnumbered milestone closure).
+
+---
+
+## Next Step Handoff — Step 2
+
+**Step 2 — Large-library fixtures and measurement harness**
+
+Deliver:
+
+- Deterministic catalogue generator profiles (1k / 10k / ≈40k)
+- Projection baseline harness with informational reporting
+- Initial baseline documentation (no production optimisation unless required to measure)
+
+Expected commit: `test(music): add large-library performance baselines`

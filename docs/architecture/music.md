@@ -2,7 +2,7 @@
 
 
 
-**Status:** **In progress** — Phase 5.4 planning (2026-07-21); Phase 5.3 complete; **Phase 5.4 complete (2026-07-22)**
+**Status:** **In progress** — Phase 5.5 complete (2026-07-23); **Phase 5.6 planning** — [performance / UX hardening](../roadmap/m5-phase-5.6-music-performance-and-ux-hardening.md)
 
 **Related roadmap:** [M5 — Music](../roadmap/m5-plan.md) · [Phase 5.1 spec](../roadmap/m5-phase-5.1-music-catalogue-metadata.md)
 
@@ -27,7 +27,7 @@
 - [ADR-020: Music Catalogue Schema and Media Kind](./decisions/ADR-020-music-catalogue-schema-and-media-kind.md) — **Accepted** (M5.1)
 - [ADR-021: Music Metadata Precedence and Identity](./decisions/ADR-021-music-metadata-precedence-and-identity.md) — **Accepted** (M5.1)
 
-- [ADR-022: Music Queue and Listening State](./decisions/ADR-022-music-queue-and-listening-state.md) — **Partially Accepted** (M5.4 listening history; queue/favourites deferred)
+- [ADR-022: Music Queue and Listening State](./decisions/ADR-022-music-queue-and-listening-state.md) — **Accepted** (M5.5)
 
 - [ADR-023: Music Player Surface Architecture](./decisions/ADR-023-music-player-surface-architecture.md) — **Accepted** (M5.3 Step 1–2)
 
@@ -528,17 +528,21 @@ Grouping authority: `artist_group_key` and `album_group_key` from M5.1 (ADR-021)
 
 |---|---|
 
-| Catalogue size | 10k+ tracks — client parse must stay O(n) single pass |
+| Catalogue size | Live NAS ~42k audio / ~122k total items — client parse must stay O(n) single pass |
 
-| Artist/album indexes | Build derived maps lazily or on catalogue load — measure in 5.5 |
+| Artist/album indexes | `MusicLibraryService` memoises projection by identity; deepen indexes / remove repeated work in **Phase 5.6** |
 
-| Artwork | Many small embedded images — LRU eviction critical |
+| Artwork | Many small images — respect existing LRU / image-cache policy; harden fallbacks in 5.6 |
 
-| Queue | Cap max queue length (TBD in ADR-022) |
+| Queue | Cap max persisted queue length — `MusicPlaybackSessionPolicy.maxPersistedTrackIds` (500) |
 
-| UI lists | `ListView`/`GridView` with cache extent tuning from 4.5 |
+| UI lists | Lazy `ListView`/`GridView`; rebuild and scroll hardening in 5.6 |
 
-| Catalogue replace | Drop derived indexes; prune state; invalidate artwork/search |
+| Catalogue replace | Invalidate projection; prune listening/session state; invalidate artwork/search |
+
+
+
+**Phase 5.6 (planning):** [Music library performance, scale and UX hardening](../roadmap/m5-phase-5.6-music-performance-and-ux-hardening.md) — baselines first (1k/10k/≈40k), then evidence-gated optimisation. No feature expansion.
 
 
 

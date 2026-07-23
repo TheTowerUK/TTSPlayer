@@ -66,7 +66,7 @@ Implement in order unless a documented dependency allows parallel documentation 
 | **5.3** | Music Playback and Queue | ✅ Complete (2026-07-21) — [spec](./m5-phase-5.3-music-playback-queue.md) |
 | **5.4** | Music State and Listening History | ✅ Complete (2026-07-22) — [spec](./m5-phase-5.4-listening-history-continue-listening.md) · [closure](./m5-phase-5.4-closure-report.md) |
 | **5.5** | Playback Session Persistence | ✅ Complete (2026-07-23) — [spec](./m5-phase-5.5-playback-session-persistence.md) · [closure](./m5-phase-5.5-closure-report.md) |
-| **5.6** | Release and Documentation | **Next** |
+| **5.6** | Music Library Performance, Scale and UX Hardening | **Next** — [spec](./m5-phase-5.6-music-performance-and-ux-hardening.md) |
 
 ---
 
@@ -407,7 +407,7 @@ M5.3 adds play track, play album, queue next/previous, seek, shuffle, and repeat
 
 **Out of scope / deferred:**
 
-- Original “performance, large-library, artwork pressure” gates — deferred to Phase 5.6 or a dedicated performance pass
+- Original “performance, large-library, artwork pressure” gates — deferred to Phase 5.6 ([spec](./m5-phase-5.6-music-performance-and-ux-hardening.md))
 - Shuffle/repeat persistence, playlists, favourites redesign, autoplay
 
 **Dependencies:** Phases 5.1–5.4 feature-complete; ADR-022 **Accepted**.
@@ -421,32 +421,53 @@ M5.3 adds play track, play album, queue next/previous, seek, shuffle, and repeat
 
 ---
 
-### Phase 5.6 — Release and Documentation
+### Phase 5.6 — Music Library Performance, Scale and UX Hardening
+
+**Status:** **PLANNING** (2026-07-23) — [Phase 5.6 spec](./m5-phase-5.6-music-performance-and-ux-hardening.md)
+
+**Objective:** Ensure the music library remains responsive, predictable, and visually stable against large mixed-media catalogues (~40k audio / live ~42k audio) before broader feature work.
+
+**Scope (planned):**
+
+- Deterministic 1k / 10k / ≈40k generated fixtures and informational performance baselines (MP1–MP18)
+- Projection and indexing efficiency (`MusicLibraryService` / `MusicLibraryProjection`)
+- Search and list-rendering hardening; rebuild reduction; scroll stability
+- Artwork fallback and loading/empty/error states
+- Mixed-media isolation at scale; queue/session large-catalogue regression
+- Optional aggregate performance diagnostics (redacted)
+- Opt-in Windows runtime harness (`PHASE_56_RUNTIME=1`)
+
+**Out of scope / deferred:**
+
+- Playlists, favourites redesign, shuffle/repeat
+- Autoplay / restore prior playing state
+- Database-backed search or second artwork cache (ADR required if pursued)
+- **Original Phase 5.6 “Release and Documentation”** — deferred to post-5.6 M5 release closure
+
+**Dependencies:** Phases 5.1–5.5 complete; ADR-022 **Accepted**.
+
+**Definition of done:**
+
+- [ ] Deterministic fixtures and recorded baselines
+- [ ] Projection/search/list correctness and responsiveness at supported scales
+- [ ] Windows runtime matrix executed; full suite + Release build green
+- [ ] Architecture and roadmap reconciled; README unstaged
+
+#### Post-5.6 — M5 Release and Documentation (deferred)
 
 **Objective:** Close M5 with the same release discipline as M4 — audit, regression, manual QA, release summary, version and tags.
 
-**Scope:**
+Originally numbered as Phase 5.6; deferred so performance/UX hardening ships first. Remains required for milestone DoD.
+
+**Scope (deferred):**
 
 - Cross-phase documentation reconciliation
 - Full `flutter test` and analyze reporting
 - Manual Windows QA checklist (music-specific + video regression)
 - Release summary document (pattern: [m4-release-summary.md](../release/m4-release-summary.md))
-- Version bump and tags — **version TBD** at closure (do not assume in 5.0)
+- Version bump and tags — **version TBD** at closure
 
-**Out of scope:**
-
-- New feature work
-- M4 cosmetic fixes unless release blockers
-
-**Dependencies:** Phases 5.1–5.5 complete.
-
-**Definition of done:**
-
-- [ ] Milestone DoD reconciled
-- [ ] ADRs Accepted where implemented
-- [ ] Release documentation complete
-- [ ] Video regression checklist pass
-- [ ] Tags applied per release discipline
+**Dependencies:** Phase 5.6 performance hardening complete.
 
 ---
 
@@ -462,7 +483,7 @@ M5 is complete when:
 - [ ] Required listening state works (favourites, recently played, Continue Listening, queue persistence per ADR-022)
 - [ ] Music appears in search with appropriate presentation
 - [ ] Album artwork uses existing cache pipeline
-- [ ] Large music libraries remain usable (performance acceptance criteria in 5.5 spec)
+- [ ] Large music libraries remain usable (performance acceptance criteria in [Phase 5.6 spec](./m5-phase-5.6-music-performance-and-ux-hardening.md))
 - [ ] Diagnostics expose music/queue summary without secrets
 - [ ] Automated tests pass; Windows runtime harnesses pass
 - [ ] Manual Windows QA complete
@@ -499,7 +520,7 @@ No additional ADRs proposed for M5.0. Settings changes (e.g. music default shuff
 | Queue restoration after catalogue changes | Prune unavailable tracks; ADR-022 policies |
 | Unsupported audio formats | Indexer `unsupported` / omit policy; clear client messaging |
 | Platform playback capabilities | Gate 0 audio audit before 5.3; Windows-first |
-| Video workflow regressions | Parallel regression harness; video manual QA in 5.6 |
+| Video workflow regressions | Parallel regression harness; video manual QA in M5 release closure |
 | Premature multi-device coupling | Explicitly out of scope; state keys local-only |
 
 ---
