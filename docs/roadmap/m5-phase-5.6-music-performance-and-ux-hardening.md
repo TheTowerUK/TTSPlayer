@@ -1,9 +1,10 @@
 # M5 Phase 5.6 — Music Library Performance, Scale and UX Hardening
 
-**Status:** **PLANNING** — specification locked (2026-07-23)
+**Status:** **IN PROGRESS** — Step 2 baselines recorded (2026-07-23); Steps 3–6 pending
 **Milestone:** M5 — Music
 **Branch:** `m5-development`
 **Predecessor:** Phase 5.5 complete (2026-07-23) — ADR-022 **Accepted**
+**Step 2 commit:** `test(music): add large-library performance baselines`
 
 → [M5 plan](./m5-plan.md)
 → [Phase 5.5 closure](./m5-phase-5.5-closure-report.md)
@@ -28,7 +29,7 @@ The phase establishes measurable baselines, removes avoidable repeated computati
 
 **Scope realignment note:** The original [M5 plan](./m5-plan.md) listed Phase 5.6 as “Release and Documentation.” That release-closure work remains required for M5 milestone completion but is **deferred** until after this performance/UX hardening pass. Performance/scale work deferred from the original Phase 5.5 title is **absorbed here**.
 
-This commit is **planning-only**. No production code or tests are modified until Step 2.
+**Step 2 (2026-07-23):** Deterministic 1k/10k/40k fixtures and informational MP1–MP18 baselines recorded. No production optimisation yet.
 
 ---
 
@@ -77,7 +78,7 @@ Fixtures must be **generated or compact** — do not commit large media files or
 
 Optional live path: `PHASE_56_LOCAL_CATALOG`. Default automated suite must not depend on NAS availability.
 
-**Existing starting point:** `test/support/large_music_catalog_factory.dart` (currently ~20k-track default). Step 2 extends/replaces this with explicit 1k/10k/40k profiles and richer metadata variation.
+**Existing starting point:** `test/support/large_music_catalog_factory.dart` (legacy ~20k). **Step 2 deliverable:** `test/support/phase_56_large_music_catalog_fixture.dart` with explicit 1k/10k/40k profiles.
 
 ### 3. Projection efficiency
 
@@ -240,11 +241,100 @@ No ADR for routine implementation detail. A new ADR is required only for substan
 | Search | `SearchService` + music presentation | Unified index; music fields already indexed |
 | Artwork | `ArtworkService` + Flutter `ImageCache` | Existing LRU / budget policy |
 | Listening / session | Phase 5.4 / 5.5 repositories | Preserve; include large-catalogue reconcile scenarios |
-| Large fixture starter | `test/support/large_music_catalog_factory.dart` | Extend for 1k/10k/40k + metadata variation |
+| Large fixture starter | `test/support/large_music_catalog_factory.dart` | Legacy ~20k |
+| Phase 5.6 fixtures | `test/support/phase_56_large_music_catalog_fixture.dart` | **Step 2** — 1k/10k/40k + variation |
+| Baseline harness | `test/music_library_large_catalog_baseline_test.dart` | **Step 2** — MP1–MP18 informational |
 
 ---
 
-## Baseline Scenario Matrix (MP1–MP18)
+## Step 2 — Fixtures and measurement (complete 2026-07-23)
+
+### Fixture profiles (exact)
+
+| Profile | Grid | +compilations | +sentinels | Exact audio | Artists* | Albums* |
+|---|---|---|---|---|---|---|
+| small | 50×4×5 = 1,000 | +5 | +5 | **1,010** | 58 | 208 |
+| medium | 100×10×10 = 10,000 | +5 | +5 | **10,010** | 108 | 1,008 |
+| large | 200×20×10 = 40,000 | +5 | +5 | **40,010** | 208 | 4,008 |
+| mixed | small audio | +5 | +5 | **1,010** | 58 | 208 |
+
+\*Projected counts after grouping (includes Unicode artists, sentinels, compilations). Mixed also adds 25 video + 25 image items (excluded from music projection).
+
+**Generator:** in-memory, deterministic IDs (`p56-aNNN-bNN-tNN`), no committed JSON/media. Variation: missing metadata, compilations, duplicate titles, Unicode/diacritics, whitespace, artwork presence/absence, mixed media.
+
+### Measurement method
+
+- `Stopwatch` monotonic timing
+- 1 untimed warm-up + 3 timed samples; **median** reported
+- Fixture generation timed separately from projection
+- Classification: **informational** (correctness assertions blocking)
+- Environment caveat: Windows 11 Pro / Dart 3.12.2 workstation — timings are machine-local
+
+### MP1–MP18 results (Step 2 workstation)
+
+| ID | Result | Median (ms) | Classification |
+|---|---|---|---|
+| MP1 | ✅ 1,010 audio projection | **5** | informational |
+| MP2 | ✅ 10,010 audio projection | **30** | informational |
+| MP3 | ✅ 40,010 audio projection | **148** | informational |
+| MP4 | ✅ mixed exclusion exact | **2** | informational |
+| MP5 | ✅ missing metadata fallback | — | correctness |
+| MP6 | ✅ compilation grouping | — | correctness |
+| MP7 | ✅ repeated consistency | **3** | informational |
+| MP8 | ✅ catalogue replace | **3** | informational |
+| MP9 | ✅ empty query → `[]` | **0** | informational |
+| MP10 | ✅ title sentinel | **4** | informational |
+| MP11 | ✅ artist sentinel | **4** | informational |
+| MP12 | ✅ album sentinel | **5** | informational |
+| MP13 | ✅ sequential replace (sync) | — | correctness; async stale → Step 4 |
+| MP14 | ✅ absent sentinel empty | **4** | informational |
+| MP15 | ✅ lazy artists (11/58 mounted) | **525** (pump) | informational |
+| MP16 | ✅ lazy albums (11/208 mounted) | **104** (pump) | informational |
+| MP17 | ✅ lazy tracks scroll | — | correctness |
+| MP18 | ✅ projection reused; scroll not retained on pump replace | — | baseline documented |
+
+**Search index build (medium):** ~25–43 ms (informational, separate from query samples).
+
+**Memoisation:** identity hit ≈ **0 ms**; cold rebuild after invalidate (medium) median ≈ **28–48 ms**.
+
+**Optional live catalogue:** skipped (`PHASE_56_LOCAL_CATALOG` unset).
+
+### Current memoisation behaviour (documented)
+
+| Behaviour | Evidence |
+|---|---|
+| Cache key | `Catalog.catalogueIdentity` |
+| Reuse | Same identity → `identical` projection instance |
+| Invalidation | `MusicLibraryService.invalidate()` on catalogue replace |
+| Still rebuilds | Full `MusicLibraryProjection.build` on cold miss; linear `findTrackById` / `findArtistByGroupKey` / `findAlbumByGroupKey` |
+
+### Step 3 evidence — repeated work / bottlenecks
+
+1. **Linear lookup scans** on `findTrackById` / artist / album keys (O(n) per call) — hot path for session restore and UI.
+2. **Cold projection rebuild** ~30–150 ms depending on scale after invalidate.
+3. **`MusicAlbumDetailScreen` eagerly spreads all track tiles** into `ListView(children:)` — not lazy (Step 4 candidate).
+4. **Screens call `projectionFor` inside `Consumer` build** — cheap when memoised; ensure identity stability.
+5. **SearchScreen async stale discard** not exercised by sync `SearchService` — Step 4 widget coverage.
+
+### Proposed thresholds (for Steps 3–6)
+
+| Category | Policy |
+|---|---|
+| Informational | Continue reporting medians; no CI fail on timing alone |
+| Watch | Projection median > **2×** recorded Step 2 median on same class of machine |
+| Blocking regression | Only after Step 3+ with documented tolerance; suggested starting relative gate: **no worse than 150% of controlled baseline median** once repeatability shown |
+| Correctness | Always blocking |
+
+Suggested absolute **watch** bands (Windows workstation class, not CI hard gates yet):
+
+| Operation | Step 2 median | Watch if |
+|---|---|---|
+| MP1 projection | ~5 ms | > 25 ms |
+| MP2 projection | ~30 ms | > 100 ms |
+| MP3 projection | ~148 ms | > 500 ms |
+| Medium search query | ~4–7 ms | > 50 ms |
+
+---
 
 ### Projection
 
@@ -437,24 +527,20 @@ These are not prerequisites for Phase 5.6 completion.
 
 ---
 
-## Open Questions (resolve in Step 2)
+## Open Questions (resolve in Step 3+)
 
-1. Exact track counts for 1k/10k/40k profiles (artist×album×track dimensions).
-2. Whether projection build should expose a timed diagnostic field in Step 5/6 or remain test-only.
-3. Whether linear `findTrackById` becomes a map index in Step 3 (evidence-gated).
-4. Numeric Windows workstation thresholds after first baseline run.
-5. Naming of the post-5.6 M5 release-closure phase (retain as “5.6b/5.7” vs unnumbered milestone closure).
+1. ~~Exact track counts for 1k/10k/40k profiles~~ — **resolved:** 1,010 / 10,010 / 40,010 audio.
+2. Whether projection build should expose a timed diagnostic field — still open for Step 5/6.
+3. Whether linear `findTrackById` becomes a map index in Step 3 — **recommended** from Step 2 evidence.
+4. ~~Numeric Windows workstation thresholds~~ — **proposed** in Step 2 section (watch bands).
+5. Naming of the post-5.6 M5 release-closure phase — still open.
 
 ---
 
-## Next Step Handoff — Step 2
+## Next Step Handoff — Step 3
 
-**Step 2 — Large-library fixtures and measurement harness**
+**Step 3 — Projection and indexing optimisation**
 
-Deliver:
+Deliver evidence-gated changes from Step 2 bottlenecks (lookup indexes, avoid repeated scans) with before/after medians.
 
-- Deterministic catalogue generator profiles (1k / 10k / ≈40k)
-- Projection baseline harness with informational reporting
-- Initial baseline documentation (no production optimisation unless required to measure)
-
-Expected commit: `test(music): add large-library performance baselines`
+Expected commit: `perf(music): optimise library projection`

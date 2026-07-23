@@ -423,7 +423,7 @@ M5.3 adds play track, play album, queue next/previous, seek, shuffle, and repeat
 
 ### Phase 5.6 — Music Library Performance, Scale and UX Hardening
 
-**Status:** **PLANNING** (2026-07-23) — [Phase 5.6 spec](./m5-phase-5.6-music-performance-and-ux-hardening.md)
+**Status:** **IN PROGRESS** (2026-07-23) — [Phase 5.6 spec](./m5-phase-5.6-music-performance-and-ux-hardening.md) · Step 2 baselines complete
 
 **Objective:** Ensure the music library remains responsive, predictable, and visually stable against large mixed-media catalogues (~40k audio / live ~42k audio) before broader feature work.
 

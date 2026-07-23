@@ -542,7 +542,7 @@ Grouping authority: `artist_group_key` and `album_group_key` from M5.1 (ADR-021)
 
 
 
-**Phase 5.6 (planning):** [Music library performance, scale and UX hardening](../roadmap/m5-phase-5.6-music-performance-and-ux-hardening.md) — baselines first (1k/10k/≈40k), then evidence-gated optimisation. No feature expansion.
+**Phase 5.6 (in progress):** [Music library performance, scale and UX hardening](../roadmap/m5-phase-5.6-music-performance-and-ux-hardening.md) — Step 2 baselines recorded (1,010 / 10,010 / 40,010 audio; MP3 projection median ~148 ms informational). Step 3 next: evidence-gated projection indexing.
 
 
 
