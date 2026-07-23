@@ -8,22 +8,20 @@ class MusicArtist {
   final List<MusicAlbum> albums;
   final List<MediaItem> tracks;
 
+  /// Album-ordered flattening cached at projection build.
+  final List<MediaItem> tracksInAlbumOrder;
+
   const MusicArtist({
     required this.groupKey,
     required this.displayName,
     required this.albums,
     required this.tracks,
+    required this.tracksInAlbumOrder,
   });
 
   int get albumCount => albums.length;
 
   int get trackCount => tracks.length;
-
-  /// Album-ordered flattening: albums sorted by [MusicSorting.compareAlbumsWithinArtist],
-  /// tracks within each album by [MusicSorting.compareTracksInAlbum].
-  List<MediaItem> get tracksInAlbumOrder {
-    return [for (final album in albums) ...album.tracks];
-  }
 
   /// Deterministic artwork source: first album's representative track.
   MediaItem? get representativeTrack {

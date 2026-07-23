@@ -10,22 +10,19 @@ class MusicAlbum {
   final int discCount;
   final List<MediaItem> tracks;
 
+  /// Cached at projection build — avoids re-sorting on every artwork request.
+  final MediaItem representativeTrack;
+
   const MusicAlbum({
     required this.groupKey,
     required this.displayTitle,
     required this.displayArtist,
     required this.tracks,
+    required this.representativeTrack,
     this.year,
     this.genre,
     this.discCount = 1,
   });
 
   int get trackCount => tracks.length;
-
-  /// Deterministic artwork source: first track sorted by file path.
-  MediaItem get representativeTrack {
-    final sorted = List<MediaItem>.from(tracks)
-      ..sort((a, b) => a.filePath.compareTo(b.filePath));
-    return sorted.first;
-  }
 }

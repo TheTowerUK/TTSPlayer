@@ -313,6 +313,131 @@ void main() {
     });
   });
 
+  group('Phase 5.6 Step 3 lookup baselines', () {
+    test('MP-LOOKUP — repeated track/artist/album lookups', () {
+      final small = MusicLibraryProjection.build(phase56SmallCatalog());
+      final medium = MusicLibraryProjection.build(phase56MediumCatalog());
+      final large = MusicLibraryProjection.build(phase56LargeCatalog());
+
+      for (final entry in [
+        ('MP-LOOKUP-S', small),
+        ('MP-LOOKUP-M', medium),
+        ('MP-LOOKUP-L', large),
+      ]) {
+        final id = entry.$1;
+        final projection = entry.$2;
+        final trackIds = [
+          for (var i = 0; i < 10000; i++)
+            projection.tracks[i % projection.trackCount].id,
+        ];
+        final artistKeys = [
+          for (var i = 0; i < 10000; i++)
+            projection.artists[i % projection.artistCount].groupKey,
+        ];
+        final albumKeys = [
+          for (var i = 0; i < 10000; i++)
+            projection.albums[i % projection.albumCount].groupKey,
+        ];
+
+        var hitCount = 0;
+        final hitSamples = baseline.measureSyncSamples(
+          operation: () {
+            hitCount = 0;
+            for (final trackId in trackIds) {
+              if (projection.findTrackById(trackId) != null) hitCount++;
+            }
+          },
+        );
+        expect(hitCount, 10000);
+
+        var missCount = 0;
+        final missSamples = baseline.measureSyncSamples(
+          operation: () {
+            missCount = 0;
+            for (var i = 0; i < 10000; i++) {
+              if (projection.findTrackById('missing-$i') == null) missCount++;
+            }
+          },
+        );
+        expect(missCount, 10000);
+
+        var artistHits = 0;
+        final artistSamples = baseline.measureSyncSamples(
+          operation: () {
+            artistHits = 0;
+            for (final key in artistKeys) {
+              if (projection.findArtistByGroupKey(key) != null) artistHits++;
+            }
+          },
+        );
+        expect(artistHits, 10000);
+
+        var albumHits = 0;
+        final albumSamples = baseline.measureSyncSamples(
+          operation: () {
+            albumHits = 0;
+            for (final key in albumKeys) {
+              if (projection.findAlbumByGroupKey(key) != null) albumHits++;
+            }
+          },
+        );
+        expect(albumHits, 10000);
+
+        baseline.add(
+          Phase56BaselineResult(
+            scenarioId: '$id-TRACK-HIT',
+            operation: '10000_track_id_lookups_hit',
+            catalogueItemCount: projection.trackCount,
+            audioItemCount: projection.trackCount,
+            artistCount: projection.artistCount,
+            albumCount: projection.albumCount,
+            samples: hitSamples,
+            classification: 'informational',
+            notes: 'indexes t=${projection.trackIndexCount} '
+                'a=${projection.artistIndexCount} '
+                'al=${projection.albumIndexCount}',
+          ),
+        );
+        baseline.add(
+          Phase56BaselineResult(
+            scenarioId: '$id-TRACK-MISS',
+            operation: '10000_track_id_lookups_miss',
+            catalogueItemCount: projection.trackCount,
+            audioItemCount: projection.trackCount,
+            artistCount: projection.artistCount,
+            albumCount: projection.albumCount,
+            samples: missSamples,
+            classification: 'informational',
+          ),
+        );
+        baseline.add(
+          Phase56BaselineResult(
+            scenarioId: '$id-ARTIST',
+            operation: '10000_artist_group_lookups',
+            catalogueItemCount: projection.trackCount,
+            audioItemCount: projection.trackCount,
+            artistCount: projection.artistCount,
+            albumCount: projection.albumCount,
+            samples: artistSamples,
+            classification: 'informational',
+          ),
+        );
+        baseline.add(
+          Phase56BaselineResult(
+            scenarioId: '$id-ALBUM',
+            operation: '10000_album_group_lookups',
+            catalogueItemCount: projection.trackCount,
+            audioItemCount: projection.trackCount,
+            artistCount: projection.artistCount,
+            albumCount: projection.albumCount,
+            samples: albumSamples,
+            classification: 'informational',
+          ),
+        );
+      }
+    });
+  });
+
   group('Phase 5.6 MusicLibraryService memoisation baseline', () {
     test('reuses projection for equivalent catalogue identity', () {
       final catalog = phase56SmallCatalog();

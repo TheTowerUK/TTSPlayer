@@ -28,15 +28,20 @@ class Phase56BaselineResult {
   final String classification;
   final String? notes;
 
-  String get sampleSummary =>
-      samples.map((d) => '${d.inMilliseconds}').join('/');
+  String get sampleSummary => samples.map(_formatDuration).join('/');
 
   String toReportLine() {
     final note = notes == null || notes!.isEmpty ? '' : ' | $notes';
     return '$scenarioId | $audioItemCount audio / '
         '$artistCount artists / $albumCount albums | $operation | '
-        'samples $sampleSummary ms | median ${median.inMilliseconds} ms | '
+        'samples $sampleSummary | median ${_formatDuration(median)} | '
         '$classification$note';
+  }
+
+  /// Prefer ms for multi-millisecond work; µs for sub-ms lookup loops.
+  static String _formatDuration(Duration d) {
+    if (d.inMilliseconds >= 1) return '${d.inMilliseconds} ms';
+    return '${d.inMicroseconds} µs';
   }
 
   static Duration _median(List<Duration> samples) {

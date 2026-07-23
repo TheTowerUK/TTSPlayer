@@ -70,12 +70,26 @@ MusicAlbum _album(
   String title = 'Album A',
   int? year,
 }) {
+  final MediaItem representative;
+  if (tracks.isEmpty) {
+    representative = MediaItem(
+      id: 'empty-representative',
+      title: 'Empty',
+      filePath: r'Y:\Media\Music\empty.mp3',
+      mediaKindRaw: 'audio',
+    );
+  } else {
+    final sorted = List<MediaItem>.from(tracks)
+      ..sort((a, b) => a.filePath.compareTo(b.filePath));
+    representative = sorted.first;
+  }
   return MusicAlbum(
     groupKey: groupKey,
     displayTitle: title,
     displayArtist: 'Artist',
     tracks: tracks,
     year: year,
+    representativeTrack: representative,
   );
 }
 
@@ -90,6 +104,7 @@ MusicArtist _artist({
     displayName: name,
     albums: albums,
     tracks: flat,
+    tracksInAlbumOrder: flat,
   );
 }
 
@@ -247,11 +262,13 @@ void main() {
         () async {
       final controller =
           MusicPlaybackQueueController(playbackService: _stubPlayback());
-      controller.seedAlbumQueue(_album([
-        _track('t1', trackNumber: 1),
-        _track('t2', trackNumber: 2),
-        _track('t3', trackNumber: 3),
-      ]), sourceIndex: 2);
+      controller.seedAlbumQueue(
+          _album([
+            _track('t1', trackNumber: 1),
+            _track('t2', trackNumber: 2),
+            _track('t3', trackNumber: 3),
+          ]),
+          sourceIndex: 2);
 
       await controller.reconcileWithCatalog(_catalogWithAudioIds(['t1', 't3']));
 
@@ -296,7 +313,8 @@ void main() {
       final controller =
           MusicPlaybackQueueController(playbackService: _stubPlayback());
       final albums = [
-        _album([_track('a1'), _track('a2')], groupKey: 'a', title: 'A', year: 1969),
+        _album([_track('a1'), _track('a2')],
+            groupKey: 'a', title: 'A', year: 1969),
         _album([_track('b1')], groupKey: 'b', title: 'B', year: 1970),
       ];
       final artist = _artist(albums: albums);
@@ -311,8 +329,10 @@ void main() {
       final controller =
           MusicPlaybackQueueController(playbackService: _stubPlayback());
       final albums = [
-        _album([_track('shared-title-a')], groupKey: 'artist-a|shared', title: 'Shared'),
-        _album([_track('unique-b')], groupKey: 'artist-a|other', title: 'Other'),
+        _album([_track('shared-title-a')],
+            groupKey: 'artist-a|shared', title: 'Shared'),
+        _album([_track('unique-b')],
+            groupKey: 'artist-a|other', title: 'Other'),
       ];
       final artist = _artist(albums: albums);
 

@@ -504,7 +504,7 @@ Client-side projection over the unified catalogue — no second store:
 
 |---|---|
 
-| `MusicLibraryProjection` | Builds artists, albums, tracks from `Catalog.allItems` where `isAudio` |
+| `MusicLibraryProjection` | Builds artists, albums, tracks from `Catalog.allItems` where `isAudio`; owns ordered collections + lookup indexes |
 
 | `MusicLibraryService` | Memoises projection by `catalogueIdentity`; invalidated on catalogue replace |
 
@@ -520,6 +520,35 @@ Grouping authority: `artist_group_key` and `album_group_key` from M5.1 (ADR-021)
 
 
 
+#### Projection lifecycle (Phase 5.6 Step 3)
+
+
+
+```text
+Catalogue
+    ↓
+MusicLibraryService  (memoised by catalogueIdentity)
+    ↓
+MusicLibraryProjection
+    ├── ordered tracks
+    ├── ordered artists
+    ├── ordered albums
+    ├── track lookup index      (trackId → MediaItem)
+    ├── artist lookup index     (artistGroupKey → MusicArtist)
+    └── album lookup index      (albumGroupKey → MusicAlbum)
+```
+
+
+
+- **Catalogue authority:** filesystem / `catalog.json` remains the only metadata source of truth.
+- **Memoisation key:** `Catalog.catalogueIdentity` (`catalogueInfo.id`, else `legacy:$generatedAt`) — not item count.
+- **Invalidation:** identity change or `MusicLibraryService.invalidate()` drops the cached projection; a new projection is built atomically. Old projections remain immutable but are no longer returned.
+- **Immutability:** exposed track / artist / album lists (and nested album track lists) are unmodifiable; UI must not mutate them.
+- **No persistence:** projection data is never written to disk; it is always rebuilt from the current catalogue.
+- **Duplicate IDs:** first browse-ordered audio occurrence wins (matches pre-index linear-scan policy).
+
+
+
 ## 13. Cache and performance implications
 
 
@@ -530,7 +559,7 @@ Grouping authority: `artist_group_key` and `album_group_key` from M5.1 (ADR-021)
 
 | Catalogue size | Live NAS ~42k audio / ~122k total items — client parse must stay O(n) single pass |
 
-| Artist/album indexes | `MusicLibraryService` memoises projection by identity; deepen indexes / remove repeated work in **Phase 5.6** |
+| Artist/album indexes | `MusicLibraryProjection` owns O(1) track/artist/album maps (Phase 5.6 Step 3); `MusicLibraryService` memoises by identity |
 
 | Artwork | Many small images — respect existing LRU / image-cache policy; harden fallbacks in 5.6 |
 
@@ -542,7 +571,7 @@ Grouping authority: `artist_group_key` and `album_group_key` from M5.1 (ADR-021)
 
 
 
-**Phase 5.6 (in progress):** [Music library performance, scale and UX hardening](../roadmap/m5-phase-5.6-music-performance-and-ux-hardening.md) — Step 2 baselines recorded (1,010 / 10,010 / 40,010 audio; MP3 projection median ~148 ms informational). Step 3 next: evidence-gated projection indexing.
+**Phase 5.6 (in progress):** [Music library performance, scale and UX hardening](../roadmap/m5-phase-5.6-music-performance-and-ux-hardening.md) — Step 3 projection indexes complete. Step 4 next: search/browse UX hardening.
 
 
 

@@ -25,11 +25,14 @@ MediaItem _track(String id, {String title = 'Track'}) {
 }
 
 MusicAlbum _album(List<MediaItem> tracks, {String groupKey = 'album-a'}) {
+  final representative = List<MediaItem>.from(tracks)
+    ..sort((a, b) => a.filePath.compareTo(b.filePath));
   return MusicAlbum(
     groupKey: groupKey,
     displayTitle: 'Album A',
     displayArtist: 'Artist',
     tracks: tracks,
+    representativeTrack: representative.first,
   );
 }
 
@@ -40,6 +43,7 @@ MusicArtist _artist(List<MusicAlbum> albums, {String groupKey = 'artist-a'}) {
     displayName: 'Artist',
     albums: albums,
     tracks: flat,
+    tracksInAlbumOrder: flat,
   );
 }
 

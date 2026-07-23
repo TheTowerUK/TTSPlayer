@@ -1,10 +1,11 @@
 # M5 Phase 5.6 — Music Library Performance, Scale and UX Hardening
 
-**Status:** **IN PROGRESS** — Step 2 baselines recorded (2026-07-23); Steps 3–6 pending
+**Status:** **IN PROGRESS** — Step 3 projection optimisation complete (2026-07-23); Steps 4–6 pending
 **Milestone:** M5 — Music
 **Branch:** `m5-development`
 **Predecessor:** Phase 5.5 complete (2026-07-23) — ADR-022 **Accepted**
-**Step 2 commit:** `test(music): add large-library performance baselines`
+**Step 2 commit:** `34dc00d` — `test(music): add large-library performance baselines`
+**Step 3 commit:** `perf(music): optimise library projection`
 
 → [M5 plan](./m5-plan.md)
 → [Phase 5.5 closure](./m5-phase-5.5-closure-report.md)
@@ -30,6 +31,8 @@ The phase establishes measurable baselines, removes avoidable repeated computati
 **Scope realignment note:** The original [M5 plan](./m5-plan.md) listed Phase 5.6 as “Release and Documentation.” That release-closure work remains required for M5 milestone completion but is **deferred** until after this performance/UX hardening pass. Performance/scale work deferred from the original Phase 5.5 title is **absorbed here**.
 
 **Step 2 (2026-07-23):** Deterministic 1k/10k/40k fixtures and informational MP1–MP18 baselines recorded. No production optimisation yet.
+
+**Step 3 (2026-07-23):** Evidence-gated projection indexes, one-pass grouping keys, immutable ordered collections, and cached representative / album-order track lists. See Step 3 section below.
 
 ---
 
@@ -316,6 +319,28 @@ No ADR for routine implementation detail. A new ADR is required only for substan
 4. **Screens call `projectionFor` inside `Consumer` build** — cheap when memoised; ensure identity stability.
 5. **SearchScreen async stale discard** not exercised by sync `SearchService` — Step 4 widget coverage.
 
+### Step 3 optimisation evidence table
+
+| Evidence | Existing behaviour | Proposed change | Expected benefit |
+|---|---|---|---|
+| Repeated `findTrackById` / artist / album linear scans (session restore, detail screens, listening presentation) | O(n) per lookup | Stable `trackId` / `artistGroupKey` / `albumGroupKey` maps on projection | Constant-time lookup |
+| Artist + album grouping recomputed keys twice per item | Two `normalizeGroupKey` / effective-key calls per audio item | Derive keys once per item into local maps during build | Lower projection string work |
+| Albums-within-artist sorted twice (bucket loop + artist build) | Duplicate `compareAlbumsWithinArtist` | Sort once in `albumsByArtist`; reuse ordered list | Reduced sort work |
+| `representativeTrack` re-sorted by path on every artwork request | O(k log k) per access | Cache at album construction | Cheaper artwork / tile leading |
+| `tracksInAlbumOrder` rebuilt on every queue-seed / playability check | Fresh list allocation per call | Cache at artist construction | Cheaper queue seeding |
+| Exposed lists were mutable plain `List`s | Consumers could mutate derived state | `List.unmodifiable` on projection / album / artist collections | Immutable derived state |
+| Catalogue identity already keyed by `catalogueInfo.id` | Sufficient (not item-count) | Keep `Catalog.catalogueIdentity`; replace projection atomically on identity change | No stale indexes after rescan |
+
+### Rejected / deferred optimisations
+
+| Idea | Why rejected in Step 3 |
+|---|---|
+| Inverted search indexes / token DB | No Step 2 proof of need beyond linear search; reserved for Step 4 if measured |
+| Background isolates for projection | Cold rebuild already ~30–150 ms; complexity not justified |
+| Persistent projection disk cache | Violates derived-state / catalogue-authority rules |
+| Speculative `trackId → artist/album` reverse maps | No current consumer beyond group-key lookups already indexed |
+| New product-facing sort modes | Explicitly out of scope |
+
 ### Proposed thresholds (for Steps 3–6)
 
 | Category | Policy |
@@ -527,20 +552,87 @@ These are not prerequisites for Phase 5.6 completion.
 
 ---
 
-## Open Questions (resolve in Step 3+)
+## Step 3 — Projection and indexing optimisation (complete 2026-07-23)
 
-1. ~~Exact track counts for 1k/10k/40k profiles~~ — **resolved:** 1,010 / 10,010 / 40,010 audio.
-2. Whether projection build should expose a timed diagnostic field — still open for Step 5/6.
-3. Whether linear `findTrackById` becomes a map index in Step 3 — **recommended** from Step 2 evidence.
-4. ~~Numeric Windows workstation thresholds~~ — **proposed** in Step 2 section (watch bands).
-5. Naming of the post-5.6 M5 release-closure phase — still open.
+### Projection lifecycle (final)
+
+```text
+Catalogue generation N
+        ↓
+MusicLibraryService resolves catalogueIdentity
+        ↓
+MusicLibraryProjection.build once
+        ↓
+Ordered tracks / artists / albums + lookup indexes retained
+        ↓
+Screens and services reuse generation N projection
+
+Catalogue generation N+1 (identity change or invalidate)
+        ↓
+Old projection dropped from service cache (immutable but unused)
+        ↓
+New projection built atomically
+```
+
+- Catalogue remains metadata authority; projection is never persisted.
+- Memoisation key: `Catalog.catalogueIdentity` (`catalogueInfo.id` or `legacy:$generatedAt`).
+- Duplicate track IDs: **first** browse-ordered occurrence wins (matches prior linear scan).
+
+### Indexes owned by projection
+
+| Index | Type | Semantics |
+|---|---|---|
+| Track | `trackId → MediaItem` | Audio only; first-wins duplicates; unknown → null |
+| Artist | `artistGroupKey → MusicArtist` | Unknown key → null |
+| Album | `albumGroupKey → MusicAlbum` | Unknown key → null |
+
+### Before / after (Windows workstation, flutter test, 1 warm-up + 3 samples → median)
+
+| Scenario | Step 2 median | Step 3 median | Δ | Notes |
+|---|---|---|---|---|
+| MP1 projection (1,010) | 5 ms | 5 ms | 0% | Neutral |
+| MP2 projection (10,010) | 30 ms | 32 ms | +7% | Neutral (within tolerance) |
+| MP3 projection (40,010) | 148 ms | 177 ms | +20% | Mild cold-build cost from indexes + cached fields; **within 150% gate**; not blocking |
+| MP8 replace | (correctness) | 2 ms | — | Stale IDs cleared |
+| MEMO-HOT | 0 ms | 0 ms | — | Unchanged |
+| MEMO-COLD (medium) | 28–48 ms | 31 ms | — | Neutral |
+| 10k track hits (large) | O(n) linear (unmeasured Step 2) | **~328 µs** | Material | Index path |
+| 10k track misses (large) | O(n) | **~844 µs** | Material | Index path |
+| 10k artist lookups (large) | O(n) | **~155 µs** | Material | Index path |
+| 10k album lookups (large) | O(n) | **~299 µs** | Material | Index path |
+
+Environment: Windows desktop, `flutter test`, Dart VM (informational; not Release runtime).
+
+### Remaining bottlenecks for later steps
+
+| Bottleneck | Owner |
+|---|---|
+| Search linear scan / async stale discard / ranking | Step 4 |
+| Eager album-detail track list / browse list polish | Step 4 |
+| Artwork fallback UX | Step 5 |
+| Formal Windows runtime closure | Step 6 |
+
+### Step 3 completion status
+
+**Complete** for projection/indexing scope. Phase 5.6 remains **IN PROGRESS** (Steps 4–6 pending).
 
 ---
 
-## Next Step Handoff — Step 3
+## Open Questions (resolve in Step 4+)
 
-**Step 3 — Projection and indexing optimisation**
+1. ~~Exact track counts for 1k/10k/40k profiles~~ — **resolved:** 1,010 / 10,010 / 40,010 audio.
+2. Whether projection build should expose a timed diagnostic field — still open for Step 5/6.
+3. ~~Whether linear `findTrackById` becomes a map index in Step 3~~ — **done** (Step 3).
+4. ~~Numeric Windows workstation thresholds~~ — **proposed** in Step 2 section (watch bands).
+5. Naming of the post-5.6 M5 release-closure phase — still open.
+6. Whether Step 4 should add search-specific indexes — defer until search baselines show need.
 
-Deliver evidence-gated changes from Step 2 bottlenecks (lookup indexes, avoid repeated scans) with before/after medians.
+---
 
-Expected commit: `perf(music): optimise library projection`
+## Next Step Handoff — Step 4
+
+**Step 4 — Search and browse UX hardening**
+
+Use Step 2/3 evidence for search cost and list rendering (eager album detail, lazy list mount counts). Preserve search result ordering unless a measured ranking change is explicitly approved.
+
+Expected commit pattern: follow phase plan (`perf` / `fix` / `ui` as appropriate).
