@@ -404,7 +404,7 @@ Separate from `catalog.json` and separate from video resume keys where policies 
 | Music Continue Listening | Derived from listening history | `MusicScreen` only (not dashboard) | ✅ Step 5 — `ContinueListeningSection` |
 | Music Recently Played | Same envelope | `MusicRecentlyPlayedScreen` + landing nav tile | ✅ Step 5 |
 | Music favourites | `LibraryMetadataRepository` or future extension | Repository | Deferred |
-| Queue persistence | ADR-022 envelope | Repository | **Deferred outside 5.4** — no serialization/restoration in this phase |
+| Queue persistence | `ttsplayer_music_queue_v1` | `MusicPlaybackSessionRepository` + coordinator + restorer | ✅ Phase 5.5 — silent cold-start restore; no autoplay |
 | Play counts / playlists | — | — | Deferred |
 
 
@@ -436,6 +436,30 @@ Separate from `catalog.json` and separate from video resume keys where policies 
 **Implementation (Phase 5.5 Step 4, 2026-07-22):** `MusicPlaybackSessionRestorer` hydrates `MusicPlaybackQueueController` after catalogue load via `DashboardScreen` bootstrap. Persisted session reconciles through `MusicPlaybackSessionRepository.validateAgainstCatalog` before track resolution against catalogue + `MusicLibraryProjection`. `MusicPlaybackQueueController.restoreSession` replaces the queue atomically and stores `restoredStartPosition` for deferred seek on the next user-initiated `playCurrent` — no autoplay or navigation. `MusicPlaybackSessionCoordinator` defers persistence until `enablePersistenceAfterColdStartRestore` to avoid overwriting stored state with an empty startup queue. Runtime catalogue replacement continues to reconcile the persisted envelope only (Step 3); it does not rehydrate the live queue.
 
 **Implementation (Phase 5.5 Step 5, 2026-07-22):** `MusicPlaybackSessionLifecycleObserver` wraps the application shell and flushes session state on background lifecycle transitions via `MusicPlaybackSessionCoordinator.onAppLifecyclePaused()`. Duplicate events within one background transition are suppressed until `AppLifecycleState.resumed`. Lifecycle writes are blocked until cold-start restore enables persistence. Aggregate playback-session diagnostics are exposed through `DiagnosticsService` and the plain-text export as section **Music Playback Session** — counts and flags only.
+
+**Closure (Phase 5.5 Step 6, 2026-07-23):** Windows runtime harness PS1–PS16 (`PHASE_55_RUNTIME=1`) validated production repository, coordinator, restorer, queue, lifecycle flush, catalogue reconciliation, diagnostics redaction, and isolation. ADR-022 **Accepted**. → [Phase 5.5 closure](../roadmap/m5-phase-5.5-closure-report.md)
+
+**Final playback-session flow:**
+
+```
+Playback/queue events
+        ↓
+MusicPlaybackSessionCoordinator
+        ↓
+MusicPlaybackSessionRepository
+        ↓
+ttsplayer_music_queue_v1
+
+Application startup
+        ↓
+Catalogue load and reconciliation
+        ↓
+MusicPlaybackSessionRestorer
+        ↓
+Live queue restored without autoplay
+        ↓
+Deferred position applied on explicit Play
+```
 
 
 ---
@@ -540,7 +564,7 @@ Extend `RuntimeDiagnosticsSnapshot` (no secrets):
 
 | Queue length | `12` |
 
-| Queue persistence | `enabled` |
+| Queue persistence | `enabled` — `ttsplayer_music_queue_v1` (M5.5) |
 
 | Last playback error kind | `backendFailed` (redacted detail) |
 

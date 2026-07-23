@@ -1,12 +1,14 @@
 # ADR-022: Music Queue and Listening State
 
-**Status:** Partially Accepted
+**Status:** Accepted
 
 **Date:** 2026-07-19
 
 **Partially Accepted:** 2026-07-21 (M5.4 planning — listening history scope locked)
 
-**Milestone:** M5 Phase 5.0 / 5.3–5.4
+**Accepted:** 2026-07-23 (M5.5 — playback session persistence complete)
+
+**Milestone:** M5 Phase 5.0 / 5.3–5.5
 
 **Authors:** M5 planning pass
 
@@ -20,11 +22,24 @@
 | Listening history persistence | **Accepted** (M5.4) | `MusicListeningRepository` at `ttsplayer_music_listening_v1` — [Phase 5.4 spec](../../roadmap/m5-phase-5.4-listening-history-continue-listening.md) |
 | Continue Listening / Recently Played | **Accepted** (M5.4) | Music landing only; isolated from video `position_*` keys |
 | Video namespace unchanged | **Accepted** | Audio never writes video resume keys |
-| Queue persistence across app restart | **Deferred** | Not in Phase 5.4 — no queue serialization or restoration |
+| Queue persistence across app restart | **Accepted** (M5.5) | `MusicPlaybackSessionRepository` at `ttsplayer_music_queue_v1` — [Phase 5.5 spec](../../roadmap/m5-phase-5.5-playback-session-persistence.md) |
 | Music favourites envelope | **Deferred** | Remains in `LibraryMetadataRepository` pattern for now |
 | Playlists | **Deferred** | Post-M5 |
 
-**Full Accepted status** for this ADR requires queue persistence to ship. Until then, status remains **Partially Accepted**.
+---
+
+## Final decision (Accepted 2026-07-23)
+
+1. **Separate versioned envelopes** — listening history (`ttsplayer_music_listening_v1`) and playback session (`ttsplayer_music_queue_v1`) are independent; neither clear operation clears the other.
+2. **Playback-session identity is track ID only** — never rematch by title, artist, album, or path; metadata is not duplicated into the session envelope.
+3. **Queue and active track persist** — ordered `queueTrackIds` and `activeTrackId` survive application restart when IDs still resolve.
+4. **Position persists with throttle and lifecycle flush** — 5 s throttle while playing; immediate on seek jump, pause, active-track change, clear, dispose, and app lifecycle background transitions.
+5. **Cold-start queue restoration is silent** — after catalogue load, `MusicPlaybackSessionRestorer` hydrates the live queue without preparing or starting the engine.
+6. **Autoplay is prohibited** — restored playback starts only after explicit user Play; prior playing/paused engine state is not restored.
+7. **Catalogue reconciliation removes invalid entries** — non-audio, missing, and non-playable IDs are pruned; surviving order retained; active fallback + position zero when the active track is removed; empty session when none survive.
+8. **Listening history, playback session, and video resume remain isolated** — distinct storage keys and repositories; audio never writes `position_*` / `duration_*`.
+
+**Deferred outside this ADR acceptance (future scope):** music favourites envelope extension, playlists, shuffle/repeat persistence, video queue persistence.
 
 ---
 
@@ -32,23 +47,11 @@
 
 **M5.3 (2026-07-20):** In-memory queue ordering, coordinator transport, and contextual album/artist queue seeding implemented.
 
-**M5.4 Step 2 (2026-07-21):** `MusicListeningRepository` and `MusicListeningRecord` implemented with unit tests. Persistence-only — not yet wired to UI or catalogue reconciliation.
+**M5.4 Steps 2–9 / closure (2026-07-21–22):** Listening history repository, coordinator, Continue Listening / Recently Played UI, clear history, diagnostics, integration and Windows runtime validation. Queue persistence remained deferred until Phase 5.5.
 
-**M5.4 Step 3 (2026-07-21):** `MusicListeningCoordinator` wired to `PlaybackService` and `MusicPlaybackQueueController` in `main.dart`. Observes audio playback lifecycle; persists via `MusicListeningRepository` only. Video resume keys unchanged. Queue persistence and UI remain deferred.
+**M5.5 Steps 1–5 (2026-07-22):** `MusicPlaybackSession` envelope; `MusicPlaybackSessionRepository`; `MusicPlaybackSessionCoordinator` (debounce/throttle/immediate); catalogue `validateAgainstCatalog`; `MusicPlaybackSessionRestorer` cold-start hydrate with deferred seek; `MusicPlaybackSessionLifecycleObserver`; Music Playback Session diagnostics section.
 
-**M5.4 Step 4 (2026-07-21):** `MusicListeningRepository.validateAgainstCatalog` integrated into `CatalogCacheCoordinator.onCatalogReplaced`. Prunes records by `trackId` only; refreshes snapshot metadata for retained tracks; never resets listening state. Queue persistence remains deferred.
-
-**M5.4 Step 5 (2026-07-21):** Continue Listening and Recently Played UI on `MusicScreen`; `MusicRecentlyPlayedScreen`; resume/replay via `openMusicPlayerFromListeningRecord` with album-or-single queue seeding and `historyPlaybackStartPosition`. Presentation depends on `MusicListeningRepository` queries only. Clear history, diagnostics, and queue persistence remain deferred. Status stays **Partially Accepted**.
-
-**M5.4 Step 6 (2026-07-21):** `MusicListeningRepository.clearAll()` with `MusicListeningClearResult`; Recently Played overflow menu and confirmation dialog. Successful clear persists empty envelope before in-memory update; playback and queues unchanged. Queue persistence remains deferred. Status stays **Partially Accepted**.
-
-**M5.4 Step 7 (2026-07-21):** Music listening diagnostics section — `MusicListeningDiagnostics` with aggregate counts and coordinator session flags; no record-level metadata in export. Diagnostics capture is read-only (no load/persist/clear/reconcile). Queue persistence remains deferred. Status stays **Partially Accepted**.
-
-**M5.4 Step 8 (2026-07-21):** Integration suite `phase_54_listening_history_integration_test.dart` — 38 tests (I1–I16) validating cross-component listening lifecycle, persistence reload, navigation, UI, failure injection, and regression guards (video CW, favourites, dashboard). Queue persistence remains deferred. Status stays **Partially Accepted**.
-
-**M5.4 Step 9 (2026-07-22):** Windows runtime harness (`PHASE_54_RUNTIME=1`) — 20 automated scenarios including real libmpv playback (R5), catalogue replace/failure, clear-history UI, diagnostics privacy, persistence restart. Queue persistence remains deferred. Status stays **Partially Accepted**.
-
-**M5.4 closure (2026-07-22):** Phase 5.4 complete — listening history, Continue Listening, Recently Played, reconciliation, clear history, and diagnostics shipped and validated. **Queue persistence across app restart** remains the sole open ADR-022 acceptance criterion. Status remains **Partially Accepted** until Phase 5.5+ delivers queue serialization/restoration or the ADR is formally amended.
+**M5.5 Step 6 (2026-07-23):** Windows runtime harness PS1–PS16 (`PHASE_55_RUNTIME=1`); focused and full regression green; Release build succeeded; ADR promoted to **Accepted**. → [Phase 5.5 closure](../../roadmap/m5-phase-5.5-closure-report.md)
 
 ---
 
@@ -58,8 +61,8 @@ Video resume uses `PlaybackService` keys (`position_*`, `duration_*`) and **Cont
 
 - An ordered **queue** with next/previous
 - **Recently played** and **Continue Listening** distinct from video
-- **Favourites** for tracks/albums/artists
-- Survival across app restart (queue persistence — **deferred** outside M5.4)
+- **Favourites** for tracks/albums/artists (deferred envelope)
+- Survival across app restart (queue persistence — **delivered in M5.5**)
 - Reconciliation when `catalog.json` is replaced (stale track ids)
 
 M4 established `LibraryMetadataRepository` for favourites with **prune on catalogue replacement only** (ADR-007). Music state follows the same lifecycle discipline.
@@ -95,7 +98,7 @@ M4 established `LibraryMetadataRepository` for favourites with **prune on catalo
 
 4. **Prune on catalogue replacement:** remove history entries whose ids are absent; retain entries when the same `trackId` still resolves after rescan; silent UI; single listener notification (same hook as ADR-007 / cache coordinator).
 
-5. **Queue persistence (deferred):** save on queue mutation debounced; restore on startup if ids still valid; empty queue if all ids stale — **not implemented in M5.4**.
+5. **Queue persistence (M5.5):** `MusicPlaybackSessionRepository` at `ttsplayer_music_queue_v1`; coordinator debounced/throttled saves; cold-start restore without autoplay; catalogue prune of invalid IDs.
 
 6. **Video namespace unchanged** — no reuse of `position_*` for music; prevents Continue Watching collisions.
 
@@ -108,7 +111,7 @@ M4 established `LibraryMetadataRepository` for favourites with **prune on catalo
 - Separates music listening state from video resume semantics (different UX policies).
 - Repository pattern matches proven M4.3 favourites architecture.
 - Prune-on-replace avoids ghost entries without filesystem polling.
-- Partial acceptance allows listening history to ship without blocking on queue persistence.
+- Separate session envelope keeps queue identity lean (IDs only) while listening history retains display snapshots.
 
 ---
 
@@ -118,16 +121,16 @@ M4 established `LibraryMetadataRepository` for favourites with **prune on catalo
 
 - Clear ownership and test boundaries
 - Catalogue replace behaviour consistent with favourites and search invalidation
-- Listening history can validate independently of queue persistence
+- Queue survives restart without forcing playback or navigation
 
 ### Negative
 
-- ADR remains open until queue persistence ships
-- Two-phase delivery requires careful documentation of deferred scope
+- Two local envelopes to reason about (listening vs session)
+- Favourites/playlists remain deferred beyond this ADR’s Accepted status for queue/history
 
 ### Neutral
 
-- Original monolithic `MusicStateRepository` envelope split: listening history ships first; queue/favourites may follow in later increments
+- Original monolithic `MusicStateRepository` envelope split delivered as listening history then playback session
 
 ---
 
@@ -135,7 +138,7 @@ M4 established `LibraryMetadataRepository` for favourites with **prune on catalo
 
 ### Alternative A — Ephemeral queue only (no persistence)
 
-**Rejected for M5 milestone:** Poor desktop UX long-term; deferred to post-5.4, not rejected permanently.
+**Rejected for M5 milestone:** Poor desktop UX; superseded by M5.5 delivery.
 
 ### Alternative B — Store queue in catalogue JSON
 
@@ -143,7 +146,7 @@ M4 established `LibraryMetadataRepository` for favourites with **prune on catalo
 
 ### Alternative C — Fully Accepted ADR at M5.4 closure
 
-**Rejected because:** Queue persistence explicitly deferred outside Phase 5.4.
+**Rejected because:** Queue persistence was explicitly deferred outside Phase 5.4; Accepted after M5.5 DoD met.
 
 ---
 
@@ -151,5 +154,6 @@ M4 established `LibraryMetadataRepository` for favourites with **prune on catalo
 
 - [ADR-007](./ADR-007-library-metadata-and-favourites.md)
 - [Phase 5.4 spec](../../roadmap/m5-phase-5.4-listening-history-continue-listening.md)
+- [Phase 5.5 spec](../../roadmap/m5-phase-5.5-playback-session-persistence.md)
 - [music.md](../music.md) · §11
 - [caching.md](../caching.md) — catalogue replacement lifecycle

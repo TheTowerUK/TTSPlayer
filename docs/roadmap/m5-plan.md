@@ -65,8 +65,8 @@ Implement in order unless a documented dependency allows parallel documentation 
 | **5.2** | Music Library Experience | ✅ Complete (2026-07-19) — [spec](./m5-phase-5.2-music-library-experience.md) |
 | **5.3** | Music Playback and Queue | ✅ Complete (2026-07-21) — [spec](./m5-phase-5.3-music-playback-queue.md) |
 | **5.4** | Music State and Listening History | ✅ Complete (2026-07-22) — [spec](./m5-phase-5.4-listening-history-continue-listening.md) · [closure](./m5-phase-5.4-closure-report.md) |
-| **5.5** | Performance, Diagnostics and Runtime Validation | **Next** |
-| **5.6** | Release and Documentation | Planned |
+| **5.5** | Playback Session Persistence | ✅ Complete (2026-07-23) — [spec](./m5-phase-5.5-playback-session-persistence.md) · [closure](./m5-phase-5.5-closure-report.md) |
+| **5.6** | Release and Documentation | **Next** |
 
 ---
 
@@ -389,34 +389,35 @@ M5.3 adds play track, play album, queue next/previous, seek, shuffle, and repeat
 
 ---
 
-### Phase 5.5 — Performance, Diagnostics and Runtime Validation
+### Phase 5.5 — Playback Session Persistence
 
-**Objective:** Music-specific performance, cache behaviour, diagnostics, and Windows runtime harness coverage.
+**Status:** ✅ **COMPLETE** (2026-07-23) — [Phase 5.5 spec](./m5-phase-5.5-playback-session-persistence.md) · [closure](./m5-phase-5.5-closure-report.md)
 
-**Scope (planned):**
+**Objective:** Persist and restore the active music queue session across application restart (ADR-022 final acceptance criterion).
 
-- Large music catalogue indexing and client parse performance
-- Search index build cost with audio items
-- Artwork cache pressure (many album thumbnails)
-- Lazy loading for artist/album lists
-- Queue size limits and memory
-- Catalogue replacement → stale queue/history reconciliation
-- Diagnostics sections: music library counts, queue depth, last error (redacted)
-- Windows runtime harness `PHASE_5x_RUNTIME` scenarios (pattern from M4)
+**Scope (delivered):**
 
-**Out of scope:**
+- Versioned `MusicPlaybackSessionRepository` at `ttsplayer_music_queue_v1`
+- Debounced queue / throttled position persistence via `MusicPlaybackSessionCoordinator`
+- Catalogue reconciliation on successful replace
+- Silent cold-start restore via `MusicPlaybackSessionRestorer` (no autoplay)
+- Deferred seek on explicit Play; lifecycle flush on background transitions
+- Redacted Music Playback Session diagnostics
+- Windows runtime harness PS1–PS16 (`PHASE_55_RUNTIME=1`)
 
-- New telemetry or upload pipelines
-- Micro-benchmark gates that flake in CI
+**Out of scope / deferred:**
 
-**Dependencies:** Phases 5.1–5.4 feature-complete.
+- Original “performance, large-library, artwork pressure” gates — deferred to Phase 5.6 or a dedicated performance pass
+- Shuffle/repeat persistence, playlists, favourites redesign, autoplay
+
+**Dependencies:** Phases 5.1–5.4 feature-complete; ADR-022 **Accepted**.
 
 **Definition of done:**
 
-- [ ] Deterministic tests for catalogue replace → music state prune
-- [ ] Diagnostics snapshot includes music/queue summary fields
-- [ ] Windows runtime matrix executed and recorded
-- [ ] No regression in Phase 4.x harness suites
+- [x] Deterministic tests for catalogue replace → session prune
+- [x] Diagnostics snapshot includes playback-session aggregate fields
+- [x] Windows runtime matrix executed and recorded
+- [x] No regression in default Flutter suite / Release build
 
 ---
 

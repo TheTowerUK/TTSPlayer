@@ -154,6 +154,8 @@ Snapshot type: `MusicListeningDiagnostics` on `RuntimeDiagnosticsSnapshot.musicL
 
 Snapshot type: `MusicPlaybackSessionDiagnostics` on `RuntimeDiagnosticsSnapshot.musicPlaybackSession` (nullable when repository not loaded or not wired).
 
+**Runtime evidence (Phase 5.5 Step 6, 2026-07-23):** Opt-in Windows harness PS13–PS14 confirmed aggregate export labels (`Persisted queue items`, `Live queue items`, etc.) and sentinel redaction (no track IDs, titles, artists, albums, paths, or raw envelope JSON in the Music Playback Session section). → [Phase 5.5 closure](../roadmap/m5-phase-5.5-closure-report.md)
+
 ---
 
 ## Failure isolation

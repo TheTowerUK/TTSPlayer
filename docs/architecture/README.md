@@ -32,11 +32,11 @@ Planning and implementation documents for [M4 — User Experience and Platform I
 
 ## M5 planning (active)
 
-Planning and catalogue foundation for [M5 — Music](../roadmap/m5-plan.md). **Phase 5.4 listening history complete**; Phase 5.5 next.
+Planning and catalogue foundation for [M5 — Music](../roadmap/m5-plan.md). **Phase 5.5 playback session persistence complete**; Phase 5.6 next.
 
 | Document | Phase | Status |
 |---|---|---|
-| [Music](./music.md) | 5.0 ✅ / 5.1 ✅ / 5.2 ✅ / 5.3 ✅ / 5.4 ✅ | [M5 plan](../roadmap/m5-plan.md) · [Phase 5.4 closure](../roadmap/m5-phase-5.4-closure-report.md) · ADR-020/021 **Accepted** · ADR-022 **Partially Accepted** |
+| [Music](./music.md) | 5.0 ✅ / 5.1 ✅ / 5.2 ✅ / 5.3 ✅ / 5.4 ✅ / 5.5 ✅ | [M5 plan](../roadmap/m5-plan.md) · [Phase 5.5 closure](../roadmap/m5-phase-5.5-closure-report.md) · ADR-020/021/022 **Accepted** |
 
 ## Architecture Decision Records
 
