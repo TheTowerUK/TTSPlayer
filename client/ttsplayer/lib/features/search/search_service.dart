@@ -35,6 +35,11 @@ class SearchService {
   @visibleForTesting
   bool simulateBuildFailure = false;
 
+  /// Optional delay injected after index ensure and before filtering (tests).
+  /// Used to prove latest-query ownership under deferred completion.
+  @visibleForTesting
+  Duration? debugSearchDelay;
+
   /// Lifetime count of completed index builds for this service instance.
   int get indexBuildCount => _indexBuildCount;
 
@@ -51,7 +56,8 @@ class SearchService {
 
   /// Library names for filter chips — from the built index when current, else [Catalog].
   List<String> libraryNamesFor(Catalog catalog) {
-    if (_catalogueIdentity == catalog.catalogueIdentity && _libraryNames.isNotEmpty) {
+    if (_catalogueIdentity == catalog.catalogueIdentity &&
+        _libraryNames.isNotEmpty) {
       return _libraryNames;
     }
     return catalog.libraryFolders.map((f) => f.name).toList();
@@ -59,7 +65,8 @@ class SearchService {
 
   /// Extensions for filter chips — from the built index when current, else [Catalog].
   List<String> extensionsFor(Catalog catalog) {
-    if (_catalogueIdentity == catalog.catalogueIdentity && _extensions.isNotEmpty) {
+    if (_catalogueIdentity == catalog.catalogueIdentity &&
+        _extensions.isNotEmpty) {
       return _extensions;
     }
     return _collectExtensions(catalog);
@@ -138,6 +145,11 @@ class SearchService {
       return const [];
     }
 
+    final delay = debugSearchDelay;
+    if (delay != null) {
+      await Future<void>.delayed(delay);
+    }
+
     return search(query, filters);
   }
 
@@ -165,8 +177,10 @@ class SearchService {
       return a.item.title.toLowerCase().compareTo(b.item.title.toLowerCase());
     });
 
-    if (hits.length <= maxResults) return hits;
-    return hits.sublist(0, maxResults);
+    if (hits.length <= maxResults) {
+      return List<SearchResult>.unmodifiable(hits);
+    }
+    return List<SearchResult>.unmodifiable(hits.sublist(0, maxResults));
   }
 
   bool _hasIndexFor(String identity) => _catalogueIdentity == identity;

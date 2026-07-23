@@ -490,6 +490,37 @@ Extend existing `SearchService` — **no second index**.
 
 **M5.2 implemented:** `SearchResultRow` shows `Audio` kind chip and `artist · album` subtitle; `SearchScreen` routes audio hits to `MusicTrackDetailScreen` (not video `ItemDetailScreen`). **M5.3 Step 1:** separate play action opens `MusicPlayerScreen`.
 
+#### Search execution (Phase 5.6 Step 4)
+
+```text
+Search query
+    ↓
+single debounce owner (SearchScreen, 150ms) or immediate _runSearchNow
+    ↓
+generation/token captured
+    ↓
+stable SearchService index (catalogue allItems)
+    ↓
+latest-generation + mounted check
+    ↓
+immutable published results
+```
+
+- Debounce owner is exclusively `SearchScreen` (no nested timers).
+- Dispose cancels the debounce timer and bumps generation so in-flight work cannot `setState`.
+- Matching semantics unchanged (token AND; no fuzzy/ranking changes).
+- Browse UI consumes the memoised projection via lazy lists and stable row keys; browse screens do not subscribe to playback-position ticks.
+
+```text
+Stable projection
+    ↓
+lazy list surfaces (ListView.separated / SliverList)
+    ↓
+CatalogService Consumer (narrow vs playback)
+    ↓
+stable row identity (groupKey / track id) + PageStorageKey scroll
+```
+
 
 
 ### Phase 5.2 — Derived music library views (implemented)
@@ -571,7 +602,7 @@ MusicLibraryProjection
 
 
 
-**Phase 5.6 (in progress):** [Music library performance, scale and UX hardening](../roadmap/m5-phase-5.6-music-performance-and-ux-hardening.md) — Step 3 projection indexes complete. Step 4 next: search/browse UX hardening.
+**Phase 5.6 (in progress):** [Music library performance, scale and UX hardening](../roadmap/m5-phase-5.6-music-performance-and-ux-hardening.md) — Step 4 search/list hardening complete. Step 5 next: artwork and empty/error UX.
 
 
 

@@ -33,6 +33,7 @@ class SearchResultsList extends StatelessWidget {
     final rows = _flattenGroups(groups, showHeaders);
 
     return ListView.separated(
+      key: const PageStorageKey<String>('search_results_list'),
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.lg,
         0,
@@ -121,18 +122,21 @@ final class _SearchListResult extends _SearchListRow {
     void Function(SearchResult result)? onPlayResult,
   }) {
     final contextLabel = catalogueFolderContext(catalog, result.item.id);
-    final canBrowse = onBrowseFolder != null && _canBrowseFolder(catalog, result);
+    final browseFolder = onBrowseFolder;
+    final canBrowse =
+        browseFolder != null && _canBrowseFolder(catalog, result);
 
     return SearchResultRow(
       result: result,
       displayContext: contextLabel,
       onOpen: () => onOpenResult(result),
-      onBrowseFolder: canBrowse ? () => onBrowseFolder!(result) : null,
+      onBrowseFolder: canBrowse ? () => browseFolder(result) : null,
       onPlay: _playCallback(onPlayResult),
     );
   }
 
-  VoidCallback? _playCallback(void Function(SearchResult result)? onPlayResult) {
+  VoidCallback? _playCallback(
+      void Function(SearchResult result)? onPlayResult) {
     if (onPlayResult == null) return null;
     final item = result.item;
     if (!item.isAudio || !item.status.isPlayable) return null;

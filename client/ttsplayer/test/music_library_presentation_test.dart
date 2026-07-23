@@ -152,7 +152,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byKey(const Key('music_artists_list')), findsOneWidget);
+      expect(find.byKey(const PageStorageKey<String>('music_artists_list')),
+          findsOneWidget);
       await tester.tap(find.text('The Beatles'));
       await tester.pumpAndSettle();
 
@@ -167,7 +168,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byKey(const Key('music_albums_list')), findsOneWidget);
+      expect(find.byKey(const PageStorageKey<String>('music_albums_list')),
+          findsOneWidget);
       await tester.tap(find.byType(ListTile).first);
       await tester.pumpAndSettle();
 

@@ -26,10 +26,8 @@ class MusicTracksScreen extends StatelessWidget {
             );
           }
 
-          final tracks = context
-              .read<MusicLibraryService>()
-              .projectionFor(catalog)
-              .tracks;
+          final tracks =
+              context.read<MusicLibraryService>().projectionFor(catalog).tracks;
 
           if (tracks.isEmpty) {
             return const EmptyState(
@@ -41,7 +39,7 @@ class MusicTracksScreen extends StatelessWidget {
           return Scrollbar(
             thumbVisibility: true,
             child: ListView.separated(
-              key: const Key('music_tracks_list'),
+              key: const PageStorageKey<String>('music_tracks_list'),
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
               itemCount: tracks.length,
               separatorBuilder: (_, __) => const Divider(height: 1),

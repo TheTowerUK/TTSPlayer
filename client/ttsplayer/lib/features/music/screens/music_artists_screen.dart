@@ -41,7 +41,7 @@ class MusicArtistsScreen extends StatelessWidget {
           return Scrollbar(
             thumbVisibility: true,
             child: ListView.separated(
-              key: const Key('music_artists_list'),
+              key: const PageStorageKey<String>('music_artists_list'),
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
               itemCount: artists.length,
               separatorBuilder: (_, __) => const Divider(height: 1),

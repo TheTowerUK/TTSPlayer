@@ -56,61 +56,97 @@ class MusicAlbumDetailScreen extends StatelessWidget {
             '${album.trackCount} tracks',
           ].join(' · ');
 
-          final canPlayAlbum = MusicQueueSeeding.hasPlayableTracks(album.tracks);
+          final canPlayAlbum =
+              MusicQueueSeeding.hasPlayableTracks(album.tracks);
+          final tracks = album.tracks;
 
           return Scrollbar(
             thumbVisibility: true,
-            child: ListView(
-              key: Key('music_album_detail_${album.groupKey}'),
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              children: [
-                Center(
-                  child: MusicArtworkThumbnail(
-                    item: album.representativeTrack,
-                    size: 160,
+            child: CustomScrollView(
+              key: PageStorageKey<String>(
+                'music_album_detail_${album.groupKey}',
+              ),
+              slivers: [
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.lg,
+                    AppSpacing.lg,
+                    0,
+                  ),
+                  sliver: SliverList(
+                    delegate: SliverChildListDelegate.fixed([
+                      Center(
+                        child: MusicArtworkThumbnail(
+                          item: album.representativeTrack,
+                          size: 160,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.base),
+                      Text(
+                        album.displayTitle,
+                        style: AppTypography.sectionTitle,
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(meta, style: AppTypography.cardSubtitle),
+                      const SizedBox(height: AppSpacing.base),
+                      Semantics(
+                        button: true,
+                        enabled: canPlayAlbum,
+                        label: 'Play album ${album.displayTitle}',
+                        excludeSemantics: true,
+                        child: FilledButton.icon(
+                          key: const Key('music_album_play'),
+                          onPressed: canPlayAlbum
+                              ? () => openMusicPlayerFromAlbum(
+                                    context,
+                                    album: album,
+                                  )
+                              : null,
+                          icon: const Icon(Icons.play_arrow),
+                          label: const Text('Play album'),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            minimumSize: const Size.fromHeight(48),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.section),
+                      const SectionHeader(title: 'Tracks'),
+                      const SizedBox(height: AppSpacing.sm),
+                    ]),
                   ),
                 ),
-                const SizedBox(height: AppSpacing.base),
-                Text(album.displayTitle, style: AppTypography.sectionTitle),
-                const SizedBox(height: AppSpacing.sm),
-                Text(meta, style: AppTypography.cardSubtitle),
-                const SizedBox(height: AppSpacing.base),
-                Semantics(
-                  button: true,
-                  enabled: canPlayAlbum,
-                  label: 'Play album ${album.displayTitle}',
-                  excludeSemantics: true,
-                  child: FilledButton.icon(
-                    key: const Key('music_album_play'),
-                    onPressed: canPlayAlbum
-                        ? () => openMusicPlayerFromAlbum(context, album: album)
-                        : null,
-                    icon: const Icon(Icons.play_arrow),
-                    label: const Text('Play album'),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      minimumSize: const Size.fromHeight(48),
-                    ),
+                // Lazy track rows — only visible tiles are built (Step 4).
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    0,
+                    AppSpacing.lg,
+                    AppSpacing.lg,
                   ),
-                ),
-                const SizedBox(height: AppSpacing.section),
-                const SectionHeader(title: 'Tracks'),
-                const SizedBox(height: AppSpacing.sm),
-                ...album.tracks.map(
-                  (track) => MusicTrackListTile(
-                    track: track,
-                    onTap: () => openMusicTrackDetailScreen(
-                      context,
-                      trackId: track.id,
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final track = tracks[index];
+                        return MusicTrackListTile(
+                          track: track,
+                          onTap: () => openMusicTrackDetailScreen(
+                            context,
+                            trackId: track.id,
+                          ),
+                          onPlay: track.status.isPlayable
+                              ? () => openMusicPlayerFromAlbumTrack(
+                                    context,
+                                    album: album,
+                                    track: track,
+                                  )
+                              : null,
+                          playSemanticsLabel: 'Play ${track.title} from album',
+                        );
+                      },
+                      childCount: tracks.length,
                     ),
-                    onPlay: track.status.isPlayable
-                        ? () => openMusicPlayerFromAlbumTrack(
-                              context,
-                              album: album,
-                              track: track,
-                            )
-                        : null,
-                    playSemanticsLabel: 'Play ${track.title} from album',
                   ),
                 ),
               ],

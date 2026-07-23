@@ -1,11 +1,12 @@
 # M5 Phase 5.6 — Music Library Performance, Scale and UX Hardening
 
-**Status:** **IN PROGRESS** — Step 3 projection optimisation complete (2026-07-23); Steps 4–6 pending
+**Status:** **IN PROGRESS** — Step 4 search/list hardening complete (2026-07-23); Steps 5–6 pending
 **Milestone:** M5 — Music
 **Branch:** `m5-development`
 **Predecessor:** Phase 5.5 complete (2026-07-23) — ADR-022 **Accepted**
 **Step 2 commit:** `34dc00d` — `test(music): add large-library performance baselines`
-**Step 3 commit:** `perf(music): optimise library projection`
+**Step 3 commit:** `5a5e1bb` — `perf(music): optimise library projection`
+**Step 4 commit:** `perf(music): harden search and library rendering`
 
 → [M5 plan](./m5-plan.md)
 → [Phase 5.5 closure](./m5-phase-5.5-closure-report.md)
@@ -607,9 +608,7 @@ Environment: Windows desktop, `flutter test`, Dart VM (informational; not Releas
 
 | Bottleneck | Owner |
 |---|---|
-| Search linear scan / async stale discard / ranking | Step 4 |
-| Eager album-detail track list / browse list polish | Step 4 |
-| Artwork fallback UX | Step 5 |
+| Artwork fallback UX / missing-poster polish | Step 5 |
 | Formal Windows runtime closure | Step 6 |
 
 ### Step 3 completion status
@@ -618,21 +617,87 @@ Environment: Windows desktop, `flutter test`, Dart VM (informational; not Releas
 
 ---
 
-## Open Questions (resolve in Step 4+)
+## Step 4 — Search and list rendering hardening (complete 2026-07-23)
+
+### Evidence → change
+
+| Evidence | Existing behaviour | Change | Benefit |
+|---|---|---|---|
+| MP13 / Step 2 note on async stale discard | Screen already had generation; clear/filter paths could race debounce | Single `_runSearchNow` cancels debounce; dispose bumps generation | Latest query owns publish; no post-dispose publish |
+| MP17 album-detail eager spread | `ListView(children: ...map)` | `CustomScrollView` + `SliverList` builders | Bounded mounted track tiles |
+| MP18 scroll not retained | `Key` only; pumped replacements lost offset | `PageStorageKey` on browse lists + Navigator push/pop | Scroll retained on back |
+| Browse lists already lazy / no PlaybackService listen | Confirmed | Rebuild-isolation tests | Proof position ticks do not rebuild lists |
+| Search matching contract | Token AND over index blob | Unchanged; results `List.unmodifiable` | Immutable published results |
+
+### Search matching contract (preserved)
+
+Covers title, filename, path, library/parent, extension, and for audio: artist, album, albumArtist, genre. Case-insensitive; `/`→`\`; whitespace token AND; no diacritic folding; cap 100; empty/whitespace → `[]`.
+
+### Search lifecycle (final)
+
+```text
+Search query
+    ↓
+single debounce owner (SearchScreen, 150ms) OR immediate _runSearchNow
+    ↓
+generation/token captured
+    ↓
+SearchService index (catalogue allItems) + optional debug delay
+    ↓
+latest-generation + mounted check
+    ↓
+immutable published results
+```
+
+Debounce interval **unchanged** at 150ms.
+
+### UI consumption
+
+```text
+Stable projection
+    ↓
+lazy list surfaces (ListView.separated / SliverList)
+    ↓
+CatalogService Consumer only (no playback-position listen on browse)
+    ↓
+stable row keys (artist/album groupKey, track id)
+```
+
+### MP9–MP18 Step 4 notes
+
+| ID | Result |
+|---|---|
+| MP9–MP12, MP14 | Contracts preserved; timings informational (~0–5 ms search medians) |
+| MP13 | Deferred A vs fast C via `debugSearchDelay`; screen owns publish |
+| MP15–MP16 | Lazy mount unchanged (~11 tiles) |
+| MP17 | Tracks list lazy; album/artist detail now SliverList |
+| MP18 | Scroll offset retained via PageStorageKey (e.g. 900→900) |
+
+### Remaining for Step 5
+
+Artwork fallback UX, missing-poster polish, any residual empty/error presentation polish.
+
+### Step 4 completion status
+
+**Complete** for search/list hardening. Phase 5.6 remains **IN PROGRESS** (Steps 5–6 pending).
+
+---
+
+## Open Questions (resolve in Step 5+)
 
 1. ~~Exact track counts for 1k/10k/40k profiles~~ — **resolved:** 1,010 / 10,010 / 40,010 audio.
 2. Whether projection build should expose a timed diagnostic field — still open for Step 5/6.
 3. ~~Whether linear `findTrackById` becomes a map index in Step 3~~ — **done** (Step 3).
 4. ~~Numeric Windows workstation thresholds~~ — **proposed** in Step 2 section (watch bands).
 5. Naming of the post-5.6 M5 release-closure phase — still open.
-6. Whether Step 4 should add search-specific indexes — defer until search baselines show need.
+6. ~~Whether Step 4 should add search-specific indexes~~ — **deferred**; linear indexed scan + cap 100 sufficient at measured scale.
 
 ---
 
-## Next Step Handoff — Step 4
+## Next Step Handoff — Step 5
 
-**Step 4 — Search and browse UX hardening**
+**Step 5 — Artwork and empty/error UX hardening**
 
-Use Step 2/3 evidence for search cost and list rendering (eager album detail, lazy list mount counts). Preserve search result ordering unless a measured ranking change is explicitly approved.
+Harden artwork fallbacks and loading/empty/error presentation without changing catalogue authority or playback contracts.
 
-Expected commit pattern: follow phase plan (`perf` / `fix` / `ui` as appropriate).
+Expected commit pattern: follow phase plan.

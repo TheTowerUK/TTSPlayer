@@ -145,7 +145,7 @@ void main() {
       await tester.tap(find.text('Artists'));
       await tester.pumpAndSettle();
 
-      expect(find.byKey(const Key('music_artists_list')), findsOneWidget);
+      expect(find.byKey(const PageStorageKey<String>('music_artists_list')), findsOneWidget);
       await tester.tap(find.byType(ListTile).first);
       await tester.pumpAndSettle();
 

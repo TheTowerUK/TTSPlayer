@@ -60,6 +60,9 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   void dispose() {
     _debounce?.cancel();
+    _debounce = null;
+    // Invalidate in-flight searches so they cannot publish after dispose.
+    _searchGeneration++;
     _controller.removeListener(_onQueryChanged);
     _controller.dispose();
     _focusNode.dispose();
@@ -72,6 +75,13 @@ class _SearchScreenState extends State<SearchScreen> {
       unawaited(_runSearch());
     });
     setState(() {});
+  }
+
+  /// Cancels any pending debounce and runs search immediately.
+  void _runSearchNow() {
+    _debounce?.cancel();
+    _debounce = null;
+    unawaited(_runSearch());
   }
 
   Future<void> _runSearch() async {
@@ -118,13 +128,13 @@ class _SearchScreenState extends State<SearchScreen> {
 
   void _clearQuery() {
     _controller.clear();
-    unawaited(_runSearch());
+    _runSearchNow();
     _focusNode.requestFocus();
   }
 
   void _clearFilters() {
     setState(() => _filters = const SearchFilters.empty());
-    unawaited(_runSearch());
+    _runSearchNow();
   }
 
   void _rememberQuery(String query) {
@@ -138,7 +148,7 @@ class _SearchScreenState extends State<SearchScreen> {
   void _applyRecentQuery(String query) {
     _controller.text = query;
     _controller.selection = TextSelection.collapsed(offset: query.length);
-    unawaited(_runSearch());
+    _runSearchNow();
   }
 
   void _playAudioResult(SearchResult result) {
@@ -153,7 +163,7 @@ class _SearchScreenState extends State<SearchScreen> {
           duration: Duration(seconds: 3),
         ),
       );
-      unawaited(_runSearch());
+      _runSearchNow();
       return;
     }
 
@@ -174,7 +184,7 @@ class _SearchScreenState extends State<SearchScreen> {
           duration: Duration(seconds: 3),
         ),
       );
-      unawaited(_runSearch());
+      _runSearchNow();
       return;
     }
 
@@ -238,7 +248,8 @@ class _SearchScreenState extends State<SearchScreen> {
             appBar: const TtsAppBar(title: 'Search'),
             body: Consumer<CatalogService>(
               builder: (context, catalogService, _) {
-                if (catalogService.isLoading && catalogService.catalog == null) {
+                if (catalogService.isLoading &&
+                    catalogService.catalog == null) {
                   return const LoadingCard(message: 'Loading catalogue…');
                 }
 
@@ -248,7 +259,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     kind: SearchEmptyKind.catalogueUnavailable,
                     onRetry: () async {
                       await catalogService.rescan();
-                      if (mounted) unawaited(_runSearch());
+                      if (mounted) _runSearchNow();
                     },
                   );
                 }
@@ -308,7 +319,7 @@ class _SearchScreenState extends State<SearchScreen> {
                             ),
                           ),
                           textInputAction: TextInputAction.search,
-                          onSubmitted: (_) => unawaited(_runSearch()),
+                          onSubmitted: (_) => _runSearchNow(),
                         ),
                       ),
                     ),
@@ -324,7 +335,7 @@ class _SearchScreenState extends State<SearchScreen> {
                         queryActive: queryActive,
                         onFiltersChanged: (filters) {
                           setState(() => _filters = filters);
-                          unawaited(_runSearch());
+                          _runSearchNow();
                         },
                       ),
                     ),

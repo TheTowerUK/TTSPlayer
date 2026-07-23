@@ -22,7 +22,7 @@ class MusicArtistDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: TtsAppBar(title: 'Artist'),
+      appBar: const TtsAppBar(title: 'Artist'),
       body: Consumer<CatalogService>(
         builder: (context, catalogService, _) {
           final catalog = catalogService.catalog;
@@ -43,7 +43,8 @@ class MusicArtistDetailScreen extends StatelessWidget {
             return EmptyState(
               icon: Icons.person_outline,
               title: 'Artist no longer in catalogue.',
-              subtitle: 'This artist may have been removed by a catalogue refresh.',
+              subtitle:
+                  'This artist may have been removed by a catalogue refresh.',
               actionLabel: 'Back',
               onAction: () => Navigator.maybePop(context),
             );
@@ -51,71 +52,128 @@ class MusicArtistDetailScreen extends StatelessWidget {
 
           final canPlayArtist =
               MusicQueueSeeding.hasPlayableTracks(artist.tracksInAlbumOrder);
+          final albums = artist.albums;
+          final tracks = artist.tracks;
 
           return Scrollbar(
             thumbVisibility: true,
-            child: ListView(
-              key: Key('music_artist_detail_${artist.groupKey}'),
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              children: [
-                Text(artist.displayName, style: AppTypography.sectionTitle),
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  '${artist.albumCount} albums · ${artist.trackCount} tracks',
-                  style: AppTypography.cardSubtitle,
-                ),
-                const SizedBox(height: AppSpacing.base),
-                Semantics(
-                  button: true,
-                  enabled: canPlayArtist,
-                  label: 'Play artist ${artist.displayName}',
-                  excludeSemantics: true,
-                  child: FilledButton.icon(
-                    key: const Key('music_artist_play'),
-                    onPressed: canPlayArtist
-                        ? () => openMusicPlayerFromArtist(context, artist: artist)
-                        : null,
-                    icon: const Icon(Icons.play_arrow),
-                    label: const Text('Play artist'),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      minimumSize: const Size.fromHeight(48),
-                    ),
+            child: CustomScrollView(
+              key: PageStorageKey<String>(
+                'music_artist_detail_${artist.groupKey}',
+              ),
+              slivers: [
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.lg,
+                    AppSpacing.lg,
+                    0,
+                  ),
+                  sliver: SliverList(
+                    delegate: SliverChildListDelegate.fixed([
+                      Text(
+                        artist.displayName,
+                        style: AppTypography.sectionTitle,
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(
+                        '${artist.albumCount} albums · ${artist.trackCount} tracks',
+                        style: AppTypography.cardSubtitle,
+                      ),
+                      const SizedBox(height: AppSpacing.base),
+                      Semantics(
+                        button: true,
+                        enabled: canPlayArtist,
+                        label: 'Play artist ${artist.displayName}',
+                        excludeSemantics: true,
+                        child: FilledButton.icon(
+                          key: const Key('music_artist_play'),
+                          onPressed: canPlayArtist
+                              ? () => openMusicPlayerFromArtist(
+                                    context,
+                                    artist: artist,
+                                  )
+                              : null,
+                          icon: const Icon(Icons.play_arrow),
+                          label: const Text('Play artist'),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            minimumSize: const Size.fromHeight(48),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.section),
+                      const SectionHeader(title: 'Albums'),
+                      const SizedBox(height: AppSpacing.sm),
+                      if (albums.isEmpty)
+                        const Text(
+                          'No albums.',
+                          style: AppTypography.bodyMuted,
+                        ),
+                    ]),
                   ),
                 ),
-                const SizedBox(height: AppSpacing.section),
-                const SectionHeader(title: 'Albums'),
-                const SizedBox(height: AppSpacing.sm),
-                if (artist.albums.isEmpty)
-                  const Text('No albums.', style: AppTypography.bodyMuted)
-                else
-                  ...artist.albums.map(
-                    (album) => MusicAlbumListTile(
-                      album: album,
-                      onTap: () => openMusicAlbumDetailScreen(
-                        context,
-                        albumGroupKey: album.groupKey,
+                if (albums.isNotEmpty)
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg,
+                    ),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          final album = albums[index];
+                          return MusicAlbumListTile(
+                            album: album,
+                            onTap: () => openMusicAlbumDetailScreen(
+                              context,
+                              albumGroupKey: album.groupKey,
+                            ),
+                          );
+                        },
+                        childCount: albums.length,
                       ),
                     ),
                   ),
-                const SizedBox(height: AppSpacing.section),
-                const SectionHeader(title: 'Tracks'),
-                const SizedBox(height: AppSpacing.sm),
-                ...artist.tracks.map(
-                  (track) => MusicTrackListTile(
-                    track: track,
-                    onTap: () => openMusicTrackDetailScreen(
-                      context,
-                      trackId: track.id,
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      AppSpacing.lg,
+                      AppSpacing.section,
+                      AppSpacing.lg,
+                      AppSpacing.sm,
                     ),
-                    onPlay: track.status.isPlayable
-                        ? () => openMusicPlayerFromArtistTrack(
-                              context,
-                              artist: artist,
-                              track: track,
-                            )
-                        : null,
-                    playSemanticsLabel: 'Play ${track.title} from artist',
+                    child: SectionHeader(title: 'Tracks'),
+                  ),
+                ),
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    0,
+                    AppSpacing.lg,
+                    AppSpacing.lg,
+                  ),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final track = tracks[index];
+                        return MusicTrackListTile(
+                          track: track,
+                          onTap: () => openMusicTrackDetailScreen(
+                            context,
+                            trackId: track.id,
+                          ),
+                          onPlay: track.status.isPlayable
+                              ? () => openMusicPlayerFromArtistTrack(
+                                    context,
+                                    artist: artist,
+                                    track: track,
+                                  )
+                              : null,
+                          playSemanticsLabel: 'Play ${track.title} from artist',
+                        );
+                      },
+                      childCount: tracks.length,
+                    ),
                   ),
                 ),
               ],

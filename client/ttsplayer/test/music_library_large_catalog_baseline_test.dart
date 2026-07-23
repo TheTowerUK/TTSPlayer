@@ -602,28 +602,38 @@ void main() {
       final search = SearchService();
       await search.ensureIndex(catalog);
 
-      // SearchService is synchronous after index build — sequential replacement.
-      final queries = [
+      // Deterministic deferred ownership: slow query A, then fast query C.
+      search.debugSearchDelay = const Duration(milliseconds: 60);
+      final olderFuture = search.searchCatalog(
+        catalog,
         Phase56Sentinels.titleToken,
-        Phase56Sentinels.artistToken,
-        Phase56Sentinels.albumToken,
+        const SearchFilters(),
+      );
+
+      search.debugSearchDelay = Duration.zero;
+      final latest = await search.searchCatalog(
+        catalog,
         Phase56Sentinels.absentToken,
-        Phase56Sentinels.titleToken,
-      ];
-      List? last;
-      for (final q in queries) {
-        last = await search.searchCatalog(catalog, q, const SearchFilters());
-      }
-      expect(last, isNotEmpty);
+        const SearchFilters(),
+      );
+      expect(latest, isEmpty);
+
+      final older = await olderFuture;
       expect(
-        last!.any((r) => r.item.id == Phase56Sentinels.titleTrackId),
+        older.any((r) => r.item.id == Phase56Sentinels.titleTrackId),
         isTrue,
       );
+
+      // Screen-level generation token (SearchScreen) discards older publishes;
+      // service returns independent futures. Proven in search_presentation_test
+      // and music_search_list_hardening_test.
       baseline.observe(
         'mp13_note',
-        'SearchService sync after index; async stale discard is SearchScreen '
-            '(150ms debounce) — Step 4',
+        'SearchService concurrent futures independent; '
+            'SearchScreen generation + dispose bump owns publish',
       );
+      baseline.observe('mp13_latest_empty', latest.isEmpty);
+      baseline.observe('mp13_older_had_title_hit', true);
     });
 
     test('MP14 — no-results behaviour', () async {
@@ -681,7 +691,8 @@ void main() {
       await tester.pump();
       sw.stop();
 
-      expect(find.byKey(const Key('music_artists_list')), findsOneWidget);
+      expect(find.byKey(const PageStorageKey<String>('music_artists_list')),
+          findsOneWidget);
       final mountedTiles = find.byType(MusicArtistListTile).evaluate().length;
       expect(mountedTiles, greaterThan(0));
       expect(mountedTiles, lessThan(projection.artistCount));
@@ -718,7 +729,8 @@ void main() {
       await tester.pump();
       sw.stop();
 
-      expect(find.byKey(const Key('music_albums_list')), findsOneWidget);
+      expect(find.byKey(const PageStorageKey<String>('music_albums_list')),
+          findsOneWidget);
       final mountedTiles = find.byType(MusicAlbumListTile).evaluate().length;
       expect(mountedTiles, greaterThan(0));
       expect(mountedTiles, lessThan(projection.albumCount));
@@ -752,13 +764,14 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byKey(const Key('music_tracks_list')), findsOneWidget);
+      expect(find.byKey(const PageStorageKey<String>('music_tracks_list')),
+          findsOneWidget);
       final beforeKeys = _mountedTrackKeys(tester);
       expect(beforeKeys, isNotEmpty);
       expect(beforeKeys.length, lessThan(projection.trackCount));
 
       await tester.drag(
-        find.byKey(const Key('music_tracks_list')),
+        find.byKey(const PageStorageKey<String>('music_tracks_list')),
         const Offset(0, -2400),
       );
       await tester.pumpAndSettle();
@@ -777,8 +790,8 @@ void main() {
       baseline.observe('mp17_track_count', projection.trackCount);
       baseline.observe(
         'mp17_album_detail_note',
-        'MusicAlbumDetailScreen eagerly spreads all track tiles into ListView '
-            'children — Step 4 rendering candidate',
+        'MusicAlbumDetailScreen / MusicArtistDetailScreen use SliverList '
+            'builders (Step 4)',
       );
     });
 
@@ -787,8 +800,6 @@ void main() {
       final catalog = phase56SmallCatalog();
       final service = MusicLibraryService();
       final projection = service.projectionFor(catalog);
-      final artist = projection.artists.first;
-      final album = artist.albums.first;
       await _configureViewport(tester);
 
       await tester.pumpWidget(
@@ -800,55 +811,40 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Scroll artists list.
-      await tester.drag(
-        find.byKey(const Key('music_artists_list')),
-        const Offset(0, -800),
-      );
+      final listFinder =
+          find.byKey(const PageStorageKey<String>('music_artists_list'));
+      await tester.drag(listFinder, const Offset(0, -900));
       await tester.pumpAndSettle();
 
-      await tester.pumpWidget(
-        _musicHarness(
-          catalog: catalog,
-          musicLibrary: service,
-          child: MusicArtistDetailScreen(artistGroupKey: artist.groupKey),
-        ),
-      );
-      await tester.pumpAndSettle();
-      expect(find.textContaining(artist.displayName), findsWidgets);
+      final offsetBefore = tester
+          .state<ScrollableState>(find.byType(Scrollable).first)
+          .position
+          .pixels;
+      expect(offsetBefore, greaterThan(0));
 
-      await tester.pumpWidget(
-        _musicHarness(
-          catalog: catalog,
-          musicLibrary: service,
-          child: MusicAlbumDetailScreen(albumGroupKey: album.groupKey),
-        ),
-      );
+      final mountedTile = find.byType(MusicArtistListTile).first;
+      await tester.tap(mountedTile);
+      await tester.pumpAndSettle();
+      expect(find.byType(MusicArtistDetailScreen), findsOneWidget);
+
+      Navigator.of(
+        tester.element(find.byType(MusicArtistDetailScreen)),
+      ).pop();
       await tester.pumpAndSettle();
 
-      // Return to artists list — current production pattern rebuilds the
-      // screen widget; MaterialPageRoute scroll retention is not used here.
-      await tester.pumpWidget(
-        _musicHarness(
-          catalog: catalog,
-          musicLibrary: service,
-          child: const MusicArtistsScreen(),
-        ),
-      );
-      await tester.pumpAndSettle();
-      expect(find.byKey(const Key('music_artists_list')), findsOneWidget);
-
-      // Projection must remain the memoised instance across navigations.
+      final offsetAfter = tester
+          .state<ScrollableState>(find.byType(Scrollable).first)
+          .position
+          .pixels;
+      expect(offsetAfter, closeTo(offsetBefore, 1.0));
       expect(
         identical(service.projectionFor(catalog), projection),
         isTrue,
       );
-      baseline.observe(
-        'mp18_scroll_retention',
-        'not retained across pumped screen replacements — baseline documented; '
-            'Navigator route retention deferred to Step 4 if needed',
-      );
+      baseline.observe('mp18_scroll_retention', 'retained via PageStorageKey');
       baseline.observe('mp18_projection_reused', true);
+      baseline.observe('mp18_offset_before', offsetBefore);
+      baseline.observe('mp18_offset_after', offsetAfter);
     });
   });
 
