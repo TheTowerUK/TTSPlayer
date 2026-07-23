@@ -10,6 +10,7 @@ import '../music_library_service.dart';
 import '../music_navigation.dart';
 import '../music_queue_seeding.dart';
 import '../widgets/music_artwork_thumbnail.dart';
+import '../widgets/music_catalog_ui_state.dart';
 import '../widgets/music_list_tiles.dart';
 
 class MusicAlbumDetailScreen extends StatelessWidget {
@@ -26,14 +27,10 @@ class MusicAlbumDetailScreen extends StatelessWidget {
       appBar: const TtsAppBar(title: 'Album'),
       body: Consumer<CatalogService>(
         builder: (context, catalogService, _) {
-          final catalog = catalogService.catalog;
-          if (catalog == null) {
-            return const EmptyState(
-              icon: Icons.album_outlined,
-              title: 'Album unavailable.',
-            );
-          }
+          final unavailable = musicCatalogUnavailableBody(catalogService);
+          if (unavailable != null) return unavailable;
 
+          final catalog = catalogService.catalog!;
           final album = context
               .read<MusicLibraryService>()
               .projectionFor(catalog)
@@ -41,8 +38,10 @@ class MusicAlbumDetailScreen extends StatelessWidget {
 
           if (album == null) {
             return EmptyState(
+              key: const Key('music_album_missing'),
               icon: Icons.album_outlined,
               title: 'Album no longer in catalogue.',
+              subtitle: 'It may have been removed by a catalogue refresh.',
               actionLabel: 'Back',
               onAction: () => Navigator.maybePop(context),
             );
@@ -114,41 +113,51 @@ class MusicAlbumDetailScreen extends StatelessWidget {
                       const SizedBox(height: AppSpacing.section),
                       const SectionHeader(title: 'Tracks'),
                       const SizedBox(height: AppSpacing.sm),
+                      if (tracks.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.only(bottom: AppSpacing.sm),
+                          child: Text(
+                            key: Key('music_album_tracks_empty'),
+                            'No tracks in this album.',
+                            style: AppTypography.bodyMuted,
+                          ),
+                        ),
                     ]),
                   ),
                 ),
-                // Lazy track rows — only visible tiles are built (Step 4).
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.lg,
-                    0,
-                    AppSpacing.lg,
-                    AppSpacing.lg,
-                  ),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final track = tracks[index];
-                        return MusicTrackListTile(
-                          track: track,
-                          onTap: () => openMusicTrackDetailScreen(
-                            context,
-                            trackId: track.id,
-                          ),
-                          onPlay: track.status.isPlayable
-                              ? () => openMusicPlayerFromAlbumTrack(
-                                    context,
-                                    album: album,
-                                    track: track,
-                                  )
-                              : null,
-                          playSemanticsLabel: 'Play ${track.title} from album',
-                        );
-                      },
-                      childCount: tracks.length,
+                if (tracks.isNotEmpty)
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.lg,
+                      0,
+                      AppSpacing.lg,
+                      AppSpacing.lg,
+                    ),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          final track = tracks[index];
+                          return MusicTrackListTile(
+                            track: track,
+                            onTap: () => openMusicTrackDetailScreen(
+                              context,
+                              trackId: track.id,
+                            ),
+                            onPlay: track.status.isPlayable
+                                ? () => openMusicPlayerFromAlbumTrack(
+                                      context,
+                                      album: album,
+                                      track: track,
+                                    )
+                                : null,
+                            playSemanticsLabel:
+                                'Play ${track.title} from album',
+                          );
+                        },
+                        childCount: tracks.length,
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
           );

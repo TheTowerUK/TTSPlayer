@@ -8,6 +8,10 @@ import '../../../theme/app_theme.dart';
 import '../../../widgets/artwork/artwork_image.dart';
 
 /// Square music artwork thumbnail using the existing artwork pipeline.
+///
+/// Layout box is fixed ([size]×[size]) before and after load. Failures fall
+/// back to [MediaPlaceholder] via [ArtworkImage] without changing dimensions.
+/// Decode hints match the square surface (not portrait search thumbs).
 class MusicArtworkThumbnail extends StatelessWidget {
   final MediaItem? item;
   final double size;
@@ -23,7 +27,7 @@ class MusicArtworkThumbnail extends StatelessWidget {
     final artworkService = context.read<ArtworkService>();
     final candidate = item == null
         ? artworkService.forMediaItem(
-            MediaItem(
+            const MediaItem(
               id: 'music-placeholder',
               title: 'Music',
               filePath: r'Y:\Media\Music\placeholder.mp3',
@@ -32,15 +36,20 @@ class MusicArtworkThumbnail extends StatelessWidget {
           )
         : artworkService.forMediaItem(item!);
 
-    return SizedBox(
-      width: size,
-      height: size,
-      child: ClipRRect(
-        borderRadius: AppRadius.chipRadius,
-        child: ArtworkImage(
-          candidate: candidate,
-          iconSize: AppIcons.md,
-          logicalDecodeSize: ArtworkSurfaceSizes.searchResultThumbnail(),
+    return Semantics(
+      // Decorative — titles/labels live on the surrounding list tile.
+      excludeSemantics: true,
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: ClipRRect(
+          borderRadius: AppRadius.chipRadius,
+          child: ArtworkImage(
+            candidate: candidate,
+            fit: BoxFit.cover,
+            iconSize: size >= 96 ? AppIcons.lg : AppIcons.md,
+            logicalDecodeSize: ArtworkSurfaceSizes.musicSquareThumbnail(size),
+          ),
         ),
       ),
     );

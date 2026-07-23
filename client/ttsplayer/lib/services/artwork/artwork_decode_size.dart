@@ -69,6 +69,9 @@ abstract final class ArtworkSurfaceSizes {
     return Size(width, height);
   }
 
+  /// Square music browse / detail / history thumbnails (Phase 5.6 Step 5).
+  static Size musicSquareThumbnail([double size = 56]) => Size(size, size);
+
   static Size favouritesRowThumbnail() => const Size(72, 48);
 
   static Size itemDetailPoster(double screenWidth) {

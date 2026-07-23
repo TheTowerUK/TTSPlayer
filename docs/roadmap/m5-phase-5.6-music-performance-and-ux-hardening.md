@@ -1,12 +1,13 @@
 # M5 Phase 5.6 — Music Library Performance, Scale and UX Hardening
 
-**Status:** **IN PROGRESS** — Step 4 search/list hardening complete (2026-07-23); Steps 5–6 pending
+**Status:** **IN PROGRESS** — Step 5 artwork/UI-state hardening complete (2026-07-23); Step 6 pending
 **Milestone:** M5 — Music
 **Branch:** `m5-development`
 **Predecessor:** Phase 5.5 complete (2026-07-23) — ADR-022 **Accepted**
 **Step 2 commit:** `34dc00d` — `test(music): add large-library performance baselines`
 **Step 3 commit:** `5a5e1bb` — `perf(music): optimise library projection`
-**Step 4 commit:** `perf(music): harden search and library rendering`
+**Step 4 commit:** `6b1574d` — `perf(music): harden search and library rendering`
+**Step 5 commit:** `fix(music): harden artwork and library states`
 
 → [M5 plan](./m5-plan.md)
 → [Phase 5.5 closure](./m5-phase-5.5-closure-report.md)
@@ -683,10 +684,70 @@ Artwork fallback UX, missing-poster polish, any residual empty/error presentatio
 
 ---
 
-## Open Questions (resolve in Step 5+)
+## Step 5 — Artwork and UI-state hardening (complete 2026-07-23)
+
+### Artwork precedence (unchanged)
+
+```text
+MediaItem.thumbnailPath (if file exists)
+    ↓
+Stem / named sidecar beside the media file
+    ↓
+Folder art in the media directory
+    ↓
+MediaPlaceholder (music visual kind)
+```
+
+No embedded-tag extraction and no remote artwork download. Artist/album tiles use `representativeTrack` through the same pipeline.
+
+### Fit and layout policy
+
+- Music thumbs are **square** fixed `SizedBox(size×size)` + `ClipRRect`
+- Images use **`BoxFit.cover`** (no stretch)
+- Placeholders are centred icons in the **same layout box**
+- Decode hints use `ArtworkSurfaceSizes.musicSquareThumbnail(size)` (not portrait search thumbs)
+- `ArtworkImage` fills via `SizedBox.expand` so load/placeholder do not shift text
+
+### Cache ownership
+
+| Layer | Owner |
+|---|---|
+| Candidate resolution LRU | `ArtworkService` (capacity 500; cleared on catalogue replace) |
+| Pixel decode cache | Global Flutter `PaintingBinding.imageCache` (ADR-015, 100 MiB) |
+
+No second artwork cache introduced.
+
+### Loading / empty / error matrix
+
+| State | Presentation |
+|---|---|
+| Loading (no catalog yet) | `LoadingCard` — `music_catalog_loading` |
+| Catalog load failure | `EmptyState` + Retry — `music_catalog_load_error` (path/URL redacted) |
+| No catalog | `EmptyState` — `music_catalog_missing` |
+| Empty audio library | `EmptyState` — `music_library_empty` |
+| Empty artists/albums/tracks | Dedicated empty states with subtitles |
+| Invalid artist/album route | Missing empty state + Back |
+| Album/artist empty sections | Inline muted copy under section headers |
+| Degraded reload (prior catalog kept) | Non-blocking banner — `music_catalog_degraded_banner` |
+
+### Partial metadata
+
+Track rows use `MusicConstants` via `musicDisplayTitle` / `Artist` / `Album` (whitespace → unknown). Grouping/sort unchanged.
+
+### Diagnostics
+
+No new aggregate fields (existing artwork LRU + image-cache metrics remain sufficient).
+
+### Step 5 completion status
+
+**Complete** for artwork/UI-state scope. Phase 5.6 remains **IN PROGRESS** (Step 6 pending).
+
+---
+
+## Open Questions (resolve in Step 6+)
 
 1. ~~Exact track counts for 1k/10k/40k profiles~~ — **resolved:** 1,010 / 10,010 / 40,010 audio.
-2. Whether projection build should expose a timed diagnostic field — still open for Step 5/6.
+2. Whether projection build should expose a timed diagnostic field — still open for Step 6.
 3. ~~Whether linear `findTrackById` becomes a map index in Step 3~~ — **done** (Step 3).
 4. ~~Numeric Windows workstation thresholds~~ — **proposed** in Step 2 section (watch bands).
 5. Naming of the post-5.6 M5 release-closure phase — still open.
@@ -694,10 +755,10 @@ Artwork fallback UX, missing-poster polish, any residual empty/error presentatio
 
 ---
 
-## Next Step Handoff — Step 5
+## Next Step Handoff — Step 6
 
-**Step 5 — Artwork and empty/error UX hardening**
+**Step 6 — Formal Windows runtime validation and Phase 5.6 closure**
 
-Harden artwork fallbacks and loading/empty/error presentation without changing catalogue authority or playback contracts.
+Run controlled Windows runtime scenarios against large-library / live catalogue where available; publish closure report; do not expand feature scope.
 
-Expected commit pattern: follow phase plan.
+Expected commit pattern: follow phase plan (`test` / `docs`).

@@ -9,6 +9,7 @@ import '../../../widgets/tts_app_bar.dart';
 import '../music_library_service.dart';
 import '../music_navigation.dart';
 import '../music_queue_seeding.dart';
+import '../widgets/music_catalog_ui_state.dart';
 import '../widgets/music_list_tiles.dart';
 
 class MusicArtistDetailScreen extends StatelessWidget {
@@ -25,15 +26,10 @@ class MusicArtistDetailScreen extends StatelessWidget {
       appBar: const TtsAppBar(title: 'Artist'),
       body: Consumer<CatalogService>(
         builder: (context, catalogService, _) {
-          final catalog = catalogService.catalog;
-          if (catalog == null) {
-            return const EmptyState(
-              icon: Icons.person_outline,
-              title: 'Artist unavailable.',
-              subtitle: 'The catalogue is no longer loaded.',
-            );
-          }
+          final unavailable = musicCatalogUnavailableBody(catalogService);
+          if (unavailable != null) return unavailable;
 
+          final catalog = catalogService.catalog!;
           final artist = context
               .read<MusicLibraryService>()
               .projectionFor(catalog)
@@ -41,6 +37,7 @@ class MusicArtistDetailScreen extends StatelessWidget {
 
           if (artist == null) {
             return EmptyState(
+              key: const Key('music_artist_missing'),
               icon: Icons.person_outline,
               title: 'Artist no longer in catalogue.',
               subtitle:
@@ -107,7 +104,8 @@ class MusicArtistDetailScreen extends StatelessWidget {
                       const SizedBox(height: AppSpacing.sm),
                       if (albums.isEmpty)
                         const Text(
-                          'No albums.',
+                          key: Key('music_artist_albums_empty'),
+                          'No albums for this artist.',
                           style: AppTypography.bodyMuted,
                         ),
                     ]),
@@ -134,48 +132,63 @@ class MusicArtistDetailScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                const SliverToBoxAdapter(
+                SliverToBoxAdapter(
                   child: Padding(
-                    padding: EdgeInsets.fromLTRB(
+                    padding: const EdgeInsets.fromLTRB(
                       AppSpacing.lg,
                       AppSpacing.section,
                       AppSpacing.lg,
                       AppSpacing.sm,
                     ),
-                    child: SectionHeader(title: 'Tracks'),
-                  ),
-                ),
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.lg,
-                    0,
-                    AppSpacing.lg,
-                    AppSpacing.lg,
-                  ),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final track = tracks[index];
-                        return MusicTrackListTile(
-                          track: track,
-                          onTap: () => openMusicTrackDetailScreen(
-                            context,
-                            trackId: track.id,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SectionHeader(title: 'Tracks'),
+                        if (tracks.isEmpty) ...[
+                          const SizedBox(height: AppSpacing.sm),
+                          const Text(
+                            key: Key('music_artist_tracks_empty'),
+                            'No tracks for this artist.',
+                            style: AppTypography.bodyMuted,
                           ),
-                          onPlay: track.status.isPlayable
-                              ? () => openMusicPlayerFromArtistTrack(
-                                    context,
-                                    artist: artist,
-                                    track: track,
-                                  )
-                              : null,
-                          playSemanticsLabel: 'Play ${track.title} from artist',
-                        );
-                      },
-                      childCount: tracks.length,
+                        ],
+                      ],
                     ),
                   ),
                 ),
+                if (tracks.isNotEmpty)
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.lg,
+                      0,
+                      AppSpacing.lg,
+                      AppSpacing.lg,
+                    ),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          final track = tracks[index];
+                          return MusicTrackListTile(
+                            track: track,
+                            onTap: () => openMusicTrackDetailScreen(
+                              context,
+                              trackId: track.id,
+                            ),
+                            onPlay: track.status.isPlayable
+                                ? () => openMusicPlayerFromArtistTrack(
+                                      context,
+                                      artist: artist,
+                                      track: track,
+                                    )
+                                : null,
+                            playSemanticsLabel:
+                                'Play ${track.title} from artist',
+                          );
+                        },
+                        childCount: tracks.length,
+                      ),
+                    ),
+                  ),
               ],
             ),
           );

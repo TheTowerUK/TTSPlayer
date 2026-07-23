@@ -602,7 +602,25 @@ MusicLibraryProjection
 
 
 
-**Phase 5.6 (in progress):** [Music library performance, scale and UX hardening](../roadmap/m5-phase-5.6-music-performance-and-ux-hardening.md) — Step 4 search/list hardening complete. Step 5 next: artwork and empty/error UX.
+**Phase 5.6 (in progress):** [Music library performance, scale and UX hardening](../roadmap/m5-phase-5.6-music-performance-and-ux-hardening.md) — Step 5 artwork/UI-state hardening complete. Step 6 next: Windows runtime validation and phase closure.
+
+#### Music artwork flow (Phase 5.6 Step 5)
+
+```text
+Music item (or album/artist representativeTrack)
+    ↓
+ArtworkService resolution (thumb → sidecar → folder → placeholder)
+    ↓
+stable ArtworkCandidate (+ LRU)
+    ↓
+ArtworkImage → Flutter image cache (ADR-015)
+    ↓
+fixed square layout container (BoxFit.cover)
+    ↓
+MediaPlaceholder on failure (same box)
+```
+
+Music browse/detail/history surfaces use `MusicArtworkThumbnail`. Loading / missing / failure catalogue gates are shared via `musicCatalogUnavailableBody` / `musicCatalogDegradedBanner`.
 
 
 

@@ -7,6 +7,7 @@ import '../../../widgets/empty_state.dart';
 import '../../../widgets/tts_app_bar.dart';
 import '../music_library_service.dart';
 import '../music_navigation.dart';
+import '../widgets/music_catalog_ui_state.dart';
 import '../widgets/music_list_tiles.dart';
 
 class MusicAlbumsScreen extends StatelessWidget {
@@ -18,42 +19,50 @@ class MusicAlbumsScreen extends StatelessWidget {
       appBar: const TtsAppBar(title: 'Albums'),
       body: Consumer<CatalogService>(
         builder: (context, catalogService, _) {
-          final catalog = catalogService.catalog;
-          if (catalog == null) {
-            return const EmptyState(
-              icon: Icons.album_outlined,
-              title: 'No catalogue loaded.',
-            );
-          }
+          final unavailable = musicCatalogUnavailableBody(catalogService);
+          if (unavailable != null) return unavailable;
 
+          final catalog = catalogService.catalog!;
           final albums =
               context.read<MusicLibraryService>().projectionFor(catalog).albums;
 
           if (albums.isEmpty) {
             return const EmptyState(
+              key: Key('music_albums_empty'),
               icon: Icons.album_outlined,
               title: 'No albums found.',
+              subtitle: 'This catalogue has no audio grouped by album.',
             );
           }
 
-          return Scrollbar(
-            thumbVisibility: true,
-            child: ListView.separated(
-              key: const PageStorageKey<String>('music_albums_list'),
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-              itemCount: albums.length,
-              separatorBuilder: (_, __) => const Divider(height: 1),
-              itemBuilder: (context, index) {
-                final album = albums[index];
-                return MusicAlbumListTile(
-                  album: album,
-                  onTap: () => openMusicAlbumDetailScreen(
-                    context,
-                    albumGroupKey: album.groupKey,
+          final degraded = musicCatalogDegradedBanner(catalogService);
+
+          return Column(
+            children: [
+              if (degraded != null) degraded,
+              Expanded(
+                child: Scrollbar(
+                  thumbVisibility: true,
+                  child: ListView.separated(
+                    key: const PageStorageKey<String>('music_albums_list'),
+                    padding:
+                        const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                    itemCount: albums.length,
+                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    itemBuilder: (context, index) {
+                      final album = albums[index];
+                      return MusicAlbumListTile(
+                        album: album,
+                        onTap: () => openMusicAlbumDetailScreen(
+                          context,
+                          albumGroupKey: album.groupKey,
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
+                ),
+              ),
+            ],
           );
         },
       ),

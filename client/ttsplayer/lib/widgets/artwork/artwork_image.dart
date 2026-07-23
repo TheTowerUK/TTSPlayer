@@ -79,23 +79,27 @@ class ArtworkImage extends StatelessWidget {
     final decode = _decodeSizeFor(context);
 
     if (loadUri != null && _isNetworkUri(loadUri)) {
-      child = Image.network(
-        loadUri,
-        fit: fit,
-        cacheWidth: decode.cacheWidth,
-        cacheHeight: decode.cacheHeight,
-        errorBuilder: (_, __, ___) => _placeholder(),
+      child = SizedBox.expand(
+        child: Image.network(
+          loadUri,
+          fit: fit,
+          cacheWidth: decode.cacheWidth,
+          cacheHeight: decode.cacheHeight,
+          errorBuilder: (_, __, ___) => _placeholder(),
+        ),
       );
     } else if (loadUri != null) {
-      child = Image.file(
-        _fileForLocalUri(loadUri),
-        fit: fit,
-        cacheWidth: decode.cacheWidth,
-        cacheHeight: decode.cacheHeight,
-        errorBuilder: (_, __, ___) => _placeholder(),
+      child = SizedBox.expand(
+        child: Image.file(
+          _fileForLocalUri(loadUri),
+          fit: fit,
+          cacheWidth: decode.cacheWidth,
+          cacheHeight: decode.cacheHeight,
+          errorBuilder: (_, __, ___) => _placeholder(),
+        ),
       );
     } else {
-      child = _placeholder();
+      child = SizedBox.expand(child: _placeholder());
     }
 
     if (radius != null) {
