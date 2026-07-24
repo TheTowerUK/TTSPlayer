@@ -1,5 +1,36 @@
 # Release History
 
+## M5 — Music
+
+**Version:** `v0.6.0`  
+**Milestone:** M5 — **Complete** 2026-07-24  
+**Tags:** `v0.6.0` / `m5-complete`
+
+### Added
+
+- Music catalogue indexing (`media_kind`, schema v3, scanner 0.4.0)
+- Artist / album / track browsing and detail surfaces
+- Dedicated music player with in-memory queue (next/previous, album/artist seeding)
+- Continue Listening and Recently Played (music-only persistence)
+- Playback session persistence (queue, active track, position; no autoplay)
+- Large-library performance fixtures, projection indexes, search/list hardening
+- Opt-in Windows runtime harnesses for Phases 5.3–5.6
+
+### Changed
+
+- ADR-020–023 Accepted; music projection memoised by catalogue identity
+- Diagnostics extended with music listening and playback-session aggregates (redacted)
+
+### Known limitations
+
+- No shuffle/repeat, playlists, or music favourites redesign
+- Stale schema-v2 catalogues require rescan for music
+- Some scanner durations may be null until MediaKit loads the file
+
+→ [M5 complete](./m5-complete.md)
+
+---
+
 ## M4 — User Experience and Platform Integration
 
 **Date:** July 2026  

@@ -2,11 +2,12 @@
 
 
 
-**Status:** **In progress** — Phase 5.6 complete (2026-07-24); M5 release/docs next — [closure](../roadmap/m5-phase-5.6-closure-report.md)
+**Status:** ✅ **COMPLETE** (2026-07-24) — [M5 release summary](../release/m5-complete.md)
 
 **Related roadmap:** [M5 — Music](../roadmap/m5-plan.md) · [Phase 5.1 spec](../roadmap/m5-phase-5.1-music-catalogue-metadata.md)
 
-**Predecessor baseline:** M4 complete — `v0.5.0`
+**Predecessor baseline:** M4 complete — `v0.5.0`  
+**Milestone tags:** `m5-complete` · `v0.6.0`
 
 
 

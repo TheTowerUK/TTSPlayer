@@ -30,13 +30,13 @@ Planning and implementation documents for [M4 — User Experience and Platform I
 | [Caching](./caching.md) | 4.5 | **Implemented / Accepted** — [spec](../roadmap/m4-phase-4.5-performance-caching.md) · ADR-014–016 |
 | [Diagnostics](./diagnostics.md) | 4.6 | **Implemented / Accepted** — [spec](../roadmap/m4-phase-4.6-diagnostics-supportability.md) · ADR-017–019 |
 
-## M5 planning (active)
+## M5 — Music (complete)
 
-Planning and catalogue foundation for [M5 — Music](../roadmap/m5-plan.md). **Phase 5.6 complete** (2026-07-24); M5 release/docs next.
+Planning and catalogue foundation for [M5 — Music](../roadmap/m5-plan.md). **M5 complete** (2026-07-24) — [release](../release/m5-complete.md).
 
 | Document | Phase | Status |
 |---|---|---|
-| [Music](./music.md) | 5.0–5.6 ✅ | [M5 plan](../roadmap/m5-plan.md) · [Phase 5.6 closure](../roadmap/m5-phase-5.6-closure-report.md) · ADR-020/021/022 **Accepted** |
+| [Music](./music.md) | M5 ✅ | [M5 plan](../roadmap/m5-plan.md) · [M5 complete](../release/m5-complete.md) · ADR-020/021/022/023 **Accepted** |
 
 ## Architecture Decision Records
 

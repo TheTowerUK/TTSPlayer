@@ -1,14 +1,15 @@
 # M5 Phase 5.3 — Music Playback and Queue
 
-**Status:** **In progress** — Step 3 complete (2026-07-20); Step 2 complete; Step 1 complete; Gate 0 complete
+**Status:** ✅ **COMPLETE** (2026-07-21) — Gate 0 + Steps 1–3 + live validation
 **Milestone:** M5 — Music
 **Branch:** `m5-development`
 
 → [M5 plan](./m5-plan.md#phase-53--music-playback-and-queue)
 → [Music architecture](../architecture/music.md)
 → [Playback architecture](../architecture/playback.md)
-→ [ADR-022](../architecture/decisions/ADR-022-music-queue-and-listening-state.md)
-→ [ADR-023](../architecture/decisions/ADR-023-music-player-surface-architecture.md)
+→ [ADR-022](../architecture/decisions/ADR-022-music-queue-and-listening-state.md) — Accepted (M5.5)
+→ [ADR-023](../architecture/decisions/ADR-023-music-player-surface-architecture.md) — Accepted (M5.3)
+→ [M5 complete](../release/m5-complete.md)
 
 ---
 

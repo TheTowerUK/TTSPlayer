@@ -10,7 +10,9 @@ Milestone plans, phase specifications, and planning principles for TTSPlayer.
 
 ## Active milestone
 
-**M5 — Music** — [m5-plan.md](./m5-plan.md) · Phase **5.6 complete** (2026-07-24) — [closure](./m5-phase-5.6-closure-report.md) · next: M5 release/docs
+**M6 — Books / comics (and related expansion)** — planning handover after M5 tags.
+
+**M5 — Music** — ✅ Complete (2026-07-24) — [m5-plan.md](./m5-plan.md) · [release](../release/m5-complete.md)
 
 | Sub-phase | Document | Status |
 |---|---|---|
@@ -21,6 +23,7 @@ Milestone plans, phase specifications, and planning principles for TTSPlayer.
 | 5.4 | [Phase 5.4 spec](./m5-phase-5.4-listening-history-continue-listening.md) · [Closure](./m5-phase-5.4-closure-report.md) | ✅ Complete |
 | 5.5 | [Phase 5.5 spec](./m5-phase-5.5-playback-session-persistence.md) · [Closure](./m5-phase-5.5-closure-report.md) | ✅ Complete |
 | 5.6 | [Phase 5.6 spec](./m5-phase-5.6-music-performance-and-ux-hardening.md) · [closure](./m5-phase-5.6-closure-report.md) | ✅ Complete |
+| Release | [m5-complete.md](../release/m5-complete.md) | ✅ Complete |
 
 ---
 
@@ -28,6 +31,7 @@ Milestone plans, phase specifications, and planning principles for TTSPlayer.
 
 | Milestone | Plan | Release |
 |---|---|---|
+| M5 | [m5-plan.md](./m5-plan.md) | [m5-complete.md](../release/m5-complete.md) |
 | M4 | [m4-plan.md](./m4-plan.md) | [m4-release-summary.md](../release/m4-release-summary.md) |
 | M3.5 | [network-client-foundation.md](./network-client-foundation.md) · [m35-phase-4-plan.md](./m35-phase-4-plan.md) | [m3.5-media-access-complete.md](../release/m3.5-media-access-complete.md) |
 | M3 | [m3-personal-media-experience.md](./m3-personal-media-experience.md) | [v0.3.0.md](../release/v0.3.0.md) |

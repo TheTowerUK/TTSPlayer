@@ -220,4 +220,4 @@ Validate on Release binary (`flutter build windows --release`):
 | 21 | Roadmap / architecture current | ✅ |
 | 22 | README outside phase commit | ✅ |
 
-**Phase 5.5: COMPLETE.** Next: **Phase 5.6 — Release and Documentation** (includes deferred performance validation realignment).
+**Phase 5.5: COMPLETE.** Next was Phase 5.6 performance hardening (complete 2026-07-24); M5 release closure complete — [m5-complete.md](../release/m5-complete.md).

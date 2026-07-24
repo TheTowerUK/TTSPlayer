@@ -246,7 +246,7 @@ App-level validation through `PlaybackService` and player UI (`phase_44_windows_
 | Route guard | Pop existing `music:player:*` routes before push |
 | Empty group | Snackbar; no queue created |
 
-**Still deferred:** shuffle, repeat, queue panel, ADR-022 persistence envelope.
+**Still deferred beyond M5:** shuffle, repeat, queue panel UI. Session persistence shipped in M5.5 (ADR-022 Accepted). See [m5-complete.md](../release/m5-complete.md).
 
 → [M5.3 phase spec](../roadmap/m5-phase-5.3-music-playback-queue.md)
 
