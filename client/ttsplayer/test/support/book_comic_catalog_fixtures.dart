@@ -21,7 +21,7 @@ const kCatalogV4BookComicFixture = r'''
       "accessible": true
     }
   ],
-  "total_items": 6,
+  "total_items": 11,
   "folders": [
     {
       "id": "lib-media",
@@ -76,6 +76,55 @@ const kCatalogV4BookComicFixture = r'''
               "file_path": "Y:\\Media\\Comics\\Batman_01.cbr",
               "status": "available",
               "media_kind": "comic"
+            }
+          ],
+          "subfolders": []
+        },
+        {
+          "id": "mixed",
+          "name": "Mixed",
+          "path": "Y:\\Media\\Mixed",
+          "item_count": 5,
+          "items": [
+            {
+              "id": "mixed-vid",
+              "title": "Mixed Clip",
+              "file_path": "Y:\\Media\\Mixed\\clip.mp4",
+              "status": "available",
+              "media_kind": "video"
+            },
+            {
+              "id": "mixed-aud",
+              "title": "Mixed Song",
+              "file_path": "Y:\\Media\\Mixed\\song.mp3",
+              "status": "available",
+              "media_kind": "audio",
+              "artist": "Mixed Artist"
+            },
+            {
+              "id": "mixed-img",
+              "title": "Mixed Photo",
+              "file_path": "Y:\\Media\\Mixed\\photo.jpg",
+              "status": "available",
+              "media_kind": "image"
+            },
+            {
+              "id": "mixed-book",
+              "title": "Mixed Manual",
+              "file_path": "Y:\\Media\\Mixed\\manual.pdf",
+              "status": "available",
+              "media_kind": "book",
+              "author": "Docs Team",
+              "page_count": 12
+            },
+            {
+              "id": "mixed-comic",
+              "title": "Mixed Issue",
+              "file_path": "Y:\\Media\\Mixed\\issue.cbz",
+              "status": "available",
+              "media_kind": "comic",
+              "series": "Mixed Series",
+              "page_count": 18
             }
           ],
           "subfolders": []

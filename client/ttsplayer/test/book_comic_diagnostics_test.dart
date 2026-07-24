@@ -26,10 +26,10 @@ void main() {
     expect(snapshot.catalogue?.status, DiagnosticSectionStatus.complete);
     expect(snapshot.catalogue?.catalogueVersion, 4);
     expect(snapshot.catalogue?.scannerVersion, '0.5.0');
-    expect(snapshot.catalogue?.bookItemCount, 2);
-    expect(snapshot.catalogue?.comicItemCount, 2);
-    expect(snapshot.catalogue?.videoItemCount, 1);
-    expect(snapshot.catalogue?.audioItemCount, 1);
+    expect(snapshot.catalogue?.bookItemCount, 3);
+    expect(snapshot.catalogue?.comicItemCount, 3);
+    expect(snapshot.catalogue?.videoItemCount, 2);
+    expect(snapshot.catalogue?.audioItemCount, 2);
     expect(snapshot.catalogue?.supportedExtensionCount, greaterThan(20));
 
     final export = formatDiagnosticsExport(snapshot);

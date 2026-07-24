@@ -10,7 +10,13 @@ enum LibraryFilter {
   video('video'),
 
   /// Image extension items; subfolders remain visible.
-  images('images');
+  images('images'),
+
+  /// Book extension items (`.pdf`, `.epub`); subfolders remain visible.
+  books('books'),
+
+  /// Comic archive items (`.cbz`, `.cbr`); subfolders remain visible.
+  comics('comics');
 
   const LibraryFilter(this.storageKey);
 

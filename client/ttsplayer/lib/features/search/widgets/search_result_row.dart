@@ -4,8 +4,8 @@ import 'package:provider/provider.dart';
 import '../../../services/artwork/artwork_decode_size.dart';
 import '../../../services/artwork/artwork_service.dart';
 import '../../../models/media_item.dart';
-import '../../../models/media_kind.dart';
 import '../../../theme/app_theme.dart';
+import '../../../utils/media_kind_presentation.dart';
 import '../../../widgets/artwork/artwork_image.dart';
 import '../models/search_result.dart';
 
@@ -37,7 +37,7 @@ class SearchResultRow extends StatelessWidget {
 
     return Semantics(
       container: true,
-      label: '${_kindLabel(item)}: ${item.title}'
+      label: '${MediaKindPresentation.semanticsLabel(item)}'
           '${musicMeta.isNotEmpty ? ', $musicMeta' : ''}'
           '${contextLabel.isNotEmpty ? ', in $contextLabel' : ''}',
       child: Material(
@@ -103,7 +103,7 @@ class SearchResultRow extends StatelessWidget {
                       const SizedBox(height: AppSpacing.xs),
                       Row(
                         children: [
-                          _KindChip(label: _kindLabel(item)),
+                          _KindChip(label: MediaKindPresentation.labelFor(item)),
                           const SizedBox(width: AppSpacing.sm),
                           _ExtensionChip(label: item.extension.toUpperCase()),
                           if (!item.status.isPlayable) ...[
@@ -155,17 +155,6 @@ class SearchResultRow extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  static String _kindLabel(MediaItem item) {
-    return switch (item.mediaKind) {
-      MediaKind.video => 'Video',
-      MediaKind.audio => 'Audio',
-      MediaKind.image => 'Image',
-      MediaKind.book => 'Book',
-      MediaKind.comic => 'Comic',
-      MediaKind.unknown => 'Media',
-    };
   }
 
   static String _musicMetadataLine(MediaItem item) {

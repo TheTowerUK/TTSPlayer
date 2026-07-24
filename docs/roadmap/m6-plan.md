@@ -1,10 +1,11 @@
 # M6 — Books & Comics
 
-**Status:** **IN PROGRESS** — Phase 6.2 Books & comics library browsing (next)  
+**Status:** **IN PROGRESS** — Phase 6.3 Comic archive reader (next)  
 **Branch:** `m6-development`  
 **Development version:** `v0.7.0-dev` (proposed; app remains `0.6.0+1` until release)  
 **Predecessor:** M5 — tags `v0.6.0` / `m5-complete` (2026-07-24)  
-**Phase 6.1:** ✅ Complete (2026-07-24) — catalogue v4 / books & comics indexing
+**Phase 6.1:** ✅ Complete (2026-07-24) — catalogue v4 / books & comics indexing  
+**Phase 6.2:** ✅ Complete (2026-07-24) — browse / search / detail presentation (no readers)
 
 → [Books & comics architecture](../architecture/books-comics.md)  
 → [CBR/RAR evaluation](../architecture/cbr-rar-evaluation.md)  
@@ -101,7 +102,7 @@ M6 extends TTSPlayer from a **video + music** personal media application into a 
 |---|---|---|
 | **6.0** | Planning and Architecture | ✅ Complete |
 | **6.1** | Catalogue schema, media kinds, indexer formats (+ RAR/CBR provisional preferred) | ✅ **Complete** |
-| **6.2** | Books & comics library browsing / presentation | Planned |
+| **6.2** | Books & comics library browsing / presentation | ✅ Complete |
 | **6.3** | Comic archive reader (CBZ and CBR required) | Planned |
 | **6.4** | Book document reader (PDF/EPUB) | Planned |
 | **6.5** | Reading progress and Continue Reading | Planned |
@@ -192,28 +193,33 @@ M6 extends TTSPlayer from a **video + music** personal media application into a 
 
 **Objective:** Present book and comic items in folder browse and optional book/comic-aware detail surfaces without inventing categories.
 
-**Scope:**
+**Status:** ✅ Complete (2026-07-24)
+
+**Scope delivered:**
 
 - Folder browse recognition of book/comic kinds (labels, icons, open actions)
-- Item detail for books/comics (title fallback to filename; available metadata)
-- Search presentation labels for book/comic
-- Empty/missing artwork placeholders
-- Navigation into readers (stubs or “coming in 6.3/6.4” only if gated — prefer wiring after readers exist)
+- `LibraryFilter.books` / `LibraryFilter.comics` on folder browse
+- Item detail for books/comics (title, author/series, format, page count, archive type; non-reader stub)
+- Search kind chips (Book / Comic) + result labels; author/series search via Phase 6.1 haystack
+- Distinct literature vs comics placeholder artwork (no archive/PDF/EPUB cover extraction)
+- A/V isolation: `PlaybackService.play` refuses non-A/V; detail never routes to video/music players
+- Opt-in Windows runtime: `PHASE_62_RUNTIME=1` · `test/phase_62_books_comics_windows_runtime_test.dart`
 
-**Out of scope:** Reader implementations; progress persistence; dashboard “All Comics” aggregates.
+**Out of scope (unchanged):** Reader implementations; progress persistence; dashboard “All Comics” aggregates.
 
-**Architecture impact:** Folder UI, detail screens, search result rows, navigation helpers.
+**Architecture impact:** Folder UI, detail screens, search result rows, presentation helper (`MediaKindPresentation`), artwork visual kinds.
 
-**Automated tests:** Widget tests for labels/open actions; search presentation; video/music browse regression.
+**Automated tests:** `book_comic_presentation_test.dart`, search/filter extensions, video/music browse regression via full suite.
 
-**Runtime / manual:** Browse mixed folders on Windows; confirm folder-first labels.
+**Runtime:** Phase 6.2 Windows harness green (mixed folder, filters, search, detail stub, back nav, layout).
 
 **Definition of done:**
 
-- [ ] Book/comic items visible in real folders with correct kind presentation
-- [ ] No invented parent groups
-- [ ] Search shows kind without leaking paths
-- [ ] Focused + full suite green
+- [x] Book/comic items visible in real folders with correct kind presentation
+- [x] No invented parent groups
+- [x] Search shows kind without leaking paths
+- [x] Focused + full suite green
+- [x] Windows runtime opt-in harness green
 
 **Dependencies:** Phase 6.1.
 
@@ -480,6 +486,6 @@ Each checkbox must point to a test, runtime scenario, document section, build re
 
 ## Handoff
 
-**Next implementation phase:** **Phase 6.2 — Books & comics library browsing / presentation.**
+**Next implementation phase:** **Phase 6.3 — Comic archive reader (CBZ/CBR)** — begin with **Gate 0** (RAR/Windows spike).
 
 Phase 6.1 catalogue support is complete. Do not begin CBR reader work until Phase 6.3 Gate 0 passes.

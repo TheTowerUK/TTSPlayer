@@ -6,6 +6,7 @@ import '../services/artwork/artwork_decode_size.dart';
 import '../services/artwork/artwork_service.dart';
 import '../services/playback_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/media_kind_presentation.dart';
 import '../widgets/artwork/artwork_image.dart';
 import '../widgets/favourite_toggle_button.dart';
 import '../widgets/tts_app_bar.dart';
@@ -66,6 +67,37 @@ class _PosterArea extends StatelessWidget {
               MediaQuery.sizeOf(context).width,
             ),
           ),
+          Positioned(
+            top: 12,
+            left: 12,
+            child: Container(
+              padding: AppSpacing.chip,
+              decoration: BoxDecoration(
+                color: Colors.black.withAlpha(160),
+                borderRadius: AppRadius.chipRadius,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    MediaKindPresentation.iconFor(item),
+                    size: 14,
+                    color: AppColors.textPrimary,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    MediaKindPresentation.labelFor(item),
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: AppTypography.size11,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
           if (item.status != MediaItemStatus.available)
             Positioned(
               top: 12,
@@ -124,15 +156,23 @@ class _MetadataPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final chips = [
+    final chips = <String>[
+      MediaKindPresentation.labelFor(item),
+      if (item.isBook || item.isComic) ...[
+        if (item.author != null && item.author!.trim().isNotEmpty)
+          item.author!.trim(),
+        if (item.series != null && item.series!.trim().isNotEmpty)
+          item.series!.trim(),
+        if (item.pageCount != null) '${item.pageCount} pages',
+        if (item.isComic) _comicArchiveType(item.extension),
+      ],
       if (item.year != null) '${item.year}',
       if (item.formattedDuration != null) item.formattedDuration!,
-      if (item.author != null && item.author!.isNotEmpty) item.author!,
-      if (item.series != null && item.series!.isNotEmpty) item.series!,
-      if (item.pageCount != null) '${item.pageCount} pages',
+      if (item.isAudio) ...[
+        if (item.artist != null && item.artist!.isNotEmpty) item.artist!,
+        if (item.album != null && item.album!.isNotEmpty) item.album!,
+      ],
       item.extension.toUpperCase(),
-      if (item.isBook) 'Book',
-      if (item.isComic) 'Comic',
     ];
 
     return Padding(
@@ -147,6 +187,8 @@ class _MetadataPanel extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                   height: 1.2,
                 ),
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
           ),
           if (chips.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.iconGap),
@@ -159,6 +201,14 @@ class _MetadataPanel extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  static String _comicArchiveType(String extension) {
+    return switch (extension.toLowerCase()) {
+      'cbz' => 'ZIP archive',
+      'cbr' => 'RAR archive',
+      _ => 'Comic archive',
+    };
   }
 }
 
@@ -277,11 +327,7 @@ class _PlaySection extends StatelessWidget {
   }
 
   Widget _buildReaderPending(BuildContext context) {
-    final kindLabel = item.isComic
-        ? 'Comic'
-        : item.isBook
-            ? 'Book'
-            : 'Document';
+    final kindLabel = MediaKindPresentation.labelFor(item);
     return Padding(
       padding: AppSpacing.playSection,
       child: Column(
@@ -290,12 +336,16 @@ class _PlaySection extends StatelessWidget {
           SizedBox(
             height: 52,
             child: FilledButton.icon(
+              key: const Key('item_detail_reader_pending'),
               style: FilledButton.styleFrom(
                 disabledBackgroundColor: Colors.white10,
                 disabledForegroundColor: Colors.white30,
                 shape: AppRadius.buttonShape,
               ),
-              icon: const Icon(Icons.menu_book_outlined, size: AppIcons.standard),
+              icon: Icon(
+                MediaKindPresentation.iconFor(item),
+                size: AppIcons.standard,
+              ),
               label: Text(
                 'Open $kindLabel',
                 style: const TextStyle(
@@ -305,8 +355,9 @@ class _PlaySection extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.iconGap),
-          const Text(
-            'Indexed and browseable. Dedicated reader opens in a later M6 phase.',
+          Text(
+            key: const Key('item_detail_reader_pending_message'),
+            'Reader available in a later phase. $kindLabel files are indexed and browseable.',
             style: AppTypography.labelMuted,
             textAlign: TextAlign.center,
           ),

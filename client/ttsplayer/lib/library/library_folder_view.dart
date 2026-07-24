@@ -60,6 +60,8 @@ List<MediaFolder> _filterSubfolders(
     case LibraryFilter.foldersOnly:
     case LibraryFilter.video:
     case LibraryFilter.images:
+    case LibraryFilter.books:
+    case LibraryFilter.comics:
       return List<MediaFolder>.from(subfolders);
   }
 }
@@ -85,6 +87,20 @@ List<MediaItem> _filterItems(
       );
       return items
           .where((item) => imageSet.contains(item.extension))
+          .toList(growable: false);
+    case LibraryFilter.books:
+      final bookSet = SupportedExtensions.effectiveBookSet(
+        catalogSupported: catalogSupportedExtensions,
+      );
+      return items
+          .where((item) => bookSet.contains(item.extension))
+          .toList(growable: false);
+    case LibraryFilter.comics:
+      final comicSet = SupportedExtensions.effectiveComicSet(
+        catalogSupported: catalogSupportedExtensions,
+      );
+      return items
+          .where((item) => comicSet.contains(item.extension))
           .toList(growable: false);
     case LibraryFilter.all:
       return List<MediaItem>.from(items);

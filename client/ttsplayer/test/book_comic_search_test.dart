@@ -64,6 +64,34 @@ void main() {
     expect(audio.any((r) => r.item.mediaKind == MediaKind.audio), isTrue);
   });
 
+  test('media kind filter isolates books and comics', () {
+    final books = searchService.search(
+      'Manual',
+      const SearchFilters(mediaKind: MediaKind.book),
+    );
+    expect(books, isNotEmpty);
+    expect(books.every((r) => r.item.mediaKind == MediaKind.book), isTrue);
+
+    final comics = searchService.search(
+      'Night',
+      const SearchFilters(mediaKind: MediaKind.comic),
+    );
+    expect(comics, isNotEmpty);
+    expect(comics.every((r) => r.item.mediaKind == MediaKind.comic), isTrue);
+
+    final booksOnlyMixed = searchService.search(
+      'Mixed',
+      const SearchFilters(mediaKind: MediaKind.book),
+    );
+    expect(booksOnlyMixed.every((r) => r.item.mediaKind == MediaKind.book), isTrue);
+    expect(booksOnlyMixed.any((r) => r.item.id == 'mixed-book'), isTrue);
+  });
+
+  test('mediaKindsFor includes book and comic', () {
+    final kinds = searchService.mediaKindsFor(catalog);
+    expect(kinds, containsAll([MediaKind.book, MediaKind.comic, MediaKind.video]));
+  });
+
   test('extensions list includes book and comic formats', () {
     final extensions = searchService.extensionsFor(catalog);
     expect(extensions, containsAll(['pdf', 'epub', 'cbz', 'cbr', 'mp4', 'mp3']));

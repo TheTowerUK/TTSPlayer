@@ -417,6 +417,15 @@ class PlaybackService extends ChangeNotifier {
   // ---------------------------------------------------------------------------
 
   Future<void> play(MediaItem item, {Duration? startPosition}) async {
+    if (!item.canStartAvPlayback) {
+      _errorMessage =
+          'This item is not playable in the audio/video player.';
+      _logState(
+        'Error: refused non-A/V play (${item.mediaKind.name})',
+      );
+      notifyListeners();
+      return;
+    }
     if (!item.status.isPlayable) {
       _errorMessage = _statusMessage(item);
       _logState('Error: item not playable (${item.status.name})');

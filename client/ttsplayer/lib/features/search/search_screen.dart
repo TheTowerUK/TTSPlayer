@@ -330,6 +330,8 @@ class _SearchScreenState extends State<SearchScreen> {
                       child: SearchFilterChips(
                         libraryNames: searchService.libraryNamesFor(catalog),
                         extensions: searchService.extensionsFor(catalog),
+                        availableMediaKinds:
+                            searchService.mediaKindsFor(catalog),
                         filters: _filters,
                         resultCount: _results.length,
                         queryActive: queryActive,

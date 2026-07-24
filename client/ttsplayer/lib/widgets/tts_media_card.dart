@@ -6,6 +6,7 @@ import '../models/media_item.dart';
 import '../services/artwork/artwork_service.dart';
 import '../services/artwork/artwork_decode_size.dart';
 import '../theme/app_theme.dart';
+import '../utils/media_kind_presentation.dart';
 import 'artwork/artwork_image.dart';
 
 /// Premium media item card with artwork, desktop hover, and press effects.
@@ -54,82 +55,94 @@ class _TtsMediaCardState extends State<TtsMediaCard> {
         _hovered = false;
         _pressed = false;
       }),
-      child: GestureDetector(
-        onTap: widget.onTap,
-        onTapDown: (_) => setState(() => _pressed = true),
-        onTapUp: (_) => setState(() => _pressed = false),
-        onTapCancel: () => setState(() => _pressed = false),
-        child: AnimatedScale(
-          scale: _pressed ? AppAnimations.pressScale : 1.0,
-          duration: AppAnimations.fast,
-          curve: AppAnimations.enter,
-          child: AnimatedContainer(
-            duration: AppDurations.hover,
-            curve: AppAnimations.smooth,
-            decoration: AppCardStyles.decoration(
-              hovered: _hovered,
-              pressed: _pressed,
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          return ArtworkImage(
-                            candidate: candidate,
-                            fit: BoxFit.cover,
-                            logicalDecodeSize: Size(
-                              constraints.maxWidth,
-                              constraints.maxHeight,
-                            ),
-                          );
-                        },
-                      ),
-                      if (widget.item.status != MediaItemStatus.available)
+      child: Semantics(
+        button: true,
+        label: MediaKindPresentation.semanticsLabel(widget.item),
+        child: GestureDetector(
+          onTap: widget.onTap,
+          onTapDown: (_) => setState(() => _pressed = true),
+          onTapUp: (_) => setState(() => _pressed = false),
+          onTapCancel: () => setState(() => _pressed = false),
+          child: AnimatedScale(
+            scale: _pressed ? AppAnimations.pressScale : 1.0,
+            duration: AppAnimations.fast,
+            curve: AppAnimations.enter,
+            child: AnimatedContainer(
+              duration: AppDurations.hover,
+              curve: AppAnimations.smooth,
+              decoration: AppCardStyles.decoration(
+                hovered: _hovered,
+                pressed: _pressed,
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            return ArtworkImage(
+                              candidate: candidate,
+                              fit: BoxFit.cover,
+                              logicalDecodeSize: Size(
+                                constraints.maxWidth,
+                                constraints.maxHeight,
+                              ),
+                            );
+                          },
+                        ),
+                        if (widget.item.status != MediaItemStatus.available)
+                          Positioned(
+                            top: AppSpacing.sm,
+                            right: AppSpacing.sm,
+                            child: _StatusBadge(status: widget.item.status),
+                          ),
                         Positioned(
                           top: AppSpacing.sm,
-                          right: AppSpacing.sm,
-                          child: _StatusBadge(status: widget.item.status),
+                          left: widget.topLeftOverlay != null
+                              ? AppSpacing.xl + AppSpacing.sm
+                              : AppSpacing.sm,
+                          child: _KindBadge(item: widget.item),
                         ),
-                      if (widget.topLeftOverlay != null)
-                        Positioned(
-                          top: AppSpacing.xs,
-                          left: AppSpacing.xs,
-                          child: widget.topLeftOverlay!,
-                        ),
-                    ],
-                  ),
-                ),
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxHeight: _metadataMaxHeight),
-                  child: Padding(
-                    padding: AppSpacing.card,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Flexible(
-                          child: Text(
-                            widget.item.title,
-                            style: AppTypography.cardTitle.copyWith(
-                              fontSize: AppTypography.size14,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+                        if (widget.topLeftOverlay != null)
+                          Positioned(
+                            top: AppSpacing.xs,
+                            left: AppSpacing.xs,
+                            child: widget.topLeftOverlay!,
                           ),
-                        ),
-                        const SizedBox(height: AppSpacing.xs),
-                        _MetaRow(item: widget.item),
                       ],
                     ),
                   ),
-                ),
-              ],
+                  ConstrainedBox(
+                    constraints:
+                        const BoxConstraints(maxHeight: _metadataMaxHeight),
+                    child: Padding(
+                      padding: AppSpacing.card,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              widget.item.title,
+                              style: AppTypography.cardTitle.copyWith(
+                                fontSize: AppTypography.size14,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.xs),
+                          _MetaRow(item: widget.item),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -145,16 +158,55 @@ class _MetaRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final parts = <String>[
-      if (item.year != null) '${item.year}',
-      if (item.formattedDuration != null) item.formattedDuration!,
-    ];
-    if (parts.isEmpty) return const SizedBox.shrink();
+    final subtitle = MediaKindPresentation.cardSubtitle(item);
+    if (subtitle == null || subtitle.isEmpty) {
+      return const SizedBox.shrink();
+    }
     return Text(
-      parts.join('  ·  '),
+      subtitle,
       style: AppTypography.cardSubtitle,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
+    );
+  }
+}
+
+class _KindBadge extends StatelessWidget {
+  final MediaItem item;
+
+  const _KindBadge({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: 3,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.black.withAlpha(160),
+        borderRadius: AppRadius.chipRadius,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            MediaKindPresentation.iconFor(item),
+            size: 12,
+            color: AppColors.textPrimary,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            MediaKindPresentation.labelFor(item),
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: AppTypography.size11,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.3,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

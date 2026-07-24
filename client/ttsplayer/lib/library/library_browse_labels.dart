@@ -32,6 +32,10 @@ extension LibraryFilterLabels on LibraryFilter {
         return 'Video';
       case LibraryFilter.images:
         return 'Images';
+      case LibraryFilter.books:
+        return 'Books';
+      case LibraryFilter.comics:
+        return 'Comics';
     }
   }
 }

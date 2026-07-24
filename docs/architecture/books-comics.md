@@ -1,10 +1,10 @@
 # Books & Comics Architecture (M6)
 
-**Status:** Planning — Phase 6.0 (2026-07-24)  
+**Status:** Active — Phase 6.2 browse/presentation complete; Phase 6.3 reader next (2026-07-24)  
 **Milestone plan:** [m6-plan.md](../roadmap/m6-plan.md)  
 **Related ADRs:** [ADR-024](./decisions/ADR-024-book-comic-catalogue-schema-and-media-kind.md) · [ADR-025](./decisions/ADR-025-book-comic-identity-and-metadata-precedence.md) · [ADR-026](./decisions/ADR-026-reader-surface-architecture.md) · [ADR-027](./decisions/ADR-027-reading-progress-and-continue-reading.md)
 
-> This document captures the **intended** M6 architecture. It must not be treated as implemented until the corresponding phases close and ADRs are Accepted.
+> Phases 6.1–6.2 are implemented on `m6-development`. Reader surfaces (6.3+) and progress (6.5) remain planned until those phases close and ADRs are Accepted.
 
 ---
 
@@ -72,8 +72,21 @@ Loose image sequences in a folder remain `image` items (M4 behaviour). Promoting
 ### Client responsibilities
 
 - Parse new kinds with unknown-kind safety (default presentation, not crash)
-- Route open actions by kind to the correct reader
+- Present books/comics in folder browse, search, and detail with kind labels/icons (Phase 6.2)
+- Route open actions by kind to the correct reader **when readers exist** (6.3/6.4); until then show a non-reader stub and refuse A/V playback
 - Keep `SupportedExtensions` and catalogue `supported_extensions` in sync
+
+### Browse and presentation (Phase 6.2)
+
+| Surface | Behaviour |
+|---|---|
+| Folder browse | `.pdf`/`.epub` → Book; `.cbz`/`.cbr` → Comic; mixed folders show all kinds; filters `Books` / `Comics` |
+| Cards / list rows | Kind badge + subtitle (author/series when present); distinct literature vs comics placeholders |
+| Search | Kind chips in TYPE filter row; author/series in search blob (6.1); no path leakage |
+| Item detail | Available metadata only; primary action disabled (“Reader available in a later phase”) |
+| Isolation | Books/comics never open video player, music player, or image viewer |
+
+No virtual “All Books” / “All Comics” libraries.
 
 ### Versioning
 
@@ -188,7 +201,7 @@ Music playlists, shuffle/repeat, lyrics, favourites redesign, and related items 
 | Phase | Architecture focus |
 |---|---|
 | 6.1 | Schema, kinds, indexer, client models |
-| 6.2 | Browse / detail / search presentation |
+| 6.2 | Browse / detail / search presentation — ✅ Complete (kind badges, folder filters, search kind chips, detail stub, placeholders; no readers) |
 | 6.3 | Comic reader |
 | 6.4 | Book reader |
 | 6.5 | Reading progress + Continue Reading |

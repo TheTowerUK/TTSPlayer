@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../../models/catalog.dart';
 import '../../models/media_folder.dart';
 import '../../models/media_item.dart';
+import '../../models/media_kind.dart';
 import 'models/search_filters.dart';
 import 'models/search_index_entry.dart';
 import 'models/search_result.dart';
@@ -25,6 +26,7 @@ class SearchService {
   String? _catalogueIdentity;
   List<String> _libraryNames = const [];
   List<String> _extensions = const [];
+  List<MediaKind> _mediaKinds = const [];
 
   int _invalidationGeneration = 0;
   Future<void>? _buildFuture;
@@ -51,6 +53,7 @@ class SearchService {
 
   List<String> get libraryNames => _libraryNames;
   List<String> get extensions => _extensions;
+  List<MediaKind> get mediaKinds => _mediaKinds;
   int get indexedItemCount => _index.length;
   String? get catalogueIdentity => _catalogueIdentity;
 
@@ -72,6 +75,15 @@ class SearchService {
     return _collectExtensions(catalog);
   }
 
+  /// Media kinds present in the catalogue (for kind filter chips).
+  List<MediaKind> mediaKindsFor(Catalog catalog) {
+    if (_catalogueIdentity == catalog.catalogueIdentity &&
+        _mediaKinds.isNotEmpty) {
+      return _mediaKinds;
+    }
+    return _collectMediaKinds(catalog);
+  }
+
   /// Synchronously populates the index (tests and direct ranking assertions).
   @visibleForTesting
   void buildIndex(Catalog catalog) {
@@ -87,6 +99,7 @@ class SearchService {
     _catalogueIdentity = null;
     _libraryNames = const [];
     _extensions = const [];
+    _mediaKinds = const [];
   }
 
   /// Called from [CatalogCacheCoordinator] on successful catalogue replacement.
@@ -204,6 +217,7 @@ class SearchService {
         .toList(growable: false);
     final libraryNames = libraries.map((f) => f.name).toList();
     final extensions = _collectExtensions(catalog);
+    final mediaKinds = _collectMediaKinds(catalog);
 
     if (genAtStart != _invalidationGeneration) return;
     if (_buildInFlightIdentity != identity) return;
@@ -212,6 +226,7 @@ class SearchService {
     _catalogueIdentity = identity;
     _libraryNames = libraryNames;
     _extensions = extensions;
+    _mediaKinds = mediaKinds;
     _index = entries;
   }
 
@@ -220,6 +235,7 @@ class SearchService {
     _catalogueIdentity = identity;
     _libraryNames = catalog.libraryFolders.map((f) => f.name).toList();
     _extensions = _collectExtensions(catalog);
+    _mediaKinds = _collectMediaKinds(catalog);
 
     final libraries = catalog.libraryFolders;
     _index = catalog.allItems
@@ -269,6 +285,10 @@ class SearchService {
     }
     if (filters.extension != null &&
         entry.item.extension != filters.extension) {
+      return false;
+    }
+    if (filters.mediaKind != null &&
+        entry.item.mediaKind != filters.mediaKind) {
       return false;
     }
     return true;
@@ -361,5 +381,25 @@ class SearchService {
     final set = {...fromCatalogue, ...fromItems}..removeWhere((e) => e.isEmpty);
     final list = set.toList()..sort();
     return list;
+  }
+
+  static List<MediaKind> _collectMediaKinds(Catalog catalog) {
+    final present = <MediaKind>{};
+    for (final item in catalog.allItems) {
+      final kind = item.mediaKind;
+      if (kind == MediaKind.unknown) continue;
+      present.add(kind);
+    }
+    const order = <MediaKind>[
+      MediaKind.video,
+      MediaKind.audio,
+      MediaKind.image,
+      MediaKind.book,
+      MediaKind.comic,
+    ];
+    return [
+      for (final kind in order)
+        if (present.contains(kind)) kind,
+    ];
   }
 }

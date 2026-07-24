@@ -2,6 +2,7 @@ import 'dart:io';
 
 import '../../models/media_folder.dart';
 import '../../models/media_item.dart';
+import '../../models/media_kind.dart';
 import 'artwork_candidate.dart';
 import 'artwork_kind.dart';
 import 'library_visual_kind.dart';
@@ -78,7 +79,7 @@ class ArtworkService {
   }
 
   ArtworkCandidate _forMediaItem(MediaItem item, MediaFolder? parentFolder) {
-    final visualKind = visualKindForExtension(item.extension);
+    final visualKind = visualKindForMediaItem(item);
 
     if (item.thumbnailPath != null && _fileExists(item.thumbnailPath!)) {
       return ArtworkCandidate(
@@ -141,8 +142,11 @@ class ArtworkService {
     if (_containsAny(lower, ['document', 'doc'])) {
       return LibraryVisualKind.documents;
     }
-    if (_containsAny(lower, ['book', 'literature', 'comic'])) {
+    if (_containsAny(lower, ['book', 'literature', 'ebook', 'epub'])) {
       return LibraryVisualKind.literature;
+    }
+    if (_containsAny(lower, ['comic', 'manga', 'cbz', 'cbr'])) {
+      return LibraryVisualKind.comics;
     }
     if (_containsAny(lower, ['game'])) {
       return LibraryVisualKind.games;
@@ -153,8 +157,26 @@ class ArtworkService {
     return LibraryVisualKind.unknown;
   }
 
+  /// Prefer catalogue [MediaItem.mediaKind]; fall back to extension mapping.
+  LibraryVisualKind visualKindForMediaItem(MediaItem item) {
+    switch (item.mediaKind) {
+      case MediaKind.video:
+        return LibraryVisualKind.videos;
+      case MediaKind.audio:
+        return LibraryVisualKind.music;
+      case MediaKind.image:
+        return LibraryVisualKind.images;
+      case MediaKind.book:
+        return LibraryVisualKind.literature;
+      case MediaKind.comic:
+        return LibraryVisualKind.comics;
+      case MediaKind.unknown:
+        return visualKindForExtension(item.extension);
+    }
+  }
+
   LibraryVisualKind visualKindForExtension(String extension) {
-    switch (extension) {
+    switch (extension.toLowerCase()) {
       case 'mp4':
       case 'mkv':
       case 'mov':
@@ -166,21 +188,30 @@ class ArtworkService {
       case 'wav':
       case 'aac':
       case 'ogg':
+      case 'opus':
+      case 'm4a':
+      case 'wma':
         return LibraryVisualKind.music;
       case 'jpg':
       case 'jpeg':
       case 'png':
       case 'webp':
       case 'gif':
+      case 'bmp':
+      case 'tif':
+      case 'tiff':
         return LibraryVisualKind.images;
       case 'pdf':
+      case 'epub':
+      case 'mobi':
+        return LibraryVisualKind.literature;
+      case 'cbz':
+      case 'cbr':
+        return LibraryVisualKind.comics;
       case 'doc':
       case 'docx':
       case 'txt':
         return LibraryVisualKind.documents;
-      case 'epub':
-      case 'mobi':
-        return LibraryVisualKind.literature;
       default:
         return LibraryVisualKind.unknown;
     }

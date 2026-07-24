@@ -222,7 +222,7 @@ Widget _harness({
   required Catalog catalog,
   required Widget home,
   LibraryMetadataRepository? metadataRepository,
-  Size viewport = const Size(900, 420),
+  Size viewport = const Size(1100, 800),
 }) {
   final catalogService = _FakeCatalogService(catalog);
   final metadata = metadataRepository ?? _defaultRepository;

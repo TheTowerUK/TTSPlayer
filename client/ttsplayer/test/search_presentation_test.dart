@@ -167,7 +167,7 @@ Widget _searchHarness({
   CatalogService? catalogService,
   SettingsRepository? settingsRepository,
   SearchService? searchService,
-  Size viewport = const Size(900, 420),
+  Size viewport = const Size(1100, 800),
   Key? screenKey,
 }) {
   final service = catalogService ?? _FakeCatalogService(catalog);
