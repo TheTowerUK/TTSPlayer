@@ -176,9 +176,9 @@ Trust the Caddy internal CA on clients, or use a certificate your OS already tru
 | **M2** First playable | ✅ [v0.2.0](docs/release/release-history.md) | End-to-end video on Windows |
 | **M3** Personal media UX | ✅ [v0.3.0](docs/release/v0.3.0.md) | Dashboard, libraries, search, resume |
 | **M3.5** Network access | ✅ [`m3.5-complete`](docs/release/m3.5-media-access-complete.md) | HTTPS catalogue, provider config, TNAS validation |
-| **M4** Rich media libraries | 📋 Planned | Image browsing & viewer — [spec](docs/roadmap/m4-rich-media-libraries.md) |
-| **M5** Music library | 📋 Planned | Audio playback & browsing |
-| **M6** Books & comics | 📋 Planned | Reading experience |
+| **M4** UX & platform | ✅ [v0.5.0](docs/release/m4-release-summary.md) | Providers, settings, library, caching, diagnostics |
+| **M5** Music library | ✅ [v0.6.0](docs/release/m5-complete.md) | Catalogue, browse, playback, listening state |
+| **M6** Books & comics | 🔄 Planning | [m6-plan.md](docs/roadmap/m6-plan.md) · [v0.7.0-dev](docs/release/v0.7.0-dev.md) |
 | **M7** Multi-device | 📋 Planned | Remote control, sync, profiles — [mobile delivery](docs/roadmap/mobile-delivery.md) |
 
 Full living roadmap: [`docs/roadmap/roadmap.md`](docs/roadmap/roadmap.md)

@@ -18,11 +18,13 @@ Shipping history and milestone snapshots for TTSPlayer.
 
 ## Current development focus
 
-**M6 — Books / comics** — planning handover after M5. Deferred music features (playlists, shuffle/repeat, favourites redesign, etc.) may be scheduled when approved.
+**M6 — Books & Comics** — Phase 6.0 Planning and Architecture (not implementation-complete).
 
-→ [Roadmap](../roadmap/README.md) · [M5 complete](./m5-complete.md)
+→ [M6 plan](../roadmap/m6-plan.md) · [v0.7.0-dev tracker](./v0.7.0-dev.md) · [Books & comics architecture](../architecture/books-comics.md)
 
-**Branch:** `m5-development` (closure) — next development branch TBD for M6
+Deferred M5 music features (playlists, shuffle/repeat, favourites redesign, etc.) remain a **separate backlog** — not silent M6 scope ([m5-complete.md §4](./m5-complete.md)).
+
+**Branch:** `m6-development`
 
 ---
 
@@ -34,9 +36,9 @@ Milestones and development branches are tracked separately: a completed mileston
 |---|---|
 | Latest release | M5 — `v0.6.0` — [m5-complete.md](./m5-complete.md) |
 | Previous release | M4 — `v0.5.0` — [m4-release-summary.md](./m4-release-summary.md) |
-| Current work | M6 planning handover |
-| Development branch | `m5-development` (M5 closed) |
-| Previous validated tag | `v0.5.0` / `m4-complete` |
+| Current work | M6 Phase 6.0 — Planning and Architecture |
+| Development branch | `m6-development` |
+| Previous validated tag | `v0.6.0` / `m5-complete` |
 
 ---
 
@@ -44,6 +46,7 @@ Milestones and development branches are tracked separately: a completed mileston
 
 | Document | Milestone | Tag |
 |---|---|---|
+| [v0.7.0-dev — M6 development tracker](./v0.7.0-dev.md) | M6 (active) | — |
 | [M5 — Music](./m5-complete.md) | M5 | `v0.6.0` / `m5-complete` |
 | [M4 — User Experience and Platform Integration](./m4-release-summary.md) | M4 | `v0.5.0` / `m4-complete` |
 | [v0.5.0-dev — M4/M5 development cycle notes](./v0.5.0-dev.md) | M4–M5 (archive) | — |

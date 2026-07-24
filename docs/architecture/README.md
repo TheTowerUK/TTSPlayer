@@ -38,6 +38,14 @@ Planning and catalogue foundation for [M5 — Music](../roadmap/m5-plan.md). **M
 |---|---|---|
 | [Music](./music.md) | M5 ✅ | [M5 plan](../roadmap/m5-plan.md) · [M5 complete](../release/m5-complete.md) · ADR-020/021/022/023 **Accepted** |
 
+## M6 — Books & Comics (planning)
+
+Planning documents for [M6 — Books & Comics](../roadmap/m6-plan.md). **Phase 6.0 in progress** — no implementation claimed.
+
+| Document | Phase | Status |
+|---|---|---|
+| [Books & comics](./books-comics.md) | 6.0 | Planning — ADR-024–027 **Proposed** · [m6-plan](../roadmap/m6-plan.md) · [v0.7.0-dev](../release/v0.7.0-dev.md) |
+
 ## Architecture Decision Records
 
 Significant cross-layer decisions are recorded as ADRs:

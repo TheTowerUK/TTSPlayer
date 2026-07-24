@@ -81,9 +81,14 @@ Extend TTSPlayer with music catalogue metadata, artist/album/track browsing, que
 
 ## M6 — Books & Comics
 
-**Status:** Planned
+**Status:** 🔄 In progress — Phase 6.0 Planning and Architecture (2026-07-24)
 
-Reading experience for books and comic archives.
+Reading experience for books and comic archives on the existing folder-tree platform: catalogue kinds, browse presentation, dedicated readers, and reading progress — without inventing categories or absorbing deferred music features.
+
+→ [M6 plan](./m6-plan.md)
+→ [Books & comics architecture](../architecture/books-comics.md)
+→ [v0.7.0-dev tracker](../release/v0.7.0-dev.md)
+→ [ADR-024–027 (Proposed)](../architecture/decisions/README.md#m6--books--comics)
 
 ---
 

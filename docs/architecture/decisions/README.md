@@ -96,9 +96,18 @@ Every ADR must include these headings (use [ADR-template.md](./ADR-template.md))
 | [ADR-022](./ADR-022-music-queue-and-listening-state.md) | Music Queue and Listening State | **Accepted** (M5.5 — queue persistence + listening history) |
 | [ADR-023](./ADR-023-music-player-surface-architecture.md) | Music Player Surface Architecture | Accepted (M5.3) |
 
+### M6 — Books & Comics
+
+| ADR | Title | Status |
+|---|---|---|
+| [ADR-024](./ADR-024-book-comic-catalogue-schema-and-media-kind.md) | Book/Comic Catalogue Schema and Media Kind | **Proposed** |
+| [ADR-025](./ADR-025-book-comic-identity-and-metadata-precedence.md) | Book/Comic Identity and Metadata Precedence | **Proposed** |
+| [ADR-026](./ADR-026-reader-surface-architecture.md) | Reader Surface Architecture | **Proposed** |
+| [ADR-027](./ADR-027-reading-progress-and-continue-reading.md) | Reading Progress and Continue Reading | **Proposed** |
+
 ---
 
 ## Related documents
 
-- [M4 plan](../roadmap/m4-plan.md) · [M5 plan](../roadmap/m5-plan.md)
+- [M4 plan](../roadmap/m4-plan.md) · [M5 plan](../roadmap/m5-plan.md) · [M6 plan](../roadmap/m6-plan.md)
 - [Architecture index](../README.md)

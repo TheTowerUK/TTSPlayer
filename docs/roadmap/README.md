@@ -10,7 +10,13 @@ Milestone plans, phase specifications, and planning principles for TTSPlayer.
 
 ## Active milestone
 
-**M6 — Books / comics (and related expansion)** — planning handover after M5 tags.
+**M6 — Books & Comics** — 🔄 Phase 6.0 Planning and Architecture (2026-07-24)
+
+| Sub-phase | Document | Status |
+|---|---|---|
+| 6.0 | [M6 plan](./m6-plan.md) · [Books & comics architecture](../architecture/books-comics.md) · ADR-024–027 Proposed | 🔄 In progress |
+| 6.1–6.6 | Defined in [m6-plan.md](./m6-plan.md) | Planned |
+| Dev tracker | [v0.7.0-dev.md](../release/v0.7.0-dev.md) | Active |
 
 **M5 — Music** — ✅ Complete (2026-07-24) — [m5-plan.md](./m5-plan.md) · [release](../release/m5-complete.md)
 
@@ -64,5 +70,4 @@ Milestone plans, phase specifications, and planning principles for TTSPlayer.
 
 | Milestone | Focus |
 |---|---|
-| M6 | Books & Comics — [roadmap.md](./roadmap.md#m6--books--comics) |
 | M7 | Multi-device — [mobile-delivery.md](./mobile-delivery.md) |
