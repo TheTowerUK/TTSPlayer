@@ -44,7 +44,7 @@ Planning documents for [M6 — Books & Comics](../roadmap/m6-plan.md). **Phase 6
 
 | Document | Phase | Status |
 |---|---|---|
-| [Books & comics](./books-comics.md) | 6.0 | Planning — ADR-024–027 **Proposed** · [m6-plan](../roadmap/m6-plan.md) · [v0.7.0-dev](../release/v0.7.0-dev.md) |
+| [Books & comics](./books-comics.md) | 6.1 ✅ | Catalogue v4 complete — ADR-024/025/026 **Proposed** · [CBR eval](./cbr-rar-evaluation.md) · [m6-plan](../roadmap/m6-plan.md) |
 
 ## Architecture Decision Records
 

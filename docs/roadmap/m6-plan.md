@@ -1,11 +1,13 @@
 # M6 — Books & Comics
 
-**Status:** **IN PROGRESS** — Phase 6.0 Planning and Architecture (2026-07-24)  
+**Status:** **IN PROGRESS** — Phase 6.2 Books & comics library browsing (next)  
 **Branch:** `m6-development`  
-**Development version:** `v0.7.0-dev` (proposed; app remains `0.6.0+1` until implementation begins)  
-**Predecessor:** M5 — tags `v0.6.0` / `m5-complete` (2026-07-24)
+**Development version:** `v0.7.0-dev` (proposed; app remains `0.6.0+1` until release)  
+**Predecessor:** M5 — tags `v0.6.0` / `m5-complete` (2026-07-24)  
+**Phase 6.1:** ✅ Complete (2026-07-24) — catalogue v4 / books & comics indexing
 
 → [Books & comics architecture](../architecture/books-comics.md)  
+→ [CBR/RAR evaluation](../architecture/cbr-rar-evaluation.md)  
 → [M5 complete](../release/m5-complete.md)  
 → [Roadmap principles](./principles.md)  
 → [Architecture index](../architecture/README.md)  
@@ -97,8 +99,8 @@ M6 extends TTSPlayer from a **video + music** personal media application into a 
 
 | Sub-phase | Focus | Status |
 |---|---|---|
-| **6.0** | Planning and Architecture | 🔄 **In progress** (this document) |
-| **6.1** | Catalogue schema, media kinds, indexer formats (+ RAR/CBR selection) | Planned |
+| **6.0** | Planning and Architecture | ✅ Complete |
+| **6.1** | Catalogue schema, media kinds, indexer formats (+ RAR/CBR provisional preferred) | ✅ **Complete** |
 | **6.2** | Books & comics library browsing / presentation | Planned |
 | **6.3** | Comic archive reader (CBZ and CBR required) | Planned |
 | **6.4** | Book document reader (PDF/EPUB) | Planned |
@@ -110,7 +112,7 @@ M6 extends TTSPlayer from a **video + music** personal media application into a 
 
 ### Phase 6.0 — Planning and Architecture
 
-**Status:** 🔄 **IN PROGRESS** (2026-07-24)
+**Status:** ✅ **COMPLETE** (2026-07-24) — commit `b3e844a`
 
 **Objective:** Define M6 scope, terminology, catalogue implications, reader architecture options, reading-state model, diagnostics, validation strategy, and milestone Definition of Done.
 
@@ -153,49 +155,36 @@ M6 extends TTSPlayer from a **video + music** personal media application into a 
 
 ### Phase 6.1 — Catalogue schema, media kinds, and indexer formats
 
-**Objective:** Extend the scanner and catalogue model so books and comics are first-class indexed items with stable identity and `media_kind`, and lock the Windows RAR/CBR implementation choice needed for required `.cbr` support.
+**Status:** ✅ **COMPLETE** (2026-07-24)
+
+**Objective:** Extend the scanner and catalogue model so books and comics are first-class indexed items with stable identity and `media_kind`, and record a provisional preferred Windows RAR/CBR approach for required `.cbr` support.
 
 **Scope:**
 
-- New `media_kind` values (proposed: `book`, `comic`) — finalised in ADR-024
-- Supported extensions (required v1 comics: **`.cbz`**, **`.cbr`**; books: `.pdf`, `.epub`)
-- **Evaluate and select** a Windows-compatible RAR/CBR solution (if not already selected in 6.0), covering licensing, maintenance, packaging, extraction security, performance, and testability — record the choice in architecture docs / ADR notes
-- Catalogue version bump policy (likely `catalogue_version: 4`) and scanner version bump
+- New `media_kind` values (`book`, `comic`) — ADR-024
+- Supported extensions (comics: **`.cbz`**, **`.cbr`**; books: `.pdf`, `.epub`)
+- Windows RAR/CBR approach recorded as **provisional preferred** (`package:unrar`) with Phase **6.3 Gate 0** blocking — see [cbr-rar-evaluation.md](../architecture/cbr-rar-evaluation.md)
+- `catalogue_version: 4`, scanner `0.5.0`
 - Client `MediaKind` / `SupportedExtensions` / inference updates
 - Mixed-media isolation (video/audio/image unchanged)
 - Deterministic fixture catalogues for tests (including `.cbz` and `.cbr` fixtures)
 
 **Out of scope:** Full comic reader UI, reading progress UI, metadata scrapers, MOBI/AZW, treating loose image folders as comics.
 
-**Architecture impact:** Scanner, catalogue schema, client models, search kind labels, Caddy allowlist sync, declared native/RAR dependency for later reader phases.
-
-**Implementation steps (planned):**
-
-1. Lock ADR-024 / ADR-025 decisions (`.cbz` + `.cbr` required)
-2. Complete RAR/CBR Windows solution selection (blocking for later 6.3)
-3. Indexer extension sets + `media_kind` emission for book and comic (both archive types)
-4. Client model/parser updates with unknown-kind safety
-5. Fixtures + unit tests
-6. Architecture/docs update (selected RAR stack documented)
-
-**Automated tests:** Indexer unit tests; catalogue parse tests; mixed-media regression; unknown-kind non-crash; `.cbz` and `.cbr` present in fixtures with `media_kind: comic`.
-
-**Runtime / manual:** Rescan sample library; confirm counts for both comic formats; no video/music regression.
-
-**Documentation:** Scanner notes, schema notes, RAR/CBR selection record, ADR acceptance when DoD met.
+**Architecture impact:** Scanner, catalogue schema, client models, search kind labels, Caddy allowlist sync; native/RAR dependency deferred to Gate 0 / 6.3.
 
 **Definition of done:**
 
-- [ ] Supported book/comic extensions indexed with correct `media_kind` (including both `.cbz` and `.cbr`)
-- [ ] Windows-compatible RAR/CBR implementation selected and documented (licensing, packaging, security posture)
-- [ ] Unsupported formats omitted or skipped per existing policy
-- [ ] Client loads mixed catalogues without breaking video/audio/image
-- [ ] Automated tests pass; Windows Release build still succeeds (or documents pending native dep wiring for 6.3)
-- [ ] ADR-024 (and related) Accepted when criteria met
+- [x] Supported book/comic extensions indexed with correct `media_kind` (including both `.cbz` and `.cbr`)
+- [x] Windows-compatible RAR/CBR approach recorded as **provisional preferred** with Gate 0 defined (not falsely marked fully validated)
+- [x] Unsupported formats omitted or skipped per existing policy
+- [x] Client loads mixed catalogues without breaking video/audio/image
+- [x] Automated tests pass; Windows mixed-catalogue scan validated
+- [ ] ADR-024 remains **Proposed** until formal Accept (catalogue criteria met; CBR Gate 0 still open)
 
 **Dependencies:** Phase 6.0 complete and agreed.
 
-**Risks:** RAR/CBR dependency licensing, packaging, and security; large EPUB/PDF metadata cost; HTTPS Range behaviour for large PDFs.
+**Risks carried forward:** RAR/CBR packaging and Gate 0; large EPUB/PDF metadata cost; HTTPS Range for large PDFs.
 
 ---
 
@@ -234,10 +223,23 @@ M6 extends TTSPlayer from a **video + music** personal media application into a 
 
 **Objective:** Open **both** `.cbz` and `.cbr` comic archives in a dedicated paged reader on Windows, with graceful failure for bad archives.
 
+**Gate 0 (blocking — before reader Accept):**
+
+1. Minimal Windows **Release** spike with the provisional RAR stack (or chosen fallback)
+2. Correct native library / binary bundling for Release
+3. List a representative CBR without full extraction
+4. Extract or stream selected image entries
+5. Validate **RAR4 and RAR5** fixtures
+6. Test corrupt, encrypted, and multi-volume fixtures (graceful failure)
+7. Confirm licensing and redistribution acceptability
+8. Confirm acceptable memory behaviour for large archives (lazy/selective access; no unbounded full-archive RAM load)
+
+Failed Gate 0 → evaluate documented fallback from [cbr-rar-evaluation.md](../architecture/cbr-rar-evaluation.md). **Do not silently remove CBR.**
+
 **Scope:**
 
 - Dedicated comic reader surface (ADR-026)
-- **CBZ (ZIP)** page extraction and **CBR (RAR)** page extraction via the stack selected in 6.0 / early 6.1 — both required
+- **CBZ (ZIP)** page extraction and **CBR (RAR)** page extraction via the stack that **passes Gate 0** — both formats required
 - Next/previous page, scrubber/page indicator, fullscreen-friendly controls
 - Local + HTTPS file access via `MediaLocationResolver`
 - Failure states: missing file; corrupt archive; unsupported archive variant; encrypted archive; multi-volume archive — user-visible recovery, **no crash**, catalogue remainder unaffected
@@ -245,7 +247,7 @@ M6 extends TTSPlayer from a **video + music** personal media application into a 
 
 **Out of scope:** PDF/EPUB; dual-page advanced modes (unless trivial); download-to-cache redesign; music/video changes; loose image-folder “virtual comics”.
 
-**Architecture impact:** New reader module; selected RAR dependency packaging; temp extraction policy; memory bounds for large archives; extraction security controls.
+**Architecture impact:** New reader module; RAR dependency packaging after Gate 0; temp extraction policy; memory bounds for large archives; extraction security controls.
 
 **Automated tests:** Archive open/parse unit tests for CBZ and CBR; widget tests for page nav; failure fixtures (corrupt, encrypted, multi-volume, unsupported).
 
@@ -253,6 +255,7 @@ M6 extends TTSPlayer from a **video + music** personal media application into a 
 
 **Definition of done:**
 
+- [ ] Gate 0 checklist complete with evidence
 - [ ] User can open a **CBZ** from browse/detail and turn pages
 - [ ] User can open a **CBR** from browse/detail and turn pages
 - [ ] Windows runtime validation passes for both CBZ and CBR fixtures
@@ -261,7 +264,7 @@ M6 extends TTSPlayer from a **video + music** personal media application into a 
 - [ ] Suite + Release build green with documented native/RAR dependencies
 - [ ] CBR remains in scope unless an explicit approved deferral document exists (none by default)
 
-**Dependencies:** Phase 6.2 (or 6.1 if browse open action is minimal); RAR/CBR solution selected in 6.0 or early 6.1.
+**Dependencies:** Phase 6.2 (or 6.1 if browse open action is minimal); provisional RAR approach from 6.1; **Gate 0 pass** before CBR reader Accept.
 
 ---
 
@@ -434,7 +437,7 @@ Each checkbox must point to a test, runtime scenario, document section, build re
 | Risk | Mitigation |
 |---|---|
 | Heavy reader plugins on Windows | Spike in 6.0 open questions; choose packages with Windows support; Gate-0 style spike before 6.3/6.4 acceptance |
-| CBR/RAR implementation & dependency risk (licensing, packaging, security, performance, testability) | **Product scope remains required.** Evaluate and select a Windows-compatible solution in Phase 6.0 or early 6.1; document choice; validate both formats in 6.3 runtime. No silent CBR deferral — any later deferral needs explicit approval + known-limitation docs before M6 closure |
+| CBR/RAR implementation & dependency risk (licensing, packaging, security, performance, testability) | **Product scope remains required.** Provisional preferred: `package:unrar`. Reject `package:rar` for Windows unless platform evidence appears. Phase **6.3 Gate 0** is blocking. Failed Gate 0 → evaluate documented fallback — **no silent CBR deferral** |
 | Large PDF memory use | Lazy page decode; informational performance gates; fixture size limits |
 | HTTPS Range incomplete for some readers | Validate early; fall back to local cache only if ADR approves |
 | Scope creep from M5 music deferrals | Explicit exclusion table; reject silent inclusion |
@@ -446,17 +449,18 @@ Each checkbox must point to a test, runtime scenario, document section, build re
 
 ## Open questions (resolve before or during early phases)
 
-1. **Which acceptable RAR/CBR implementation will be adopted for Windows?** (licensing, maintenance, packaging, extraction security, performance, testability — select in 6.0 or early 6.1)
-2. Single `media_kind: document` vs separate `book` / `comic`? (**Recommendation:** separate kinds.)
+1. **Which acceptable RAR/CBR implementation will be adopted for Windows?** → **Provisional preferred (6.1):** `package:unrar` (official UnRAR Dart FFI). **`package:rar` is not preferred for Windows** (published platforms omit Windows). Full Accept requires Phase **6.3 Gate 0**. See [cbr-rar-evaluation.md](../architecture/cbr-rar-evaluation.md).
+2. Single `media_kind: document` vs separate `book` / `comic`? → **Resolved:** separate kinds (`book`, `comic`).
 3. Which Flutter packages for PDF/EPUB on Windows are acceptable (license + maintenance)?
 4. Should Continue Reading live on the dashboard, a Reading landing, or both (without fake folders)?
 5. Temp extraction directory policy for comic archives (session-scoped wipe vs cache with LRU)?
-6. Does catalogue_version bump to 4, or can kinds be additive on v3 with scanner version alone?
+6. Does catalogue_version bump to 4, or can kinds be additive on v3 with scanner version alone? → **Resolved:** `catalogue_version: 4`, scanner `0.5.0`.
 
 **Resolved for M6 baseline (not open):**
 
 - `.cbz` and `.cbr` are both **required** comic formats.
 - Loose image-sequence folders are **not** treated as comics in initial M6 scope unless separately approved.
+- Windows CBR approach recorded as **provisional preferred** only; dependency not added until Gate 0.
 
 ---
 
@@ -476,6 +480,6 @@ Each checkbox must point to a test, runtime scenario, document section, build re
 
 ## Handoff
 
-**Next implementation phase after planning agreement:** **Phase 6.1 — Catalogue schema, media kinds, and indexer formats.**
+**Next implementation phase:** **Phase 6.2 — Books & comics library browsing / presentation.**
 
-Do not begin 6.1 until this Phase 6.0 plan and Proposed ADRs have been reviewed and agreed.
+Phase 6.1 catalogue support is complete. Do not begin CBR reader work until Phase 6.3 Gate 0 passes.

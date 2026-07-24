@@ -241,10 +241,16 @@ class SearchService {
             item.genre,
           ].whereType<String>().join(' ')
         : '';
+    final documentFields = (item.isBook || item.isComic)
+        ? [
+            item.author,
+            item.series,
+          ].whereType<String>().join(' ')
+        : '';
 
     final blob = _normalize(
       '${item.title} $fileName ${item.filePath} $libraryName '
-      '$parentFolderName ${item.extension} $musicFields',
+      '$parentFolderName ${item.extension} $musicFields $documentFields',
     );
 
     return SearchIndexEntry(

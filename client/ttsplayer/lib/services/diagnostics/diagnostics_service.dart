@@ -13,6 +13,7 @@ import '../../features/music/services/music_playback_session_restorer.dart';
 import '../../features/search/search_service.dart';
 import '../../models/catalogue_provider_snapshot.dart';
 import '../../models/media_folder.dart';
+import '../../models/media_kind.dart';
 import '../../services/artwork/artwork_service.dart';
 import '../../services/catalog_service.dart';
 import '../../services/library/library_metadata_repository.dart';
@@ -190,14 +191,45 @@ class DiagnosticsService {
       if (catalog == null) {
         return null;
       }
+      var video = 0;
+      var audio = 0;
+      var image = 0;
+      var book = 0;
+      var comic = 0;
+      var unknown = 0;
+      for (final item in catalog.allItems) {
+        switch (item.mediaKind) {
+          case MediaKind.video:
+            video++;
+          case MediaKind.audio:
+            audio++;
+          case MediaKind.image:
+            image++;
+          case MediaKind.book:
+            book++;
+          case MediaKind.comic:
+            comic++;
+          case MediaKind.unknown:
+            unknown++;
+        }
+      }
       return CatalogueDiagnostics(
         status: DiagnosticSectionStatus.complete,
         catalogueIdentity: redactIdentity(catalog.catalogueIdentity),
         sourceKindLabel: _catalogService.catalogueSourceLabel,
         generatedAt: catalog.generatedAt,
+        catalogueVersion: catalog.catalogueInfo?.catalogueVersion,
+        scannerVersion: catalog.catalogueInfo?.scannerVersion,
         libraryCount: catalog.folders.length,
         folderCount: _countFolders(catalog.folders),
         itemCount: catalog.totalItems,
+        videoItemCount: video,
+        audioItemCount: audio,
+        imageItemCount: image,
+        bookItemCount: book,
+        comicItemCount: comic,
+        unknownItemCount: unknown,
+        supportedExtensionCount: catalog.supportedExtensions.length,
         isDemoData: _catalogService.isDemoCatalogue,
         isDegraded: _catalogService.isDegradedLoad,
         isLoading: _catalogService.isLoading,

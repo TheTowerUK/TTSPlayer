@@ -26,6 +26,7 @@ import time
 from pathlib import Path
 from datetime import datetime, timezone
 
+import document_metadata
 import music_metadata
 
 # Windows console (cp1252) cannot encode emoji or many Unicode characters.
@@ -44,8 +45,8 @@ if hasattr(sys.stderr, "reconfigure"):
 #                     in a way the client must detect. The app reads this
 #                     to decide whether it understands the file.
 # ------------------------------------------------------------------
-SCANNER_VERSION = "0.4.0"
-CATALOGUE_VERSION = 3
+SCANNER_VERSION = "0.5.0"
+CATALOGUE_VERSION = 4
 
 # ------------------------------------------------------------------
 # Supported media extensions — single source for full and library scans.
@@ -58,7 +59,15 @@ _AUDIO_EXTENSIONS = frozenset({
 _IMAGE_EXTENSIONS = frozenset({
     ".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp", ".tif", ".tiff",
 })
-SUPPORTED_EXTENSIONS = _VIDEO_EXTENSIONS | _AUDIO_EXTENSIONS | _IMAGE_EXTENSIONS
+_BOOK_EXTENSIONS = frozenset({".pdf", ".epub"})
+_COMIC_EXTENSIONS = frozenset({".cbz", ".cbr"})
+SUPPORTED_EXTENSIONS = (
+    _VIDEO_EXTENSIONS
+    | _AUDIO_EXTENSIONS
+    | _IMAGE_EXTENSIONS
+    | _BOOK_EXTENSIONS
+    | _COMIC_EXTENSIONS
+)
 
 # Lowercase names without the dot — written to catalog.json and shown in the client.
 SUPPORTED_EXTENSIONS_SORTED: list[str] = sorted(
@@ -129,6 +138,13 @@ def _folder_contains_audio(file_entries: list[Path]) -> bool:
     return any(e.suffix.lower() in _AUDIO_EXTENSIONS for e in file_entries)
 
 
+def _folder_contains_book_or_comic(file_entries: list[Path]) -> bool:
+    return any(
+        e.suffix.lower() in _BOOK_EXTENSIONS or e.suffix.lower() in _COMIC_EXTENSIONS
+        for e in file_entries
+    )
+
+
 def _media_stems_in_folder(file_entries: list[Path], extensions: frozenset[str]) -> set[str]:
     return {
         e.stem.lower()
@@ -146,21 +162,26 @@ def is_artwork_sidecar(entry: Path, file_entries: list[Path]) -> bool:
     True when an image file is acting as artwork for sibling media.
 
     Named sidecars (poster.jpg, cover.png, …) are excluded when the folder
-    contains video or audio files. Stem-matched images beside media with the
-    same stem are excluded. Standalone images in image libraries remain indexed.
+    contains video, audio, book, or comic files. Stem-matched images beside
+    media with the same stem are excluded. Standalone images in image libraries
+    remain indexed.
     """
     if entry.suffix.lower() not in _IMAGE_EXTENSIONS:
         return False
 
-    has_video = _folder_contains_video(file_entries)
-    has_audio = _folder_contains_audio(file_entries)
+    has_av = _folder_contains_video(file_entries) or _folder_contains_audio(file_entries)
+    has_document = _folder_contains_book_or_comic(file_entries)
     if is_named_artwork_sidecar(entry.name):
-        return has_video or has_audio
+        return has_av or has_document
 
     stem = entry.stem.lower()
     if stem in _video_stems_in_folder(file_entries):
         return True
-    return stem in _media_stems_in_folder(file_entries, _AUDIO_EXTENSIONS)
+    if stem in _media_stems_in_folder(file_entries, _AUDIO_EXTENSIONS):
+        return True
+    if stem in _media_stems_in_folder(file_entries, _BOOK_EXTENSIONS):
+        return True
+    return stem in _media_stems_in_folder(file_entries, _COMIC_EXTENSIONS)
 
 
 def _index_files_in_folder(
@@ -512,6 +533,10 @@ def media_kind_for_suffix(suffix: str) -> str:
         return "audio"
     if lower in _IMAGE_EXTENSIONS:
         return "image"
+    if lower in _BOOK_EXTENSIONS:
+        return "book"
+    if lower in _COMIC_EXTENSIONS:
+        return "comic"
     return "unknown"
 
 
@@ -556,6 +581,20 @@ def make_item(file_path: Path, warnings: list[dict]) -> dict | None:
                 _warn(warnings, str_path, exc)
                 fallback = music_metadata.build_music_metadata(file_path, tags={})
                 item.update(fallback)
+        elif kind == "book":
+            try:
+                book_fields = document_metadata.build_book_metadata(file_path)
+                item.update(book_fields)
+            except Exception as exc:
+                _warn(warnings, str_path, exc)
+                item["title"] = clean_title(file_path.stem)
+        elif kind == "comic":
+            try:
+                comic_fields = document_metadata.build_comic_metadata(file_path)
+                item.update(comic_fields)
+            except Exception as exc:
+                _warn(warnings, str_path, exc)
+                item["title"] = clean_title(file_path.stem)
 
         return item
     except _FS_ERRORS as exc:

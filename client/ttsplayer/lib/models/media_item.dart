@@ -64,6 +64,15 @@ class MediaItem {
   final String? artistGroupKey;
   final String? albumGroupKey;
 
+  /// Book/comic author or comic writer (optional enrichment).
+  final String? author;
+
+  /// Comic series name when present (e.g. ComicInfo.xml).
+  final String? series;
+
+  /// Page count when inexpensive to obtain (e.g. ComicInfo.xml).
+  final int? pageCount;
+
   const MediaItem({
     required this.id,
     required this.title,
@@ -83,6 +92,9 @@ class MediaItem {
     this.genre,
     this.artistGroupKey,
     this.albumGroupKey,
+    this.author,
+    this.series,
+    this.pageCount,
   });
 
   /// Resolved kind — explicit catalogue value or extension inference (v2).
@@ -95,8 +107,15 @@ class MediaItem {
 
   bool get isImage => mediaKind == MediaKind.image;
 
+  bool get isBook => mediaKind == MediaKind.book;
+
+  bool get isComic => mediaKind == MediaKind.comic;
+
   /// Audio items are excluded from video Continue Watching (M5.1).
   bool get isContinueWatchingEligible => isVideo;
+
+  /// Video/audio playback surfaces only — books/comics use readers (M6+).
+  bool get canStartAvPlayback => isVideo || isAudio;
 
   factory MediaItem.fromJson(Map<String, dynamic> json) {
     final filePath = _cast<String>(json['file_path'], 'MediaItem', 'file_path');
@@ -119,6 +138,9 @@ class MediaItem {
       genre: json['genre'] as String?,
       artistGroupKey: json['artist_group_key'] as String?,
       albumGroupKey: json['album_group_key'] as String?,
+      author: json['author'] as String?,
+      series: json['series'] as String?,
+      pageCount: _parseOptionalInt(json['page_count']),
     );
   }
 
@@ -154,6 +176,9 @@ class MediaItem {
         if (genre != null) 'genre': genre,
         if (artistGroupKey != null) 'artist_group_key': artistGroupKey,
         if (albumGroupKey != null) 'album_group_key': albumGroupKey,
+        if (author != null) 'author': author,
+        if (series != null) 'series': series,
+        if (pageCount != null) 'page_count': pageCount,
       };
 
   String? get formattedDuration {

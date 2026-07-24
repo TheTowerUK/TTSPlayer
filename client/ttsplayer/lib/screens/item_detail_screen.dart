@@ -127,7 +127,12 @@ class _MetadataPanel extends StatelessWidget {
     final chips = [
       if (item.year != null) '${item.year}',
       if (item.formattedDuration != null) item.formattedDuration!,
+      if (item.author != null && item.author!.isNotEmpty) item.author!,
+      if (item.series != null && item.series!.isNotEmpty) item.series!,
+      if (item.pageCount != null) '${item.pageCount} pages',
       item.extension.toUpperCase(),
+      if (item.isBook) 'Book',
+      if (item.isComic) 'Comic',
     ];
 
     return Padding(
@@ -193,7 +198,12 @@ class _PlaySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!item.status.isPlayable) return _buildDisabled(context);
+    if (!item.status.isPlayable) {
+      return _buildDisabled(context);
+    }
+    if (!item.canStartAvPlayback) {
+      return _buildReaderPending(context);
+    }
 
     return FutureBuilder<ResumeInfo?>(
       future: context.read<PlaybackService>().resumeInfoFor(item.id),
@@ -262,6 +272,45 @@ class _PlaySection extends StatelessWidget {
       context,
       MaterialPageRoute(
         builder: (_) => PlayerScreen(item: item, startPosition: startPosition),
+      ),
+    );
+  }
+
+  Widget _buildReaderPending(BuildContext context) {
+    final kindLabel = item.isComic
+        ? 'Comic'
+        : item.isBook
+            ? 'Book'
+            : 'Document';
+    return Padding(
+      padding: AppSpacing.playSection,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            height: 52,
+            child: FilledButton.icon(
+              style: FilledButton.styleFrom(
+                disabledBackgroundColor: Colors.white10,
+                disabledForegroundColor: Colors.white30,
+                shape: AppRadius.buttonShape,
+              ),
+              icon: const Icon(Icons.menu_book_outlined, size: AppIcons.standard),
+              label: Text(
+                'Open $kindLabel',
+                style: const TextStyle(
+                    fontSize: AppTypography.size16, fontWeight: FontWeight.w700),
+              ),
+              onPressed: null,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.iconGap),
+          const Text(
+            'Indexed and browseable. Dedicated reader opens in a later M6 phase.',
+            style: AppTypography.labelMuted,
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }

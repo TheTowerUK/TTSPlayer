@@ -3,6 +3,8 @@ enum MediaKind {
   video,
   audio,
   image,
+  book,
+  comic,
   unknown;
 
   static MediaKind fromString(String? value) {

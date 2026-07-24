@@ -33,13 +33,24 @@ Describe how books and comics fit into TTSPlayer’s existing folder-first, prov
 
 | Kind | Typical formats (M6 baseline) | Primary surface |
 |---|---|---|
-| `comic` | **`.cbz`**, **`.cbr`** (both required) | Comic archive reader |
-| `book` | `.pdf`, `.epub` | Document reader |
+| `comic` | **`.cbz`**, **`.cbr`** (both required) | Comic archive reader (Phase 6.3) |
+| `book` | `.pdf`, `.epub` | Document reader (Phase 6.4) |
 | existing | `video`, `audio`, `image`, `unknown` | Unchanged |
 
 **Recommendation:** Keep `book` and `comic` distinct. Presentation, progress units, and reader stacks differ enough that a single `document` kind would force awkward branching.
 
 **Comic formats:** `.cbz` (ZIP) and `.cbr` (RAR) are the two primary comic archive formats and are **required M6 baseline scope**. CBR is an implementation/dependency risk, not optional product scope. Any later deferral of CBR requires an explicit documented decision, rationale, known limitation, and approval before M6 closure.
+
+**CBR/RAR stack (Phase 6.1):** **Provisional preferred** — `package:unrar` (Dart FFI to official UnRAR). **Not** `package:rar` for Windows (published platforms omit Windows). See [cbr-rar-evaluation.md](./cbr-rar-evaluation.md). Not wired into the app until Phase 6.3 **Gate 0** passes.
+
+### Catalogue versions
+
+| Version | Scanner | Content |
+|---|---|---|
+| 3 | 0.4.0 | Video / audio / image + music metadata |
+| **4** | **0.5.0** | + book / comic kinds and extensions |
+
+Client `CatalogueInfo.maxSupportedCatalogueVersion` is **4**. Higher versions throw `UnsupportedCatalogueVersionException`.
 
 ### What is not a comic in initial M6 scope
 
@@ -105,10 +116,11 @@ All opens go through `MediaLocationResolver` / existing provider config so local
 
 ### Extraction / decode
 
-- **CBZ:** ZIP entry list → decode pages lazily (required)
-- **CBR:** RAR archive → decode pages lazily via a Windows-compatible stack selected in Phase 6.0 or early 6.1 (required). Selection must consider licensing, maintenance, packaging, extraction security, performance, and testability.
+- **CBZ:** ZIP entry list → decode pages lazily (required; reader in 6.3)
+- **CBR:** RAR via **provisional preferred** stack `package:unrar` (official UnRAR Dart FFI). `package:rar` is **not** preferred for Windows (no published Windows platform support). Gate 0 in Phase 6.3 is blocking — see [cbr-rar-evaluation.md](./cbr-rar-evaluation.md).
+- **Indexer metadata (6.1):** CBZ may read ComicInfo.xml; CBR uses filename title only until the reader stack is wired.
 - **Failure modes:** unsupported, encrypted, corrupt, or multi-volume archives fail gracefully — no crash; catalogue browse/playback elsewhere unaffected
-- **PDF/EPUB:** Via vetted Flutter/Windows-capable packages (spike before Accept)
+- **PDF/EPUB:** Via vetted Flutter/Windows-capable packages (spike before Accept in 6.4)
 
 Temp files must be session-scoped or LRU-cached with a documented wipe policy (open question in m6-plan).
 

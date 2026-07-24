@@ -98,9 +98,22 @@ String formatDiagnosticsExport(RuntimeDiagnosticsSnapshot snapshot) {
     _writeLine(buffer, 'Identity', catalogue.catalogueIdentity);
     _writeLine(buffer, 'Source', catalogue.sourceKindLabel);
     _writeLine(buffer, 'Generated at', catalogue.generatedAt);
+    _writeLine(buffer, 'Catalogue version', _formatInt(catalogue.catalogueVersion));
+    _writeLine(buffer, 'Scanner version', catalogue.scannerVersion);
     _writeLine(buffer, 'Libraries', _formatInt(catalogue.libraryCount));
     _writeLine(buffer, 'Folders', _formatInt(catalogue.folderCount));
     _writeLine(buffer, 'Items', _formatInt(catalogue.itemCount));
+    _writeLine(buffer, 'Video items', _formatInt(catalogue.videoItemCount));
+    _writeLine(buffer, 'Audio items', _formatInt(catalogue.audioItemCount));
+    _writeLine(buffer, 'Image items', _formatInt(catalogue.imageItemCount));
+    _writeLine(buffer, 'Book items', _formatInt(catalogue.bookItemCount));
+    _writeLine(buffer, 'Comic items', _formatInt(catalogue.comicItemCount));
+    _writeLine(buffer, 'Unknown items', _formatInt(catalogue.unknownItemCount));
+    _writeLine(
+      buffer,
+      'Supported extensions',
+      _formatInt(catalogue.supportedExtensionCount),
+    );
     _writeLine(buffer, 'Demo data', _formatBool(catalogue.isDemoData));
     _writeLine(buffer, 'Degraded', _formatBool(catalogue.isDegraded));
     _writeLine(buffer, 'Loading', _formatBool(catalogue.isLoading));

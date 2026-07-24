@@ -32,10 +32,23 @@ abstract final class SupportedExtensions {
     'webp',
   };
 
+  static const Set<String> book = {
+    'epub',
+    'pdf',
+  };
+
+  static const Set<String> comic = {
+    'cbr',
+    'cbz',
+  };
+
   static const List<String> all = [
     'aac',
     'avi',
     'bmp',
+    'cbr',
+    'cbz',
+    'epub',
     'flac',
     'gif',
     'jpeg',
@@ -48,6 +61,7 @@ abstract final class SupportedExtensions {
     'mp4',
     'ogg',
     'opus',
+    'pdf',
     'png',
     'tif',
     'tiff',
@@ -68,6 +82,14 @@ abstract final class SupportedExtensions {
 
   static Set<String> effectiveImageSet({Iterable<String>? catalogSupported}) {
     return _effectiveSet(image, catalogSupported);
+  }
+
+  static Set<String> effectiveBookSet({Iterable<String>? catalogSupported}) {
+    return _effectiveSet(book, catalogSupported);
+  }
+
+  static Set<String> effectiveComicSet({Iterable<String>? catalogSupported}) {
+    return _effectiveSet(comic, catalogSupported);
   }
 
   static Set<String> _effectiveSet(
@@ -94,6 +116,12 @@ abstract final class SupportedExtensions {
     if (effectiveImageSet(catalogSupported: catalogSupported).contains(ext)) {
       return MediaExtensionCategory.image;
     }
+    if (effectiveBookSet(catalogSupported: catalogSupported).contains(ext)) {
+      return MediaExtensionCategory.book;
+    }
+    if (effectiveComicSet(catalogSupported: catalogSupported).contains(ext)) {
+      return MediaExtensionCategory.comic;
+    }
     return MediaExtensionCategory.other;
   }
 }
@@ -102,5 +130,7 @@ enum MediaExtensionCategory {
   video,
   audio,
   image,
+  book,
+  comic,
   other,
 }

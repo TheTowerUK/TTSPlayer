@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../constants/supported_extensions.dart';
 import 'media_folder.dart';
 import 'media_item.dart';
+import 'unsupported_catalogue_version_exception.dart';
 
 // Intercepts a hard cast, logs the failing field, then rethrows.
 T _cast<T>(dynamic value, String model, String field) {
@@ -22,6 +23,9 @@ T _cast<T>(dynamic value, String model, String field) {
 // ---------------------------------------------------------------------------
 
 class CatalogueInfo {
+  /// Highest catalogue_version this client build understands (M6.1 → 4).
+  static const int maxSupportedCatalogueVersion = 4;
+
   /// Unique identity for this catalogue file.
   /// Format: <ISO-8601-UTC-second>-<6 uppercase hex chars>
   /// Example: "2026-07-01T20:14:53Z-8F2A1B"
@@ -270,15 +274,25 @@ class Catalog {
 
     final scan = scanRaw != null ? ScanStats.fromJson(scanRaw) : null;
 
+    final catalogueInfo =
+        catalogueRaw != null ? CatalogueInfo.fromJson(catalogueRaw) : null;
+    final version = catalogueInfo?.catalogueVersion ?? 1;
+    if (version > CatalogueInfo.maxSupportedCatalogueVersion) {
+      throw UnsupportedCatalogueVersionException(
+        version: version,
+        maxSupported: CatalogueInfo.maxSupportedCatalogueVersion,
+      );
+    }
+
     return Catalog(
-      catalogueInfo: catalogueRaw != null ? CatalogueInfo.fromJson(catalogueRaw) : null,
+      catalogueInfo: catalogueInfo,
       scan: scan,
       generatedAt: json['generated_at'] as String? ?? scan?.completed ?? '',
-      sources: sources,
       totalItems: _cast<int>(json['total_items'], 'Catalog', 'total_items'),
       folders: (_cast<List<dynamic>>(json['folders'], 'Catalog', 'folders'))
           .map((e) => MediaFolder.fromJson(e as Map<String, dynamic>))
           .toList(),
+      sources: sources,
       scanWarnings: ((json['scan_warnings'] as List<dynamic>?) ?? [])
           .map((e) => ScanWarning.fromJson(e as Map<String, dynamic>))
           .toList(),

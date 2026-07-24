@@ -79,9 +79,18 @@ class CatalogueDiagnostics {
     this.catalogueIdentity,
     this.sourceKindLabel,
     this.generatedAt,
+    this.catalogueVersion,
+    this.scannerVersion,
     this.libraryCount,
     this.folderCount,
     this.itemCount,
+    this.videoItemCount,
+    this.audioItemCount,
+    this.imageItemCount,
+    this.bookItemCount,
+    this.comicItemCount,
+    this.unknownItemCount,
+    this.supportedExtensionCount,
     this.isDemoData,
     this.isDegraded,
     this.isLoading,
@@ -93,9 +102,18 @@ class CatalogueDiagnostics {
   final String? catalogueIdentity;
   final String? sourceKindLabel;
   final String? generatedAt;
+  final int? catalogueVersion;
+  final String? scannerVersion;
   final int? libraryCount;
   final int? folderCount;
   final int? itemCount;
+  final int? videoItemCount;
+  final int? audioItemCount;
+  final int? imageItemCount;
+  final int? bookItemCount;
+  final int? comicItemCount;
+  final int? unknownItemCount;
+  final int? supportedExtensionCount;
   final bool? isDemoData;
   final bool? isDegraded;
   final bool? isLoading;

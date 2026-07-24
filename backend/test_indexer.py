@@ -365,8 +365,96 @@ class MusicIndexingTests(unittest.TestCase):
             names = {Path(i["file_path"]).name for i in node["items"]}
             self.assertEqual(names, {"track.mp3"})
 
-    def test_catalogue_version_constant_is_three(self):
-        self.assertEqual(indexer.CATALOGUE_VERSION, 3)
+    def test_catalogue_version_constant_is_four(self):
+        self.assertEqual(indexer.CATALOGUE_VERSION, 4)
+        self.assertEqual(indexer.SCANNER_VERSION, "0.5.0")
+
+
+class BookComicIndexingTests(unittest.TestCase):
+    def test_book_and_comic_extensions_supported(self):
+        for ext in (".pdf", ".epub", ".cbz", ".cbr"):
+            with self.subTest(ext=ext):
+                self.assertIn(ext, indexer.SUPPORTED_EXTENSIONS)
+
+    def test_media_kind_for_book_and_comic_suffixes(self):
+        self.assertEqual(indexer.media_kind_for_suffix(".pdf"), "book")
+        self.assertEqual(indexer.media_kind_for_suffix(".epub"), "book")
+        self.assertEqual(indexer.media_kind_for_suffix(".cbz"), "comic")
+        self.assertEqual(indexer.media_kind_for_suffix(".cbr"), "comic")
+
+    def test_make_item_pdf_emits_book_kind(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "My_Novel.pdf"
+            path.write_bytes(b"%PDF-1.4")
+            warnings: list[dict] = []
+            item = indexer.make_item(path, warnings)
+            self.assertIsNotNone(item)
+            self.assertEqual(item["media_kind"], "book")
+            self.assertEqual(item["title"], "My Novel")
+            self.assertNotIn("author", item)
+
+    def test_make_item_cbz_emits_comic_kind(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "Issue_01.cbz"
+            path.write_bytes(b"PK\x03\x04")  # not a valid zip; metadata falls back
+            warnings: list[dict] = []
+            item = indexer.make_item(path, warnings)
+            self.assertIsNotNone(item)
+            self.assertEqual(item["media_kind"], "comic")
+            self.assertEqual(item["title"], "Issue 01")
+
+    def test_make_item_cbr_emits_comic_kind_filename_title(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "Batman_01.cbr"
+            path.write_bytes(b"Rar!\x1a\x07")
+            warnings: list[dict] = []
+            item = indexer.make_item(path, warnings)
+            self.assertIsNotNone(item)
+            self.assertEqual(item["media_kind"], "comic")
+            self.assertEqual(item["title"], "Batman 01")
+
+    def test_scan_root_indexes_mixed_book_comic_video(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "Books").mkdir()
+            (root / "Books" / "guide.pdf").write_bytes(b"%PDF")
+            (root / "Comics").mkdir()
+            (root / "Comics" / "issue.cbz").write_bytes(b"PK")
+            (root / "Comics" / "issue.cbr").write_bytes(b"Rar")
+            (root / "Videos").mkdir()
+            (root / "Videos" / "clip.mp4").write_bytes(b"v")
+
+            warnings: list[dict] = []
+            counters = {"folders": 0, "items": 0}
+            folders, total = indexer.scan_root(root, warnings, counters)
+            self.assertGreaterEqual(total, 4)
+            kinds = {i.get("media_kind") for i in _all_items_from_folders(folders)}
+            self.assertIn("book", kinds)
+            self.assertIn("comic", kinds)
+            self.assertIn("video", kinds)
+
+            block = indexer.make_catalogue_block("test-id")
+            self.assertEqual(block["catalogue_version"], 4)
+            self.assertEqual(block["scanner_version"], "0.5.0")
+            self.assertIn("pdf", block["supported_extensions"])
+            self.assertIn("epub", block["supported_extensions"])
+            self.assertIn("cbz", block["supported_extensions"])
+            self.assertIn("cbr", block["supported_extensions"])
+
+    def test_cover_sidecar_skipped_beside_book(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            folder = root / "Books"
+            folder.mkdir()
+            (folder / "novel.pdf").write_bytes(b"%PDF")
+            (folder / "cover.jpg").write_bytes(b"JPEG")
+            warnings: list[dict] = []
+            counters = {"folders": 0, "items": 0}
+            folders, total = indexer.scan_root(root, warnings, counters)
+            names = {Path(i["file_path"]).name for i in _all_items_from_folders(folders)}
+            self.assertIn("novel.pdf", names)
+            self.assertNotIn("cover.jpg", names)
+            self.assertEqual(total, 1)
 
 
 class AddedAtTests(unittest.TestCase):

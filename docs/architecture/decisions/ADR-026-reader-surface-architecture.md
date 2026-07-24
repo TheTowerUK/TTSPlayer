@@ -23,7 +23,7 @@ Reusing the video player for PDFs or forcing comics through the music shell woul
 2. Readers may share **chrome patterns** (app bar, theme, focus targets, error banners) but **not** `VideoPlayerController`, music queue, or listening session controllers.
 3. Open actions route by `media_kind` from folder/detail/search.
 4. All media access uses existing **MediaLocationResolver** / provider stack.
-5. Reader package choices (PDF/EPUB/ZIP/RAR) must be Windows-capable and documented; RAR/CBR selection is a Phase 6.0 or early 6.1 prerequisite; spikes precede Accept.
+5. Reader package choices (PDF/EPUB/ZIP/RAR) must be Windows-capable and documented; CBR uses the **provisional preferred** stack from [cbr-rar-evaluation.md](../cbr-rar-evaluation.md) only after **Phase 6.3 Gate 0** passes.
 6. Comic reader **Definition of Done** requires successful Windows runtime validation of **both** CBZ and CBR fixtures (open + page navigation).
 7. Failure modes: missing file; corrupt archive; unsupported archive variant; **encrypted** archive; **multi-volume** archive → dismissible error with recovery (back / rescan), **never crash**, and **never affect** the rest of the catalogue or other media kinds.
 

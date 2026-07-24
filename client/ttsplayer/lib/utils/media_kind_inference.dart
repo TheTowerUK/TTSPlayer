@@ -24,6 +24,12 @@ MediaKind inferMediaKind({
   if (SupportedExtensions.image.contains(ext)) {
     return MediaKind.image;
   }
+  if (SupportedExtensions.book.contains(ext)) {
+    return MediaKind.book;
+  }
+  if (SupportedExtensions.comic.contains(ext)) {
+    return MediaKind.comic;
+  }
   return MediaKind.unknown;
 }
 

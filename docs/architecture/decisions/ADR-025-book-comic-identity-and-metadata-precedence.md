@@ -1,8 +1,8 @@
 # ADR-025: Book/Comic Identity and Metadata Precedence
 
-**Status:** Proposed  
+**Status:** Proposed (identity/metadata behaviour implemented for 6.1 indexing)  
 **Date:** 2026-07-24  
-**Milestone:** M6 — Phase 6.0 / 6.1–6.2  
+**Milestone:** M6 — Phase 6.1–6.2  
 **Related:** [books-comics.md](../books-comics.md) · [ADR-021](./ADR-021-music-metadata-precedence-and-identity.md) · [ADR-024](./ADR-024-book-comic-catalogue-schema-and-media-kind.md)
 
 ---

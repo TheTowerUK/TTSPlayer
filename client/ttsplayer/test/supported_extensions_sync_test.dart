@@ -6,6 +6,9 @@ const _expectedExtensions = [
   'aac',
   'avi',
   'bmp',
+  'cbr',
+  'cbz',
+  'epub',
   'flac',
   'gif',
   'jpeg',
@@ -18,6 +21,7 @@ const _expectedExtensions = [
   'mp4',
   'ogg',
   'opus',
+  'pdf',
   'png',
   'tif',
   'tiff',
@@ -27,13 +31,13 @@ const _expectedExtensions = [
 ];
 
 void main() {
-  test('SupportedExtensions includes image and video types', () {
+  test('SupportedExtensions matches indexer including book/comic', () {
     expect(SupportedExtensions.all, _expectedExtensions);
-    for (final ext in ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp', 'tif', 'tiff']) {
+    for (final ext in ['pdf', 'epub', 'cbz', 'cbr']) {
       expect(
         SupportedExtensions.all,
         contains(ext),
-        reason: 'image extension $ext must be indexed',
+        reason: 'book/comic extension $ext must be indexed',
       );
     }
   });

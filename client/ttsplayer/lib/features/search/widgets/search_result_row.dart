@@ -162,18 +162,29 @@ class SearchResultRow extends StatelessWidget {
       MediaKind.video => 'Video',
       MediaKind.audio => 'Audio',
       MediaKind.image => 'Image',
+      MediaKind.book => 'Book',
+      MediaKind.comic => 'Comic',
       MediaKind.unknown => 'Media',
     };
   }
 
   static String _musicMetadataLine(MediaItem item) {
-    if (!item.isAudio) return '';
-    final artist = item.artist ?? item.albumArtist;
-    final album = item.album;
-    if (artist != null && album != null) {
-      return '$artist · $album';
+    if (item.isAudio) {
+      final artist = item.artist ?? item.albumArtist;
+      final album = item.album;
+      if (artist != null && album != null) {
+        return '$artist · $album';
+      }
+      return artist ?? album ?? '';
     }
-    return artist ?? album ?? '';
+    if (item.isBook || item.isComic) {
+      final parts = <String>[
+        if (item.author != null && item.author!.isNotEmpty) item.author!,
+        if (item.series != null && item.series!.isNotEmpty) item.series!,
+      ];
+      return parts.join(' · ');
+    }
+    return '';
   }
 }
 

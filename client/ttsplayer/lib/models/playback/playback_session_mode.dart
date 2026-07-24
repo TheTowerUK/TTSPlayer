@@ -10,6 +10,12 @@ enum PlaybackSessionMode {
 }
 
 /// Derives session mode from catalogue media kind (M5.1).
+///
+/// Books and comics must not open an A/V session (M6.1) — callers should
+/// gate with [MediaItem.canStartAvPlayback] before invoking playback.
 PlaybackSessionMode playbackSessionModeFor(MediaItem item) {
-  return item.isAudio ? PlaybackSessionMode.audio : PlaybackSessionMode.video;
+  if (item.isAudio) {
+    return PlaybackSessionMode.audio;
+  }
+  return PlaybackSessionMode.video;
 }

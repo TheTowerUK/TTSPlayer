@@ -130,8 +130,8 @@ Sprint checkpoints: `m3-sprint-3`, `m3-complete`. Sprint 4 delivered Featured Fo
 
 | Sub-phase | Focus | Status |
 |---|---|---|
-| **6.0** | Planning and Architecture | 🔄 In progress |
-| **6.1** | Catalogue schema, media kinds, indexer formats (+ RAR/CBR selection) | Planned |
+| **6.0** | Planning and Architecture | ✅ Complete |
+| **6.1** | Catalogue schema, media kinds, indexer formats (+ RAR/CBR provisional preferred) | ✅ Complete |
 | **6.2** | Books & comics library browsing / presentation | Planned |
 | **6.3** | Comic archive reader (CBZ **and** CBR required) | Planned |
 | **6.4** | Book document reader (PDF/EPUB) | Planned |
@@ -142,6 +142,6 @@ Sprint checkpoints: `m3-sprint-3`, `m3-complete`. Sprint 4 delivered Featured Fo
 → [M6 plan](docs/roadmap/m6-plan.md)  
 → [Books & comics architecture](docs/architecture/books-comics.md)  
 → [ADR-024–027 (Proposed)](docs/architecture/decisions/README.md#m6--books--comics)  
-→ **Next after planning agreement:** Phase 6.1  
+→ **Next:** Phase 6.2  
 
 **Not silent M6 scope:** M5 deferred music features (playlists, shuffle/repeat, favourites redesign, lyrics, etc.) remain a separate backlog — see [m5-complete.md §4](docs/release/m5-complete.md).
