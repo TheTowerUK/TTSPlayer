@@ -2,7 +2,7 @@
 
 A lightweight, **local-first** home media platform. Browse your own folder structure, play video from local paths or a NAS, and optionally stream over HTTPS — without Plex-style daemons, transcoding, or metadata scrapers.
 
-**Current release line:** `v0.4.0-dev` · **M3.5 complete** ([deployment validation](docs/release/m3.5-media-access-complete.md#deployment-validation--2026-07-07)) · tag [`m3.5-complete`](https://github.com/TheTowerUK/TTSPlayer/releases/tag/m3.5-complete)
+**Current release line:** `v0.6.0` · **M5 complete** ([release summary](docs/release/m5-complete.md)) · tags [`v0.6.0`](https://github.com/TheTowerUK/TTSPlayer/releases/tag/v0.6.0) / [`m5-complete`](https://github.com/TheTowerUK/TTSPlayer/releases/tag/m5-complete)
 
 ---
 
@@ -20,6 +20,21 @@ TTSPlayer treats the **filesystem as the source of truth**. Your folder names ar
 **Platforms today:** Windows desktop (primary), Android-capable Flutter tree. iOS/tvOS are future targets.
 
 **Validated deployment:** TerraMaster TNAS + Caddy on `:8443` — HTTPS catalogue, remote playback, HTTP Range (seeking), and trusted internal CA.
+
+---
+
+## Quick Start (5 minutes)
+
+Run the client with the **bundled demo catalogue** — no NAS or indexer required.
+
+```powershell
+git clone https://github.com/TheTowerUK/TTSPlayer.git
+cd TTSPlayer\client\ttsplayer
+flutter pub get
+flutter run -d windows
+```
+
+On first launch you can browse folders and play sample items immediately. Point at your own library later via **Settings** (see [Build instructions](#build-instructions)).
 
 ---
 
