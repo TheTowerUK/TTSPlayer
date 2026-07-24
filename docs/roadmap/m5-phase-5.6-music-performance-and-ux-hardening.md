@@ -9,7 +9,7 @@
 **Step 4 commit:** `6b1574d` — `perf(music): harden search and library rendering`
 **Step 5 commit:** `ce65b94` — `fix(music): harden artwork and library states`
 **Step 6a commit:** `004e33c` — `test(music): validate large-library runtime`
-**Step 6b commit:** *(closure)* — `docs(m5.6): close music performance hardening phase`
+**Step 6b commit:** `314c796` — `docs(m5.6): close music performance hardening phase`
 
 → [M5 plan](./m5-plan.md)
 → [Phase 5.6 closure](./m5-phase-5.6-closure-report.md)

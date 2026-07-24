@@ -34,7 +34,7 @@ Ensure the music library remains responsive, predictable, and visually stable ag
 | 4 Search/lists | `6b1574d` | `perf(music): harden search and library rendering` |
 | 5 Artwork/UI | `ce65b94` | `fix(music): harden artwork and library states` |
 | 6a Runtime | `004e33c` | `test(music): validate large-library runtime` |
-| 6b Closure | *(this commit)* | `docs(m5.6): close music performance hardening phase` |
+| 6b Closure | `314c796` | `docs(m5.6): close music performance hardening phase` |
 
 ---
 
