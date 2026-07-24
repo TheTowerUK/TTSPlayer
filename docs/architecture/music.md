@@ -2,7 +2,7 @@
 
 
 
-**Status:** **In progress** — Phase 5.5 complete (2026-07-23); **Phase 5.6 planning** — [performance / UX hardening](../roadmap/m5-phase-5.6-music-performance-and-ux-hardening.md)
+**Status:** **In progress** — Phase 5.6 complete (2026-07-24); M5 release/docs next — [closure](../roadmap/m5-phase-5.6-closure-report.md)
 
 **Related roadmap:** [M5 — Music](../roadmap/m5-plan.md) · [Phase 5.1 spec](../roadmap/m5-phase-5.1-music-catalogue-metadata.md)
 
@@ -602,7 +602,7 @@ MusicLibraryProjection
 
 
 
-**Phase 5.6 (in progress):** [Music library performance, scale and UX hardening](../roadmap/m5-phase-5.6-music-performance-and-ux-hardening.md) — Step 5 artwork/UI-state hardening complete. Step 6 next: Windows runtime validation and phase closure.
+**Phase 5.6 (complete 2026-07-24):** [Music library performance, scale and UX hardening](../roadmap/m5-phase-5.6-music-performance-and-ux-hardening.md) — [closure](../roadmap/m5-phase-5.6-closure-report.md). Projection indexes + memoisation; search ownership; lazy lists + scroll retention; artwork/UI-state hardening; Windows runtime P56-RT1–RT20.
 
 #### Music artwork flow (Phase 5.6 Step 5)
 

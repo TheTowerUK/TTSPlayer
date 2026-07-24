@@ -66,7 +66,7 @@ Implement in order unless a documented dependency allows parallel documentation 
 | **5.3** | Music Playback and Queue | ✅ Complete (2026-07-21) — [spec](./m5-phase-5.3-music-playback-queue.md) |
 | **5.4** | Music State and Listening History | ✅ Complete (2026-07-22) — [spec](./m5-phase-5.4-listening-history-continue-listening.md) · [closure](./m5-phase-5.4-closure-report.md) |
 | **5.5** | Playback Session Persistence | ✅ Complete (2026-07-23) — [spec](./m5-phase-5.5-playback-session-persistence.md) · [closure](./m5-phase-5.5-closure-report.md) |
-| **5.6** | Music Library Performance, Scale and UX Hardening | **Next** — [spec](./m5-phase-5.6-music-performance-and-ux-hardening.md) |
+| **5.6** | Music Library Performance, Scale and UX Hardening | ✅ Complete — [spec](./m5-phase-5.6-music-performance-and-ux-hardening.md) · [closure](./m5-phase-5.6-closure-report.md) |
 
 ---
 
@@ -423,7 +423,11 @@ M5.3 adds play track, play album, queue next/previous, seek, shuffle, and repeat
 
 ### Phase 5.6 — Music Library Performance, Scale and UX Hardening
 
-**Status:** **IN PROGRESS** (2026-07-23) — [Phase 5.6 spec](./m5-phase-5.6-music-performance-and-ux-hardening.md) · Step 2 baselines complete
+**Status:** ✅ **COMPLETE** (2026-07-24) — [Phase 5.6 spec](./m5-phase-5.6-music-performance-and-ux-hardening.md) · [Closure](./m5-phase-5.6-closure-report.md)
+
+Deterministic 1k/10k/≈40k fixtures; MP1–MP18 informational baselines; projection indexes + memoisation; search ownership + lazy lists; artwork/UI-state hardening; Windows runtime P56-RT1–RT20. Feature expansion remained out of scope.
+
+**Next for M5:** Post-5.6 release and documentation closure (below).
 
 **Objective:** Ensure the music library remains responsive, predictable, and visually stable against large mixed-media catalogues (~40k audio / live ~42k audio) before broader feature work.
 
@@ -448,10 +452,12 @@ M5.3 adds play track, play album, queue next/previous, seek, shuffle, and repeat
 
 **Definition of done:**
 
-- [ ] Deterministic fixtures and recorded baselines
-- [ ] Projection/search/list correctness and responsiveness at supported scales
-- [ ] Windows runtime matrix executed; full suite + Release build green
-- [ ] Architecture and roadmap reconciled; README unstaged
+- [x] Deterministic fixtures and recorded baselines
+- [x] Projection/search/list correctness and responsiveness at supported scales
+- [x] Windows runtime matrix executed; full suite + Release build green
+- [x] Architecture and roadmap reconciled; README unstaged
+
+→ [Closure report](./m5-phase-5.6-closure-report.md)
 
 #### Post-5.6 — M5 Release and Documentation (deferred)
 
@@ -483,7 +489,7 @@ M5 is complete when:
 - [ ] Required listening state works (favourites, recently played, Continue Listening, queue persistence per ADR-022)
 - [ ] Music appears in search with appropriate presentation
 - [ ] Album artwork uses existing cache pipeline
-- [ ] Large music libraries remain usable (performance acceptance criteria in [Phase 5.6 spec](./m5-phase-5.6-music-performance-and-ux-hardening.md))
+- [x] Large music libraries remain usable (performance acceptance criteria in [Phase 5.6 spec](./m5-phase-5.6-music-performance-and-ux-hardening.md) · [closure](./m5-phase-5.6-closure-report.md))
 - [ ] Diagnostics expose music/queue summary without secrets
 - [ ] Automated tests pass; Windows runtime harnesses pass
 - [ ] Manual Windows QA complete

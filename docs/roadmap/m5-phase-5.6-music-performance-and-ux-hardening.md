@@ -1,15 +1,18 @@
 # M5 Phase 5.6 — Music Library Performance, Scale and UX Hardening
 
-**Status:** **IN PROGRESS** — Step 5 artwork/UI-state hardening complete (2026-07-23); Step 6 pending
+**Status:** ✅ **COMPLETE** (2026-07-24) — [Closure report](./m5-phase-5.6-closure-report.md)
 **Milestone:** M5 — Music
 **Branch:** `m5-development`
 **Predecessor:** Phase 5.5 complete (2026-07-23) — ADR-022 **Accepted**
 **Step 2 commit:** `34dc00d` — `test(music): add large-library performance baselines`
 **Step 3 commit:** `5a5e1bb` — `perf(music): optimise library projection`
 **Step 4 commit:** `6b1574d` — `perf(music): harden search and library rendering`
-**Step 5 commit:** `fix(music): harden artwork and library states`
+**Step 5 commit:** `ce65b94` — `fix(music): harden artwork and library states`
+**Step 6a commit:** `004e33c` — `test(music): validate large-library runtime`
+**Step 6b commit:** *(closure)* — `docs(m5.6): close music performance hardening phase`
 
 → [M5 plan](./m5-plan.md)
+→ [Phase 5.6 closure](./m5-phase-5.6-closure-report.md)
 → [Phase 5.5 closure](./m5-phase-5.5-closure-report.md)
 → [Music architecture](../architecture/music.md#13-cache-and-performance-implications)
 → [ADR-022](../architecture/decisions/ADR-022-music-queue-and-listening-state.md) — Accepted (no change required for 5.6 planning)
@@ -740,17 +743,21 @@ No new aggregate fields (existing artwork LRU + image-cache metrics remain suffi
 
 ### Step 5 completion status
 
-**Complete** for artwork/UI-state scope. Phase 5.6 remains **IN PROGRESS** (Step 6 pending).
+**Complete** for artwork/UI-state scope.
+
+### Step 6 completion status
+
+**Complete** (2026-07-24) — Windows runtime P56-RT1–RT20 + phase closure. → [Closure report](./m5-phase-5.6-closure-report.md)
 
 ---
 
-## Open Questions (resolve in Step 6+)
+## Open Questions (resolved / remaining)
 
 1. ~~Exact track counts for 1k/10k/40k profiles~~ — **resolved:** 1,010 / 10,010 / 40,010 audio.
-2. Whether projection build should expose a timed diagnostic field — still open for Step 6.
+2. Whether projection build should expose a timed diagnostic field — **deferred** (not required for 5.6 closure; aggregates remain informational in test baselines).
 3. ~~Whether linear `findTrackById` becomes a map index in Step 3~~ — **done** (Step 3).
-4. ~~Numeric Windows workstation thresholds~~ — **proposed** in Step 2 section (watch bands).
-5. Naming of the post-5.6 M5 release-closure phase — still open.
+4. ~~Numeric Windows workstation thresholds~~ — **proposed** in Step 2 section (watch bands); remain informational.
+5. Naming of the post-5.6 M5 release-closure phase — still open for M5 release work.
 6. ~~Whether Step 4 should add search-specific indexes~~ — **deferred**; linear indexed scan + cap 100 sufficient at measured scale.
 
 ---

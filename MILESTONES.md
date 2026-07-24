@@ -8,7 +8,7 @@ Canonical milestone detail lives in [`docs/roadmap/`](docs/roadmap/).
 | M3 | [Personal Media Experience](docs/roadmap/m3-personal-media-experience.md) | ✅ v0.3.0 |
 | M3.5 | [Network Client Foundation](docs/roadmap/network-client-foundation.md) | ✅ `m3.5-complete` |
 | M4 | [User Experience and Platform Integration](docs/roadmap/m4-plan.md) | ✅ `v0.5.0` — [release summary](docs/release/m4-release-summary.md) |
-| M5 | [Music](docs/roadmap/m5-plan.md) | 🔄 In progress — Phase 5.6 next (5.5 complete 2026-07-23) |
+| M5 | [Music](docs/roadmap/m5-plan.md) | 🔄 In progress — Phase 5.6 complete (2026-07-24); release/docs next |
 | M7 | [Multi-device Experience](docs/roadmap/mobile-delivery.md#m7--multi-device-experience) | Planned |
 
 → [Roadmap principles](docs/roadmap/principles.md)
@@ -90,7 +90,9 @@ Sprint checkpoints: `m3-sprint-3`, `m3-complete`. Sprint 4 delivered Featured Fo
 
 ## M5 — Music
 
-**Status:** In progress — Phase 5.5 complete; **Phase 5.6 next** (performance / scale / UX hardening)
+**Status:** In progress — Phase 5.6 complete; **M5 release and documentation closure next**
+**Phase:** Music — catalogue extension, music browsing, audio playback, listening state, search, artwork, performance, diagnostics, release
+**Previous:** M4 complete (2026-07-18) · Phase 5.5 complete (2026-07-23) · Phase 5.6 complete (2026-07-24)
 **Branch:** `m5-development`
 **Baseline:** `v0.5.0`
 
@@ -104,10 +106,11 @@ Sprint checkpoints: `m3-sprint-3`, `m3-complete`. Sprint 4 delivered Featured Fo
 | **5.3** | Music Playback and Queue | ✅ Complete (2026-07-21) |
 | **5.4** | Music State and Listening History | ✅ Complete (2026-07-22) |
 | **5.5** | Playback Session Persistence | ✅ Complete (2026-07-23) — [spec](docs/roadmap/m5-phase-5.5-playback-session-persistence.md) · [closure](docs/roadmap/m5-phase-5.5-closure-report.md) |
-| **5.6** | Music Library Performance, Scale and UX Hardening | **Next** — [spec](docs/roadmap/m5-phase-5.6-music-performance-and-ux-hardening.md) |
+| **5.6** | Music Library Performance, Scale and UX Hardening | ✅ Complete (2026-07-24) — [spec](docs/roadmap/m5-phase-5.6-music-performance-and-ux-hardening.md) · [closure](docs/roadmap/m5-phase-5.6-closure-report.md) |
 
 → [M5 plan](docs/roadmap/m5-plan.md)
-→ [Phase 5.6 spec](docs/roadmap/m5-phase-5.6-music-performance-and-ux-hardening.md)
+→ [Phase 5.6 closure](docs/roadmap/m5-phase-5.6-closure-report.md)
+→ **Next:** M5 release and documentation closure
 → [Phase 5.5 closure](docs/roadmap/m5-phase-5.5-closure-report.md)
 → [Music architecture](docs/architecture/music.md)
 → [ADR-020–023](docs/architecture/decisions/README.md#m5--music)

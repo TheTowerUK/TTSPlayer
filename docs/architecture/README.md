@@ -32,11 +32,11 @@ Planning and implementation documents for [M4 — User Experience and Platform I
 
 ## M5 planning (active)
 
-Planning and catalogue foundation for [M5 — Music](../roadmap/m5-plan.md). **Phase 5.5 complete**; Phase 5.6 performance / scale / UX hardening next.
+Planning and catalogue foundation for [M5 — Music](../roadmap/m5-plan.md). **Phase 5.6 complete** (2026-07-24); M5 release/docs next.
 
 | Document | Phase | Status |
 |---|---|---|
-| [Music](./music.md) | 5.0–5.5 ✅ / 5.6 planning | [M5 plan](../roadmap/m5-plan.md) · [Phase 5.6 spec](../roadmap/m5-phase-5.6-music-performance-and-ux-hardening.md) · ADR-020/021/022 **Accepted** |
+| [Music](./music.md) | 5.0–5.6 ✅ | [M5 plan](../roadmap/m5-plan.md) · [Phase 5.6 closure](../roadmap/m5-phase-5.6-closure-report.md) · ADR-020/021/022 **Accepted** |
 
 ## Architecture Decision Records
 
