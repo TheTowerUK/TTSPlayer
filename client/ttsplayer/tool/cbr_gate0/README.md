@@ -1,18 +1,19 @@
-# CBR Gate 0 — optional fixture generator (Windows)
+# CBR Gate 0 — fixture generator + staging (Windows)
 
-Produces **pending** local fixtures only (RAR4/RAR5 pages, encrypted, large, multi-volume).
-These are **not** treated as completed Gate 0 evidence until a candidate passes
-native packaging and the harness exercises them.
+Produces TTSPlayer-owned synthetic CBR/RAR fixtures for Candidate E evidence.
+See `test/support/cbr_gate0_fixtures/README.md`.
 
-Requires WinRAR `rar.exe` on PATH or at the default install location.
-Antivirus (e.g. Norton CyberCapture) may quarantine `rar.exe` / UnRAR binaries —
-exclude the project and Pub cache directories before running. That is a packaging /
-environment concern, separate from the Gate 0 MSVC compile failure for
-`package:unrar`.
+Requires WinRAR `Rar.exe` (tooling only — not shipped). Extract WinRAR with 7-Zip
+into `staging/winrar_extract/` or pass `-RarExe`. RAR4 creation needs WinRAR 6.x
+(`-ma4` removed in WinRAR 7).
+
+Antivirus may quarantine RAR tooling — environment concern, separate from
+Candidate B's MSVC compile failure and from Candidate E's technical CLI evidence.
 
 ```powershell
 cd client\ttsplayer
-powershell -ExecutionPolicy Bypass -File tool\cbr_gate0\generate_fixtures.ps1
+powershell -ExecutionPolicy Bypass -File tool\cbr_gate0\generate_fixtures.ps1 `
+  -RarExe tool\cbr_gate0\staging\winrar_extract\Rar.exe
 ```
 
-Outputs under `test\support\cbr_gate0_fixtures\` (optional packs are gitignored).
+`staging/` is gitignored. Do not commit WinRAR installers.

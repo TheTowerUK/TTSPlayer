@@ -1,43 +1,44 @@
-# CBR Gate 0 fixtures
+# CBR Gate 0 fixtures (Candidate E)
 
-TTSPlayer-owned test data for M6 Phase 6.3 Gate 0. **No copyrighted comics. No third-party sample archives.**
+TTSPlayer-owned synthetic data only. **No copyrighted comics.**
 
-## Committed files (licence-safe, reproducible)
+## Committed / local synthetics
 
 | File | How created | Purpose |
 |---|---|---|
-| `corrupt_synthetic.rar` | TTSPlayer-generated: RAR5 magic (`Rar!\x1a\x07\x01`) + short pseudo-random payload, truncated | Corrupt / incomplete archive shape (no third-party content) |
-| `empty.rar` | Zero-byte file created by TTSPlayer | Empty archive failure |
-| `not_rar.bin` | 32 arbitrary TTSPlayer-chosen bytes | Not-an-archive failure |
-| `page_001.png` | TTSPlayer-generated 1×1 PNG | Neutral seed image for optional local packing |
+| `corrupt_synthetic.rar` | RAR5 magic + short payload | Corrupt / truncated |
+| `empty.rar` | Zero-byte file | Empty archive |
+| `not_rar.bin` | 32 arbitrary bytes | Not-an-archive |
+| `page_001.png` | 1×1 PNG seed | Source image for packing |
+| `rar4_pages.cbr` | WinRAR **6.24** `rar a -ep1 -m3 -ma4` over `page_001..005.png` | Valid **RAR4** (`Rar!\x1a\x07\x00`) |
+| `rar5_pages.cbr` | WinRAR **7.23** `rar a -r -ep1 -m3 -ma5` from pages root | Valid **RAR5** with nested `nested/page_extra.png`, `page_006.jpg`, `notes.txt` |
+| `encrypted.cbr` | `rar a -hpgate0` (password `gate0`) | Encrypted headers |
+| `no_images.cbr` | Text-only archive | No supported images |
+| `large_pages.cbr` | 40 tiny PNGs, `-m1 -ma5` | Timing / process observation |
+| `safe_names_only.cbr` | Single `evil.png` | Safe-name extract baseline |
+| `multivolume.cbr` | First volume of split set (`-v3k`) | Multi-volume detection |
+| `multivolume_missing_part.cbr` | First volume alone | Missing continuation |
+| `multivolume.part*.rar` | Remaining volumes (gitignored companions) | Optional complete set |
 
-Regenerate committed synthetics (PowerShell):
+## Generator commands
+
+Tooling only (not shipped). Requires extracted `Rar.exe`:
 
 ```powershell
-$dir = "client\ttsplayer\test\support\cbr_gate0_fixtures"
-$magic = [byte[]](0x52,0x61,0x72,0x21,0x1A,0x07,0x01)
-$payload = [byte[]](0x00,0x33,0x92,0xB5,0xE5,0x0A,0x01,0x05,0x06,0xDE,0xAD,0xBE,0xEF)
-[IO.File]::WriteAllBytes("$dir\corrupt_synthetic.rar", ($magic + $payload))
-[IO.File]::WriteAllBytes("$dir\empty.rar", [byte[]]@())
-[IO.File]::WriteAllBytes("$dir\not_rar.bin", [byte[]](1..32 | ForEach-Object { $_ }))
-# page_001.png: minimal 1x1 PNG already committed; re-export from any PNG tool if needed
+cd client\ttsplayer
+# RAR5 / encrypted / large / no-images (WinRAR 7.23+)
+powershell -ExecutionPolicy Bypass -File tool\cbr_gate0\generate_fixtures.ps1 `
+  -RarExe tool\cbr_gate0\staging\winrar_extract\Rar.exe
+
+# RAR4 creation requires WinRAR 6.x (7.x removed -ma4):
+# Extract https://www.rarlab.com/rar/winrar-x64-624.exe then:
+& tool\cbr_gate0\staging\winrar624_extract\Rar.exe a -ep1 -m3 -ma4 -y `
+  test\support\cbr_gate0_fixtures\rar4_pages.cbr page_*.png
 ```
 
-## Pending fixtures (not committed — not Gate 0 complete)
-
-Create locally with `tool/cbr_gate0/generate_fixtures.ps1` when WinRAR `rar.exe` is available. These remain **pending**, not completed evidence:
-
-| File | Purpose |
-|---|---|
-| `rar4_pages.cbr` | Valid RAR4 with ordered PNG pages |
-| `rar5_pages.cbr` | Valid RAR5 with ordered PNG pages + nested folder + non-image |
-| `encrypted.cbr` | Password-protected (`gate0`) |
-| `large_pages.cbr` | Larger page set for memory observation |
-| `multivolume.cbr` / `.r00` | Multi-volume unsupported path |
-
-Do **not** commit copyrighted comic content. Prefer generated PNGs from `page_001.png` only. Do **not** commit third-party package sample RAR files unless redistribution rights and purpose are documented in this README and approved.
+Source images: generated PNGs/JPEGs only (see script). Never add licensed comic pages.
 
 ## Signature notes
 
-- RAR5 magic: `52 61 72 21 1A 07 01` (`Rar!\x1a\x07\x01`)
-- RAR4 magic: `52 61 72 21 1A 07 00` (`Rar!\x1a\x07\x00`)
+- RAR5 magic: `52 61 72 21 1A 07 01`
+- RAR4 magic: `52 61 72 21 1A 07 00`

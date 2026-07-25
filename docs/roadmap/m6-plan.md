@@ -1,12 +1,12 @@
 # M6 — Books & Comics
 
-**Status:** **IN PROGRESS** — Phase 6.3 Gate 0 **FAIL** for `package:unrar` (2026-07-25); fallback spike next  
+**Status:** **IN PROGRESS** — Phase 6.3 Gate 0 Candidate E **Conditional pass** (UnRAR CLI, 2026-07-25); reader UI next; phase **not** complete  
 **Branch:** `m6-development`  
 **Development version:** `v0.7.0-dev` (proposed; app remains `0.6.0+1` until release)  
 **Predecessor:** M5 — tags `v0.6.0` / `m5-complete` (2026-07-24)  
 **Phase 6.1:** ✅ Complete (2026-07-24) — catalogue v4 / books & comics indexing  
 **Phase 6.2:** ✅ Complete (2026-07-24) — browse / search / detail presentation (no readers)  
-**Phase 6.3 Gate 0:** ❌ **Fail** for published `package:unrar` 0.1.2 on Windows MSVC — see [cbr-rar-evaluation.md](../architecture/cbr-rar-evaluation.md). CBR remains required. Reader UI not started.
+**Phase 6.3 Gate 0:** Candidate B ❌ Fail (`package:unrar`); Candidate E ⚠ **Conditional pass** (official UnRAR CLI) — see [cbr-rar-evaluation.md](../architecture/cbr-rar-evaluation.md). CBR remains required. Reader UI not started; phase not complete.
 
 → [Books & comics architecture](../architecture/books-comics.md)  
 → [CBR/RAR evaluation](../architecture/cbr-rar-evaluation.md)  
@@ -104,7 +104,7 @@ M6 extends TTSPlayer from a **video + music** personal media application into a 
 | **6.0** | Planning and Architecture | ✅ Complete |
 | **6.1** | Catalogue schema, media kinds, indexer formats (+ RAR/CBR provisional preferred) | ✅ **Complete** |
 | **6.2** | Books & comics library browsing / presentation | ✅ Complete |
-| **6.3** | Comic archive reader (CBZ and CBR required) | Planned — Gate 0 **FAIL** for `package:unrar`; fallback pending; **not complete** |
+| **6.3** | Comic archive reader (CBZ and CBR required) | Planned — Gate 0 Candidate E **Conditional pass**; reader UI pending; **not complete** |
 | **6.4** | Book document reader (PDF/EPUB) | Planned |
 | **6.5** | Reading progress and Continue Reading | Planned |
 | **6.6** | Performance, diagnostics, and Windows runtime validation | Planned |
@@ -228,7 +228,7 @@ M6 extends TTSPlayer from a **video + music** personal media application into a 
 
 ### Phase 6.3 — Comic archive reader (CBZ/CBR)
 
-**Status:** **Not complete.** Gate 0 for published `package:unrar` 0.1.2 = **FAIL** (2026-07-25). Reader UI not started. ADR-026 remains Proposed.
+**Status:** **Not complete.** Gate 0 Candidate E = **Conditional pass** (2026-07-25). Reader UI not started. ADR-026 remains Proposed. Conditions listed in [cbr-rar-evaluation.md](../architecture/cbr-rar-evaluation.md) are Phase 6.3 DoD items.
 
 **Objective:** Open **both** `.cbz` and `.cbr` comic archives in a dedicated paged reader on Windows, with graceful failure for bad archives.
 
@@ -264,16 +264,24 @@ Failed Gate 0 → evaluate documented fallback from [cbr-rar-evaluation.md](../a
 
 **Definition of done:**
 
-- [ ] Gate 0 checklist complete with evidence
+- [ ] Gate 0 checklist complete with evidence (Candidate E **Conditional pass** recorded; Candidate B Fail retained)
+- [ ] **Redistribution approval** for the exact shipping `UnRAR.exe` (identity + SHA-256) — **blocking** for production packaging / release distribution (technical Gate 0 ≠ redistribution approval)
+- [ ] Validated UnRAR binary shipped only after (2), with `License.txt` + runtime SHA-256 gate
+- [ ] Builds omit optional CBR native tool predictably when approved binary absent; adapter reports controlled CBR-unavailable
+- [ ] Accept process-per-page + temp-dir selective extract (documented timeouts/bounds)
+- [ ] Multi-volume and encrypted archives remain non-openable with taxonomy mapping
+- [ ] Unicode entry-name behaviour revalidated before claiming full Unicode comic support
+- [ ] Legal/policy review complete for any channel that distributes `UnRAR.exe` (incl. Store if applicable)
 - [ ] User can open a **CBZ** from browse/detail and turn pages
 - [ ] User can open a **CBR** from browse/detail and turn pages
 - [ ] Windows runtime validation passes for both CBZ and CBR fixtures
 - [ ] Unsupported, encrypted, corrupt, or multi-volume archives fail gracefully (no crash; catalogue elsewhere unaffected)
 - [ ] No writes to video/music preference keys
 - [ ] Suite + Release build green with documented native/RAR dependencies
+- [ ] ADR-026 Accepted only after reader validation **and** redistribution condition cleared
 - [ ] CBR remains in scope unless an explicit approved deferral document exists (none by default)
 
-**Dependencies:** Phase 6.2 (or 6.1 if browse open action is minimal); provisional RAR approach from 6.1; **Gate 0 pass** before CBR reader Accept.
+**Dependencies:** Phase 6.2; Gate 0 Conditional pass (technical); **redistribution approval** before shipping UnRAR; reader Accept blocked until DoD above.
 
 ---
 
@@ -458,7 +466,7 @@ Each checkbox must point to a test, runtime scenario, document section, build re
 
 ## Open questions (resolve before or during early phases)
 
-1. **Which acceptable RAR/CBR implementation will be adopted for Windows?** → Published `package:unrar` **failed** Gate 0 (2026-07-25). Next candidates: **D** (owned UnRAR FFI + MSVC DLL) or **E** (bundled UnRAR CLI). **`package:rar` is not preferred for Windows**. See [cbr-rar-evaluation.md](../architecture/cbr-rar-evaluation.md).
+1. **Which acceptable RAR/CBR implementation will be adopted for Windows?** → Candidate E (official UnRAR CLI) **Conditional pass** (2026-07-25). Candidate D remains escape hatch. **`package:rar` is not preferred for Windows**. See [cbr-rar-evaluation.md](../architecture/cbr-rar-evaluation.md).
 2. Single `media_kind: document` vs separate `book` / `comic`? → **Resolved:** separate kinds (`book`, `comic`).
 3. Which Flutter packages for PDF/EPUB on Windows are acceptable (license + maintenance)?
 4. Should Continue Reading live on the dashboard, a Reading landing, or both (without fake folders)?
@@ -489,6 +497,6 @@ Each checkbox must point to a test, runtime scenario, document section, build re
 
 ## Handoff
 
-**Next implementation phase:** **Phase 6.3 Gate 0 fallback** — evaluate Candidate D (owned UnRAR FFI + MSVC DLL) or Candidate E (bundled UnRAR CLI). Do **not** Accept ADR-026 or start reader UI until a Gate 0 Pass/Conditional pass.
+**Next:** Clear **redistribution approval** for the exact `UnRAR.exe` (blocking for production packaging), then Phase 6.3 comic reader UI under remaining Conditional-pass DoD items. Candidate D remains escape hatch. ADR-026 stays Proposed; Phase 6.3 incomplete.
 
-Phase 6.1 catalogue support is complete. Do not begin CBR reader work until Phase 6.3 Gate 0 passes.
+Phase 6.1–6.2 complete. Gate 0 Conditional pass (technical) does **not** complete Phase 6.3 and does **not** authorize shipping UnRAR.

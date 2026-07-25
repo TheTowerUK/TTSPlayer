@@ -1,0 +1,3 @@
+# Local downloads / WinRAR extracts for fixture tooling only — never commit.
+staging/**
+!staging/.gitignore

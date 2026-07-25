@@ -1,10 +1,10 @@
 # Windows CBR / RAR Extraction Evaluation (M6 Phase 6.1)
 
-**Status:** Gate 0 **FAIL** for published `package:unrar` 0.1.2 on Windows MSVC (2026-07-25) — CBR remains required; evaluate fallback next  
-**Date:** 2026-07-25 (Gate 0 spike)  
-**Related:** [ADR-024](./decisions/ADR-024-book-comic-catalogue-schema-and-media-kind.md) · [ADR-026](./decisions/ADR-026-reader-surface-architecture.md) · [m6-plan.md](../roadmap/m6-plan.md) · [books-comics.md](./books-comics.md)
+**Status:** Candidate B **FAIL**; Candidate E (UnRAR CLI) **Conditional pass** (2026-07-25) — CBR remains required; Phase 6.3 reader **not** complete  
+**Date:** 2026-07-25 (Gate 0 spikes)  
+**Related:** [ADR-024](./decisions/ADR-024-book-comic-catalogue-schema-and-media-kind.md) · [ADR-026](./decisions/ADR-026-reader-surface-architecture.md) · [unrar-cli-provenance.md](./unrar-cli-provenance.md) · [m6-plan.md](../roadmap/m6-plan.md) · [books-comics.md](./books-comics.md)
 
-> **Product scope:** `.cbz` and `.cbr` are **both required** for M6. Gate 0 rejected the provisional preferred package **as published** for Windows Release builds. **Do not silently drop CBR.** Next work evaluates a documented fallback.
+> **Product scope:** `.cbz` and `.cbr` are **both required** for M6. Candidate B (`package:unrar`) failed MSVC native hooks. Candidate E (official `UnRAR.exe` CLI) earned a **Conditional pass** — see conditions below. **Do not silently drop CBR.** ADR-026 remains Proposed; reader UI not started.
 
 ---
 
@@ -204,17 +204,15 @@ See `client/ttsplayer/test/support/cbr_gate0_fixtures/README.md`.
 | Replaceability | TTSPlayer-owned `CbrArchiveAdapter` port is the right boundary |
 | Security/upgrade | Would require tracking UnRAR upstream + hook maintenance |
 
-### Fallback recommendation (next)
+### Fallback recommendation (after Candidate B Fail)
 
-**Preferred next spike order:**
+1. **Candidate E — bundled `UnRAR.exe` CLI** — evaluated next (below).
+2. **Candidate D — TTSPlayer-owned FFI** to official UnRAR DLL — remains alternate if CLI conditions prove unacceptable.
+3. **Fork of `package:unrar`** with MSVC-conditional flags — only if upstream/DLL path preferred later.
 
-1. **Candidate D — TTSPlayer-owned FFI** binding to official UnRAR, building `UnRARDll.vcxproj` (or makefile) with MSVC and shipping `unrar.dll` beside the Release exe (plus `UNRAR_LIBRARY_PATH` / exe-dir load). Reuse UnRAR 7.x sources; keep `CbrArchiveAdapter`.
-2. **Candidate E — bundled `UnRAR.exe` CLI** if DLL packaging remains painful; higher process overhead; clearer redistribution story for the official binary.
-3. **Fork of `package:unrar`** with MSVC-conditional flags in `hook/build.dart` — only if upstream is unresponsive and we want to keep their Dart bindings.
+**Not preferred:** Candidate A (`package:rar`) — Windows still not a published platform.
 
-**Not preferred next:** Candidate A (`package:rar`) — Windows still not a published platform.
-
-### Gate decision
+### Gate decision (Candidate B)
 
 | Field | Value |
 |---|---|
@@ -222,7 +220,87 @@ See `client/ttsplayer/test/support/cbr_gate0_fixtures/README.md`.
 | Blocking criteria failed | Windows native packaging / Release-capable DLL build via package hooks |
 | CBR scope | **Still required** |
 | ADR-026 | Remains **Proposed** — do not Accept |
-| Phase 6.3 | **Not complete** — Gate 0 must pass on a fallback before reader Accept |
+| Phase 6.3 | **Not complete** |
+
+---
+
+## Gate 0 Candidate 2 — Official UnRAR CLI (Candidate E) — 2026-07-25
+
+**Decision: Conditional pass**
+
+This Conditional pass means **technical viability only**. It does **not** approve redistribution of any UnRAR/WinRAR-supplied executable, and it does **not** authorize production packaging or release distribution of a build that includes `UnRAR.exe`.
+
+| Axis | Status |
+|---|---|
+| Technical viability (list/extract/failure matrix/Release copy-when-present) | **Conditional pass** |
+| Redistribution / shipping approval for the exact binary | **Unresolved — blocking** for production packaging and release distribution |
+| ADR-026 / Phase 6.3 complete | **No** — remain Proposed / incomplete |
+
+Provenance: [unrar-cli-provenance.md](./unrar-cli-provenance.md) · Notices: [third-party-unrar-cli.md](../legal/third-party-unrar-cli.md)
+
+### What was proven (technical)
+
+| Check | Result |
+|---|---|
+| Baseline | `m6-development` @ `c7c0755`; no `package:unrar`; ADR-026 Proposed |
+| Working binary | `UnRAR.exe` obtained from **WinRAR 7.23** x64 package (`winrar-x64-723.exe`); banner `UNRAR 7.23 x64 freeware`; SHA-256 `0D3715001790F0FD18D3E850F947B540530B2D2DEB9A2E6A9E84F2ED7B234235` |
+| Rejected addon | `unrarw64.exe` from rarlab addon page — **unsuitable**: spawned with exit 0 but **no usable console stdout/stderr** (required CLI I/O absent) |
+| Local Release copy test | When `third_party/unrar_cli/UnRAR.exe` is present locally, CMake **optionally** copies it beside `ttsplayer.exe`; normal repo builds **omit** it when absent (no hard fail) |
+| Dev/Gate override | `PHASE_63_UNRAR_EXE` for local/harness tests only — **not** required for normal builds |
+| Missing executable | Adapter returns controlled unavailable error (`nativeLibraryMissing`) — no crash |
+| List RAR4 / RAR5 | `UnRAR lt -p-` — one process; no full extract; nested paths OK |
+| Selective extract | `UnRAR x` of named entry into owned temp dir; **one process per page**; temp cleaned |
+| Failure matrix | Corrupt, encrypted (exit 11), empty, not-rar, no-images, multi-volume (`Details: volume`), missing exe, hash mismatch — classified; no crash |
+| Path traversal | Rejected in Dart before spawn |
+| Security | `Process.start` + arg list, `runInShell: false`, output bounded, passwords not logged (`-p-`) |
+
+**Redistribution wording:** Nothing in this evaluation claims that extracting `UnRAR.exe` from a WinRAR installer and redistributing it with TTSPlayer is definitively permitted. Production packaging and release distribution remain **blocked** until formal confirmation of the **exact binary’s** redistribution terms.
+
+### Informational performance (large_pages.cbr, 40 tiny PNGs)
+
+| Metric | Observation |
+|---|---|
+| List | ~60–65 ms |
+| First-page extract | ~60–65 ms |
+| Sequential 3 pages | 3 process invocations |
+| Temp disk | Per-extract unique dir under system temp; deleted after read |
+| Peak memory | Not instrumented beyond process spawn; CLI child is short-lived |
+
+### Maintainability comparison (updated)
+
+| Factor | B `package:unrar` | E UnRAR CLI | D Owned UnRAR DLL FFI | C libarchive |
+|---|---|---|---|---|
+| Packaging | Fail (MSVC hooks) | CMake copy exe — works | MSVC project ownership | DLL + codecs |
+| Runtime | N/A | Process-per-op overhead | In-process | In-process |
+| Parsing | Dart API | CLI text (`lt`) fragile | FFI structs | FFI |
+| Security surface | Native hook compile | Child process + temp files | DLL load | DLL load |
+| Licensing | UnRAR + MIT pkg | UnRAR terms exist; **redistribution of exact binary unresolved** | UnRAR source/DLL | libarchive + RAR codec |
+| Upgrade | Pub + hooks | Manual re-hash/bundle | Manual rebuild | Manual |
+| Testability | Blocked | Opt-in harness green | Not spiked | Not spiked |
+
+### Conditions (Phase 6.3 Definition of Done items)
+
+1. **Redistribution approval (blocking):** Obtain formal confirmation that the **exact** shipping `UnRAR.exe` (identity + SHA-256) may be redistributed with TTSPlayer; until then, **do not** commit the exe or ship production/release builds that embed it.
+2. Ship only a **validated** UnRAR binary with `License.txt` and runtime SHA-256 gate once redistribution is approved.
+3. Accept **process-per-page** + **temp-dir selective extract** for M6 comics (document; bound timeouts).
+4. Keep multi-volume and encrypted archives as **non-openable** with taxonomy mapping.
+5. Complete **legal/policy review** (including Microsoft Store if applicable) before any channel that distributes `UnRAR.exe`.
+6. Revalidate **Unicode entry names** (console/code-page) before claiming full Unicode comic support.
+7. Builds without a local/approved binary must **omit** the optional CBR tool predictably; adapter must report controlled CBR-unavailable (not crash).
+8. Do **not** Accept ADR-026 or mark Phase 6.3 complete until comic reader UI + CBZ/CBR runtime validation land **and** redistribution condition (1) is cleared.
+
+### Gate decision (Candidate E)
+
+| Field | Value |
+|---|---|
+| Decision | **Conditional pass** (technical viability ≠ redistribution approval) |
+| Redistribution | **Unresolved — blocking** for production packaging / release distribution |
+| CBR scope | **Still required** |
+| ADR-026 | Remains **Proposed** |
+| Phase 6.3 | **Not complete** |
+| Recommended next after docs commit | Clear redistribution condition, then comic reader UI under remaining conditions; Candidate D remains escape hatch |
+
+Norton CyberCapture / AV: treat as a **separate packaging observation**. Candidate E technical evidence used a working UnRAR console binary; standalone `unrarw64.exe` empty I/O may involve environment/AV and was not used.
 
 ---
 
@@ -243,9 +321,10 @@ When implementing after Gate 0:
 | Item | Result |
 |---|---|
 | Provisional preferred stack (6.1) | **`package:unrar`** (official UnRAR via Dart FFI) |
-| Gate 0 (6.3 spike, 2026-07-25) | **FAIL** — Windows MSVC native hook incompatible |
+| Gate 0 Candidate B | **FAIL** — Windows MSVC native hook incompatible |
+| Gate 0 Candidate E | **Conditional pass** — official UnRAR CLI (see conditions) |
 | `package:rar` for Windows | Still **not preferred** |
-| In `pubspec.yaml` now | **No** (removed after evidence) |
+| RAR dependency in app | CLI binary optional beside Release exe (not committed until approved) |
 | Scanner indexes `.cbr` | **Yes** |
 | ADR-026 | Remains **Proposed** |
 | Failed Gate 0 policy | Evaluate documented fallback; **no silent CBR removal** |

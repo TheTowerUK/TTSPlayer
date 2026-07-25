@@ -33,6 +33,9 @@ dependencies:
   # App version display in settings diagnostics
   package_info_plus: ^9.0.1
 
+  # SHA-256 checks for bundled UnRAR CLI authenticity (Gate 0 Candidate E)
+  crypto: ^3.0.3
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

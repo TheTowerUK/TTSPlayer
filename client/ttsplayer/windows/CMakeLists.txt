@@ -106,3 +106,21 @@ install(DIRECTORY "${PROJECT_BUILD_DIR}/${FLUTTER_ASSET_DIR_NAME}"
 install(FILES "${AOT_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
   CONFIGURATIONS Profile;Release
   COMPONENT Runtime)
+
+# Optional CBR support: official RARLab UnRAR.exe beside the app when present locally.
+# Normal repository builds omit it when absent (no hard failure).
+# Do not ship until redistribution of the exact binary is formally approved.
+# See docs/architecture/unrar-cli-provenance.md
+set(UNRAR_CLI_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/../third_party/unrar_cli/UnRAR.exe")
+if(EXISTS "${UNRAR_CLI_SOURCE}")
+  message(STATUS "UnRAR CLI found — will install beside application (optional CBR support)")
+  install(FILES "${UNRAR_CLI_SOURCE}"
+    DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
+    COMPONENT Runtime)
+  install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../third_party/unrar_cli/License.txt"
+    DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
+    COMPONENT Runtime
+    OPTIONAL)
+else()
+  message(STATUS "UnRAR CLI not present at third_party/unrar_cli/UnRAR.exe — omitting optional CBR native tool")
+endif()

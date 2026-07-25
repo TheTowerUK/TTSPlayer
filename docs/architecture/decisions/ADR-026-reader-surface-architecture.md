@@ -1,6 +1,6 @@
 # ADR-026: Reader Surface Architecture
 
-**Status:** Proposed — Gate 0 **FAIL** for published `package:unrar` (2026-07-25); CBR still required via fallback  
+**Status:** Proposed — Gate 0 Candidate B **FAIL**; Candidate E (UnRAR CLI) **Conditional pass** (technical only, 2026-07-25); redistribution of UnRAR.exe **unresolved/blocking** for shipping; reader not implemented; Phase 6.3 incomplete  
 **Date:** 2026-07-24  
 **Milestone:** M6 — Phase 6.0 / 6.3–6.4  
 **Related:** [books-comics.md](../books-comics.md) · [cbr-rar-evaluation.md](../cbr-rar-evaluation.md) · [ADR-023](./ADR-023-music-player-surface-architecture.md) · [ADR-007](./ADR-007-playback-architecture.md)
@@ -23,7 +23,7 @@ Reusing the video player for PDFs or forcing comics through the music shell woul
 2. Readers may share **chrome patterns** (app bar, theme, focus targets, error banners) but **not** `VideoPlayerController`, music queue, or listening session controllers.
 3. Open actions route by `media_kind` from folder/detail/search.
 4. All media access uses existing **MediaLocationResolver** / provider stack.
-5. Reader package choices (PDF/EPUB/ZIP/RAR) must be Windows-capable and documented; CBR must use a stack that **passes Phase 6.3 Gate 0**. Published `package:unrar` 0.1.2 **failed** Gate 0 on Windows MSVC (see [cbr-rar-evaluation.md](../cbr-rar-evaluation.md)); a fallback must pass before this ADR can be Accepted.
+5. Reader package choices (PDF/EPUB/ZIP/RAR) must be Windows-capable and documented; CBR must use a stack that **passes Phase 6.3 Gate 0**. Published `package:unrar` failed; official **UnRAR CLI** earned a **Conditional pass** (see [cbr-rar-evaluation.md](../cbr-rar-evaluation.md) · [unrar-cli-provenance.md](../unrar-cli-provenance.md)). Conditions must be met before this ADR can be Accepted.
 6. Comic reader **Definition of Done** requires successful Windows runtime validation of **both** CBZ and CBR fixtures (open + page navigation).
 7. Failure modes: missing file; corrupt archive; unsupported archive variant; **encrypted** archive; **multi-volume** archive → dismissible error with recovery (back / rescan), **never crash**, and **never affect** the rest of the catalogue or other media kinds.
 
