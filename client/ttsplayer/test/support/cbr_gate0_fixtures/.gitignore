@@ -1,0 +1,8 @@
+# Optional local CBR Gate 0 packs (generator output — do not commit)
+rar4_pages.cbr
+rar5_pages.cbr
+encrypted.cbr
+large_pages.cbr
+multivolume.cbr
+multivolume.r00
+multivolume.r01

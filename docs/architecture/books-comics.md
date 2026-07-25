@@ -1,6 +1,6 @@
 # Books & Comics Architecture (M6)
 
-**Status:** Active — Phase 6.2 browse/presentation complete; Phase 6.3 reader next (2026-07-24)  
+**Status:** Active — Phase 6.2 browse/presentation complete; Phase 6.3 Gate 0 **FAIL** for `package:unrar` (2026-07-25); fallback next; reader UI not started  
 **Milestone plan:** [m6-plan.md](../roadmap/m6-plan.md)  
 **Related ADRs:** [ADR-024](./decisions/ADR-024-book-comic-catalogue-schema-and-media-kind.md) · [ADR-025](./decisions/ADR-025-book-comic-identity-and-metadata-precedence.md) · [ADR-026](./decisions/ADR-026-reader-surface-architecture.md) · [ADR-027](./decisions/ADR-027-reading-progress-and-continue-reading.md)
 
@@ -41,7 +41,7 @@ Describe how books and comics fit into TTSPlayer’s existing folder-first, prov
 
 **Comic formats:** `.cbz` (ZIP) and `.cbr` (RAR) are the two primary comic archive formats and are **required M6 baseline scope**. CBR is an implementation/dependency risk, not optional product scope. Any later deferral of CBR requires an explicit documented decision, rationale, known limitation, and approval before M6 closure.
 
-**CBR/RAR stack (Phase 6.1):** **Provisional preferred** — `package:unrar` (Dart FFI to official UnRAR). **Not** `package:rar` for Windows (published platforms omit Windows). See [cbr-rar-evaluation.md](./cbr-rar-evaluation.md). Not wired into the app until Phase 6.3 **Gate 0** passes.
+**CBR/RAR stack (Phase 6.1 → Gate 0):** Provisional preferred was `package:unrar`. **Gate 0 FAIL (2026-07-25)** for published 0.1.2 on Windows MSVC native hooks. See [cbr-rar-evaluation.md](./cbr-rar-evaluation.md). Fallback evaluation is next; CBR remains required.
 
 ### Catalogue versions
 
@@ -130,7 +130,7 @@ All opens go through `MediaLocationResolver` / existing provider config so local
 ### Extraction / decode
 
 - **CBZ:** ZIP entry list → decode pages lazily (required; reader in 6.3)
-- **CBR:** RAR via **provisional preferred** stack `package:unrar` (official UnRAR Dart FFI). `package:rar` is **not** preferred for Windows (no published Windows platform support). Gate 0 in Phase 6.3 is blocking — see [cbr-rar-evaluation.md](./cbr-rar-evaluation.md).
+- **CBR:** Required format. Published `package:unrar` 0.1.2 **failed** Phase 6.3 Gate 0 on Windows MSVC (GCC flags → `D8021`; compile-time, before DLL). Fallback evaluation next — see [cbr-rar-evaluation.md](./cbr-rar-evaluation.md). `package:rar` is **not** preferred for Windows.
 - **Indexer metadata (6.1):** CBZ may read ComicInfo.xml; CBR uses filename title only until the reader stack is wired.
 - **Failure modes:** unsupported, encrypted, corrupt, or multi-volume archives fail gracefully — no crash; catalogue browse/playback elsewhere unaffected
 - **PDF/EPUB:** Via vetted Flutter/Windows-capable packages (spike before Accept in 6.4)

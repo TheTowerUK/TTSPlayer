@@ -1,10 +1,10 @@
 # Windows CBR / RAR Extraction Evaluation (M6 Phase 6.1)
 
-**Status:** Provisional preferred implementation recorded — **not** Gate-0 validated  
-**Date:** 2026-07-24 (corrected)  
-**Related:** [ADR-024](./decisions/ADR-024-book-comic-catalogue-schema-and-media-kind.md) · [m6-plan.md](../roadmap/m6-plan.md) · [books-comics.md](./books-comics.md)
+**Status:** Gate 0 **FAIL** for published `package:unrar` 0.1.2 on Windows MSVC (2026-07-25) — CBR remains required; evaluate fallback next  
+**Date:** 2026-07-25 (Gate 0 spike)  
+**Related:** [ADR-024](./decisions/ADR-024-book-comic-catalogue-schema-and-media-kind.md) · [ADR-026](./decisions/ADR-026-reader-surface-architecture.md) · [m6-plan.md](../roadmap/m6-plan.md) · [books-comics.md](./books-comics.md)
 
-> **Product scope:** `.cbz` and `.cbr` are **both required** for M6. This document records a **provisional preferred** Windows CBR/RAR approach for Phase 6.3. No reader dependency is in `pubspec.yaml` yet. No Windows Release spike has been run. A failed Gate 0 must evaluate a documented fallback — **not** silently drop CBR.
+> **Product scope:** `.cbz` and `.cbr` are **both required** for M6. Gate 0 rejected the provisional preferred package **as published** for Windows Release builds. **Do not silently drop CBR.** Next work evaluates a documented fallback.
 
 ---
 
@@ -107,6 +107,125 @@ Gate 0 is a **hard blocker** before comic-reader CBR work is Accepted. It must:
 
 ---
 
+## Gate 0 spike result (2026-07-25) — **FAIL** for Candidate B as published
+
+### Baseline
+
+| Check | Result |
+|---|---|
+| Branch | `m6-development` @ `eab1751` (Phase 6.2 complete) |
+| Working tree at start | Clean |
+| ADR-024 / ADR-026 | Remain **Proposed** (not Accepted) |
+| RAR dependency in app before spike | None |
+| Norton CyberCapture | Separate development-environment / packaging observation only (session interruption). **Not** the cause of this Gate 0 technical failure |
+
+### Dependency audit — `package:unrar` 0.1.2
+
+| Item | Finding |
+|---|---|
+| Version evaluated | **0.1.2** (pub.dev; published ~6 months before spike; changelog still “experimental”) |
+| Publisher | **Unverified** uploader; GitHub [Maistho/dart_unrar](https://github.com/maistho/dart_unrar) |
+| SDK | `>=3.10.0 <4.0.0` (Dart build hooks) |
+| Platforms claimed | Windows, macOS, Linux |
+| Native sources | Bundles official UnRAR **7.2.0 beta 3** sources under `third_party/unrar/` (`version.hpp` 2025-12-18) |
+| Build integration | `hook/build.dart` + `native_toolchain_c` compiles a shared library named `unrar` / `unrar.dll` |
+| Runtime lookup | `DynamicLibrary.open` over `.dart_tool/lib`, CWD, exe dir, `UNRAR_LIBRARY_PATH` |
+| Package licence | **MIT** (`LICENSE`) |
+| UnRAR licence | RARLab freeware UnRAR terms (`third_party/unrar/license.txt`): decompress-only; may redistribute UnRAR; modified source OK if licence paragraph preserved; **not** legal advice |
+| Bundles prebuilt DLL? | **No** — expects host compile via hooks |
+| Architectures | Spike exercised **Windows x64** MSVC Build Tools 18 / cl 19.50 |
+
+### Blocking failure — Windows MSVC native hook
+
+**Failure class:** Reproducible **native compilation** failure on Windows x64 MSVC **before** any `unrar.dll` is created. It is independent of Norton CyberCapture / runtime antivirus behaviour. Antivirus may still matter later for packaging UnRAR binaries; it did not cause this Fail.
+
+Adding `unrar: ^0.1.2` and running `flutter test` (native asset / hooks build) invokes MSVC `cl.exe` 19.50.35728 via `package:unrar` `hook/build.dart` + `native_toolchain_c`. Captured command shape (sources abbreviated; full log in local `.dart_tool/hooks_runner/unrar/*/stdout.txt` during the spike):
+
+```text
+"C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools\VC\Tools\MSVC\14.50.35717\bin\Hostx64\x64\cl.exe" /O2 -Wno-dangling-else -Wno-switch -DRARDLL -std=c++11 -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -DRAR_SMP -pthread /DRELEASE /DNDEBUG /LD /Fe:...\.dart_tool\hooks_runner\shared\unrar\build\<hash>\unrar.dll <unrar-0.1.2\third_party\unrar\*.cpp> /link /MACHINE:X64 /LIBPATH:...\.dart_tool\hooks_runner\shared\unrar\build\<hash>\
+```
+
+MSVC rejects the GCC/Clang-style flags (first failure):
+
+```text
+Microsoft (R) C/C++ Optimizing Compiler Version 19.50.35728 for x64
+cl : Command line error D8021 : invalid numeric argument '/Wno-dangling-else'
+```
+
+(The same line also carries `-Wno-switch`, `-std=c++11`, and `-pthread`, which MSVC would likewise reject.)
+
+**Process exit code: 2.** Output path `unrar.dll` was **never produced**. Therefore:
+
+- Failure is at **compile/link invocation**, not DLL load, not extract, and not AV quarantine of a finished binary
+- Windows Release packaging via the published hook is **not proven**
+- Listing / selective extraction / RAR4·RAR5 runtime evidence against this package **could not be completed** on this toolchain
+- Keeping the dependency in `pubspec.yaml` breaks the Flutter suite’s native-asset build on this machine
+
+**Action taken:** dependency **removed** after evidence capture so the app remains green. Local `.dart_tool/hooks_runner/unrar` residue cleaned. Spike isolation code remains under `lib/features/comics/spike/` (`CbrArchiveAdapter` + path safety + failed-candidate stub) and TTSPlayer-owned fixtures under `test/support/cbr_gate0_fixtures/`.
+
+### API / design observations (from source review — not runtime-proven)
+
+| Topic | Observation |
+|---|---|
+| List without full extract | `listFiles` uses `RAR_OM_LIST` + `RAR_SKIP` — appropriate API shape |
+| Selective extract | `extractFile` extracts **one** matching entry via `RAR_EXTRACT` into a **system temp directory**, reads bytes, deletes temp (`usedTemporaryDirectory=true`). Not pure memory streaming; solid archives may still decompress prior members internally |
+| Unicode paths | Uses ANSI `RAROpenArchive` / `RARHeaderData` (not Ex/W variants) — risk for non-ASCII paths on Windows |
+| Path traversal | Package does not sanitize `..` in entry names; TTSPlayer spike helpers reject unsafe names before extract |
+
+### Fixtures prepared
+
+See `client/ttsplayer/test/support/cbr_gate0_fixtures/README.md`.
+
+**Committed (TTSPlayer-owned only):** synthetic corrupt RAR-like bytes, empty file, not-rar bytes, 1×1 PNG seed.
+
+**Pending (not completed — require local `rar.exe` / generator; do not treat as Gate 0 evidence):** valid RAR4 pages, valid RAR5 pages, encrypted, large page set, multi-volume. Generator: `tool/cbr_gate0/generate_fixtures.ps1` (not run — no `rar.exe` on PATH). No third-party package sample archives are committed.
+
+### Failure-mode matrix (partial)
+
+| Case | Status |
+|---|---|
+| Native DLL missing / hook fail | **Observed** — compile-time D8021; stub adapter classifies as `nativeLibraryLoadFailed` |
+| Corrupt / empty / not-rar fixtures | TTSPlayer-owned files on disk; full UnRAR classification **pending** (no DLL) |
+| Valid RAR4 / RAR5 page archives | **Pending** |
+| Encrypted / large / multi-volume | **Pending** |
+| Path traversal | **Unit-tested** pure Dart helpers (pass) |
+
+### Licensing (informational — not formal legal review)
+
+- Package MIT + UnRAR freeware decompress licence appear **compatible in principle** with bundling a decompress DLL, with required UnRAR licence text in docs/notices.
+- Unresolved for formal review: Microsoft Store binary policy; whether shipping a forked hook + compiled UnRAR needs extra attribution packaging; commercial distribution acknowledgements.
+
+### Maintainability
+
+| Factor | Assessment |
+|---|---|
+| Recency | Early `0.1.x`, low download volume, unverified publisher |
+| Windows readiness | **Hook not MSVC-safe** — high risk |
+| Replaceability | TTSPlayer-owned `CbrArchiveAdapter` port is the right boundary |
+| Security/upgrade | Would require tracking UnRAR upstream + hook maintenance |
+
+### Fallback recommendation (next)
+
+**Preferred next spike order:**
+
+1. **Candidate D — TTSPlayer-owned FFI** binding to official UnRAR, building `UnRARDll.vcxproj` (or makefile) with MSVC and shipping `unrar.dll` beside the Release exe (plus `UNRAR_LIBRARY_PATH` / exe-dir load). Reuse UnRAR 7.x sources; keep `CbrArchiveAdapter`.
+2. **Candidate E — bundled `UnRAR.exe` CLI** if DLL packaging remains painful; higher process overhead; clearer redistribution story for the official binary.
+3. **Fork of `package:unrar`** with MSVC-conditional flags in `hook/build.dart` — only if upstream is unresponsive and we want to keep their Dart bindings.
+
+**Not preferred next:** Candidate A (`package:rar`) — Windows still not a published platform.
+
+### Gate decision
+
+| Field | Value |
+|---|---|
+| Decision | **Fail** (Candidate B as published) |
+| Blocking criteria failed | Windows native packaging / Release-capable DLL build via package hooks |
+| CBR scope | **Still required** |
+| ADR-026 | Remains **Proposed** — do not Accept |
+| Phase 6.3 | **Not complete** — Gate 0 must pass on a fallback before reader Accept |
+
+---
+
 ## Security posture (reader phase)
 
 When implementing after Gate 0:
@@ -119,15 +238,14 @@ When implementing after Gate 0:
 
 ---
 
-## Phase 6.1 outcome (corrected)
+## Phase 6.1 outcome (corrected) + Gate 0
 
 | Item | Result |
 |---|---|
-| Provisional preferred stack | **`package:unrar`** (official UnRAR via Dart FFI) — Windows claimed by package docs |
-| `package:rar` for Windows | **Not preferred** — Windows not in published platform support |
-| Fully selected / validated | **No** — awaiting Phase 6.3 Gate 0 |
-| Added to app now | **No** |
-| Scanner indexes `.cbr` | **Yes** (`media_kind: comic`) |
-| CBR metadata in 6.1 | Filename title only |
-| CBZ metadata in 6.1 | Optional ComicInfo.xml when present |
+| Provisional preferred stack (6.1) | **`package:unrar`** (official UnRAR via Dart FFI) |
+| Gate 0 (6.3 spike, 2026-07-25) | **FAIL** — Windows MSVC native hook incompatible |
+| `package:rar` for Windows | Still **not preferred** |
+| In `pubspec.yaml` now | **No** (removed after evidence) |
+| Scanner indexes `.cbr` | **Yes** |
+| ADR-026 | Remains **Proposed** |
 | Failed Gate 0 policy | Evaluate documented fallback; **no silent CBR removal** |

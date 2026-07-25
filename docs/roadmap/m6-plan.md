@@ -1,11 +1,12 @@
 # M6 — Books & Comics
 
-**Status:** **IN PROGRESS** — Phase 6.3 Comic archive reader (next)  
+**Status:** **IN PROGRESS** — Phase 6.3 Gate 0 **FAIL** for `package:unrar` (2026-07-25); fallback spike next  
 **Branch:** `m6-development`  
 **Development version:** `v0.7.0-dev` (proposed; app remains `0.6.0+1` until release)  
 **Predecessor:** M5 — tags `v0.6.0` / `m5-complete` (2026-07-24)  
 **Phase 6.1:** ✅ Complete (2026-07-24) — catalogue v4 / books & comics indexing  
-**Phase 6.2:** ✅ Complete (2026-07-24) — browse / search / detail presentation (no readers)
+**Phase 6.2:** ✅ Complete (2026-07-24) — browse / search / detail presentation (no readers)  
+**Phase 6.3 Gate 0:** ❌ **Fail** for published `package:unrar` 0.1.2 on Windows MSVC — see [cbr-rar-evaluation.md](../architecture/cbr-rar-evaluation.md). CBR remains required. Reader UI not started.
 
 → [Books & comics architecture](../architecture/books-comics.md)  
 → [CBR/RAR evaluation](../architecture/cbr-rar-evaluation.md)  
@@ -103,7 +104,7 @@ M6 extends TTSPlayer from a **video + music** personal media application into a 
 | **6.0** | Planning and Architecture | ✅ Complete |
 | **6.1** | Catalogue schema, media kinds, indexer formats (+ RAR/CBR provisional preferred) | ✅ **Complete** |
 | **6.2** | Books & comics library browsing / presentation | ✅ Complete |
-| **6.3** | Comic archive reader (CBZ and CBR required) | Planned |
+| **6.3** | Comic archive reader (CBZ and CBR required) | Planned — Gate 0 **FAIL** for `package:unrar`; fallback pending; **not complete** |
 | **6.4** | Book document reader (PDF/EPUB) | Planned |
 | **6.5** | Reading progress and Continue Reading | Planned |
 | **6.6** | Performance, diagnostics, and Windows runtime validation | Planned |
@@ -227,11 +228,13 @@ M6 extends TTSPlayer from a **video + music** personal media application into a 
 
 ### Phase 6.3 — Comic archive reader (CBZ/CBR)
 
+**Status:** **Not complete.** Gate 0 for published `package:unrar` 0.1.2 = **FAIL** (2026-07-25). Reader UI not started. ADR-026 remains Proposed.
+
 **Objective:** Open **both** `.cbz` and `.cbr` comic archives in a dedicated paged reader on Windows, with graceful failure for bad archives.
 
 **Gate 0 (blocking — before reader Accept):**
 
-1. Minimal Windows **Release** spike with the provisional RAR stack (or chosen fallback)
+1. Minimal Windows **Release** spike with a RAR stack that builds on MSVC (fallback after `package:unrar` Fail)
 2. Correct native library / binary bundling for Release
 3. List a representative CBR without full extraction
 4. Extract or stream selected image entries
@@ -443,7 +446,7 @@ Each checkbox must point to a test, runtime scenario, document section, build re
 | Risk | Mitigation |
 |---|---|
 | Heavy reader plugins on Windows | Spike in 6.0 open questions; choose packages with Windows support; Gate-0 style spike before 6.3/6.4 acceptance |
-| CBR/RAR implementation & dependency risk (licensing, packaging, security, performance, testability) | **Product scope remains required.** Provisional preferred: `package:unrar`. Reject `package:rar` for Windows unless platform evidence appears. Phase **6.3 Gate 0** is blocking. Failed Gate 0 → evaluate documented fallback — **no silent CBR deferral** |
+| CBR/RAR implementation & dependency risk (licensing, packaging, security, performance, testability) | **Product scope remains required.** Gate 0 **FAIL** for published `package:unrar` 0.1.2 (Windows MSVC native hook). Reject `package:rar` for Windows unless platform evidence appears. Evaluate documented fallback (owned UnRAR FFI/DLL or CLI) — **no silent CBR deferral**. Phase 6.3 **not** complete |
 | Large PDF memory use | Lazy page decode; informational performance gates; fixture size limits |
 | HTTPS Range incomplete for some readers | Validate early; fall back to local cache only if ADR approves |
 | Scope creep from M5 music deferrals | Explicit exclusion table; reject silent inclusion |
@@ -455,7 +458,7 @@ Each checkbox must point to a test, runtime scenario, document section, build re
 
 ## Open questions (resolve before or during early phases)
 
-1. **Which acceptable RAR/CBR implementation will be adopted for Windows?** → **Provisional preferred (6.1):** `package:unrar` (official UnRAR Dart FFI). **`package:rar` is not preferred for Windows** (published platforms omit Windows). Full Accept requires Phase **6.3 Gate 0**. See [cbr-rar-evaluation.md](../architecture/cbr-rar-evaluation.md).
+1. **Which acceptable RAR/CBR implementation will be adopted for Windows?** → Published `package:unrar` **failed** Gate 0 (2026-07-25). Next candidates: **D** (owned UnRAR FFI + MSVC DLL) or **E** (bundled UnRAR CLI). **`package:rar` is not preferred for Windows**. See [cbr-rar-evaluation.md](../architecture/cbr-rar-evaluation.md).
 2. Single `media_kind: document` vs separate `book` / `comic`? → **Resolved:** separate kinds (`book`, `comic`).
 3. Which Flutter packages for PDF/EPUB on Windows are acceptable (license + maintenance)?
 4. Should Continue Reading live on the dashboard, a Reading landing, or both (without fake folders)?
@@ -466,7 +469,7 @@ Each checkbox must point to a test, runtime scenario, document section, build re
 
 - `.cbz` and `.cbr` are both **required** comic formats.
 - Loose image-sequence folders are **not** treated as comics in initial M6 scope unless separately approved.
-- Windows CBR approach recorded as **provisional preferred** only; dependency not added until Gate 0.
+- Windows CBR: `package:unrar` Gate 0 **Fail**; no RAR dependency in app until a fallback passes Gate 0.
 
 ---
 
@@ -486,6 +489,6 @@ Each checkbox must point to a test, runtime scenario, document section, build re
 
 ## Handoff
 
-**Next implementation phase:** **Phase 6.3 — Comic archive reader (CBZ/CBR)** — begin with **Gate 0** (RAR/Windows spike).
+**Next implementation phase:** **Phase 6.3 Gate 0 fallback** — evaluate Candidate D (owned UnRAR FFI + MSVC DLL) or Candidate E (bundled UnRAR CLI). Do **not** Accept ADR-026 or start reader UI until a Gate 0 Pass/Conditional pass.
 
 Phase 6.1 catalogue support is complete. Do not begin CBR reader work until Phase 6.3 Gate 0 passes.

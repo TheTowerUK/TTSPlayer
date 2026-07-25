@@ -1,6 +1,6 @@
 # ADR-024: Book/Comic Catalogue Schema and Media Kind
 
-**Status:** Proposed (implementation landed in Phase 6.1; Accept at phase closure)  
+**Status:** Proposed (catalogue implementation landed in Phase 6.1; CBR reader stack Gate 0 **FAIL** for `package:unrar` 2026-07-25 — Accept deferred)  
 **Date:** 2026-07-24  
 **Milestone:** M6 — Phase 6.1  
 **Related:** [books-comics.md](../books-comics.md) · [cbr-rar-evaluation.md](../cbr-rar-evaluation.md) · [m6-plan.md](../../roadmap/m6-plan.md) · [ADR-020](./ADR-020-music-catalogue-schema-and-media-kind.md)
