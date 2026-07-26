@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../features/books/reader/book_navigation.dart';
 import '../features/comics/reader/comic_navigation.dart';
 import '../models/media_item.dart';
 import '../services/artwork/artwork_decode_size.dart';
@@ -252,6 +253,9 @@ class _PlaySection extends StatelessWidget {
     if (!item.status.isPlayable) {
       return _buildDisabled(context);
     }
+    if (item.isBook) {
+      return _buildOpenBook(context);
+    }
     if (item.isComic) {
       return _buildOpenComic(context);
     }
@@ -326,6 +330,38 @@ class _PlaySection extends StatelessWidget {
       context,
       MaterialPageRoute(
         builder: (_) => PlayerScreen(item: item, startPosition: startPosition),
+      ),
+    );
+  }
+
+  Widget _buildOpenBook(BuildContext context) {
+    return Padding(
+      padding: AppSpacing.playSection,
+      child: SizedBox(
+        height: 52,
+        child: FilledButton.icon(
+          key: const Key('item_detail_open_book'),
+          style: FilledButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: AppColors.textPrimary,
+            shape: AppRadius.buttonShape,
+          ),
+          icon: Icon(
+            MediaKindPresentation.iconFor(item),
+            size: AppIcons.standard,
+          ),
+          label: const Text(
+            'Open Book',
+            style: TextStyle(
+              fontSize: AppTypography.size16,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          onPressed: () {
+            // ignore: discarded_futures
+            openBookReaderScreen(context, item: item);
+          },
+        ),
       ),
     );
   }

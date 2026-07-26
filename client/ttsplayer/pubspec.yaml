@@ -36,6 +36,9 @@ dependencies:
   # SHA-256 checks for bundled UnRAR CLI authenticity (Gate 0 Candidate E)
   crypto: ^3.0.3
   archive: ^4.0.9
+  pdfrx: ^2.4.7
+  flutter_html: ^3.0.0
+  xml: ^6.5.0
 
 dev_dependencies:
   flutter_test:

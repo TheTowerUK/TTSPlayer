@@ -1,10 +1,10 @@
 # Books & Comics Architecture (M6)
 
-**Status:** Active — Phase 6.3 **In Progress** (comic reader implementation checkpoint, 2026-07-25); UnRAR.exe **redistribution unresolved/blocking** for production packaging; ADR-026 **Proposed** (comic architecture provisionally validated)  
+**Status:** Active — Phase 6.3 **In Progress** (comic reader implementation checkpoint, 2026-07-25); Phase 6.4 ✅ **Complete** (book reader, 2026-07-26); UnRAR.exe **redistribution unresolved/blocking** for production packaging; ADR-026 **Proposed** (comic + book reader architecture provisionally validated)  
 **Milestone plan:** [m6-plan.md](../roadmap/m6-plan.md)  
 **Related ADRs:** [ADR-024](./decisions/ADR-024-book-comic-catalogue-schema-and-media-kind.md) · [ADR-025](./decisions/ADR-025-book-comic-identity-and-metadata-precedence.md) · [ADR-026](./decisions/ADR-026-reader-surface-architecture.md) · [ADR-027](./decisions/ADR-027-reading-progress-and-continue-reading.md)
 
-> Phases 6.1–6.2 complete. Phase 6.3 comic reader landed as an **implementation checkpoint** on `m6-development`; phase **not closed** while UnRAR redistribution approval remains blocking. Book reader (6.4) and reading progress (6.5) remain planned.
+> Phases 6.1–6.2 and **6.4** complete. Phase 6.3 comic reader landed as an **implementation checkpoint** on `m6-development`; phase **not closed** while UnRAR redistribution approval remains blocking. Reading progress (6.5) remains planned.
 
 ---
 
@@ -83,7 +83,7 @@ Loose image sequences in a folder remain `image` items (M4 behaviour). Promoting
 | Folder browse | `.pdf`/`.epub` → Book; `.cbz`/`.cbr` → Comic; mixed folders show all kinds; filters `Books` / `Comics` |
 | Cards / list rows | Kind badge + subtitle (author/series when present); distinct literature vs comics placeholders |
 | Search | Kind chips in TYPE filter row; author/series in search blob (6.1); no path leakage |
-| Item detail | Comics: **Open Comic** → comic reader; Books: disabled stub (“Reader available in a later phase”) |
+| Item detail | Comics: **Open Comic** → comic reader; Books: **Open Book** → PDF/EPUB reader |
 | Isolation | Books/comics never open video player, music player, or image viewer |
 
 No virtual “All Books” / “All Comics” libraries. Search opens `ItemDetailScreen` (same comic open action).
@@ -127,7 +127,7 @@ Remote metadata APIs are out of M6 scope.
 |---|---|
 | Folder / detail / search→detail | Discover and open |
 | Comic reader (`ComicReaderScreen`) | Paged image sequence from archive |
-| Book reader | Deferred to Phase 6.4 |
+| Book reader (`BookReaderScreen`) | PDF via `pdfrx`; EPUB via TTSPlayer parser + `flutter_html` |
 | Continue Reading | Deferred to Phase 6.5 |
 
 Video `PlayerScreen` and music listening surfaces are **not** reused for reading.
@@ -172,12 +172,71 @@ Shortcuts are ignored while an `EditableText` owns focus. Page indicator: `Page 
 
 - **CBZ:** full-archive decode via `package:archive` (interim); page bytes served from decoded entry content
 - **CBR:** Official **UnRAR CLI** under Gate 0 **Conditional pass** — selective per-page extract; no PATH fallback; structured args; timeout; hash gate when configured; `PHASE_63_UNRAR_EXE` for local validation only. Redistribution of `UnRAR.exe` remains **unresolved/blocking** for production packaging.
-- **PDF/EPUB:** Not started (Phase 6.4)
+- **PDF/EPUB:** Phase 6.4 **complete** — see [Book reader](#reader-architecture-phase-64-book) and [pdf-epub-evaluation.md](./pdf-epub-evaluation.md)
 - **Remote HTTP comics:** Rejected with a clear message until a later download/cache design (local-first)
 
 ### Error taxonomy
 
 Controlled kinds include: missing archive, unsupported type, corrupt, empty, no readable images, unsafe path, CBR unavailable / hash mismatch, encrypted, multi-volume, page extract failure, timeout. User messages are safe; diagnostics are redacted (basename/codes only).
+
+---
+
+## Reader architecture (Phase 6.4 book — complete)
+
+### Current book reader status (2026-07-26)
+
+| Format | Status |
+|---|---|
+| **PDF** | Implemented via `pdfrx` (PDFium); per-page render; pre-route probe |
+| **EPUB** | TTSPlayer-owned parser (`archive` + `xml`) + `flutter_html` renderer |
+| **Reading progress** | Location models exposed; **no Phase 6.5 persistence** |
+| **Unicode** | Fixture-set validated only |
+
+Gate 0 evaluation: [pdf-epub-evaluation.md](./pdf-epub-evaluation.md).
+
+### Module boundaries (`lib/features/books/`)
+
+| Layer | Responsibility |
+|---|---|
+| `BookOpener` | Resolve local path; detect PDF vs EPUB; refuse remote-only URIs |
+| `BookReaderException` / `BookReaderErrorKind` | Stable error taxonomy (PDF + EPUB) |
+| `book_path_safety` | EPUB ZIP entry safety; basename redaction helpers |
+| `EpubParser` | OPF/container parse; spine HTML + resources in session memory |
+| `EpubBookController` | Chapter navigation, text scale, non-persistent `EpubBookLocation` |
+| `BookReaderScreen` | Shared shell: title, back, location bar, format-specific controls |
+| `openBookReaderScreen` | Pre-route probe; snackbar on controlled failure |
+| `PdfBookLocation` / `EpubBookLocation` | Serializable shapes for Phase 6.5 (not written yet) |
+
+### PDF behaviour
+
+- Multi-page view via `PdfViewer.file` + `PdfViewerController`
+- Page prev/next (toolbar + keyboard); zoom via controller APIs; fit reset
+- Encrypted PDFs: classified `pdfEncrypted` (password UI deferred to Phase 6.6)
+- **Memory:** PDFium renders pages on demand; no full-document bitmap decode in app code
+
+### EPUB behaviour and security model
+
+- **Continuous scroll** reading mode (paginated reflow deferred)
+- Spine-order chapters; flat TOC from spine titles; internal relative links only
+- **Blocked:** HTTP(S)/mailto links; remote images; `<script>` / `javascript:`; unsafe ZIP paths
+- **No JS execution**; HTML rendered through `flutter_html` with constrained styles
+- **Memory (interim):** full EPUB ZIP decoded into memory for session — viewport cache does not bound parser memory (Phase 6.6 follow-up)
+
+### Book reader keyboard / controls (Windows)
+
+| Input | PDF | EPUB |
+|---|---|---|
+| Escape / AppBar back | Exit | Exit |
+| ← / Page Up | Previous page | Previous chapter |
+| → / Page Down | Next page | Next chapter |
+| Home / End | First / last page | First / last chapter |
+| Ctrl + + / − / 0 | Zoom in / out / reset fit | Text size in / out / reset |
+
+Shortcuts ignored while `EditableText` owns focus.
+
+### Opt-in runtime harness
+
+`PHASE_64_READER=1` — `test/phase_64_book_reader_windows_runtime_test.dart` (`--tags phase64-reader`).
 
 ---
 

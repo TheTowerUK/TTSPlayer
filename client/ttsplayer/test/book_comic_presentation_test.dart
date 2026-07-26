@@ -332,7 +332,7 @@ void main() {
   });
 
   group('Item detail', () {
-    testWidgets('book detail shows metadata and non-reader action',
+    testWidgets('book detail shows metadata and open book action',
         (tester) async {
       final catalog = _catalog();
       final book = catalog.allItems.firstWhere((i) => i.id == 'book-epub');
@@ -348,11 +348,8 @@ void main() {
       expect(find.text('Book'), findsWidgets);
       expect(find.text('Ada Lovelace'), findsOneWidget);
       expect(find.text('EPUB'), findsOneWidget);
-      expect(find.byKey(const Key('item_detail_reader_pending')), findsOneWidget);
-      expect(
-        find.byKey(const Key('item_detail_reader_pending_message')),
-        findsOneWidget,
-      );
+      expect(find.byKey(const Key('item_detail_open_book')), findsOneWidget);
+      expect(find.byKey(const Key('item_detail_reader_pending')), findsNothing);
       expect(find.byType(PlayerScreen), findsNothing);
       expect(find.text('Play'), findsNothing);
     });

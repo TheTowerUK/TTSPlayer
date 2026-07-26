@@ -105,7 +105,7 @@ M6 extends TTSPlayer from a **video + music** personal media application into a 
 | **6.1** | Catalogue schema, media kinds, indexer formats (+ RAR/CBR provisional preferred) | ✅ **Complete** |
 | **6.2** | Books & comics library browsing / presentation | ✅ Complete |
 | **6.3** | Comic archive reader (CBZ and CBR required) | **In Progress** — implementation checkpoint; Conditional-pass; UnRAR redistribution blocking closure |
-| **6.4** | Book document reader (PDF/EPUB) | Planned |
+| **6.4** | Book document reader (PDF/EPUB) | ✅ **Complete** (2026-07-26) |
 | **6.5** | Reading progress and Continue Reading | Planned |
 | **6.6** | Performance, diagnostics, and Windows runtime validation | Planned |
 | **Release** | M6 release and documentation | Planned |
@@ -300,30 +300,31 @@ Failed Gate 0 → evaluate documented fallback from [cbr-rar-evaluation.md](../a
 
 **Objective:** Open PDF and EPUB books in a dedicated document reader on Windows.
 
+**Status (2026-07-26):** ✅ **Complete** — PDF/EPUB reader on Windows; opt-in harness validates ItemDetail → Open Book → PdfViewer render, page nav, zoom, close.
+
 **Scope:**
 
-- Dedicated book reader surface (may share shell chrome with comic reader per ADR-026)
-- PDF rendering path; EPUB rendering path (package choices locked by ADR)
-- Page/chapter navigation appropriate to format
-- Local + HTTPS access
-- Failure and unsupported-feature messaging
+- Dedicated book reader surface (shared shell chrome with comic reader per ADR-026)
+- PDF: `pdfrx`; EPUB: TTSPlayer parser + `flutter_html`
+- Page/chapter navigation; keyboard controls
+- Local files; controlled failure before route
+- Non-persistent location models (Phase 6.5 writes deferred)
 
-**Out of scope:** Reflow publishing tools; annotation sync; TTS of book text; DRM formats.
+**Out of scope:** Reading history / Continue Reading (6.5); PDF password UI (6.6); DRM.
 
-**Architecture impact:** Heavier native/plugin dependencies; performance and memory; possibly different session model than comics.
-
-**Automated tests:** Format open tests where feasible; widget navigation; graceful failure.
-
-**Runtime:** Windows open PDF + EPUB smoke with opt-in harness.
+**Gate 0:** [pdf-epub-evaluation.md](../architecture/pdf-epub-evaluation.md) — PDF **Pass**; EPUB **Conditional pass**.
 
 **Definition of done:**
 
-- [ ] PDF and EPUB open and navigate on Windows for representative fixtures
-- [ ] Failures are non-fatal to the app
-- [ ] Video/music unaffected
-- [ ] Suite + Release build green
+- [x] PDF and EPUB open and navigate on Windows for representative fixtures
+- [x] Failures are non-fatal to the app
+- [x] Video/music/comics unaffected
+- [x] Suite + Release build green
+- [x] Opt-in Windows harness (`PHASE_64_READER=1`)
+- [x] Phase 6.4 review sign-off and commit
+- [ ] EPUB full-ZIP memory replacement or bound (Phase 6.6)
 
-**Dependencies:** Phase 6.3 recommended first (simpler archive pipeline); may proceed after 6.2 if ADR-026 allows parallel readers.
+**Dependencies:** Phase 6.2 complete; may proceed in parallel with Phase 6.3 closure items.
 
 ---
 
@@ -509,6 +510,6 @@ Each checkbox must point to a test, runtime scenario, document section, build re
 
 ## Handoff
 
-**Next:** Continue Phase **6.3** closure items (UnRAR redistribution approval, Unicode revalidation, legal review, CBZ memory measurement in 6.6). Phase **6.4** book reader starts only after explicit phase handoff. Candidate D remains escape hatch if CLI redistribution proves unacceptable.
+**Next:** Continue Phase **6.3** closure items (UnRAR redistribution approval, Unicode revalidation, legal review). Phase **6.5** reading progress is next planned reader work. CBZ/EPUB memory measurement remains Phase 6.6.
 
 Phase 6.3 implementation checkpoint landed. Gate 0 Conditional pass (technical) does **not** authorize shipping UnRAR or closing Phase 6.3.
