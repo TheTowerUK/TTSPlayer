@@ -1,10 +1,10 @@
 # Windows CBR / RAR Extraction Evaluation (M6 Phase 6.1)
 
-**Status:** Candidate B **FAIL**; Candidate E (UnRAR CLI) **Conditional pass** (2026-07-25) — CBR remains required; Phase 6.3 reader **not** complete  
-**Date:** 2026-07-25 (Gate 0 spikes)  
+**Status:** Candidate B **FAIL**; Candidate E (UnRAR CLI) **Conditional pass** (2026-07-25) — CBR remains required; Phase 6.3 **In Progress** (reader implementation checkpoint); **redistribution unresolved/blocking** for production packaging  
+**Date:** 2026-07-25 (Gate 0 spikes) / 2026-07-25 (reader checkpoint)  
 **Related:** [ADR-024](./decisions/ADR-024-book-comic-catalogue-schema-and-media-kind.md) · [ADR-026](./decisions/ADR-026-reader-surface-architecture.md) · [unrar-cli-provenance.md](./unrar-cli-provenance.md) · [m6-plan.md](../roadmap/m6-plan.md) · [books-comics.md](./books-comics.md)
 
-> **Product scope:** `.cbz` and `.cbr` are **both required** for M6. Candidate B (`package:unrar`) failed MSVC native hooks. Candidate E (official `UnRAR.exe` CLI) earned a **Conditional pass** — see conditions below. **Do not silently drop CBR.** ADR-026 remains Proposed; reader UI not started.
+> **Product scope:** `.cbz` and `.cbr` are **both required** for M6. Candidate B (`package:unrar`) failed MSVC native hooks. Candidate E (official `UnRAR.exe` CLI) earned a **Conditional pass** — see conditions below. **Do not silently drop CBR.** ADR-026 remains **Proposed** (comic architecture provisionally validated); Phase 6.3 **not closed** while UnRAR redistribution approval remains blocking.
 
 ---
 
@@ -219,8 +219,8 @@ See `client/ttsplayer/test/support/cbr_gate0_fixtures/README.md`.
 | Decision | **Fail** (Candidate B as published) |
 | Blocking criteria failed | Windows native packaging / Release-capable DLL build via package hooks |
 | CBR scope | **Still required** |
-| ADR-026 | Remains **Proposed** — do not Accept |
-| Phase 6.3 | **Not complete** |
+| ADR-026 (at Candidate B fail time) | Remained **Proposed** |
+| Phase 6.3 (at Candidate B fail time) | **Not complete** |
 
 ---
 
@@ -234,7 +234,9 @@ This Conditional pass means **technical viability only**. It does **not** approv
 |---|---|
 | Technical viability (list/extract/failure matrix/Release copy-when-present) | **Conditional pass** |
 | Redistribution / shipping approval for the exact binary | **Unresolved — blocking** for production packaging and release distribution |
-| ADR-026 / Phase 6.3 complete | **No** — remain Proposed / incomplete |
+| ADR-026 comic architecture | **Proposed** — provisionally validated at implementation checkpoint |
+| Phase 6.3 | **In Progress** — reader checkpoint landed; DoD **not complete** |
+| Production UnRAR redistribution | **Unresolved — blocking** |
 
 Provenance: [unrar-cli-provenance.md](./unrar-cli-provenance.md) · Notices: [third-party-unrar-cli.md](../legal/third-party-unrar-cli.md)
 
@@ -287,7 +289,7 @@ Provenance: [unrar-cli-provenance.md](./unrar-cli-provenance.md) · Notices: [th
 5. Complete **legal/policy review** (including Microsoft Store if applicable) before any channel that distributes `UnRAR.exe`.
 6. Revalidate **Unicode entry names** (console/code-page) before claiming full Unicode comic support.
 7. Builds without a local/approved binary must **omit** the optional CBR tool predictably; adapter must report controlled CBR-unavailable (not crash).
-8. Do **not** Accept ADR-026 or mark Phase 6.3 complete until comic reader UI + CBZ/CBR runtime validation land **and** redistribution condition (1) is cleared.
+8. Architecture Accept / Phase 6.3 **closure** requires redistribution condition (1) cleared and remaining DoD items satisfied. Implementation checkpoint (CBZ full, CBR local, missing-tooling controlled) does **not** close the phase.
 
 ### Gate decision (Candidate E)
 
@@ -296,9 +298,9 @@ Provenance: [unrar-cli-provenance.md](./unrar-cli-provenance.md) · Notices: [th
 | Decision | **Conditional pass** (technical viability ≠ redistribution approval) |
 | Redistribution | **Unresolved — blocking** for production packaging / release distribution |
 | CBR scope | **Still required** |
-| ADR-026 | Remains **Proposed** |
-| Phase 6.3 | **Not complete** |
-| Recommended next after docs commit | Clear redistribution condition, then comic reader UI under remaining conditions; Candidate D remains escape hatch |
+| ADR-026 | Remains **Proposed** (comic architecture provisionally validated) |
+| Phase 6.3 | **In Progress** — implementation checkpoint; DoD open |
+| Recommended next | Clear redistribution condition; finish Phase 6.3 DoD; Candidate D remains escape hatch |
 
 Norton CyberCapture / AV: treat as a **separate packaging observation**. Candidate E technical evidence used a working UnRAR console binary; standalone `unrarw64.exe` empty I/O may involve environment/AV and was not used.
 
@@ -326,5 +328,6 @@ When implementing after Gate 0:
 | `package:rar` for Windows | Still **not preferred** |
 | RAR dependency in app | CLI binary optional beside Release exe (not committed until approved) |
 | Scanner indexes `.cbr` | **Yes** |
-| ADR-026 | Remains **Proposed** |
+| ADR-026 | Remains **Proposed** (comic architecture provisionally validated) |
+| Phase 6.3 | **In Progress** — implementation checkpoint; UnRAR redistribution blocking closure |
 | Failed Gate 0 policy | Evaluate documented fallback; **no silent CBR removal** |

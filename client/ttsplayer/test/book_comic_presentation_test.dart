@@ -357,7 +357,7 @@ void main() {
       expect(find.text('Play'), findsNothing);
     });
 
-    testWidgets('comic detail shows series, archive type, and stub action',
+    testWidgets('comic detail shows series, archive type, and open action',
         (tester) async {
       final catalog = _catalog();
       final comic = catalog.allItems.firstWhere((i) => i.id == 'comic-cbz');
@@ -374,7 +374,8 @@ void main() {
       expect(find.text('City Watch'), findsOneWidget);
       expect(find.text('22 pages'), findsOneWidget);
       expect(find.text('ZIP archive'), findsOneWidget);
-      expect(find.byKey(const Key('item_detail_reader_pending')), findsOneWidget);
+      expect(find.byKey(const Key('item_detail_open_comic')), findsOneWidget);
+      expect(find.byKey(const Key('item_detail_reader_pending')), findsNothing);
       expect(find.byType(PlayerScreen), findsNothing);
     });
   });

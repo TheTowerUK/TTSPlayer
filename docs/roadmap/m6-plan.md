@@ -1,12 +1,12 @@
 # M6 — Books & Comics
 
-**Status:** **IN PROGRESS** — Phase 6.3 Gate 0 Candidate E **Conditional pass** (UnRAR CLI, 2026-07-25); reader UI next; phase **not** complete  
+**Status:** **IN PROGRESS** — Phase 6.3 comic reader **implementation checkpoint** (2026-07-25); Gate 0 Candidate E **Conditional pass**; UnRAR redistribution **blocking** phase closure  
 **Branch:** `m6-development`  
 **Development version:** `v0.7.0-dev` (proposed; app remains `0.6.0+1` until release)  
 **Predecessor:** M5 — tags `v0.6.0` / `m5-complete` (2026-07-24)  
 **Phase 6.1:** ✅ Complete (2026-07-24) — catalogue v4 / books & comics indexing  
 **Phase 6.2:** ✅ Complete (2026-07-24) — browse / search / detail presentation (no readers)  
-**Phase 6.3 Gate 0:** Candidate B ❌ Fail (`package:unrar`); Candidate E ⚠ **Conditional pass** (official UnRAR CLI) — see [cbr-rar-evaluation.md](../architecture/cbr-rar-evaluation.md). CBR remains required. Reader UI not started; phase not complete.
+**Phase 6.3:** **In Progress** — comic reader implementation checkpoint landed; ADR-026 remains **Proposed** (comic architecture provisionally validated). Production UnRAR redistribution remains **unresolved/blocking**.
 
 → [Books & comics architecture](../architecture/books-comics.md)  
 → [CBR/RAR evaluation](../architecture/cbr-rar-evaluation.md)  
@@ -104,7 +104,7 @@ M6 extends TTSPlayer from a **video + music** personal media application into a 
 | **6.0** | Planning and Architecture | ✅ Complete |
 | **6.1** | Catalogue schema, media kinds, indexer formats (+ RAR/CBR provisional preferred) | ✅ **Complete** |
 | **6.2** | Books & comics library browsing / presentation | ✅ Complete |
-| **6.3** | Comic archive reader (CBZ and CBR required) | Planned — Gate 0 Candidate E **Conditional pass**; reader UI pending; **not complete** |
+| **6.3** | Comic archive reader (CBZ and CBR required) | **In Progress** — implementation checkpoint; Conditional-pass; UnRAR redistribution blocking closure |
 | **6.4** | Book document reader (PDF/EPUB) | Planned |
 | **6.5** | Reading progress and Continue Reading | Planned |
 | **6.6** | Performance, diagnostics, and Windows runtime validation | Planned |
@@ -228,7 +228,17 @@ M6 extends TTSPlayer from a **video + music** personal media application into a 
 
 ### Phase 6.3 — Comic archive reader (CBZ/CBR)
 
-**Status:** **Not complete.** Gate 0 Candidate E = **Conditional pass** (2026-07-25). Reader UI not started. ADR-026 remains Proposed. Conditions listed in [cbr-rar-evaluation.md](../architecture/cbr-rar-evaluation.md) are Phase 6.3 DoD items.
+**Status:** **In Progress** (implementation checkpoint, 2026-07-25). Gate 0 Candidate E = **Conditional pass**. ADR-026 remains **Proposed** (comic reader architecture provisionally validated). Production redistribution of `UnRAR.exe` remains **unresolved/blocking** — Phase 6.3 Definition of Done is **not complete**.
+
+**Checkpoint record:**
+
+| Item | Status |
+|---|---|
+| CBZ reader | Fully implemented; runtime validated |
+| CBR reader | Technically implemented; locally validated with approved UnRAR; production distribution **blocked** |
+| Missing CBR tooling | Production controlled unavailable (not test-only) |
+| Unicode entry names | Fixture-set validation only; broader Unicode follow-up |
+| Phase 6.3 DoD | **Open** — redistribution approval and remaining checklist items |
 
 **Objective:** Open **both** `.cbz` and `.cbr` comic archives in a dedicated paged reader on Windows, with graceful failure for bad archives.
 
@@ -264,24 +274,25 @@ Failed Gate 0 → evaluate documented fallback from [cbr-rar-evaluation.md](../a
 
 **Definition of done:**
 
-- [ ] Gate 0 checklist complete with evidence (Candidate E **Conditional pass** recorded; Candidate B Fail retained)
-- [ ] **Redistribution approval** for the exact shipping `UnRAR.exe` (identity + SHA-256) — **blocking** for production packaging / release distribution (technical Gate 0 ≠ redistribution approval)
-- [ ] Validated UnRAR binary shipped only after (2), with `License.txt` + runtime SHA-256 gate
-- [ ] Builds omit optional CBR native tool predictably when approved binary absent; adapter reports controlled CBR-unavailable
-- [ ] Accept process-per-page + temp-dir selective extract (documented timeouts/bounds)
-- [ ] Multi-volume and encrypted archives remain non-openable with taxonomy mapping
-- [ ] Unicode entry-name behaviour revalidated before claiming full Unicode comic support
+- [x] Gate 0 checklist complete with evidence (Candidate E **Conditional pass** recorded; Candidate B Fail retained)
+- [ ] **Redistribution approval** for the exact shipping `UnRAR.exe` (identity + SHA-256) — **blocking** for production packaging / release distribution and **phase closure**
+- [ ] Validated UnRAR binary shipped only after redistribution approval, with `License.txt` + runtime SHA-256 gate
+- [x] Builds omit optional CBR native tool predictably when approved binary absent; adapter reports controlled CBR-unavailable (production path)
+- [x] Accept process-per-page + temp-dir selective extract for CBR (documented timeouts/bounds)
+- [x] Multi-volume and encrypted archives remain non-openable with taxonomy mapping
+- [ ] Unicode entry-name behaviour revalidated before claiming full Unicode comic support (fixture-set only so far)
 - [ ] Legal/policy review complete for any channel that distributes `UnRAR.exe` (incl. Store if applicable)
-- [ ] User can open a **CBZ** from browse/detail and turn pages
-- [ ] User can open a **CBR** from browse/detail and turn pages
-- [ ] Windows runtime validation passes for both CBZ and CBR fixtures
-- [ ] Unsupported, encrypted, corrupt, or multi-volume archives fail gracefully (no crash; catalogue elsewhere unaffected)
-- [ ] No writes to video/music preference keys
-- [ ] Suite + Release build green with documented native/RAR dependencies
-- [ ] ADR-026 Accepted only after reader validation **and** redistribution condition cleared
-- [ ] CBR remains in scope unless an explicit approved deferral document exists (none by default)
+- [x] User can open a **CBZ** from browse/detail and turn pages
+- [x] User can open a **CBR** from browse/detail and turn pages (when approved/local UnRAR present)
+- [x] Windows runtime validation passes for both CBZ and CBR fixtures (opt-in harness)
+- [x] Unsupported, encrypted, corrupt, or multi-volume archives fail gracefully (no crash; catalogue elsewhere unaffected)
+- [x] No writes to video/music preference keys
+- [x] Suite + Release build green with documented optional UnRAR dependency (exe absent in repo)
+- [ ] ADR-026 **Accepted** and Phase 6.3 marked complete (blocked by redistribution approval and remaining DoD)
+- [x] CBR remains in scope unless an explicit approved deferral document exists (none by default)
+- [ ] CBZ large-archive memory validated or replacement strategy chosen (Phase 6.6 action)
 
-**Dependencies:** Phase 6.2; Gate 0 Conditional pass (technical); **redistribution approval** before shipping UnRAR; reader Accept blocked until DoD above.
+**Dependencies:** Phase 6.2; Gate 0 Conditional pass (technical); **redistribution approval** before shipping UnRAR in production channels and closing Phase 6.3.
 
 ---
 
@@ -355,7 +366,8 @@ Failed Gate 0 → evaluate documented fallback from [cbr-rar-evaluation.md](../a
 **Scope:**
 
 - Deterministic large fixtures (many small CBZ/**CBR**/PDF stubs where practical)
-- Reader memory bounds / lazy page decode
+- **CBZ memory (required action):** measure representative large `.cbz` open + page-turn memory; either prove it remains within an agreed bound given current full-archive `package:archive` decode, or replace `CbzZipArchiveSource` with random-access ZIP I/O or session-scoped temp extraction
+- Reader decoded-page cache bounds documented separately from archive-parser memory
 - Diagnostics completeness
 - Full Windows runtime matrix for M6 scenarios
 - Full Flutter suite + analyze + Release build
@@ -388,7 +400,7 @@ Failed Gate 0 → evaluate documented fallback from [cbr-rar-evaluation.md](../a
 |---|---|---|---|
 | [ADR-024](../architecture/decisions/ADR-024-book-comic-catalogue-schema-and-media-kind.md) | Book/Comic Catalogue Schema and Media Kind | **Proposed** | New kinds + extensions + catalogue version policy |
 | [ADR-025](../architecture/decisions/ADR-025-book-comic-identity-and-metadata-precedence.md) | Book/Comic Identity and Metadata Precedence | **Proposed** | Stable ids; tag/archive metadata vs filename |
-| [ADR-026](../architecture/decisions/ADR-026-reader-surface-architecture.md) | Reader Surface Architecture | **Proposed** | Dedicated readers vs reuse of video/music surfaces |
+| [ADR-026](../architecture/decisions/ADR-026-reader-surface-architecture.md) | Reader Surface Architecture | **Proposed** (comic reader provisionally validated; Phase 6.3 in progress) | Dedicated readers vs reuse of video/music surfaces |
 | [ADR-027](../architecture/decisions/ADR-027-reading-progress-and-continue-reading.md) | Reading Progress and Continue Reading | **Proposed** | Persistence ownership and isolation |
 
 No M4/M5 ADRs require amendment for planning; implementation may reference ADR-007/014/020 patterns without superseding them.
@@ -454,7 +466,7 @@ Each checkbox must point to a test, runtime scenario, document section, build re
 | Risk | Mitigation |
 |---|---|
 | Heavy reader plugins on Windows | Spike in 6.0 open questions; choose packages with Windows support; Gate-0 style spike before 6.3/6.4 acceptance |
-| CBR/RAR implementation & dependency risk (licensing, packaging, security, performance, testability) | **Product scope remains required.** Gate 0 **FAIL** for published `package:unrar` 0.1.2 (Windows MSVC native hook). Reject `package:rar` for Windows unless platform evidence appears. Evaluate documented fallback (owned UnRAR FFI/DLL or CLI) — **no silent CBR deferral**. Phase 6.3 **not** complete |
+| CBR/RAR implementation & dependency risk (licensing, packaging, security, performance, testability) | **Product scope remains required.** Gate 0 Candidate B Fail; Candidate E Conditional pass wired into reader. **Redistribution of UnRAR.exe unresolved/blocking** for production packaging — **no silent CBR deferral** |
 | Large PDF memory use | Lazy page decode; informational performance gates; fixture size limits |
 | HTTPS Range incomplete for some readers | Validate early; fall back to local cache only if ADR approves |
 | Scope creep from M5 music deferrals | Explicit exclusion table; reject silent inclusion |
@@ -497,6 +509,6 @@ Each checkbox must point to a test, runtime scenario, document section, build re
 
 ## Handoff
 
-**Next:** Clear **redistribution approval** for the exact `UnRAR.exe` (blocking for production packaging), then Phase 6.3 comic reader UI under remaining Conditional-pass DoD items. Candidate D remains escape hatch. ADR-026 stays Proposed; Phase 6.3 incomplete.
+**Next:** Continue Phase **6.3** closure items (UnRAR redistribution approval, Unicode revalidation, legal review, CBZ memory measurement in 6.6). Phase **6.4** book reader starts only after explicit phase handoff. Candidate D remains escape hatch if CLI redistribution proves unacceptable.
 
-Phase 6.1–6.2 complete. Gate 0 Conditional pass (technical) does **not** complete Phase 6.3 and does **not** authorize shipping UnRAR.
+Phase 6.3 implementation checkpoint landed. Gate 0 Conditional pass (technical) does **not** authorize shipping UnRAR or closing Phase 6.3.

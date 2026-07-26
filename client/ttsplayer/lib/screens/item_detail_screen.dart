@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../features/comics/reader/comic_navigation.dart';
 import '../models/media_item.dart';
 import '../services/artwork/artwork_decode_size.dart';
 import '../services/artwork/artwork_service.dart';
@@ -251,6 +252,9 @@ class _PlaySection extends StatelessWidget {
     if (!item.status.isPlayable) {
       return _buildDisabled(context);
     }
+    if (item.isComic) {
+      return _buildOpenComic(context);
+    }
     if (!item.canStartAvPlayback) {
       return _buildReaderPending(context);
     }
@@ -322,6 +326,38 @@ class _PlaySection extends StatelessWidget {
       context,
       MaterialPageRoute(
         builder: (_) => PlayerScreen(item: item, startPosition: startPosition),
+      ),
+    );
+  }
+
+  Widget _buildOpenComic(BuildContext context) {
+    return Padding(
+      padding: AppSpacing.playSection,
+      child: SizedBox(
+        height: 52,
+        child: FilledButton.icon(
+          key: const Key('item_detail_open_comic'),
+          style: FilledButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: AppColors.textPrimary,
+            shape: AppRadius.buttonShape,
+          ),
+          icon: Icon(
+            MediaKindPresentation.iconFor(item),
+            size: AppIcons.standard,
+          ),
+          label: const Text(
+            'Open Comic',
+            style: TextStyle(
+              fontSize: AppTypography.size16,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          onPressed: () {
+            // ignore: discarded_futures
+            openComicReaderScreen(context, item: item);
+          },
+        ),
       ),
     );
   }

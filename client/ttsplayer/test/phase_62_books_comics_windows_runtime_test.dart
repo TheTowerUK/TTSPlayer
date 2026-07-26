@@ -217,7 +217,7 @@ void main() {
     expect(bookOnly.every((r) => r.item.mediaKind == MediaKind.book), isTrue);
   });
 
-  testWidgets('R4 item detail non-reader action does not launch A/V player',
+  testWidgets('R4 item detail book stub and comic open do not launch A/V player',
       (tester) async {
     final book = catalog.allItems.firstWhere((i) => i.isBook);
     final comic = catalog.allItems.firstWhere((i) => i.isComic);
@@ -227,7 +227,7 @@ void main() {
     expect(find.byType(PlayerScreen), findsNothing);
 
     await pumpHarness(tester, home: ItemDetailScreen(item: comic));
-    expect(find.byKey(const Key('item_detail_reader_pending')), findsOneWidget);
+    expect(find.byKey(const Key('item_detail_open_comic')), findsOneWidget);
     expect(find.byType(PlayerScreen), findsNothing);
     expect(tester.takeException(), isNull);
   });

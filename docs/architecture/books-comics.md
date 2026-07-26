@@ -1,10 +1,10 @@
 # Books & Comics Architecture (M6)
 
-**Status:** Active — Phase 6.2 complete; Phase 6.3 Gate 0 Candidate E **Conditional pass** (UnRAR CLI, 2026-07-25); reader UI not started; ADR-026 Proposed  
+**Status:** Active — Phase 6.3 **In Progress** (comic reader implementation checkpoint, 2026-07-25); UnRAR.exe **redistribution unresolved/blocking** for production packaging; ADR-026 **Proposed** (comic architecture provisionally validated)  
 **Milestone plan:** [m6-plan.md](../roadmap/m6-plan.md)  
 **Related ADRs:** [ADR-024](./decisions/ADR-024-book-comic-catalogue-schema-and-media-kind.md) · [ADR-025](./decisions/ADR-025-book-comic-identity-and-metadata-precedence.md) · [ADR-026](./decisions/ADR-026-reader-surface-architecture.md) · [ADR-027](./decisions/ADR-027-reading-progress-and-continue-reading.md)
 
-> Phases 6.1–6.2 are implemented on `m6-development`. Reader surfaces (6.3+) and progress (6.5) remain planned until those phases close and ADRs are Accepted.
+> Phases 6.1–6.2 complete. Phase 6.3 comic reader landed as an **implementation checkpoint** on `m6-development`; phase **not closed** while UnRAR redistribution approval remains blocking. Book reader (6.4) and reading progress (6.5) remain planned.
 
 ---
 
@@ -83,10 +83,10 @@ Loose image sequences in a folder remain `image` items (M4 behaviour). Promoting
 | Folder browse | `.pdf`/`.epub` → Book; `.cbz`/`.cbr` → Comic; mixed folders show all kinds; filters `Books` / `Comics` |
 | Cards / list rows | Kind badge + subtitle (author/series when present); distinct literature vs comics placeholders |
 | Search | Kind chips in TYPE filter row; author/series in search blob (6.1); no path leakage |
-| Item detail | Available metadata only; primary action disabled (“Reader available in a later phase”) |
+| Item detail | Comics: **Open Comic** → comic reader; Books: disabled stub (“Reader available in a later phase”) |
 | Isolation | Books/comics never open video player, music player, or image viewer |
 
-No virtual “All Books” / “All Comics” libraries.
+No virtual “All Books” / “All Comics” libraries. Search opens `ItemDetailScreen` (same comic open action).
 
 ### Versioning
 
@@ -110,36 +110,74 @@ Remote metadata APIs are out of M6 scope.
 
 ---
 
-## Reader architecture (proposed)
+## Reader architecture (Phase 6.3 comic — implementation checkpoint)
+
+### Current reader status (2026-07-25)
+
+| Format | Status |
+|---|---|
+| **CBZ** | Fully implemented; runtime validated (unit + opt-in Windows harness) |
+| **CBR** | Technically implemented; locally validated when approved UnRAR present; **production distribution blocked** pending approval for the exact `UnRAR.exe` |
+| **Missing CBR tooling** | Production route: `ComicArchiveOpener.openPath` / `openComicReaderScreen` → controlled `cbrSupportUnavailable` snackbar before a broken reader session (same path exercised in unit/harness tests) |
+| **Unicode entry names** | Validated for **current fixture set only** (ASCII + nested paths); non-ASCII / supplementary-character archive entry names remain follow-up unless covered by representative tests |
 
 ### Surfaces
 
 | Surface | Role |
 |---|---|
-| Folder / detail | Discover and open |
-| Comic reader | Paged image sequence from archive |
-| Book reader | Document navigation (PDF pages / EPUB spine) |
-| Continue Reading | Application-managed list of in-progress items |
+| Folder / detail / search→detail | Discover and open |
+| Comic reader (`ComicReaderScreen`) | Paged image sequence from archive |
+| Book reader | Deferred to Phase 6.4 |
+| Continue Reading | Deferred to Phase 6.5 |
 
-Video `PlayerScreen` and music listening surfaces are **not** reused for reading. Shared design tokens and chrome patterns are encouraged; shared playback controllers are forbidden.
+Video `PlayerScreen` and music listening surfaces are **not** reused for reading.
 
-### Access path
+### Module boundaries (`lib/features/comics/`)
 
-All opens go through `MediaLocationResolver` / existing provider config so local, UNC, and HTTPS catalogues behave consistently.
+| Layer | Responsibility |
+|---|---|
+| `ComicArchiveOpener` | Resolve local path via `MediaLocationResolver`; choose CBZ vs CBR source; probe CBR tooling before route |
+| `ComicArchiveSource` | Implementation-neutral list/load/dispose contract |
+| `CbzZipArchiveSource` | In-process ZIP via `package:archive` |
+| `CbrCliArchiveSource` | Adapter over Gate 0 `UnrarCliCbrAdapter` (replaceable) |
+| Page ordering / safety | Natural filename order; reject unsafe paths; image extensions only |
+| `ComicPageCache` | Bounded LRU (default **5** pages); failed loads not cached; cleared on dispose |
+| `ComicReaderController` | Session navigation + load/prefetch; no Phase 6.5 persistence |
+| `ComicReaderScreen` | Fit-to-window page display, controls, keyboard, errors |
+| `openComicReaderScreen` | Entry helper — snackbar on controlled failure (never broken route) |
+
+### Keyboard / controls (Windows)
+
+| Input | Action |
+|---|---|
+| ← / Page Up | Previous page |
+| → / Page Down | Next page |
+| Home | First page |
+| End | Last page |
+| Escape / AppBar back | Exit reader |
+| Toolbar buttons | First / prev / next / last |
+
+Shortcuts are ignored while an `EditableText` owns focus. Page indicator: `Page N of M` (semantics live region).
+
+### Cache / temp policy
+
+- **Controller page cache:** retain current page; optional adjacent prefetch (neighbors only).
+- Hard cap: `ComicPageCache.maxEntries` (default 5) on **decoded page bytes held by the controller only**.
+- Cleared when the reader disposes.
+- CBR: owned temp extract dir per page; cleaned after read; reopen does not reuse stale temps.
+- **CBZ archive memory (interim limitation):** `CbzZipArchiveSource` reads the full `.cbz` file, then `ZipDecoder.decodeBytes` decompresses **all** ZIP entries into an in-memory `Archive` retained for the open session. Navigation reuses entry bytes already held in that structure — this is **not** selective/random-access I/O. The five-page controller cache does **not** bound this underlying archive-parser memory.
+- **Phase 6.6 follow-up:** measure representative large CBZ memory use; either prove it stays within an agreed bound or replace with random-access ZIP reads or session-scoped temp extraction (see [m6-plan.md](../roadmap/m6-plan.md)).
 
 ### Extraction / decode
 
-- **CBZ:** ZIP entry list → decode pages lazily (required; reader in 6.3)
-- **CBR:** Required format. Gate 0: `package:unrar` **Fail**; official **UnRAR CLI** **Conditional pass** — see [cbr-rar-evaluation.md](./cbr-rar-evaluation.md) · [unrar-cli-provenance.md](./unrar-cli-provenance.md). `package:rar` is **not** preferred for Windows.
-- **Indexer metadata (6.1):** CBZ may read ComicInfo.xml; CBR uses filename title only until the reader stack is wired.
-- **Failure modes:** unsupported, encrypted, corrupt, or multi-volume archives fail gracefully — no crash; catalogue browse/playback elsewhere unaffected
-- **PDF/EPUB:** Via vetted Flutter/Windows-capable packages (spike before Accept in 6.4)
+- **CBZ:** full-archive decode via `package:archive` (interim); page bytes served from decoded entry content
+- **CBR:** Official **UnRAR CLI** under Gate 0 **Conditional pass** — selective per-page extract; no PATH fallback; structured args; timeout; hash gate when configured; `PHASE_63_UNRAR_EXE` for local validation only. Redistribution of `UnRAR.exe` remains **unresolved/blocking** for production packaging.
+- **PDF/EPUB:** Not started (Phase 6.4)
+- **Remote HTTP comics:** Rejected with a clear message until a later download/cache design (local-first)
 
-Temp files must be session-scoped or LRU-cached with a documented wipe policy (open question in m6-plan).
+### Error taxonomy
 
-### Comic reader validation
-
-Comic reader DoD requires Windows runtime validation of **both** CBZ and CBR fixtures (open + page navigation).
+Controlled kinds include: missing archive, unsupported type, corrupt, empty, no readable images, unsafe path, CBR unavailable / hash mismatch, encrypted, multi-volume, page extract failure, timeout. User messages are safe; diagnostics are redacted (basename/codes only).
 
 ---
 
@@ -202,7 +240,7 @@ Music playlists, shuffle/repeat, lyrics, favourites redesign, and related items 
 |---|---|
 | 6.1 | Schema, kinds, indexer, client models |
 | 6.2 | Browse / detail / search presentation — ✅ Complete (kind badges, folder filters, search kind chips, detail stub, placeholders; no readers) |
-| 6.3 | Comic reader |
+| 6.3 | Comic reader (CBZ/CBR) — **In Progress** (implementation checkpoint; UnRAR redistribution blocking closure) |
 | 6.4 | Book reader |
 | 6.5 | Reading progress + Continue Reading |
 | 6.6 | Performance, diagnostics, runtime matrix |
