@@ -10,6 +10,10 @@ import '../../features/music/services/music_playback_queue_controller.dart';
 import '../../features/music/services/music_playback_session_coordinator.dart';
 import '../../features/music/services/music_playback_session_repository.dart';
 import '../../features/music/services/music_playback_session_restorer.dart';
+import '../../features/reading/services/reading_progress_coordinator.dart';
+import '../../features/reading/services/reading_progress_diagnostics_projection.dart';
+import '../../features/reading/services/reading_progress_repository.dart';
+import '../../features/comics/spike/unrar_cli_resolver.dart';
 import '../../features/search/search_service.dart';
 import '../../models/catalogue_provider_snapshot.dart';
 import '../../models/media_folder.dart';
@@ -46,6 +50,8 @@ class DiagnosticsService {
     MusicPlaybackSessionCoordinator? musicPlaybackSessionCoordinator,
     MusicPlaybackQueueController? musicPlaybackQueueController,
     MusicPlaybackSessionRestorer? musicPlaybackSessionRestorer,
+    ReadingProgressRepository? readingProgressRepository,
+    ReadingProgressCoordinator? readingProgressCoordinator,
     Future<PackageInfo> Function()? packageInfoLoader,
     String Function()? platformNameProvider,
     bool Function()? imageCacheAvailableProvider,
@@ -61,6 +67,8 @@ class DiagnosticsService {
         _musicPlaybackSessionCoordinator = musicPlaybackSessionCoordinator,
         _musicPlaybackQueueController = musicPlaybackQueueController,
         _musicPlaybackSessionRestorer = musicPlaybackSessionRestorer,
+        _readingProgressRepository = readingProgressRepository,
+        _readingProgressCoordinator = readingProgressCoordinator,
         _applicationStartedAt = applicationStartedAt,
         _packageInfoLoader = packageInfoLoader ?? PackageInfo.fromPlatform,
         _platformNameProvider = platformNameProvider ?? _defaultPlatformName,
@@ -79,6 +87,8 @@ class DiagnosticsService {
   final MusicPlaybackSessionCoordinator? _musicPlaybackSessionCoordinator;
   final MusicPlaybackQueueController? _musicPlaybackQueueController;
   final MusicPlaybackSessionRestorer? _musicPlaybackSessionRestorer;
+  final ReadingProgressRepository? _readingProgressRepository;
+  final ReadingProgressCoordinator? _readingProgressCoordinator;
   final DateTime _applicationStartedAt;
   final Future<PackageInfo> Function() _packageInfoLoader;
   final String Function() _platformNameProvider;
@@ -100,6 +110,7 @@ class DiagnosticsService {
     final playback = _capturePlayback();
     final musicListening = _captureMusicListening();
     final musicPlaybackSession = _captureMusicPlaybackSession();
+    final readingProgress = _captureReadingProgress();
     final library = _captureLibrary(catalogue);
 
     return RuntimeDiagnosticsSnapshot(
@@ -112,6 +123,7 @@ class DiagnosticsService {
       playback: playback,
       musicListening: musicListening,
       musicPlaybackSession: musicPlaybackSession,
+      readingProgress: readingProgress,
       library: library,
     );
   }
@@ -467,6 +479,99 @@ class DiagnosticsService {
       return const MusicPlaybackSessionDiagnostics(
         status: DiagnosticSectionStatus.unavailable,
         repositoryLoaded: false,
+      );
+    }
+  }
+
+  ReadingProgressDiagnostics? _captureReadingProgress() {
+    final repository = _readingProgressRepository;
+    if (repository == null) {
+      return null;
+    }
+
+    try {
+      if (!repository.isLoaded) {
+        return null;
+      }
+
+      var status = DiagnosticSectionStatus.complete;
+      bool? coordinatorAttached;
+      bool? sessionActive;
+      bool? pendingWrite;
+      bool? pendingDebounceWrite;
+      bool? writeInFlight;
+      bool? persistenceWarningPresent;
+      String? lastPersistenceWarningSummary;
+      DateTime? lastSuccessfulFlushAt;
+
+      final coordinator = _readingProgressCoordinator;
+      if (coordinator != null) {
+        try {
+          coordinatorAttached = true;
+          sessionActive = coordinator.sessionActive;
+          pendingWrite = coordinator.pendingWrite;
+          pendingDebounceWrite = coordinator.pendingDebounceWrite;
+          writeInFlight = coordinator.writeInFlight;
+          persistenceWarningPresent =
+              coordinator.lastPersistenceWarning != null;
+          lastPersistenceWarningSummary = _safeErrorSummary(
+            coordinator.lastPersistenceWarning,
+          );
+          lastSuccessfulFlushAt = coordinator.lastSuccessfulFlushAt;
+        } catch (_) {
+          status = DiagnosticSectionStatus.partial;
+        }
+      }
+
+      final catalog = _catalogService.catalog;
+      final cbrToolingAvailable = UnrarCliResolver().resolvePath() != null;
+      final projection = ReadingProgressDiagnosticsProjection.build(
+        repository: repository,
+        catalog: catalog,
+        cbrToolingAvailable: cbrToolingAvailable,
+      );
+      final reconciliation = projection.lastReconciliation;
+
+      return ReadingProgressDiagnostics(
+        status: status,
+        repositoryInitialized: projection.initialized,
+        schemaVersion: projection.schemaVersion,
+        storedRecordCount: projection.storedRecordCount,
+        continueReadingCount: projection.continueReadingCount,
+        completedRecordCount: projection.completedRecordCount,
+        staleOrUnmatchedRecordCount: projection.staleOrUnmatchedRecordCount,
+        invalidSkippedRecordCount: projection.invalidSkippedRecordCount,
+        pendingWrite: pendingWrite,
+        pendingDebounceWrite: pendingDebounceWrite,
+        writeInFlight: writeInFlight,
+        lastSuccessfulWriteAt: projection.lastSuccessfulWriteAt,
+        lastSuccessfulFlushAt: lastSuccessfulFlushAt,
+        lastRepositoryErrorClassification: _safeErrorSummary(
+          projection.lastRepositoryErrorClassification,
+        ),
+        recoveryWarningPresent: projection.recoveryWarningPresent,
+        pdfRecordCount: projection.pdfRecordCount,
+        epubRecordCount: projection.epubRecordCount,
+        cbzRecordCount: projection.cbzRecordCount,
+        cbrRecordCount: projection.cbrRecordCount,
+        cbrUnavailableRecordCount: projection.cbrUnavailableRecordCount,
+        coordinatorAttached: coordinatorAttached,
+        sessionActive: sessionActive,
+        persistenceWarningPresent: persistenceWarningPresent,
+        lastPersistenceWarningSummary: lastPersistenceWarningSummary,
+        reconciliationRetainedCount: reconciliation?.retainedCount,
+        reconciliationRefreshedCount: reconciliation?.refreshedCount,
+        reconciliationRemovedMissingCount: reconciliation?.removedMissingCount,
+        reconciliationRemovedFormatMismatchCount:
+            reconciliation?.removedFormatMismatchCount,
+        reconciliationCbrUnavailableRetainedCount:
+            reconciliation?.cbrUnavailableRetainedCount,
+        reconciliationPersistenceFailed: reconciliation?.persistenceFailed,
+      );
+    } catch (_) {
+      return const ReadingProgressDiagnostics(
+        status: DiagnosticSectionStatus.unavailable,
+        repositoryInitialized: false,
       );
     }
   }

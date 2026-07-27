@@ -14,6 +14,7 @@ import 'package:ttsplayer/features/music/services/music_listening_repository.dar
 import 'package:ttsplayer/features/music/services/music_playback_queue_controller.dart';
 import 'package:ttsplayer/features/music/services/music_playback_session_coordinator.dart';
 import 'package:ttsplayer/features/music/services/music_playback_session_repository.dart';
+import 'package:ttsplayer/features/reading/services/reading_progress_repository.dart';
 import 'package:ttsplayer/features/music/services/music_playback_session_restorer.dart';
 import 'package:ttsplayer/features/search/search_service.dart';
 import 'package:ttsplayer/features/settings/diagnostics_export_coordinator.dart';
@@ -263,6 +264,7 @@ class Phase56RuntimeContext {
       musicPlaybackQueueController: queue,
       musicListeningRepository: listeningRepository,
       musicPlaybackSessionRepository: sessionRepository,
+      readingProgressRepository: ReadingProgressRepository(),
     );
 
     final catalogService = CatalogService(

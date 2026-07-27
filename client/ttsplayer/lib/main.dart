@@ -14,6 +14,8 @@ import 'features/music/services/music_playback_queue_controller.dart';
 import 'features/music/services/music_playback_session_coordinator.dart';
 import 'features/music/services/music_playback_session_restorer.dart';
 import 'features/music/services/music_playback_session_repository.dart';
+import 'features/reading/services/reading_progress_coordinator.dart';
+import 'features/reading/services/reading_progress_repository.dart';
 import 'features/search/search_service.dart';
 import 'navigation/app_navigator.dart';
 import 'services/artwork/artwork_service.dart';
@@ -30,6 +32,7 @@ import 'services/scanner_service.dart';
 import 'theme/app_theme.dart';
 import 'widgets/artwork/artwork_image.dart';
 import 'widgets/music_playback_session_lifecycle_observer.dart';
+import 'widgets/reading_progress_lifecycle_observer.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -63,6 +66,13 @@ Future<void> main() async {
 
   final musicPlaybackSessionRepository = MusicPlaybackSessionRepository();
   await musicPlaybackSessionRepository.initialize();
+
+  final readingProgressRepository = ReadingProgressRepository();
+  await readingProgressRepository.initialize();
+
+  final readingProgressCoordinator = ReadingProgressCoordinator(
+    repository: readingProgressRepository,
+  );
 
   final playbackService = PlaybackService(
     mediaLocationResolver: mediaLocationResolver,
@@ -104,6 +114,7 @@ Future<void> main() async {
     musicPlaybackQueueController: musicPlaybackQueueController,
     musicListeningRepository: musicListeningRepository,
     musicPlaybackSessionRepository: musicPlaybackSessionRepository,
+    readingProgressRepository: readingProgressRepository,
   );
 
   final catalogService = CatalogService(
@@ -124,6 +135,8 @@ Future<void> main() async {
     musicPlaybackSessionCoordinator: musicPlaybackSessionCoordinator,
     musicPlaybackQueueController: musicPlaybackQueueController,
     musicPlaybackSessionRestorer: musicPlaybackSessionRestorer,
+    readingProgressRepository: readingProgressRepository,
+    readingProgressCoordinator: readingProgressCoordinator,
     applicationStartedAt: applicationStartedAt,
   );
 
@@ -167,6 +180,12 @@ Future<void> main() async {
         ChangeNotifierProvider<MusicListeningRepository>.value(
           value: musicListeningRepository,
         ),
+        ChangeNotifierProvider<ReadingProgressRepository>.value(
+          value: readingProgressRepository,
+        ),
+        ChangeNotifierProvider<ReadingProgressCoordinator>.value(
+          value: readingProgressCoordinator,
+        ),
         Provider<DiagnosticsService>.value(value: diagnosticsService),
         ChangeNotifierProvider(create: (_) => ScannerService()),
         ChangeNotifierProvider(create: (_) => ScanHistoryService()),
@@ -181,15 +200,18 @@ class TTSPlayerApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MusicPlaybackSessionLifecycleObserver(
-      coordinator: context.read<MusicPlaybackSessionCoordinator>(),
-      child: MaterialApp(
-        title: 'TTSPlayer',
-        navigatorKey: rootNavigatorKey,
-        navigatorObservers: [routeObserver],
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.dark,
-        home: const DashboardScreen(),
+    return ReadingProgressLifecycleObserver(
+      coordinator: context.read<ReadingProgressCoordinator>(),
+      child: MusicPlaybackSessionLifecycleObserver(
+        coordinator: context.read<MusicPlaybackSessionCoordinator>(),
+        child: MaterialApp(
+          title: 'TTSPlayer',
+          navigatorKey: rootNavigatorKey,
+          navigatorObservers: [routeObserver],
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.dark,
+          home: const DashboardScreen(),
+        ),
       ),
     );
   }

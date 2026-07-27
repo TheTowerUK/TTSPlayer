@@ -4,7 +4,7 @@
 **Milestone plan:** [m6-plan.md](../roadmap/m6-plan.md)  
 **Related ADRs:** [ADR-024](./decisions/ADR-024-book-comic-catalogue-schema-and-media-kind.md) · [ADR-025](./decisions/ADR-025-book-comic-identity-and-metadata-precedence.md) · [ADR-026](./decisions/ADR-026-reader-surface-architecture.md) · [ADR-027](./decisions/ADR-027-reading-progress-and-continue-reading.md)
 
-> Phases 6.1–6.2 and **6.4** complete. Phase 6.3 comic reader landed as an **implementation checkpoint** on `m6-development`; phase **not closed** while UnRAR redistribution approval remains blocking. Reading progress (6.5) remains planned.
+> Phases 6.1–6.2, **6.4**, and **6.5** complete. Phase 6.3 comic reader landed as an **implementation checkpoint** on `m6-development`; phase **not closed** while UnRAR redistribution approval remains blocking.
 
 ---
 
@@ -128,7 +128,7 @@ Remote metadata APIs are out of M6 scope.
 | Folder / detail / search→detail | Discover and open |
 | Comic reader (`ComicReaderScreen`) | Paged image sequence from archive |
 | Book reader (`BookReaderScreen`) | PDF via `pdfrx`; EPUB via TTSPlayer parser + `flutter_html` |
-| Continue Reading | Deferred to Phase 6.5 |
+| Continue Reading | Phase 6.5 — `ReadingProgressRepository` + dashboard section |
 
 Video `PlayerScreen` and music listening surfaces are **not** reused for reading.
 
@@ -301,7 +301,7 @@ Music playlists, shuffle/repeat, lyrics, favourites redesign, and related items 
 | 6.2 | Browse / detail / search presentation — ✅ Complete (kind badges, folder filters, search kind chips, detail stub, placeholders; no readers) |
 | 6.3 | Comic reader (CBZ/CBR) — **In Progress** (implementation checkpoint; UnRAR redistribution blocking closure) |
 | 6.4 | Book reader |
-| 6.5 | Reading progress + Continue Reading |
+| 6.5 | Reading progress + Continue Reading | **Complete** |
 | 6.6 | Performance, diagnostics, runtime matrix |
 | Release | Governance and tags |
 

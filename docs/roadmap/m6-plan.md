@@ -106,7 +106,7 @@ M6 extends TTSPlayer from a **video + music** personal media application into a 
 | **6.2** | Books & comics library browsing / presentation | ✅ Complete |
 | **6.3** | Comic archive reader (CBZ and CBR required) | **In Progress** — implementation checkpoint; Conditional-pass; UnRAR redistribution blocking closure |
 | **6.4** | Book document reader (PDF/EPUB) | ✅ **Complete** (2026-07-26) |
-| **6.5** | Reading progress and Continue Reading | Planned |
+| **6.5** | Reading progress and Continue Reading | **Complete** (2026-07-27) — persistence, Continue Reading, diagnostics |
 | **6.6** | Performance, diagnostics, and Windows runtime validation | Planned |
 | **Release** | M6 release and documentation | Planned |
 
@@ -350,11 +350,11 @@ Failed Gate 0 → evaluate documented fallback from [cbr-rar-evaluation.md](../a
 
 **Definition of done:**
 
-- [ ] Progress survives restart
-- [ ] Stale ids pruned on catalogue replace
-- [ ] Video `position_*` and music listening/session keys untouched
-- [ ] Diagnostics redacted
-- [ ] Suite + Release green
+- [x] Progress survives restart
+- [x] Stale ids pruned on catalogue replace
+- [x] Video `position_*` and music listening/session keys untouched
+- [x] Diagnostics redacted
+- [x] Suite + Release green
 
 **Dependencies:** At least one reader phase (6.3 or 6.4) complete.
 
@@ -402,7 +402,7 @@ Failed Gate 0 → evaluate documented fallback from [cbr-rar-evaluation.md](../a
 | [ADR-024](../architecture/decisions/ADR-024-book-comic-catalogue-schema-and-media-kind.md) | Book/Comic Catalogue Schema and Media Kind | **Proposed** | New kinds + extensions + catalogue version policy |
 | [ADR-025](../architecture/decisions/ADR-025-book-comic-identity-and-metadata-precedence.md) | Book/Comic Identity and Metadata Precedence | **Proposed** | Stable ids; tag/archive metadata vs filename |
 | [ADR-026](../architecture/decisions/ADR-026-reader-surface-architecture.md) | Reader Surface Architecture | **Proposed** (comic reader provisionally validated; Phase 6.3 in progress) | Dedicated readers vs reuse of video/music surfaces |
-| [ADR-027](../architecture/decisions/ADR-027-reading-progress-and-continue-reading.md) | Reading Progress and Continue Reading | **Proposed** | Persistence ownership and isolation |
+| [ADR-027](../architecture/decisions/ADR-027-reading-progress-and-continue-reading.md) | Reading Progress and Continue Reading | **Accepted** | Persistence ownership and isolation |
 
 No M4/M5 ADRs require amendment for planning; implementation may reference ADR-007/014/020 patterns without superseding them.
 
@@ -510,6 +510,6 @@ Each checkbox must point to a test, runtime scenario, document section, build re
 
 ## Handoff
 
-**Next:** Continue Phase **6.3** closure items (UnRAR redistribution approval, Unicode revalidation, legal review). Phase **6.5** reading progress is next planned reader work. CBZ/EPUB memory measurement remains Phase 6.6.
+**Next:** Continue Phase **6.3** closure items (UnRAR redistribution approval, Unicode revalidation, legal review). Phase **6.6** performance hardening is next planned reader work. CBZ/EPUB memory measurement remains Phase 6.6.
 
 Phase 6.3 implementation checkpoint landed. Gate 0 Conditional pass (technical) does **not** authorize shipping UnRAR or closing Phase 6.3.

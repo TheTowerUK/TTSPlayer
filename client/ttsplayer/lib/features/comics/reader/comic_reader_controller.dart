@@ -47,13 +47,13 @@ class ComicReaderController extends ChangeNotifier {
     return 'Page ${_index + 1} of ${_pages.length}';
   }
 
-  Future<void> open() async {
+  Future<void> open({int initialPageIndex = 0}) async {
     _state = ComicReaderLoadState.loadingPages;
     _error = null;
     _notify();
     try {
       _pages = await _source.listPages();
-      _index = 0;
+      _index = initialPageIndex.clamp(0, _pages.length - 1);
       await _loadCurrent(prefetch: true);
     } on ComicArchiveException catch (e) {
       _error = e;

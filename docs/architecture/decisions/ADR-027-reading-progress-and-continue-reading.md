@@ -1,7 +1,8 @@
 # ADR-027: Reading Progress and Continue Reading
 
-**Status:** Proposed  
+**Status:** Accepted  
 **Date:** 2026-07-24  
+**Accepted:** 2026-07-27 (Phase 6.5 implementation and diagnostics validated)  
 **Milestone:** M6 — Phase 6.0 / 6.5  
 **Related:** [books-comics.md](../books-comics.md) · [ADR-022](./ADR-022-music-queue-and-listening-state.md) · [ADR-014](./ADR-014-playback-position-persistence.md)
 
@@ -13,7 +14,7 @@ Video resume and music listening/session state already use application-managed p
 
 ---
 
-## Decision (proposed)
+## Decision
 
 1. Introduce a **versioned reading-progress repository** owned by the application (not `catalog.json`).
 2. Store progress keyed by stable media item `id` with a format-appropriate location:
@@ -53,10 +54,13 @@ Video resume and music listening/session state already use application-managed p
 
 ---
 
-## Acceptance criteria (for later Accept)
+## Acceptance criteria
 
-- [ ] Progress survives process restart
-- [ ] Resume opens the correct location in the reader
-- [ ] Prune on catalogue replace covered by tests
-- [ ] Key isolation tests prove no writes to video/music namespaces
-- [ ] Continue Reading UI is not framed as a filesystem folder
+- [x] Progress survives process restart
+- [x] Resume opens the correct location in the reader
+- [x] Continue Reading excludes completed items; detail offers Read Again / Start from Beginning
+- [x] Catalogue replacement prunes stale ids; metadata snapshots refresh
+- [x] Isolated preference key (`ttsplayer_reading_progress_v1`); no writes to video/music keys
+- [x] Diagnostics aggregates only; no paths, hrefs, entry names, or raw JSON in export
+
+**Note:** Accepting ADR-027 does **not** resolve CBR UnRAR redistribution (Phase 6.3 closure remains separate).

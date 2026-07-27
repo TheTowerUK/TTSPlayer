@@ -67,6 +67,7 @@ void main() {
       expect(find.text('Search'), findsOneWidget);
       expect(find.text('Playback'), findsOneWidget);
       expect(find.text('Music Listening'), findsOneWidget);
+      expect(find.text('Reading progress'), findsOneWidget);
       expect(find.text('Library'), findsOneWidget);
       expect(find.textContaining('Instance of'), findsNothing);
     });

@@ -8,6 +8,8 @@ import 'package:ttsplayer/features/music/services/music_playback_session_coordin
 import 'package:ttsplayer/features/music/services/music_playback_session_repository.dart';
 import 'package:ttsplayer/features/music/services/music_playback_session_restorer.dart';
 import 'package:ttsplayer/features/music/music_library_service.dart';
+import 'package:ttsplayer/features/reading/services/reading_progress_coordinator.dart';
+import 'package:ttsplayer/features/reading/services/reading_progress_repository.dart';
 import 'package:ttsplayer/features/search/search_service.dart';
 import 'package:ttsplayer/models/catalog.dart';
 import 'package:ttsplayer/models/media_folder.dart';
@@ -118,6 +120,14 @@ Widget _dashboardHarness(Catalog catalog) {
       ),
       Provider(create: (_) => ArtworkService(fileExists: (_) => false)),
       Provider(create: (_) => SearchService()),
+      ChangeNotifierProvider<ReadingProgressRepository>.value(
+        value: ReadingProgressRepository(),
+      ),
+      ChangeNotifierProvider(
+        create: (context) => ReadingProgressCoordinator(
+          repository: context.read<ReadingProgressRepository>(),
+        ),
+      ),
       Provider(create: (_) => MusicLibraryService()),
       ChangeNotifierProvider<CatalogService>.value(
         value: _FakeCatalogService(catalog),
@@ -204,6 +214,14 @@ void main() {
           ),
           Provider(create: (_) => ArtworkService(fileExists: (_) => false)),
           Provider(create: (_) => SearchService()),
+          ChangeNotifierProvider<ReadingProgressRepository>.value(
+            value: ReadingProgressRepository(),
+          ),
+          ChangeNotifierProvider(
+            create: (context) => ReadingProgressCoordinator(
+              repository: context.read<ReadingProgressRepository>(),
+            ),
+          ),
           Provider(create: (_) => MusicLibraryService()),
           ChangeNotifierProvider<CatalogService>.value(
             value: _FakeCatalogService(catalog),

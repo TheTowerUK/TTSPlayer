@@ -18,6 +18,9 @@ import '../../widgets/scan_progress_dialog.dart';
 import '../../widgets/tts_app_bar.dart';
 import 'dashboard_service.dart';
 import 'widgets/continue_watching_section.dart';
+import '../reading/services/continue_reading_projection.dart';
+import '../reading/services/reading_progress_repository.dart';
+import '../reading/widgets/continue_reading_section.dart';
 import 'widgets/dashboard_banners.dart';
 import 'widgets/dashboard_quick_search_bar.dart';
 import 'widgets/dashboard_welcome_header.dart';
@@ -341,6 +344,24 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
                                 entries: data.continueWatching,
                               ),
                               const SizedBox(height: AppSpacing.section),
+                              Consumer<ReadingProgressRepository>(
+                                builder: (context, repository, _) {
+                                  final entries = ContinueReadingProjection()
+                                      .build(
+                                    catalog: data.catalog,
+                                    repository: repository,
+                                  );
+                                  return Column(
+                                    children: [
+                                      ContinueReadingSection(entries: entries),
+                                      if (entries.isNotEmpty)
+                                        const SizedBox(
+                                          height: AppSpacing.section,
+                                        ),
+                                    ],
+                                  );
+                                },
+                              ),
                               FavouritesSection(catalog: data.catalog),
                               const SizedBox(height: AppSpacing.section),
                               RecentlyAddedSection(entries: data.recentlyAdded),

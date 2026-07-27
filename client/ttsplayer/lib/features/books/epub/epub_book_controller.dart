@@ -63,14 +63,16 @@ class EpubBookController extends ChangeNotifier {
     );
   }
 
-  Future<void> open() async {
+  Future<void> open({int initialSpineIndex = 0, double initialScrollOffset = 0}) async {
     _state = EpubReaderLoadState.loading;
     _error = null;
     notifyListeners();
     try {
       _document = await _parser.parseFile(filePath);
-      _spineIndex = 0;
-      _scrollOffset = 0;
+      _spineIndex = initialSpineIndex.clamp(0, _document!.spine.length - 1);
+      _scrollOffset = initialScrollOffset.isFinite && !initialScrollOffset.isNegative
+          ? initialScrollOffset
+          : 0;
       _state = EpubReaderLoadState.ready;
       notifyListeners();
     } on BookReaderException catch (e) {

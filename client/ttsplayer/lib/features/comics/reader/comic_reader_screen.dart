@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 
 import '../../../models/media_item.dart';
 import '../../../theme/app_theme.dart';
+import '../../reading/models/reading_location_payload.dart';
+import '../../reading/models/reading_progress_record.dart';
+import '../../reading/reading_navigation.dart';
+import '../../reading/services/reading_progress_coordinator.dart';
 import '../archive/comic_archive_errors.dart';
 import '../archive/comic_archive_source.dart';
 import 'comic_reader_controller.dart';
@@ -21,10 +26,14 @@ class ComicReaderScreen extends StatefulWidget {
     required this.item,
     required this.source,
     @visibleForTesting this.debugController,
+    this.restorePlan,
+    this.startFromBeginning = false,
   });
 
   final MediaItem item;
   final ComicArchiveSource source;
+  final ReadingProgressRestorePlan? restorePlan;
+  final bool startFromBeginning;
 
   /// When set (tests only), skips [ComicReaderController.open] so real dart:io
   /// work can be completed outside the widget-test fake-async zone.
@@ -39,35 +48,145 @@ class _ComicReaderScreenState extends State<ComicReaderScreen> {
   late final ComicReaderController _controller;
   final FocusNode _focusNode = FocusNode();
   late final bool _ownsController;
+  ReadingProgressCoordinator? _coordinator;
+  ReadingReaderFormat? _readerFormat;
+  bool _layoutReady = false;
+  bool _closeHandled = false;
+  int? _lastPageIndex;
+
+  ReadingReaderFormat get readerFormat =>
+      _readerFormat ?? ReadingReaderFormat.cbz;
 
   @override
   void initState() {
     super.initState();
+    _readerFormat =
+        readerFormatForComicExtension(_extension(widget.item.filePath)) ??
+            ReadingReaderFormat.cbz;
     final injected = widget.debugController;
     if (injected != null) {
       _controller = injected;
       _ownsController = false;
+      _layoutReady = _controller.state == ComicReaderLoadState.ready;
     } else {
       _controller = ComicReaderController(source: widget.source);
       _ownsController = true;
       // ignore: discarded_futures
-      _controller.open();
+      _openWithRestore();
     }
     _controller.addListener(_onChanged);
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _coordinator ??= context.read<ReadingProgressCoordinator>();
+  }
+
+  Future<void> _openWithRestore() async {
+    await _controller.open();
+    if (!mounted) return;
+    final plan = widget.restorePlan;
+    if (plan != null &&
+        !widget.startFromBeginning &&
+        _controller.pageCount > 0) {
+      final names = _controller.pages.map((page) => page.entryName).toList();
+      final restored = plan.comicLocation(
+        entryNames: names,
+        currentPageCount: _controller.pageCount,
+      );
+      if (restored != null && restored.pageIndex > 0) {
+        await _controller.goToIndex(restored.pageIndex);
+      }
+    }
+    _layoutReady = _controller.state == ComicReaderLoadState.ready;
+    if (_layoutReady) {
+      _beginProgressSession();
+      _coordinator?.markLayoutReady();
+      _persistProgress(force: true);
+    }
+  }
+
+  void _beginProgressSession() {
+    if (_controller.pageCount <= 0) return;
+    final location = _currentLocation();
+    if (location == null) return;
+    _coordinator?.beginSession(
+      item: widget.item,
+      readerFormat: readerFormat,
+      initialLocation: location,
+      progressFraction: ReadingProgressRecord.fractionForComic(
+        _controller.pageIndex,
+        _controller.pageCount,
+      ),
+    );
+  }
+
+  ComicReadingLocationPayload? _currentLocation() {
+    if (_controller.pageCount <= 0) return null;
+    return ComicReadingLocationPayload(
+      pageIndex: _controller.pageIndex,
+      pageCountAtSave: _controller.pageCount,
+      entryName: _controller.currentPage?.entryName,
+      archiveFormat: readerFormat,
+    );
+  }
+
+  void _persistProgress({bool force = false}) {
+    if (!_layoutReady || _controller.pageCount <= 0) return;
+    if (!force && _lastPageIndex == _controller.pageIndex) return;
+    _lastPageIndex = _controller.pageIndex;
+    final location = _currentLocation();
+    if (location == null) return;
+    _coordinator?.onLocationChanged(
+      location: location,
+      progressFraction: ReadingProgressRecord.fractionForComic(
+        _controller.pageIndex,
+        _controller.pageCount,
+      ),
+      force: force,
+    );
+  }
+
+  Future<void> _handleClose() async {
+    if (_closeHandled) return;
+    _closeHandled = true;
+    await _coordinator?.onReaderClosed();
+    if (mounted) {
+      await Navigator.of(context).maybePop();
+    }
+  }
+
   void _onChanged() {
+    if (_controller.state == ComicReaderLoadState.ready && !_layoutReady) {
+      _layoutReady = true;
+      _beginProgressSession();
+      _coordinator?.markLayoutReady();
+      _persistProgress(force: true);
+    } else if (_layoutReady) {
+      _persistProgress();
+    }
     if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    if (!_closeHandled) {
+      // ignore: discarded_futures
+      _coordinator?.onReaderClosed();
+    }
     _controller.removeListener(_onChanged);
     if (_ownsController) {
       _controller.dispose();
     }
     _focusNode.dispose();
     super.dispose();
+  }
+
+  static String _extension(String path) {
+    final dot = path.lastIndexOf('.');
+    if (dot < 0 || dot == path.length - 1) return '';
+    return path.substring(dot + 1).toLowerCase();
   }
 
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
@@ -101,7 +220,8 @@ class _ComicReaderScreenState extends State<ComicReaderScreen> {
       return KeyEventResult.handled;
     }
     if (key == LogicalKeyboardKey.escape) {
-      Navigator.of(context).maybePop();
+      // ignore: discarded_futures
+      _handleClose();
       return KeyEventResult.handled;
     }
     return KeyEventResult.ignored;
@@ -127,7 +247,10 @@ class _ComicReaderScreenState extends State<ComicReaderScreen> {
             key: const Key('comic_reader_back'),
             tooltip: 'Close reader',
             icon: const Icon(Icons.arrow_back),
-            onPressed: () => Navigator.of(context).maybePop(),
+            onPressed: () {
+              // ignore: discarded_futures
+              _handleClose();
+            },
           ),
         ),
         body: Column(
@@ -160,7 +283,10 @@ class _ComicReaderScreenState extends State<ComicReaderScreen> {
           // ignore: discarded_futures
           _controller.open();
         },
-        onClose: () => Navigator.of(context).maybePop(),
+        onClose: () {
+          // ignore: discarded_futures
+          _handleClose();
+        },
       );
     }
 
@@ -200,7 +326,10 @@ class _ComicReaderScreenState extends State<ComicReaderScreen> {
               // ignore: discarded_futures
               _controller.retryCurrentPage();
             },
-            onClose: () => Navigator.of(context).maybePop(),
+            onClose: () {
+          // ignore: discarded_futures
+          _handleClose();
+        },
           ),
         if (state == ComicReaderLoadState.loadingPage && imageBytes != null)
           const Positioned(

@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ttsplayer/features/reading/services/reading_progress_coordinator.dart';
+import 'package:ttsplayer/features/reading/services/reading_progress_repository.dart';
 import 'package:ttsplayer/features/search/models/search_filters.dart';
 import 'package:ttsplayer/features/search/models/search_result.dart';
 import 'package:ttsplayer/features/search/search_service.dart';
@@ -98,6 +100,14 @@ Widget _harness({
           value: _FakeScanHistoryService(),
         ),
         Provider(create: (_) => SearchService()),
+        ChangeNotifierProvider<ReadingProgressRepository>.value(
+          value: ReadingProgressRepository(),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => ReadingProgressCoordinator(
+            repository: context.read<ReadingProgressRepository>(),
+          ),
+        ),
       ],
       child: MaterialApp(
         theme: AppTheme.dark,

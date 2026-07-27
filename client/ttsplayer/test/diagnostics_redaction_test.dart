@@ -60,6 +60,7 @@ void main() {
       expect(export, contains('=== Search ==='));
       expect(export, contains('=== Playback ==='));
       expect(export, contains('=== Music Listening ==='));
+      expect(export, contains('=== Reading progress ==='));
       expect(export, contains('=== Library ==='));
       expect(exportContainsSensitiveData(export), isFalse);
     });

@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pdfrx/pdfrx.dart';
+import 'package:provider/provider.dart';
 
 import '../../../models/media_item.dart';
 import '../../../theme/app_theme.dart';
+import '../../reading/models/reading_location_payload.dart';
+import '../../reading/models/reading_progress_record.dart';
+import '../../reading/reading_navigation.dart';
+import '../../reading/services/reading_progress_coordinator.dart';
 import '../archive/book_opener.dart';
 import '../archive/book_reader_errors.dart';
 import '../epub/epub_book_controller.dart';
@@ -17,11 +22,15 @@ class BookReaderScreen extends StatefulWidget {
     required this.item,
     required this.target,
     this.debugEpubController,
+    this.restorePlan,
+    this.startFromBeginning = false,
   });
 
   final MediaItem item;
   final BookOpenTarget target;
   final EpubBookController? debugEpubController;
+  final ReadingProgressRestorePlan? restorePlan;
+  final bool startFromBeginning;
 
   @override
   State<BookReaderScreen> createState() => _BookReaderScreenState();
@@ -32,6 +41,12 @@ class _BookReaderScreenState extends State<BookReaderScreen> {
   PdfViewerController? _pdfController;
   EpubBookController? _epubController;
   BookReaderException? _fatalError;
+  ReadingProgressCoordinator? _coordinator;
+  bool _pdfLayoutReady = false;
+  bool _pdfRestoreApplied = false;
+  bool _epubLayoutReady = false;
+  bool _closeHandled = false;
+  int? _lastPdfPage;
 
   @override
   void initState() {
@@ -48,21 +63,182 @@ class _BookReaderScreenState extends State<BookReaderScreen> {
       _epubController!.addListener(_onEpubChanged);
       if (widget.debugEpubController == null) {
         // ignore: discarded_futures
-        _epubController!.open();
+        _openEpubWithRestore();
       }
     }
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _coordinator ??= context.read<ReadingProgressCoordinator>();
+  }
+
+  Future<void> _openEpubWithRestore() async {
+    final c = _epubController!;
+    await c.open();
+    if (!mounted) return;
+    final plan = widget.restorePlan;
+    if (plan != null && !widget.startFromBeginning) {
+      final doc = c.document;
+      if (doc != null) {
+        final hrefs = doc.spine.map((chapter) => chapter.href).toList();
+        final restored = plan.epubLocation(
+          spineHrefs: hrefs,
+          currentSpineCount: hrefs.length,
+        );
+        if (restored != null) {
+          await c.goToChapter(restored.spineIndex);
+          c.setScrollOffset(restored.sectionRelativeOffset);
+        }
+      }
+    }
+    _beginProgressSessionEpub();
+    _epubLayoutReady = true;
+    _coordinator?.markLayoutReady();
+    _persistEpubProgress(force: true);
+  }
+
   void _onPdfChanged() {
+    final c = _pdfController;
+    if (c?.isReady == true && !_pdfLayoutReady) {
+      _pdfLayoutReady = true;
+      _beginProgressSessionPdf();
+      if (!_pdfRestoreApplied) {
+        _applyPdfRestore();
+        _pdfRestoreApplied = true;
+      }
+      _coordinator?.markLayoutReady();
+      _persistPdfProgress(force: true);
+    } else if (c?.isReady == true && _pdfLayoutReady) {
+      _persistPdfProgress();
+    }
     if (mounted) setState(() {});
   }
 
+  void _applyPdfRestore() {
+    final plan = widget.restorePlan;
+    final c = _pdfController;
+    if (plan == null || widget.startFromBeginning || c == null || !c.isReady) {
+      return;
+    }
+    final restored = plan.pdfLocation(currentPageCount: c.pageCount);
+    if (restored != null && restored.pageIndex > 0) {
+      // ignore: discarded_futures
+      c.goToPage(
+        pageNumber: restored.pageIndex + 1,
+        duration: Duration.zero,
+      );
+    }
+  }
+
+  void _beginProgressSessionPdf() {
+    final c = _pdfController;
+    if (c == null || !c.isReady) return;
+    final pageIndex = (c.pageNumber ?? 1) - 1;
+    _coordinator?.beginSession(
+      item: widget.item,
+      readerFormat: ReadingReaderFormat.pdf,
+      initialLocation: PdfReadingLocationPayload(
+        pageIndex: pageIndex,
+        pageCountAtSave: c.pageCount,
+      ),
+      progressFraction: ReadingProgressRecord.fractionForPdf(
+        pageIndex,
+        c.pageCount,
+      ),
+    );
+  }
+
+  void _beginProgressSessionEpub() {
+    final c = _epubController;
+    final doc = c?.document;
+    final chapter = c?.currentChapter;
+    if (c == null || doc == null || chapter == null) return;
+    final payload = EpubReadingLocationPayload(
+      spineIndex: c.spineIndex,
+      spineHref: chapter.href,
+      spineCountAtSave: doc.spine.length,
+      chapterTitle: chapter.title,
+      sectionRelativeOffset: c.scrollOffset,
+    );
+    _coordinator?.beginSession(
+      item: widget.item,
+      readerFormat: ReadingReaderFormat.epub,
+      initialLocation: payload,
+      progressFraction: ReadingProgressRecord.fractionForEpub(
+        spineIndex: c.spineIndex,
+        spineCount: doc.spine.length,
+        sectionRelativeOffset: c.scrollOffset,
+        sectionExtent: 1,
+      ),
+    );
+  }
+
+  void _persistPdfProgress({bool force = false}) {
+    final c = _pdfController;
+    if (c == null || !c.isReady || !_pdfLayoutReady) return;
+    final pageIndex = (c.pageNumber ?? 1) - 1;
+    if (!force && _lastPdfPage == pageIndex) return;
+    _lastPdfPage = pageIndex;
+    final fraction = ReadingProgressRecord.fractionForPdf(pageIndex, c.pageCount);
+    _coordinator?.onLocationChanged(
+      location: PdfReadingLocationPayload(
+        pageIndex: pageIndex,
+        pageCountAtSave: c.pageCount,
+      ),
+      progressFraction: fraction,
+      force: force,
+    );
+  }
+
+  void _persistEpubProgress({bool force = false}) {
+    final c = _epubController;
+    final doc = c?.document;
+    final chapter = c?.currentChapter;
+    if (c == null || doc == null || chapter == null || !_epubLayoutReady) {
+      return;
+    }
+    _coordinator?.onLocationChanged(
+      location: EpubReadingLocationPayload(
+        spineIndex: c.spineIndex,
+        spineHref: chapter.href,
+        spineCountAtSave: doc.spine.length,
+        chapterTitle: chapter.title,
+        sectionRelativeOffset: c.scrollOffset,
+      ),
+      progressFraction: ReadingProgressRecord.fractionForEpub(
+        spineIndex: c.spineIndex,
+        spineCount: doc.spine.length,
+        sectionRelativeOffset: c.scrollOffset,
+        sectionExtent: 1,
+      ),
+      force: force,
+    );
+  }
+
   void _onEpubChanged() {
+    if (_epubController?.state == EpubReaderLoadState.ready && _epubLayoutReady) {
+      _persistEpubProgress();
+    }
     if (mounted) setState(() {});
+  }
+
+  Future<void> _handleClose() async {
+    if (_closeHandled) return;
+    _closeHandled = true;
+    await _coordinator?.onReaderClosed();
+    if (mounted) {
+      await Navigator.of(context).maybePop();
+    }
   }
 
   @override
   void dispose() {
+    if (!_closeHandled) {
+      // ignore: discarded_futures
+      _coordinator?.onReaderClosed();
+    }
     _pdfController?.removeListener(_onPdfChanged);
     _epubController?.removeListener(_onEpubChanged);
     _epubController?.disposeDocument();
@@ -81,7 +257,8 @@ class _BookReaderScreenState extends State<BookReaderScreen> {
     final ctrl = HardwareKeyboard.instance.isControlPressed;
 
     if (key == LogicalKeyboardKey.escape) {
-      Navigator.of(context).maybePop();
+      // ignore: discarded_futures
+      _handleClose();
       return KeyEventResult.handled;
     }
     if (ctrl && key == LogicalKeyboardKey.equal) {
@@ -215,7 +392,10 @@ class _BookReaderScreenState extends State<BookReaderScreen> {
             key: const Key('book_reader_back'),
             tooltip: 'Close reader',
             icon: const Icon(Icons.arrow_back),
-            onPressed: () => Navigator.of(context).maybePop(),
+            onPressed: () {
+              // ignore: discarded_futures
+              _handleClose();
+            },
           ),
           actions: _buildActions(),
         ),
@@ -382,6 +562,11 @@ class _BookReaderScreenState extends State<BookReaderScreen> {
       chapter: chapter,
       document: doc,
       textScale: c.textScale,
+      initialScrollOffset: c.scrollOffset,
+      onScrollOffsetChanged: (offset) {
+        c.setScrollOffset(offset);
+        _persistEpubProgress();
+      },
       onInternalLink: (href) {
         final index = doc.spine.indexWhere(
           (s) => s.href == href || s.href.endsWith('/$href') || s.href.endsWith(href),
@@ -410,7 +595,10 @@ class _BookReaderScreenState extends State<BookReaderScreen> {
             const SizedBox(height: 16),
             FilledButton(
               key: const Key('book_reader_error_close'),
-              onPressed: () => Navigator.of(context).maybePop(),
+              onPressed: () {
+                // ignore: discarded_futures
+                _handleClose();
+              },
               child: const Text('Close'),
             ),
           ],

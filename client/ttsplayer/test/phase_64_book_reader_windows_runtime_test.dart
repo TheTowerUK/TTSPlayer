@@ -10,6 +10,8 @@ import 'package:pdfrx/pdfrx.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ttsplayer/features/books/archive/book_opener.dart';
+import 'package:ttsplayer/features/reading/services/reading_progress_coordinator.dart';
+import 'package:ttsplayer/features/reading/services/reading_progress_repository.dart';
 import 'package:ttsplayer/features/books/epub/epub_book_controller.dart';
 import 'package:ttsplayer/features/books/reader/book_pdf_probe.dart';
 import 'package:ttsplayer/features/books/reader/book_reader_screen.dart';
@@ -42,12 +44,17 @@ void main() {
 
   late Directory tmp;
   late LibraryMetadataRepository metadata;
+  late ReadingProgressRepository readingRepository;
+  late ReadingProgressCoordinator readingCoordinator;
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     tmp = Directory.systemTemp.createTempSync('tts_p64_');
     metadata = LibraryMetadataRepository();
     await metadata.initialize();
+    readingRepository = ReadingProgressRepository();
+    await readingRepository.initialize();
+    readingCoordinator = ReadingProgressCoordinator(repository: readingRepository);
 
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
@@ -63,6 +70,7 @@ void main() {
   });
 
   tearDown(() {
+    readingCoordinator.dispose();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
       const MethodChannel('plugins.flutter.io/path_provider'),
@@ -96,11 +104,18 @@ void main() {
           create: (_) => ArtworkService(fileExists: (_) => false),
           child: ChangeNotifierProvider<LibraryMetadataRepository>.value(
             value: metadata,
-            child: ChangeNotifierProvider(
-              create: (_) => PlaybackService(mediaLocationResolver: resolver),
-              child: MaterialApp(
-                theme: AppTheme.dark,
-                home: ItemDetailScreen(item: item),
+            child: ChangeNotifierProvider<ReadingProgressRepository>.value(
+              value: readingRepository,
+              child: ChangeNotifierProvider<ReadingProgressCoordinator>.value(
+                value: readingCoordinator,
+                child: ChangeNotifierProvider(
+                  create: (_) =>
+                      PlaybackService(mediaLocationResolver: resolver),
+                  child: MaterialApp(
+                    theme: AppTheme.dark,
+                    home: ItemDetailScreen(item: item),
+                  ),
+                ),
               ),
             ),
           ),
@@ -260,11 +275,17 @@ void main() {
     await tester.pumpWidget(
       Provider<MediaLocationResolver>.value(
         value: resolver,
-        child: MaterialApp(
-          home: BookReaderScreen(
-            item: item,
-            target: target,
-            debugEpubController: controller,
+        child: ChangeNotifierProvider<ReadingProgressRepository>.value(
+          value: readingRepository,
+          child: ChangeNotifierProvider<ReadingProgressCoordinator>.value(
+            value: readingCoordinator,
+            child: MaterialApp(
+              home: BookReaderScreen(
+                item: item,
+                target: target,
+                debugEpubController: controller,
+              ),
+            ),
           ),
         ),
       ),

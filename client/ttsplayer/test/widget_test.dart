@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:ttsplayer/features/music/services/music_playback_queue_controller.dart';
 import 'package:ttsplayer/features/music/services/music_playback_session_coordinator.dart';
 import 'package:ttsplayer/features/music/services/music_playback_session_repository.dart';
+import 'package:ttsplayer/features/reading/services/reading_progress_coordinator.dart';
+import 'package:ttsplayer/features/reading/services/reading_progress_repository.dart';
 import 'package:ttsplayer/main.dart';
 import 'package:ttsplayer/services/artwork/artwork_service.dart';
 import 'package:ttsplayer/services/catalog_service.dart';
@@ -48,6 +50,14 @@ void main() {
           ),
           ChangeNotifierProvider(create: (_) => ScannerService()),
           ChangeNotifierProvider(create: (_) => ScanHistoryService()),
+          ChangeNotifierProvider<ReadingProgressRepository>.value(
+            value: ReadingProgressRepository(),
+          ),
+          ChangeNotifierProvider(
+            create: (context) => ReadingProgressCoordinator(
+              repository: context.read<ReadingProgressRepository>(),
+            ),
+          ),
         ],
         child: const TTSPlayerApp(),
       ),

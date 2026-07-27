@@ -460,6 +460,167 @@ String formatDiagnosticsExport(RuntimeDiagnosticsSnapshot snapshot) {
     );
   });
 
+  // Section order: Application → Provider → Catalogue → Cache → Search →
+  // Playback → Music Listening → Music Playback Session → Reading progress →
+  // Library (stable for export regression tests).
+  final readingProgress = snapshot.readingProgress;
+  _writeSection(buffer, 'Reading progress', () {
+    if (readingProgress == null) {
+      _writeLine(buffer, 'Status', 'Unavailable');
+      return;
+    }
+    _writeLine(
+      buffer,
+      'Status',
+      _sectionStatusLabel(readingProgress.status),
+    );
+    _writeLine(
+      buffer,
+      'Repository initialized',
+      _formatBool(readingProgress.repositoryInitialized),
+    );
+    _writeLine(
+      buffer,
+      'Repository schema version',
+      _formatInt(readingProgress.schemaVersion),
+    );
+    _writeLine(
+      buffer,
+      'Total stored record count',
+      _formatInt(readingProgress.storedRecordCount),
+    );
+    _writeLine(
+      buffer,
+      'Eligible Continue Reading count',
+      _formatInt(readingProgress.continueReadingCount),
+    );
+    _writeLine(
+      buffer,
+      'Completed record count',
+      _formatInt(readingProgress.completedRecordCount),
+    );
+    _writeLine(
+      buffer,
+      'Stale or unmatched record count',
+      _formatInt(readingProgress.staleOrUnmatchedRecordCount),
+    );
+    _writeLine(
+      buffer,
+      'Invalid or skipped record count from last load',
+      _formatInt(readingProgress.invalidSkippedRecordCount),
+    );
+    _writeLine(
+      buffer,
+      'Pending coordinator write state',
+      _formatBool(readingProgress.pendingWrite),
+    );
+    _writeLine(
+      buffer,
+      'Pending debounced write',
+      _formatBool(readingProgress.pendingDebounceWrite),
+    );
+    _writeLine(
+      buffer,
+      'Write in flight',
+      _formatBool(readingProgress.writeInFlight),
+    );
+    _writeLine(
+      buffer,
+      'Last successful write time',
+      _formatDateTime(readingProgress.lastSuccessfulWriteAt),
+    );
+    _writeLine(
+      buffer,
+      'Last successful coordinator flush time',
+      _formatDateTime(readingProgress.lastSuccessfulFlushAt),
+    );
+    _writeLine(
+      buffer,
+      'Last repository error classification',
+      readingProgress.lastRepositoryErrorClassification,
+    );
+    _writeLine(
+      buffer,
+      'Recovery warning present',
+      _formatBool(readingProgress.recoveryWarningPresent),
+    );
+    _writeLine(
+      buffer,
+      'PDF record count',
+      _formatInt(readingProgress.pdfRecordCount),
+    );
+    _writeLine(
+      buffer,
+      'EPUB record count',
+      _formatInt(readingProgress.epubRecordCount),
+    );
+    _writeLine(
+      buffer,
+      'CBZ record count',
+      _formatInt(readingProgress.cbzRecordCount),
+    );
+    _writeLine(
+      buffer,
+      'CBR record count',
+      _formatInt(readingProgress.cbrRecordCount),
+    );
+    _writeLine(
+      buffer,
+      'CBR records unavailable (tooling absent)',
+      _formatInt(readingProgress.cbrUnavailableRecordCount),
+    );
+    _writeLine(
+      buffer,
+      'Coordinator attached',
+      _formatBool(readingProgress.coordinatorAttached),
+    );
+    _writeLine(
+      buffer,
+      'Active reading session',
+      _formatBool(readingProgress.sessionActive),
+    );
+    _writeLine(
+      buffer,
+      'Persistence warning present',
+      _formatBool(readingProgress.persistenceWarningPresent),
+    );
+    _writeLine(
+      buffer,
+      'Last persistence warning',
+      readingProgress.lastPersistenceWarningSummary,
+    );
+    _writeLine(
+      buffer,
+      'Reconciliation retained count',
+      _formatInt(readingProgress.reconciliationRetainedCount),
+    );
+    _writeLine(
+      buffer,
+      'Reconciliation refreshed count',
+      _formatInt(readingProgress.reconciliationRefreshedCount),
+    );
+    _writeLine(
+      buffer,
+      'Reconciliation removed (missing) count',
+      _formatInt(readingProgress.reconciliationRemovedMissingCount),
+    );
+    _writeLine(
+      buffer,
+      'Reconciliation removed (format mismatch) count',
+      _formatInt(readingProgress.reconciliationRemovedFormatMismatchCount),
+    );
+    _writeLine(
+      buffer,
+      'Reconciliation CBR unavailable retained count',
+      _formatInt(readingProgress.reconciliationCbrUnavailableRetainedCount),
+    );
+    _writeLine(
+      buffer,
+      'Reconciliation persistence failed',
+      _formatBool(readingProgress.reconciliationPersistenceFailed),
+    );
+  });
+
   final library = snapshot.library;
   _writeSection(buffer, 'Library', () {
     if (library == null) {

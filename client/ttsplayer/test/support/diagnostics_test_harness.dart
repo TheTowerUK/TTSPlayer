@@ -12,6 +12,8 @@ import 'package:ttsplayer/features/music/services/music_playback_queue_controlle
 import 'package:ttsplayer/features/music/services/music_playback_session_coordinator.dart';
 import 'package:ttsplayer/features/music/services/music_playback_session_repository.dart';
 import 'package:ttsplayer/features/music/services/music_playback_session_restorer.dart';
+import 'package:ttsplayer/features/reading/services/reading_progress_coordinator.dart';
+import 'package:ttsplayer/features/reading/services/reading_progress_repository.dart';
 import 'package:ttsplayer/features/search/search_service.dart';
 import 'package:ttsplayer/models/catalog.dart';
 import 'package:ttsplayer/models/catalogue_provider_snapshot.dart';
@@ -279,8 +281,11 @@ Future<DiagnosticsService> buildDiagnosticsHarness({
   MusicPlaybackSessionCoordinator? musicPlaybackSessionCoordinator,
   MusicPlaybackQueueController? musicPlaybackQueueController,
   MusicPlaybackSessionRestorer? musicPlaybackSessionRestorer,
+  ReadingProgressRepository? readingProgressRepository,
+  ReadingProgressCoordinator? readingProgressCoordinator,
   bool withInitializedMusicPlaybackSession = false,
   bool withInitializedMusicListening = false,
+  bool withInitializedReadingProgress = false,
   DateTime? applicationStartedAt,
   Future<PackageInfo> Function()? packageInfoLoader,
   bool Function()? imageCacheAvailableProvider,
@@ -317,6 +322,12 @@ Future<DiagnosticsService> buildDiagnosticsHarness({
     sessionRepo = await initializedMusicPlaybackSessionRepository();
   }
 
+  ReadingProgressRepository? readingRepo = readingProgressRepository;
+  if (withInitializedReadingProgress && readingRepo == null) {
+    readingRepo = ReadingProgressRepository();
+    await readingRepo.initialize();
+  }
+
   return DiagnosticsService(
     catalogService: StubCatalogService(
       stubCatalog: catalog,
@@ -334,6 +345,8 @@ Future<DiagnosticsService> buildDiagnosticsHarness({
     musicPlaybackSessionCoordinator: musicPlaybackSessionCoordinator,
     musicPlaybackQueueController: musicPlaybackQueueController,
     musicPlaybackSessionRestorer: musicPlaybackSessionRestorer,
+    readingProgressRepository: readingRepo,
+    readingProgressCoordinator: readingProgressCoordinator,
     applicationStartedAt:
         applicationStartedAt ?? DateTime.utc(2026, 7, 16, 9, 0),
     packageInfoLoader: packageInfoLoader,
@@ -368,12 +381,14 @@ RuntimeDiagnosticsSnapshot minimalSnapshot({
   PlaybackDiagnostics? playback,
   MusicListeningDiagnostics? musicListening,
   MusicPlaybackSessionDiagnostics? musicPlaybackSession,
+  ReadingProgressDiagnostics? readingProgress,
   LibraryDiagnostics? library,
   ProviderDiagnostics? provider,
   CacheDiagnostics? cache,
   bool omitLibrary = false,
   bool omitMusicListening = false,
   bool omitMusicPlaybackSession = false,
+  bool omitReadingProgress = false,
 }) {
   final at = capturedAt ?? DateTime.utc(2026, 7, 16, 12);
   return RuntimeDiagnosticsSnapshot(
@@ -455,6 +470,31 @@ RuntimeDiagnosticsSnapshot minimalSnapshot({
               persistenceWarningPresent: false,
               coordinatorAttached: true,
             )),
+    readingProgress: omitReadingProgress
+        ? null
+        : (readingProgress ??
+            const ReadingProgressDiagnostics(
+              status: DiagnosticSectionStatus.complete,
+              repositoryInitialized: true,
+              schemaVersion: 1,
+              storedRecordCount: 0,
+              continueReadingCount: 0,
+              completedRecordCount: 0,
+              staleOrUnmatchedRecordCount: 0,
+              invalidSkippedRecordCount: 0,
+              pendingWrite: false,
+              pendingDebounceWrite: false,
+              writeInFlight: false,
+              recoveryWarningPresent: false,
+              pdfRecordCount: 0,
+              epubRecordCount: 0,
+              cbzRecordCount: 0,
+              cbrRecordCount: 0,
+              cbrUnavailableRecordCount: 0,
+              coordinatorAttached: true,
+              sessionActive: false,
+              persistenceWarningPresent: false,
+            )),
     library: omitLibrary
         ? null
         : (library ??
@@ -478,6 +518,8 @@ class FakeDiagnosticsService extends DiagnosticsService {
     required super.applicationStartedAt,
     super.musicListeningRepository,
     super.musicListeningCoordinator,
+    super.readingProgressRepository,
+    super.readingProgressCoordinator,
   });
 
   int captureCount = 0;

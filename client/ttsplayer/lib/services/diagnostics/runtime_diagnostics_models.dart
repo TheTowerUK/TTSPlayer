@@ -313,6 +313,73 @@ class MusicPlaybackSessionDiagnostics {
   final bool? coordinatorAttached;
 }
 
+/// Reading progress aggregates — counts and flags only (M6.5).
+class ReadingProgressDiagnostics {
+  const ReadingProgressDiagnostics({
+    required this.status,
+    this.repositoryInitialized,
+    this.schemaVersion,
+    this.storedRecordCount,
+    this.continueReadingCount,
+    this.completedRecordCount,
+    this.staleOrUnmatchedRecordCount,
+    this.invalidSkippedRecordCount,
+    this.pendingWrite,
+    this.pendingDebounceWrite,
+    this.writeInFlight,
+    this.lastSuccessfulWriteAt,
+    this.lastSuccessfulFlushAt,
+    this.lastRepositoryErrorClassification,
+    this.recoveryWarningPresent,
+    this.pdfRecordCount,
+    this.epubRecordCount,
+    this.cbzRecordCount,
+    this.cbrRecordCount,
+    this.cbrUnavailableRecordCount,
+    this.coordinatorAttached,
+    this.sessionActive,
+    this.persistenceWarningPresent,
+    this.lastPersistenceWarningSummary,
+    this.reconciliationRetainedCount,
+    this.reconciliationRefreshedCount,
+    this.reconciliationRemovedMissingCount,
+    this.reconciliationRemovedFormatMismatchCount,
+    this.reconciliationCbrUnavailableRetainedCount,
+    this.reconciliationPersistenceFailed,
+  });
+
+  final DiagnosticSectionStatus status;
+  final bool? repositoryInitialized;
+  final int? schemaVersion;
+  final int? storedRecordCount;
+  final int? continueReadingCount;
+  final int? completedRecordCount;
+  final int? staleOrUnmatchedRecordCount;
+  final int? invalidSkippedRecordCount;
+  final bool? pendingWrite;
+  final bool? pendingDebounceWrite;
+  final bool? writeInFlight;
+  final DateTime? lastSuccessfulWriteAt;
+  final DateTime? lastSuccessfulFlushAt;
+  final String? lastRepositoryErrorClassification;
+  final bool? recoveryWarningPresent;
+  final int? pdfRecordCount;
+  final int? epubRecordCount;
+  final int? cbzRecordCount;
+  final int? cbrRecordCount;
+  final int? cbrUnavailableRecordCount;
+  final bool? coordinatorAttached;
+  final bool? sessionActive;
+  final bool? persistenceWarningPresent;
+  final String? lastPersistenceWarningSummary;
+  final int? reconciliationRetainedCount;
+  final int? reconciliationRefreshedCount;
+  final int? reconciliationRemovedMissingCount;
+  final int? reconciliationRemovedFormatMismatchCount;
+  final int? reconciliationCbrUnavailableRetainedCount;
+  final bool? reconciliationPersistenceFailed;
+}
+
 /// Immutable point-in-time diagnostics snapshot (ADR-018).
 class RuntimeDiagnosticsSnapshot {
   const RuntimeDiagnosticsSnapshot({
@@ -325,6 +392,7 @@ class RuntimeDiagnosticsSnapshot {
     required this.playback,
     this.musicListening,
     this.musicPlaybackSession,
+    this.readingProgress,
     this.library,
   });
 
@@ -337,5 +405,6 @@ class RuntimeDiagnosticsSnapshot {
   final PlaybackDiagnostics playback;
   final MusicListeningDiagnostics? musicListening;
   final MusicPlaybackSessionDiagnostics? musicPlaybackSession;
+  final ReadingProgressDiagnostics? readingProgress;
   final LibraryDiagnostics? library;
 }

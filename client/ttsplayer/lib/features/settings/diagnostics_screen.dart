@@ -273,6 +273,8 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
                 const SizedBox(height: AppSpacing.section),
                 _buildMusicPlaybackSessionSection(snapshot),
                 const SizedBox(height: AppSpacing.section),
+                _buildReadingProgressSection(snapshot),
+                const SizedBox(height: AppSpacing.section),
                 _buildLibrarySection(snapshot),
                 const SizedBox(height: AppSpacing.section),
                 Tooltip(
@@ -910,6 +912,183 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
         DiagnosticsValueRow(
           label: 'Coordinator attached',
           value: DiagnosticsFormatters.boolValue(session.coordinatorAttached),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildReadingProgressSection(RuntimeDiagnosticsSnapshot snapshot) {
+    final reading = snapshot.readingProgress;
+    if (reading == null) {
+      return const DiagnosticsSection(
+        sectionKey: Key('diagnostics_section_reading_progress'),
+        title: 'Reading progress',
+        status: DiagnosticSectionStatus.unavailable,
+        children: [
+          DiagnosticsValueRow(
+            label: 'Availability',
+            value: 'Unavailable',
+          ),
+        ],
+      );
+    }
+
+    return DiagnosticsSection(
+      sectionKey: const Key('diagnostics_section_reading_progress'),
+      title: 'Reading progress',
+      status: reading.status,
+      children: [
+        DiagnosticsValueRow(
+          label: 'Repository initialized',
+          value: DiagnosticsFormatters.boolValue(reading.repositoryInitialized),
+          valueKey: const Key('diagnostics_reading_progress_initialized'),
+        ),
+        DiagnosticsValueRow(
+          label: 'Repository schema version',
+          value: DiagnosticsFormatters.intValue(reading.schemaVersion),
+        ),
+        DiagnosticsValueRow(
+          label: 'Total stored record count',
+          value: DiagnosticsFormatters.intValue(reading.storedRecordCount),
+          valueKey: const Key('diagnostics_reading_progress_stored'),
+        ),
+        DiagnosticsValueRow(
+          label: 'Eligible Continue Reading count',
+          value: DiagnosticsFormatters.intValue(reading.continueReadingCount),
+          valueKey: const Key('diagnostics_reading_progress_continue'),
+        ),
+        DiagnosticsValueRow(
+          label: 'Completed record count',
+          value: DiagnosticsFormatters.intValue(reading.completedRecordCount),
+        ),
+        DiagnosticsValueRow(
+          label: 'Stale or unmatched record count',
+          value: DiagnosticsFormatters.intValue(
+            reading.staleOrUnmatchedRecordCount,
+          ),
+        ),
+        DiagnosticsValueRow(
+          label: 'Invalid or skipped record count from last load',
+          value: DiagnosticsFormatters.intValue(
+            reading.invalidSkippedRecordCount,
+          ),
+          valueKey: const Key('diagnostics_reading_progress_skipped'),
+        ),
+        DiagnosticsValueRow(
+          label: 'Pending coordinator write state',
+          value: DiagnosticsFormatters.boolValue(reading.pendingWrite),
+          valueKey: const Key('diagnostics_reading_progress_pending_write'),
+        ),
+        DiagnosticsValueRow(
+          label: 'Pending debounced write',
+          value: DiagnosticsFormatters.boolValue(reading.pendingDebounceWrite),
+        ),
+        DiagnosticsValueRow(
+          label: 'Write in flight',
+          value: DiagnosticsFormatters.boolValue(reading.writeInFlight),
+        ),
+        DiagnosticsValueRow(
+          label: 'Last successful write time',
+          value: DiagnosticsFormatters.dateTimeUtc(
+            reading.lastSuccessfulWriteAt,
+          ),
+        ),
+        DiagnosticsValueRow(
+          label: 'Last successful coordinator flush time',
+          value: DiagnosticsFormatters.dateTimeUtc(
+            reading.lastSuccessfulFlushAt,
+          ),
+        ),
+        DiagnosticsValueRow(
+          label: 'Last repository error classification',
+          value: DiagnosticsFormatters.textValue(
+            reading.lastRepositoryErrorClassification,
+          ),
+        ),
+        DiagnosticsValueRow(
+          label: 'Recovery warning present',
+          value: DiagnosticsFormatters.boolValue(
+            reading.recoveryWarningPresent,
+          ),
+        ),
+        DiagnosticsValueRow(
+          label: 'PDF record count',
+          value: DiagnosticsFormatters.intValue(reading.pdfRecordCount),
+        ),
+        DiagnosticsValueRow(
+          label: 'EPUB record count',
+          value: DiagnosticsFormatters.intValue(reading.epubRecordCount),
+        ),
+        DiagnosticsValueRow(
+          label: 'CBZ record count',
+          value: DiagnosticsFormatters.intValue(reading.cbzRecordCount),
+        ),
+        DiagnosticsValueRow(
+          label: 'CBR record count',
+          value: DiagnosticsFormatters.intValue(reading.cbrRecordCount),
+        ),
+        DiagnosticsValueRow(
+          label: 'CBR records unavailable (tooling absent)',
+          value: DiagnosticsFormatters.intValue(
+            reading.cbrUnavailableRecordCount,
+          ),
+          valueKey: const Key('diagnostics_reading_progress_cbr_unavailable'),
+        ),
+        DiagnosticsValueRow(
+          label: 'Coordinator attached',
+          value: DiagnosticsFormatters.boolValue(reading.coordinatorAttached),
+        ),
+        DiagnosticsValueRow(
+          label: 'Active reading session',
+          value: DiagnosticsFormatters.boolValue(reading.sessionActive),
+        ),
+        DiagnosticsValueRow(
+          label: 'Persistence warning present',
+          value: DiagnosticsFormatters.boolValue(
+            reading.persistenceWarningPresent,
+          ),
+        ),
+        DiagnosticsValueRow(
+          label: 'Last persistence warning',
+          value: DiagnosticsFormatters.textValue(
+            reading.lastPersistenceWarningSummary,
+          ),
+        ),
+        DiagnosticsValueRow(
+          label: 'Reconciliation retained count',
+          value: DiagnosticsFormatters.intValue(
+            reading.reconciliationRetainedCount,
+          ),
+        ),
+        DiagnosticsValueRow(
+          label: 'Reconciliation refreshed count',
+          value: DiagnosticsFormatters.intValue(
+            reading.reconciliationRefreshedCount,
+          ),
+        ),
+        DiagnosticsValueRow(
+          label: 'Reconciliation removed (missing) count',
+          value: DiagnosticsFormatters.intValue(
+            reading.reconciliationRemovedMissingCount,
+          ),
+        ),
+        DiagnosticsValueRow(
+          label: 'Reconciliation removed (format mismatch) count',
+          value: DiagnosticsFormatters.intValue(
+            reading.reconciliationRemovedFormatMismatchCount,
+          ),
+        ),
+        DiagnosticsValueRow(
+          label: 'Reconciliation CBR unavailable retained count',
+          value: DiagnosticsFormatters.intValue(
+            reading.reconciliationCbrUnavailableRetainedCount,
+          ),
+        ),
+        DiagnosticsValueRow(
+          label: 'Reconciliation persistence failed',
+          value: DiagnosticsFormatters.boolValue(
+            reading.reconciliationPersistenceFailed,
+          ),
         ),
       ],
     );

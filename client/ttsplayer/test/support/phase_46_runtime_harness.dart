@@ -368,6 +368,8 @@ void phase46AssertExportHeadings(String export) {
     '=== Search ===',
     '=== Playback ===',
     '=== Music Listening ===',
+    '=== Music Playback Session ===',
+    '=== Reading progress ===',
     '=== Library ===',
   ]) {
     expect(export, contains(heading));

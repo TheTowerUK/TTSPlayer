@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../features/reading/reading_navigation.dart';
 import '../features/books/reader/book_navigation.dart';
 import '../features/comics/reader/comic_navigation.dart';
 import '../models/media_item.dart';
@@ -335,65 +336,171 @@ class _PlaySection extends StatelessWidget {
   }
 
   Widget _buildOpenBook(BuildContext context) {
+    final progress = readingProgressSummaryForItem(context, item: item);
+    final hasResume = progress != null &&
+        progress.hasMeaningfulProgress &&
+        !progress.completed;
+    final completed = progress?.completed ?? false;
+
     return Padding(
       padding: AppSpacing.playSection,
-      child: SizedBox(
-        height: 52,
-        child: FilledButton.icon(
-          key: const Key('item_detail_open_book'),
-          style: FilledButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: AppColors.textPrimary,
-            shape: AppRadius.buttonShape,
-          ),
-          icon: Icon(
-            MediaKindPresentation.iconFor(item),
-            size: AppIcons.standard,
-          ),
-          label: const Text(
-            'Open Book',
-            style: TextStyle(
-              fontSize: AppTypography.size16,
-              fontWeight: FontWeight.w700,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (progress != null && (hasResume || completed)) ...[
+            Text(
+              completed
+                  ? 'Completed'
+                  : 'Continue from ${progress.locationLabel} (${progress.progressPercent}%)',
+              key: const Key('item_detail_reading_progress'),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppColors.textLow,
+                fontSize: AppTypography.size13,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+          ],
+          SizedBox(
+            height: 52,
+            child: FilledButton.icon(
+              key: const Key('item_detail_open_book'),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.textPrimary,
+                shape: AppRadius.buttonShape,
+              ),
+              icon: Icon(
+                MediaKindPresentation.iconFor(item),
+                size: AppIcons.standard,
+              ),
+              label: Text(
+                completed ? 'Read Again' : 'Open Book',
+                style: const TextStyle(
+                  fontSize: AppTypography.size16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              onPressed: () {
+                // ignore: discarded_futures
+                openBookReaderScreen(
+                  context,
+                  item: item,
+                  startFromBeginning: completed,
+                );
+              },
             ),
           ),
-          onPressed: () {
-            // ignore: discarded_futures
-            openBookReaderScreen(context, item: item);
-          },
-        ),
+          if (hasResume) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Center(
+              child: TextButton(
+                key: const Key('item_detail_start_book_beginning'),
+                onPressed: () {
+                  // ignore: discarded_futures
+                  openBookReaderScreen(
+                    context,
+                    item: item,
+                    startFromBeginning: true,
+                  );
+                },
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.textLow,
+                  padding: AppSpacing.buttonAction,
+                ),
+                child: const Text(
+                  'Start from Beginning',
+                  style: TextStyle(fontSize: AppTypography.size13),
+                ),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
 
   Widget _buildOpenComic(BuildContext context) {
+    final progress = readingProgressSummaryForItem(context, item: item);
+    final hasResume = progress != null &&
+        progress.hasMeaningfulProgress &&
+        !progress.completed;
+    final completed = progress?.completed ?? false;
+
     return Padding(
       padding: AppSpacing.playSection,
-      child: SizedBox(
-        height: 52,
-        child: FilledButton.icon(
-          key: const Key('item_detail_open_comic'),
-          style: FilledButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: AppColors.textPrimary,
-            shape: AppRadius.buttonShape,
-          ),
-          icon: Icon(
-            MediaKindPresentation.iconFor(item),
-            size: AppIcons.standard,
-          ),
-          label: const Text(
-            'Open Comic',
-            style: TextStyle(
-              fontSize: AppTypography.size16,
-              fontWeight: FontWeight.w700,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (progress != null && (hasResume || completed)) ...[
+            Text(
+              completed
+                  ? 'Completed'
+                  : 'Continue from ${progress.locationLabel} (${progress.progressPercent}%)',
+              key: const Key('item_detail_reading_progress'),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppColors.textLow,
+                fontSize: AppTypography.size13,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+          ],
+          SizedBox(
+            height: 52,
+            child: FilledButton.icon(
+              key: const Key('item_detail_open_comic'),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.textPrimary,
+                shape: AppRadius.buttonShape,
+              ),
+              icon: Icon(
+                MediaKindPresentation.iconFor(item),
+                size: AppIcons.standard,
+              ),
+              label: Text(
+                completed ? 'Read Again' : 'Open Comic',
+                style: const TextStyle(
+                  fontSize: AppTypography.size16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              onPressed: () {
+                // ignore: discarded_futures
+                openComicReaderScreen(
+                  context,
+                  item: item,
+                  startFromBeginning: completed,
+                );
+              },
             ),
           ),
-          onPressed: () {
-            // ignore: discarded_futures
-            openComicReaderScreen(context, item: item);
-          },
-        ),
+          if (hasResume) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Center(
+              child: TextButton(
+                key: const Key('item_detail_start_comic_beginning'),
+                onPressed: () {
+                  // ignore: discarded_futures
+                  openComicReaderScreen(
+                    context,
+                    item: item,
+                    startFromBeginning: true,
+                  );
+                },
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.textLow,
+                  padding: AppSpacing.buttonAction,
+                ),
+                child: const Text(
+                  'Start from Beginning',
+                  style: TextStyle(fontSize: AppTypography.size13),
+                ),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
