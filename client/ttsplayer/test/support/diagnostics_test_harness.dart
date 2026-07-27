@@ -382,6 +382,7 @@ RuntimeDiagnosticsSnapshot minimalSnapshot({
   MusicListeningDiagnostics? musicListening,
   MusicPlaybackSessionDiagnostics? musicPlaybackSession,
   ReadingProgressDiagnostics? readingProgress,
+  ReaderSessionDiagnostics? readerSession,
   LibraryDiagnostics? library,
   ProviderDiagnostics? provider,
   CacheDiagnostics? cache,
@@ -495,6 +496,16 @@ RuntimeDiagnosticsSnapshot minimalSnapshot({
               sessionActive: false,
               persistenceWarningPresent: false,
             )),
+    readerSession: readerSession ??
+        const ReaderSessionDiagnostics(
+          status: DiagnosticSectionStatus.complete,
+          comicCacheMaxEntries: 5,
+          comicCacheMaxBytes: 24 * 1024 * 1024,
+          epubCacheMaxEntries: 32,
+          epubCacheMaxBytes: 16 * 1024 * 1024,
+          pdfLimitRenderingCache: true,
+          pdfMaxImageBytesCachedOnMemory: 48 * 1024 * 1024,
+        ),
     library: omitLibrary
         ? null
         : (library ??

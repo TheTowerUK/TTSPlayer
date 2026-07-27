@@ -87,11 +87,30 @@ No temporary evaluation packages or binaries were committed. Gate 0 used `pub ad
 
 ## Phase 6.6 follow-ups
 
-| ID | Item |
-|---|---|
-| P66-EPUB-1 | Streaming/lazy EPUB resource loading to bound memory |
-| P66-EPUB-2 | Richer NCX/NAV TOC and paginated reflow mode |
-| P66-PDF-1 | Password entry flow for encrypted PDFs |
-| P66-PDF-2 | PDF text accessibility audit if PDFium text API is exposed |
+### PDF / PDFium audit (M6.6 — pdfrx 2.4.7)
 
-**Related:** [books-comics.md](./books-comics.md) · [ADR-026](./decisions/ADR-026-reader-surface-architecture.md)
+| Question | Finding |
+|---|---|
+| Does pdfrx retain rendered pages internally? | **Yes.** `_PdfViewerState` keeps `_PageRenderCache` with `pageImages` / `pageImagesPartial` maps keyed by page number. Bitmap eviction runs when estimated bytes exceed [PdfViewerParams.maxImageBytesCachedOnMemory]. |
+| Default cache / prefetch | `limitRenderingCache: true` (PDFium limited image cache flag); `maxImageBytesCachedOnMemory: 100 MiB`; `horizontalCacheExtent` / `verticalCacheExtent: 1.0` viewport for adjacent-page prefetch; progressive partial renders with configurable thresholds. |
+| Configurable limits? | **Yes** via public [PdfViewerParams] only. TTSPlayer sets **48 MiB** rendered-page budget (`book_pdf_viewer_params.dart`). |
+| Native PDF document lifetime | [PdfDocumentRef] with `autoDispose: true`; shared [PdfDocumentListenable] cache keyed by file path. Native handle released when ref/listenable disposes after viewer teardown. |
+| Native page/render surface lifetime | Per-render [PdfImage] / `ui.Image` disposed on cache eviction or viewer `dispose()`. Partial render timers cancelled on dispose. |
+| What disposes on reader close? | [PdfViewer] state `dispose()` cancels pending renders, disposes cached `ui.Image`s, detaches controller. TTSPlayer removes [PdfViewerController] listener and nulls controller; does **not** call non-existent `PdfViewerController.dispose()`. Route pop destroys [PdfViewer] widget. |
+| Repeated zoom levels | Higher zoom renders replace/augment cache entries; byte-cap eviction removes distant pages — **obsolete high-res bitmaps are evicted, not guaranteed immediately freed to OS** (Dart/GPU retention limits observability). |
+| Reopen same PDF | New route creates new [PdfViewer]; ref cache may reuse [PdfDocument] for same path until listenable disposes — reopen after full close observed clean in MP66-PDF-2 (20× cycle). |
+| Large page count (120+) | Progressive loading optional; default loads all page metadata. Navigation validated with generated 120-page fixture. Process RSS rises during render; not a hard leak in 20× reopen test. |
+| Image-heavy pages | Large content streams render through PDFium; bounded by TTSPlayer 48 MiB cache + `limitRenderingCache`. |
+| Text accessibility | **Unsupported** — raster/image presentation path; no semantic text exposed to screen readers. |
+
+**Tooling limitation:** Process RSS (`ProcessInfo.currentRss`) is the only practical Windows metric in harness tests. RSS drop after dispose is **not** proof of native heap release.
+
+| ID | Item | Status |
+|---|---|---|
+| P66-EPUB-1 | Streaming/lazy EPUB resource loading to bound memory | ✅ M6.6 |
+| P66-EPUB-2 | Richer NCX/NAV TOC and paginated reflow mode | Deferred |
+| P66-PDF-1 | Password entry flow for encrypted PDFs | Deferred |
+| P66-PDF-2 | PDF text accessibility audit if PDFium text API is exposed | **Accepted limitation** (documented) |
+| P66-PDF-3 | Tune [PdfViewerParams] from audit evidence | ✅ 48 MiB cap |
+
+**Related:** [books-comics.md](./books-comics.md) · [m6-phase-6.6-reader-hardening.md](../roadmap/m6-phase-6.6-reader-hardening.md) · [ADR-026](./decisions/ADR-026-reader-surface-architecture.md)

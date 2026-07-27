@@ -56,7 +56,8 @@ void main() {
     );
     final doc = await parser.parseFile(file.path);
     expect(doc.title, contains('日本語'));
-    expect(doc.spine.single.html, contains('世界'));
+    final html = await doc.loadChapterHtml(0);
+    expect(html, contains('世界'));
   });
 
   test('rejects unsafe archive traversal', () async {

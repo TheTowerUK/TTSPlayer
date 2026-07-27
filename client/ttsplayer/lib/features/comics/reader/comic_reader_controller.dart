@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../../reading/services/reader_session_telemetry.dart';
 import '../archive/comic_archive_errors.dart';
 import '../archive/comic_archive_source.dart';
 import '../archive/comic_page_ref.dart';
@@ -25,6 +26,8 @@ class ComicReaderController extends ChangeNotifier {
   final ComicPageCache _cache;
   final bool prefetchAdjacent;
 
+  ComicPageCache get pageCache => _cache;
+
   List<ComicPageRef> _pages = const [];
   int _index = 0;
   ComicReaderLoadState _state = ComicReaderLoadState.loadingPages;
@@ -47,6 +50,15 @@ class ComicReaderController extends ChangeNotifier {
     return 'Page ${_index + 1} of ${_pages.length}';
   }
 
+  void _publishCacheTelemetry() {
+    ReaderSessionTelemetry.instance.updateComicPageCache(
+      maxEntries: _cache.maxEntries,
+      maxBytes: _cache.maxBytes,
+      entryCount: _cache.length,
+      estimatedBytes: _cache.estimatedBytes,
+    );
+  }
+
   Future<void> open({int initialPageIndex = 0}) async {
     _state = ComicReaderLoadState.loadingPages;
     _error = null;
@@ -55,6 +67,7 @@ class ComicReaderController extends ChangeNotifier {
       _pages = await _source.listPages();
       _index = initialPageIndex.clamp(0, _pages.length - 1);
       await _loadCurrent(prefetch: true);
+      _publishCacheTelemetry();
     } on ComicArchiveException catch (e) {
       _error = e;
       _state = ComicReaderLoadState.error;
@@ -97,6 +110,7 @@ class ComicReaderController extends ChangeNotifier {
         // ignore: unawaited_futures
         _prefetchNeighbors();
       }
+      _publishCacheTelemetry();
       return;
     }
 
@@ -114,6 +128,7 @@ class ComicReaderController extends ChangeNotifier {
         // ignore: unawaited_futures
         _prefetchNeighbors();
       }
+      _publishCacheTelemetry();
     } on ComicArchiveException catch (e) {
       if (_disposed) return;
       _cache.remove(ref.entryName);
@@ -157,7 +172,9 @@ class ComicReaderController extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    _publishCacheTelemetry();
     _cache.clear();
+    ReaderSessionTelemetry.instance.recordCleanupResult('comic_reader_disposed');
     // ignore: discarded_futures
     _source.dispose();
     super.dispose();

@@ -32,6 +32,13 @@ class UnrarCliCbrAdapter implements CbrArchiveAdapter {
   /// Gate 0 observability (not for UI).
   int get processInvocations => _processInvocations;
 
+  /// Subdirectories remaining under the session temp root (best-effort).
+  int get sessionTempResidueCount {
+    final dir = _sessionTemp;
+    if (dir == null || !dir.existsSync()) return 0;
+    return dir.listSync().whereType<Directory>().length;
+  }
+
   String _requireExecutable() {
     final path = _resolver.resolvePath();
     if (path == null) {

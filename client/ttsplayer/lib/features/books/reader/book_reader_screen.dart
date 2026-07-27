@@ -11,9 +11,11 @@ import '../../reading/reading_navigation.dart';
 import '../../reading/services/reading_progress_coordinator.dart';
 import '../archive/book_opener.dart';
 import '../archive/book_reader_errors.dart';
+import '../models/book_format.dart';
 import '../epub/epub_book_controller.dart';
 import '../epub/epub_chapter_view.dart';
-import '../models/book_format.dart';
+import 'book_pdf_viewer_params.dart';
+import '../../reading/services/reader_session_telemetry.dart';
 
 /// Fullscreen book reader for PDF and EPUB.
 class BookReaderScreen extends StatefulWidget {
@@ -240,9 +242,12 @@ class _BookReaderScreenState extends State<BookReaderScreen> {
       _coordinator?.onReaderClosed();
     }
     _pdfController?.removeListener(_onPdfChanged);
+    _pdfController = null;
     _epubController?.removeListener(_onEpubChanged);
     _epubController?.disposeDocument();
+    _epubController = null;
     _focusNode.dispose();
+    ReaderSessionTelemetry.instance.recordCleanupResult('book_reader_disposed');
     super.dispose();
   }
 
@@ -539,13 +544,22 @@ class _BookReaderScreenState extends State<BookReaderScreen> {
         key: const Key('book_reader_pdf_view'),
         controller: _pdfController,
         passwordProvider: () => null,
-        params: const PdfViewerParams(),
+        params: ttsPlayerPdfViewerParams(
+          onDocumentLoadFinished: (ref, succeeded) {
+            if (succeeded) {
+              ReaderSessionTelemetry.instance.recordCleanupResult('pdf_loaded');
+            }
+          },
+        ),
       );
     }
 
     final c = _epubController!;
     if (c.state == EpubReaderLoadState.loading) {
-      return const Center(child: CircularProgressIndicator());
+      return Semantics(
+        label: 'Loading book',
+        child: const Center(child: CircularProgressIndicator()),
+      );
     }
     if (c.state == EpubReaderLoadState.error && c.error != null) {
       return _errorPane(c.error!);
@@ -580,28 +594,32 @@ class _BookReaderScreenState extends State<BookReaderScreen> {
   }
 
   Widget _errorPane(BookReaderException error) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              key: const Key('book_reader_error_message'),
-              error.userMessage,
-              style: const TextStyle(color: Colors.white, fontSize: 16),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            FilledButton(
-              key: const Key('book_reader_error_close'),
-              onPressed: () {
-                // ignore: discarded_futures
-                _handleClose();
-              },
-              child: const Text('Close'),
-            ),
-          ],
+    return Semantics(
+      liveRegion: true,
+      label: error.userMessage,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                key: const Key('book_reader_error_message'),
+                error.userMessage,
+                style: const TextStyle(color: Colors.white, fontSize: 16),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              FilledButton(
+                key: const Key('book_reader_error_close'),
+                onPressed: () {
+                  // ignore: discarded_futures
+                  _handleClose();
+                },
+                child: const Text('Close'),
+              ),
+            ],
+          ),
         ),
       ),
     );

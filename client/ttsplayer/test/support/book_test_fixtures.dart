@@ -16,6 +16,40 @@ List<int> minimalPdf({int pages = 1, double width = 200, double height = 200}) {
     );
   }
 
+  return _encodePdfObjects(objects);
+}
+
+/// PDF with per-page [MediaBox] dimensions (mixed layout stress).
+List<int> minimalPdfMixedDimensions(List<(double width, double height)> sizes) {
+  final pages = sizes.length;
+  final objects = <String>[
+    '1 0 obj<< /Type /Catalog /Pages 2 0 R >>endobj',
+    '2 0 obj<< /Type /Pages /Kids [${List.generate(pages, (i) => '${3 + i} 0 R').join(' ')}] /Count $pages >>endobj',
+  ];
+  for (var i = 0; i < pages; i++) {
+    final pageNum = 3 + i;
+    final (width, height) = sizes[i];
+    objects.add(
+      '$pageNum 0 obj<< /Type /Page /Parent 2 0 R /MediaBox [0 0 $width $height] >>endobj',
+    );
+  }
+  return _encodePdfObjects(objects);
+}
+
+/// PDF with one image-heavy page (large content stream, not full-document decode).
+List<int> minimalPdfImageHeavyPage({int streamBytes = 65536}) {
+  final streamData = List.filled(streamBytes, 0x41);
+  final streamObjNum = 4;
+  final objects = <String>[
+    '1 0 obj<< /Type /Catalog /Pages 2 0 R >>endobj',
+    '2 0 obj<< /Type /Pages /Kids [3 0 R] /Count 1 >>endobj',
+    '3 0 obj<< /Type /Page /Parent 2 0 R /MediaBox [0 0 800 600] /Contents $streamObjNum 0 R >>endobj',
+    '$streamObjNum 0 obj<< /Length $streamBytes >>stream\n${String.fromCharCodes(streamData)}\nendstream\nendobj',
+  ];
+  return _encodePdfObjects(objects);
+}
+
+List<int> _encodePdfObjects(List<String> objects) {
   final buffer = StringBuffer('%PDF-1.4\n');
   final offsets = <int>[0];
   for (final obj in objects) {
@@ -36,9 +70,35 @@ List<int> minimalPdf({int pages = 1, double width = 200, double height = 200}) {
   return utf8.encode(buffer.toString());
 }
 
-File writePdf(Directory dir, String name, {int pages = 1}) {
+File writePdf(
+  Directory dir,
+  String name, {
+  int pages = 1,
+  double width = 200,
+  double height = 200,
+}) {
   final file = File('${dir.path}${Platform.pathSeparator}$name');
-  file.writeAsBytesSync(minimalPdf(pages: pages));
+  file.writeAsBytesSync(minimalPdf(pages: pages, width: width, height: height));
+  return file;
+}
+
+/// Phase 6.6 PDF profiles (generated locally — not committed).
+File writePhase66Pdf(
+  Directory dir,
+  String name, {
+  int pages = 120,
+  double width = 200,
+  double height = 200,
+  List<(double, double)>? mixedSizes,
+  bool imageHeavyFirstPage = false,
+}) {
+  final bytes = mixedSizes != null
+      ? minimalPdfMixedDimensions(mixedSizes)
+      : imageHeavyFirstPage
+          ? minimalPdfImageHeavyPage()
+          : minimalPdf(pages: pages, width: width, height: height);
+  final file = File('${dir.path}${Platform.pathSeparator}$name');
+  file.writeAsBytesSync(bytes);
   return file;
 }
 

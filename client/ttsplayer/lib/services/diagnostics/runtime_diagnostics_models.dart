@@ -380,6 +380,49 @@ class ReadingProgressDiagnostics {
   final bool? reconciliationPersistenceFailed;
 }
 
+/// Reader cache/session aggregates for diagnostics (M6.6).
+///
+/// No paths, titles, archive entry names, or unstable memory readings.
+class ReaderSessionDiagnostics {
+  const ReaderSessionDiagnostics({
+    required this.status,
+    this.lastReaderFormat,
+    this.lastReaderOpenDurationMs,
+    this.lastFirstContentDurationMs,
+    this.lastCleanupResult,
+    this.comicCacheMaxEntries,
+    this.comicCacheMaxBytes,
+    this.comicCacheEntryCount,
+    this.comicCacheEstimatedBytes,
+    this.epubCacheMaxEntries,
+    this.epubCacheMaxBytes,
+    this.epubCacheEntryCount,
+    this.epubCacheEstimatedBytes,
+    this.pdfLimitRenderingCache,
+    this.pdfMaxImageBytesCachedOnMemory,
+    this.cbrProcessInvocations,
+    this.cbrTempDirectoryResidueCount,
+  });
+
+  final DiagnosticSectionStatus status;
+  final String? lastReaderFormat;
+  final int? lastReaderOpenDurationMs;
+  final int? lastFirstContentDurationMs;
+  final String? lastCleanupResult;
+  final int? comicCacheMaxEntries;
+  final int? comicCacheMaxBytes;
+  final int? comicCacheEntryCount;
+  final int? comicCacheEstimatedBytes;
+  final int? epubCacheMaxEntries;
+  final int? epubCacheMaxBytes;
+  final int? epubCacheEntryCount;
+  final int? epubCacheEstimatedBytes;
+  final bool? pdfLimitRenderingCache;
+  final int? pdfMaxImageBytesCachedOnMemory;
+  final int? cbrProcessInvocations;
+  final int? cbrTempDirectoryResidueCount;
+}
+
 /// Immutable point-in-time diagnostics snapshot (ADR-018).
 class RuntimeDiagnosticsSnapshot {
   const RuntimeDiagnosticsSnapshot({
@@ -393,6 +436,7 @@ class RuntimeDiagnosticsSnapshot {
     this.musicListening,
     this.musicPlaybackSession,
     this.readingProgress,
+    this.readerSession,
     this.library,
   });
 
@@ -406,5 +450,6 @@ class RuntimeDiagnosticsSnapshot {
   final MusicListeningDiagnostics? musicListening;
   final MusicPlaybackSessionDiagnostics? musicPlaybackSession;
   final ReadingProgressDiagnostics? readingProgress;
+  final ReaderSessionDiagnostics? readerSession;
   final LibraryDiagnostics? library;
 }

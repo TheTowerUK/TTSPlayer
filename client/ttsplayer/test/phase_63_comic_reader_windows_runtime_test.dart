@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ttsplayer/features/comics/archive/comic_archive_opener.dart';
 import 'package:ttsplayer/features/comics/archive/comic_archive_errors.dart';
 import 'package:ttsplayer/features/comics/reader/comic_reader_controller.dart';
@@ -16,10 +17,10 @@ import 'package:ttsplayer/models/media_item.dart';
 import 'package:ttsplayer/models/media_kind.dart';
 import 'package:ttsplayer/services/media_access/media_access_config.dart';
 import 'package:ttsplayer/services/media_access/media_location_resolver.dart';
+import 'package:ttsplayer/features/reading/services/reading_progress_coordinator.dart';
+import 'package:ttsplayer/features/reading/services/reading_progress_repository.dart';
 
 import 'support/comic_test_fixtures.dart';
-
-/// Opt-in Phase 6.3 comic reader Windows runtime harness.
 ///
 /// ```powershell
 /// cd client\ttsplayer
@@ -36,9 +37,14 @@ void main() {
   }
 
   late Directory tmp;
+  late ReadingProgressCoordinator readingCoordinator;
 
-  setUp(() {
+  setUp(() async {
     tmp = Directory.systemTemp.createTempSync('tts_p63_');
+    SharedPreferences.setMockInitialValues({});
+    final repository = ReadingProgressRepository();
+    await repository.initialize();
+    readingCoordinator = ReadingProgressCoordinator(repository: repository);
   });
 
   tearDown(() {
@@ -111,8 +117,13 @@ void main() {
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     await tester.pumpWidget(
-      Provider<MediaLocationResolver>.value(
-        value: resolver,
+      MultiProvider(
+        providers: [
+          Provider<MediaLocationResolver>.value(value: resolver),
+          ChangeNotifierProvider<ReadingProgressCoordinator>.value(
+            value: readingCoordinator,
+          ),
+        ],
         child: MaterialApp(
           home: Builder(
             builder: (context) {

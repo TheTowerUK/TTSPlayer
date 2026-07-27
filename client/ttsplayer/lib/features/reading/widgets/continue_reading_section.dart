@@ -19,14 +19,19 @@ class ContinueReadingSection extends StatelessWidget {
   Widget build(BuildContext context) {
     if (entries.isEmpty) return const SizedBox.shrink();
 
-    return Column(
-      key: const Key('continue_reading_section'),
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SectionHeader(title: 'Continue Reading'),
-        const SizedBox(height: AppSpacing.md),
-        _ContinueReadingCarousel(entries: entries),
-      ],
+    return Semantics(
+      header: true,
+      container: true,
+      label: 'Continue Reading',
+      child: Column(
+        key: const Key('continue_reading_section'),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SectionHeader(title: 'Continue Reading'),
+          const SizedBox(height: AppSpacing.md),
+          _ContinueReadingCarousel(entries: entries),
+        ],
+      ),
     );
   }
 }
@@ -150,11 +155,15 @@ class _ContinueReadingCard extends StatelessWidget {
                     ),
                   ),
                   const Spacer(),
-                  LinearProgressIndicator(
-                    value: entry.progressPercent / 100,
-                    backgroundColor: Colors.white12,
-                    color: AppColors.primary,
-                    minHeight: 4,
+                  Semantics(
+                    label: '${entry.progressPercent} percent read',
+                    value: '${entry.progressPercent}%',
+                    child: LinearProgressIndicator(
+                      value: entry.progressPercent / 100,
+                      backgroundColor: Colors.white12,
+                      color: AppColors.primary,
+                      minHeight: 4,
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   Text(

@@ -4,14 +4,17 @@ import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:xml/xml.dart';
 
+import '../../comics/archive/cbz_zip_lazy_reader.dart';
 import '../archive/book_path_safety.dart';
 import '../archive/book_reader_errors.dart';
 import 'epub_book_document.dart';
+import 'epub_resource_loader.dart';
 
-/// EPUB parser using [archive] + [xml] (TTSPlayer-owned renderer stack).
+/// EPUB parser using lazy ZIP reads where possible (M6.6).
 ///
-/// Memory (interim): decodes the full EPUB ZIP and retains spine HTML + binary
-/// resources in memory for the session. Phase 6.6 may measure/replace.
+/// [parseFile] lists the ZIP central directory and loads chapters/resources on
+/// demand via [EpubLazyResourceLoader]. [parseBytes] retains the in-memory test
+/// path for small fixtures.
 class EpubParser {
   static const maxResourceBytes = 16 * 1024 * 1024;
 
@@ -31,8 +34,23 @@ class EpubParser {
         diagnosticDetail: 'zero_byte:${bookBasename(path)}',
       );
     }
-    final bytes = await file.readAsBytes();
-    return parseBytes(bytes, sourceLabel: bookBasename(path));
+
+    final loader = EpubLazyResourceLoader(archivePath: path);
+    try {
+      return await _parseWithLoader(
+        loader: loader,
+        sourceLabel: bookBasename(path),
+        entryNames: (await CbzZipLazyReader(path).centralEntries())
+            .map((e) => e.name)
+            .toSet(),
+      );
+    } on FormatException {
+      throw BookReaderException(
+        kind: BookReaderErrorKind.epubInvalidZip,
+        userMessage: 'This book archive appears to be damaged.',
+        diagnosticDetail: 'zip_open:${bookBasename(path)}',
+      );
+    }
   }
 
   Future<EpubBookDocument> parseBytes(
@@ -50,7 +68,7 @@ class EpubParser {
       );
     }
 
-    final entries = <String, ArchiveFile>{};
+    final resources = <String, List<int>>{};
     for (final entry in archive) {
       if (!entry.isFile) continue;
       final name = entry.name.replaceAll('\\', '/');
@@ -68,11 +86,34 @@ class EpubParser {
           diagnosticDetail: 'large_entry:$sourceLabel',
         );
       }
-      entries[name] = entry;
+      resources[name] = entry.content;
     }
 
-    final container = entries['META-INF/container.xml'];
-    if (container == null) {
+    return _parseWithLoader(
+      loader: EpubMemoryResourceLoader(resources),
+      sourceLabel: sourceLabel,
+      entryNames: resources.keys.toSet(),
+      eagerSpineHtml: true,
+    );
+  }
+
+  Future<EpubBookDocument> _parseWithLoader({
+    required EpubResourceLoader loader,
+    required String sourceLabel,
+    required Set<String> entryNames,
+    bool eagerSpineHtml = false,
+  }) async {
+    for (final name in entryNames) {
+      if (bookIsUnsafeArchiveEntry(name)) {
+        throw BookReaderException(
+          kind: BookReaderErrorKind.epubUnsafePath,
+          userMessage: 'This book contains an unsafe file path.',
+          diagnosticDetail: 'unsafe:$sourceLabel',
+        );
+      }
+    }
+
+    if (!entryNames.contains('META-INF/container.xml')) {
       throw BookReaderException(
         kind: BookReaderErrorKind.epubMissingContainer,
         userMessage: 'This book is missing required EPUB metadata.',
@@ -80,10 +121,26 @@ class EpubParser {
       );
     }
 
-    final containerText = utf8.decode(container.content, allowMalformed: true);
+    final containerText = await loader.loadText('META-INF/container.xml');
+    if (containerText == null) {
+      throw BookReaderException(
+        kind: BookReaderErrorKind.epubMissingContainer,
+        userMessage: 'This book is missing required EPUB metadata.',
+        diagnosticDetail: 'no_container:$sourceLabel',
+      );
+    }
+
     final opfPath = _readContainerOpfPath(containerText);
-    final opfFile = entries[opfPath];
-    if (opfFile == null) {
+    if (!entryNames.contains(opfPath)) {
+      throw BookReaderException(
+        kind: BookReaderErrorKind.epubMalformedManifest,
+        userMessage: 'This book package document could not be found.',
+        diagnosticDetail: 'missing_opf:$sourceLabel',
+      );
+    }
+
+    final opfText = await loader.loadText(opfPath);
+    if (opfText == null) {
       throw BookReaderException(
         kind: BookReaderErrorKind.epubMalformedManifest,
         userMessage: 'This book package document could not be found.',
@@ -95,16 +152,9 @@ class EpubParser {
         ? opfPath.substring(0, opfPath.lastIndexOf('/') + 1)
         : '';
 
-    final parsed = _parseOpf(
-      utf8.decode(opfFile.content, allowMalformed: true),
-      sourceLabel,
-    );
-    final resources = <String, List<int>>{};
-    for (final entry in entries.entries) {
-      resources[entry.key] = entry.value.content;
-    }
-
+    final parsed = _parseOpf(opfText, sourceLabel);
     final spine = <EpubSpineChapter>[];
+
     for (final idref in parsed.spineIdRefs) {
       final href = parsed.manifest[idref];
       if (href == null) {
@@ -115,22 +165,42 @@ class EpubParser {
         );
       }
       final fullHref = _resolveRelative(opfDir, href);
-      final file = entries[fullHref];
-      if (file == null) {
+      if (!entryNames.contains(fullHref)) {
         throw BookReaderException(
           kind: BookReaderErrorKind.epubMissingResource,
           userMessage: 'Part of this book could not be found inside the file.',
           diagnosticDetail: 'missing_spine:$sourceLabel',
         );
       }
-      final html = utf8.decode(file.content, allowMalformed: true);
-      if (_containsBlockedActiveContent(html)) {
-        throw BookReaderException(
-          kind: BookReaderErrorKind.epubUnsupportedActiveContent,
-          userMessage: 'This book uses active content that is not supported.',
-          diagnosticDetail: 'active_content:$sourceLabel',
-        );
+
+      String? html;
+      if (eagerSpineHtml) {
+        html = await loader.loadText(fullHref);
+        if (html == null) {
+          throw BookReaderException(
+            kind: BookReaderErrorKind.epubMissingResource,
+            userMessage: 'Part of this book could not be found inside the file.',
+            diagnosticDetail: 'missing_spine:$sourceLabel',
+          );
+        }
+        if (_containsBlockedActiveContent(html)) {
+          throw BookReaderException(
+            kind: BookReaderErrorKind.epubUnsupportedActiveContent,
+            userMessage: 'This book uses active content that is not supported.',
+            diagnosticDetail: 'active_content:$sourceLabel',
+          );
+        }
+      } else {
+        final probe = await loader.loadText(fullHref);
+        if (probe != null && _containsBlockedActiveContent(probe)) {
+          throw BookReaderException(
+            kind: BookReaderErrorKind.epubUnsupportedActiveContent,
+            userMessage: 'This book uses active content that is not supported.',
+            diagnosticDetail: 'active_content:$sourceLabel',
+          );
+        }
       }
+
       spine.add(
         EpubSpineChapter(
           id: idref,
@@ -165,7 +235,7 @@ class EpubParser {
       title: parsed.title ?? bookBasename(sourceLabel),
       spine: spine,
       toc: toc,
-      resources: resources,
+      resourceLoader: loader,
       opfDirectory: opfDir,
     );
   }

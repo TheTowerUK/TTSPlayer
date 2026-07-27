@@ -166,7 +166,7 @@ Shortcuts are ignored while an `EditableText` owns focus. Page indicator: `Page 
 - Cleared when the reader disposes.
 - CBR: owned temp extract dir per page; cleaned after read; reopen does not reuse stale temps.
 - **CBZ archive memory (interim limitation):** `CbzZipArchiveSource` reads the full `.cbz` file, then `ZipDecoder.decodeBytes` decompresses **all** ZIP entries into an in-memory `Archive` retained for the open session. Navigation reuses entry bytes already held in that structure — this is **not** selective/random-access I/O. The five-page controller cache does **not** bound this underlying archive-parser memory.
-- **Phase 6.6 follow-up:** measure representative large CBZ memory use; either prove it stays within an agreed bound or replace with random-access ZIP reads or session-scoped temp extraction (see [m6-plan.md](../roadmap/m6-plan.md)).
+- **Memory (M6.6):** `CbzZipLazyReader` reads ZIP central directory only; pages inflated on demand. `ComicPageCache` caps decoded bytes (24 MiB) and entries (5).
 
 ### Extraction / decode
 
@@ -220,7 +220,7 @@ Gate 0 evaluation: [pdf-epub-evaluation.md](./pdf-epub-evaluation.md).
 - Spine-order chapters; flat TOC from spine titles; internal relative links only
 - **Blocked:** HTTP(S)/mailto links; remote images; `<script>` / `javascript:`; unsafe ZIP paths
 - **No JS execution**; HTML rendered through `flutter_html` with constrained styles
-- **Memory (interim):** full EPUB ZIP decoded into memory for session — viewport cache does not bound parser memory (Phase 6.6 follow-up)
+- **Memory (M6.6):** lazy ZIP via `EpubLazyResourceLoader` — chapters and resources loaded on demand; bounded cache (16 MiB). Spine security probes still run at open.
 
 ### Book reader keyboard / controls (Windows)
 

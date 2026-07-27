@@ -274,6 +274,7 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
                 _buildMusicPlaybackSessionSection(snapshot),
                 const SizedBox(height: AppSpacing.section),
                 _buildReadingProgressSection(snapshot),
+                _buildReaderSessionSection(snapshot),
                 const SizedBox(height: AppSpacing.section),
                 _buildLibrarySection(snapshot),
                 const SizedBox(height: AppSpacing.section),
@@ -1088,6 +1089,109 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
           label: 'Reconciliation persistence failed',
           value: DiagnosticsFormatters.boolValue(
             reading.reconciliationPersistenceFailed,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildReaderSessionSection(RuntimeDiagnosticsSnapshot snapshot) {
+    final session = snapshot.readerSession;
+    if (session == null) {
+      return const DiagnosticsSection(
+        sectionKey: Key('diagnostics_section_reader_session'),
+        title: 'Reader session',
+        status: DiagnosticSectionStatus.unavailable,
+        children: [
+          DiagnosticsValueRow(
+            label: 'Availability',
+            value: 'Unavailable',
+          ),
+        ],
+      );
+    }
+
+    return DiagnosticsSection(
+      sectionKey: const Key('diagnostics_section_reader_session'),
+      title: 'Reader session',
+      status: session.status,
+      children: [
+        DiagnosticsValueRow(
+          label: 'Last reader format',
+          value: session.lastReaderFormat ?? 'Unavailable',
+        ),
+        DiagnosticsValueRow(
+          label: 'Last reader open duration (ms)',
+          value: DiagnosticsFormatters.intValue(
+            session.lastReaderOpenDurationMs,
+          ),
+        ),
+        DiagnosticsValueRow(
+          label: 'Last first content duration (ms)',
+          value: DiagnosticsFormatters.intValue(
+            session.lastFirstContentDurationMs,
+          ),
+        ),
+        DiagnosticsValueRow(
+          label: 'Last cleanup result',
+          value: session.lastCleanupResult ?? 'Unavailable',
+        ),
+        DiagnosticsValueRow(
+          label: 'Comic cache max entries',
+          value: DiagnosticsFormatters.intValue(session.comicCacheMaxEntries),
+        ),
+        DiagnosticsValueRow(
+          label: 'Comic cache max bytes',
+          value: DiagnosticsFormatters.intValue(session.comicCacheMaxBytes),
+        ),
+        DiagnosticsValueRow(
+          label: 'Comic cache entry count',
+          value: DiagnosticsFormatters.intValue(session.comicCacheEntryCount),
+        ),
+        DiagnosticsValueRow(
+          label: 'Comic cache estimated bytes',
+          value: DiagnosticsFormatters.intValue(
+            session.comicCacheEstimatedBytes,
+          ),
+        ),
+        DiagnosticsValueRow(
+          label: 'EPUB cache max entries',
+          value: DiagnosticsFormatters.intValue(session.epubCacheMaxEntries),
+        ),
+        DiagnosticsValueRow(
+          label: 'EPUB cache max bytes',
+          value: DiagnosticsFormatters.intValue(session.epubCacheMaxBytes),
+        ),
+        DiagnosticsValueRow(
+          label: 'EPUB cache entry count',
+          value: DiagnosticsFormatters.intValue(session.epubCacheEntryCount),
+        ),
+        DiagnosticsValueRow(
+          label: 'EPUB cache estimated bytes',
+          value: DiagnosticsFormatters.intValue(
+            session.epubCacheEstimatedBytes,
+          ),
+        ),
+        DiagnosticsValueRow(
+          label: 'PDF limit rendering cache',
+          value: DiagnosticsFormatters.boolValue(
+            session.pdfLimitRenderingCache,
+          ),
+        ),
+        DiagnosticsValueRow(
+          label: 'PDF max image bytes cached on memory',
+          value: DiagnosticsFormatters.intValue(
+            session.pdfMaxImageBytesCachedOnMemory,
+          ),
+        ),
+        DiagnosticsValueRow(
+          label: 'CBR process invocations',
+          value: DiagnosticsFormatters.intValue(session.cbrProcessInvocations),
+        ),
+        DiagnosticsValueRow(
+          label: 'CBR temp directory residue count',
+          value: DiagnosticsFormatters.intValue(
+            session.cbrTempDirectoryResidueCount,
           ),
         ),
       ],

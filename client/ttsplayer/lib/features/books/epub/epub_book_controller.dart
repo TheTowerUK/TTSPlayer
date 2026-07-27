@@ -121,6 +121,13 @@ class EpubBookController extends ChangeNotifier {
   }
 
   void disposeDocument() {
+    _document?.dispose();
     _document = null;
+  }
+
+  @override
+  void dispose() {
+    disposeDocument();
+    super.dispose();
   }
 }

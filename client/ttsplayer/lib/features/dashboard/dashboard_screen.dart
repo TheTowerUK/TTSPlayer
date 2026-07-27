@@ -21,6 +21,7 @@ import 'widgets/continue_watching_section.dart';
 import '../reading/services/continue_reading_projection.dart';
 import '../reading/services/reading_progress_repository.dart';
 import '../reading/widgets/continue_reading_section.dart';
+import '../comics/spike/unrar_cli_resolver.dart';
 import 'widgets/dashboard_banners.dart';
 import 'widgets/dashboard_quick_search_bar.dart';
 import 'widgets/dashboard_welcome_header.dart';
@@ -346,8 +347,11 @@ class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
                               const SizedBox(height: AppSpacing.section),
                               Consumer<ReadingProgressRepository>(
                                 builder: (context, repository, _) {
-                                  final entries = ContinueReadingProjection()
-                                      .build(
+                                  final cbrToolingAvailable =
+                                      UnrarCliResolver().resolvePath() != null;
+                                  final entries = ContinueReadingProjection(
+                                    cbrToolingAvailable: cbrToolingAvailable,
+                                  ).build(
                                     catalog: data.catalog,
                                     repository: repository,
                                   );

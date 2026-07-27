@@ -621,6 +621,95 @@ String formatDiagnosticsExport(RuntimeDiagnosticsSnapshot snapshot) {
     );
   });
 
+  final readerSession = snapshot.readerSession;
+  _writeSection(buffer, 'Reader session', () {
+    if (readerSession == null) {
+      _writeLine(buffer, 'Status', 'Unavailable');
+      return;
+    }
+    _writeLine(buffer, 'Status', _sectionStatusLabel(readerSession.status));
+    _writeLine(
+      buffer,
+      'Last reader format',
+      readerSession.lastReaderFormat,
+    );
+    _writeLine(
+      buffer,
+      'Last reader open duration (ms)',
+      _formatInt(readerSession.lastReaderOpenDurationMs),
+    );
+    _writeLine(
+      buffer,
+      'Last first content duration (ms)',
+      _formatInt(readerSession.lastFirstContentDurationMs),
+    );
+    _writeLine(
+      buffer,
+      'Last cleanup result',
+      readerSession.lastCleanupResult,
+    );
+    _writeLine(
+      buffer,
+      'Comic cache max entries',
+      _formatInt(readerSession.comicCacheMaxEntries),
+    );
+    _writeLine(
+      buffer,
+      'Comic cache max bytes',
+      _formatInt(readerSession.comicCacheMaxBytes),
+    );
+    _writeLine(
+      buffer,
+      'Comic cache entry count',
+      _formatInt(readerSession.comicCacheEntryCount),
+    );
+    _writeLine(
+      buffer,
+      'Comic cache estimated bytes',
+      _formatInt(readerSession.comicCacheEstimatedBytes),
+    );
+    _writeLine(
+      buffer,
+      'EPUB cache max entries',
+      _formatInt(readerSession.epubCacheMaxEntries),
+    );
+    _writeLine(
+      buffer,
+      'EPUB cache max bytes',
+      _formatInt(readerSession.epubCacheMaxBytes),
+    );
+    _writeLine(
+      buffer,
+      'EPUB cache entry count',
+      _formatInt(readerSession.epubCacheEntryCount),
+    );
+    _writeLine(
+      buffer,
+      'EPUB cache estimated bytes',
+      _formatInt(readerSession.epubCacheEstimatedBytes),
+    );
+    _writeLine(
+      buffer,
+      'PDF limit rendering cache',
+      _formatBool(readerSession.pdfLimitRenderingCache),
+    );
+    _writeLine(
+      buffer,
+      'PDF max image bytes cached on memory',
+      _formatInt(readerSession.pdfMaxImageBytesCachedOnMemory),
+    );
+    _writeLine(
+      buffer,
+      'CBR process invocations (session aggregate)',
+      _formatInt(readerSession.cbrProcessInvocations),
+    );
+    _writeLine(
+      buffer,
+      'CBR temp directory residue count',
+      _formatInt(readerSession.cbrTempDirectoryResidueCount),
+    );
+  });
+
   final library = snapshot.library;
   _writeSection(buffer, 'Library', () {
     if (library == null) {

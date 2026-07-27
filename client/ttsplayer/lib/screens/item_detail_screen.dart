@@ -624,7 +624,13 @@ class _FileInfo extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(item.filePath, style: AppTypography.monoFaint),
+          Text(
+            item.filePath,
+            style: AppTypography.monoFaint,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            softWrap: true,
+          ),
           if (_formattedSize != null) ...[
             const SizedBox(height: AppSpacing.xs),
             Text(_formattedSize!, style: AppTypography.monoFaint),

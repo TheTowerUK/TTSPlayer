@@ -1,4 +1,5 @@
 import '../spike/cbr_archive_adapter.dart';
+import '../../reading/services/reader_session_telemetry.dart';
 import '../spike/cbr_gate0_models.dart';
 import '../spike/unrar_cli_cbr_adapter.dart';
 import '../spike/unrar_cli_resolver.dart';
@@ -86,9 +87,17 @@ class CbrCliArchiveSource implements ComicArchiveSource {
   @override
   Future<void> dispose() async {
     _pages = null;
+    if (_ownsAdapter && _adapter is UnrarCliCbrAdapter) {
+      final cli = _adapter as UnrarCliCbrAdapter;
+      ReaderSessionTelemetry.instance.updateCbrSession(
+        processInvocations: cli.processInvocations,
+        tempDirectoryCount: cli.sessionTempResidueCount,
+      );
+    }
     if (_ownsAdapter) {
       await _adapter.dispose();
     }
+    ReaderSessionTelemetry.instance.recordCleanupResult('cbr_source_disposed');
   }
 
   ComicArchiveException _mapCbr(CbrArchiveException e) {

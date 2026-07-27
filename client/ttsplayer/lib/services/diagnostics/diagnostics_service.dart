@@ -14,6 +14,8 @@ import '../../features/reading/services/reading_progress_coordinator.dart';
 import '../../features/reading/services/reading_progress_diagnostics_projection.dart';
 import '../../features/reading/services/reading_progress_repository.dart';
 import '../../features/comics/spike/unrar_cli_resolver.dart';
+import '../../features/reading/services/reader_session_telemetry.dart';
+import '../../features/books/reader/book_pdf_viewer_params.dart';
 import '../../features/search/search_service.dart';
 import '../../models/catalogue_provider_snapshot.dart';
 import '../../models/media_folder.dart';
@@ -111,6 +113,7 @@ class DiagnosticsService {
     final musicListening = _captureMusicListening();
     final musicPlaybackSession = _captureMusicPlaybackSession();
     final readingProgress = _captureReadingProgress();
+    final readerSession = _captureReaderSession();
     final library = _captureLibrary(catalogue);
 
     return RuntimeDiagnosticsSnapshot(
@@ -124,6 +127,7 @@ class DiagnosticsService {
       musicListening: musicListening,
       musicPlaybackSession: musicPlaybackSession,
       readingProgress: readingProgress,
+      readerSession: readerSession,
       library: library,
     );
   }
@@ -572,6 +576,36 @@ class DiagnosticsService {
       return const ReadingProgressDiagnostics(
         status: DiagnosticSectionStatus.unavailable,
         repositoryInitialized: false,
+      );
+    }
+  }
+
+  ReaderSessionDiagnostics _captureReaderSession() {
+    try {
+      final snap = ReaderSessionTelemetry.instance.snapshot();
+      return ReaderSessionDiagnostics(
+        status: DiagnosticSectionStatus.complete,
+        lastReaderFormat: snap.lastReaderFormat,
+        lastReaderOpenDurationMs: snap.lastReaderOpenDurationMs,
+        lastFirstContentDurationMs: snap.lastFirstContentDurationMs,
+        lastCleanupResult: snap.lastCleanupResult,
+        comicCacheMaxEntries: snap.comicCacheMaxEntries,
+        comicCacheMaxBytes: snap.comicCacheMaxBytes,
+        comicCacheEntryCount: snap.comicCacheEntryCount,
+        comicCacheEstimatedBytes: snap.comicCacheEstimatedBytes,
+        epubCacheMaxEntries: snap.epubCacheMaxEntries,
+        epubCacheMaxBytes: snap.epubCacheMaxBytes,
+        epubCacheEntryCount: snap.epubCacheEntryCount,
+        epubCacheEstimatedBytes: snap.epubCacheEstimatedBytes,
+        pdfLimitRenderingCache: TtsPlayerPdfViewerPolicy.limitRenderingCache,
+        pdfMaxImageBytesCachedOnMemory:
+            TtsPlayerPdfViewerPolicy.maxImageBytesCachedOnMemory,
+        cbrProcessInvocations: snap.cbrProcessInvocations,
+        cbrTempDirectoryResidueCount: snap.cbrTempDirectoryCount,
+      );
+    } catch (_) {
+      return const ReaderSessionDiagnostics(
+        status: DiagnosticSectionStatus.unavailable,
       );
     }
   }

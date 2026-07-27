@@ -1,3 +1,5 @@
+import 'epub_resource_loader.dart';
+
 class EpubTocEntry {
   const EpubTocEntry({
     required this.title,
@@ -14,29 +16,49 @@ class EpubSpineChapter {
   const EpubSpineChapter({
     required this.id,
     required this.href,
-    required this.html,
+    this.html,
     this.title,
   });
 
   final String id;
   final String href;
-  final String html;
+
+  /// Populated eagerly for in-memory test fixtures; null when lazy-loaded.
+  final String? html;
   final String? title;
 }
 
-/// Parsed EPUB package kept in memory for the open session.
+/// Parsed EPUB package for an open session.
 class EpubBookDocument {
   const EpubBookDocument({
     required this.title,
     required this.spine,
     required this.toc,
-    required this.resources,
+    required this.resourceLoader,
     required this.opfDirectory,
   });
 
   final String title;
   final List<EpubSpineChapter> spine;
   final List<EpubTocEntry> toc;
-  final Map<String, List<int>> resources;
+  final EpubResourceLoader resourceLoader;
   final String opfDirectory;
+
+  Future<String> loadChapterHtml(int index) async {
+    final chapter = spine[index];
+    if (chapter.html != null) return chapter.html!;
+    final text = await resourceLoader.loadText(chapter.href);
+    if (text == null) {
+      throw StateError('Missing spine chapter: ${chapter.href}');
+    }
+    final lower = text.toLowerCase();
+    if (lower.contains('<script') || lower.contains('javascript:')) {
+      throw StateError('Unsupported active content in ${chapter.href}');
+    }
+    return text;
+  }
+
+  void dispose() {
+    resourceLoader.dispose();
+  }
 }

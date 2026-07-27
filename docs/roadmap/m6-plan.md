@@ -107,7 +107,7 @@ M6 extends TTSPlayer from a **video + music** personal media application into a 
 | **6.3** | Comic archive reader (CBZ and CBR required) | **In Progress** — implementation checkpoint; Conditional-pass; UnRAR redistribution blocking closure |
 | **6.4** | Book document reader (PDF/EPUB) | ✅ **Complete** (2026-07-26) |
 | **6.5** | Reading progress and Continue Reading | **Complete** (2026-07-27) — persistence, Continue Reading, diagnostics |
-| **6.6** | Performance, diagnostics, and Windows runtime validation | Planned |
+| **6.6** | Performance, diagnostics, and Windows runtime validation | ✅ Complete (2026-07-27) — lazy CBZ/EPUB, cache bounds, reader diagnostics, UX/a11y matrix |
 | **Release** | M6 release and documentation | Planned |
 
 ---
@@ -510,6 +510,6 @@ Each checkbox must point to a test, runtime scenario, document section, build re
 
 ## Handoff
 
-**Next:** Continue Phase **6.3** closure items (UnRAR redistribution approval, Unicode revalidation, legal review). Phase **6.6** performance hardening is next planned reader work. CBZ/EPUB memory measurement remains Phase 6.6.
+**Next:** Continue Phase **6.3** closure items (UnRAR redistribution approval, Unicode revalidation, legal review). Phase **6.6** complete. M6 closure blocked on UnRAR production path.
 
 Phase 6.3 implementation checkpoint landed. Gate 0 Conditional pass (technical) does **not** authorize shipping UnRAR or closing Phase 6.3.

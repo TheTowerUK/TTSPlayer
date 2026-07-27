@@ -29,7 +29,11 @@ class TtsAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      title: Text(title),
+      title: Text(
+        title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
       actions: [
         ...extraActions,
         if (showHome) const HomeButton(),
