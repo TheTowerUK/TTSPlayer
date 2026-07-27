@@ -12,8 +12,6 @@ import 'package:ttsplayer/features/comics/archive/comic_archive_opener.dart';
 import 'package:ttsplayer/features/comics/archive/comic_archive_errors.dart';
 import 'package:ttsplayer/features/comics/reader/comic_reader_controller.dart';
 import 'package:ttsplayer/features/comics/reader/comic_reader_screen.dart';
-import 'package:ttsplayer/features/comics/archive/cbr/cbr_backend_resolver.dart';
-import 'package:ttsplayer/features/comics/spike/unrar_cli_resolver.dart';
 import 'package:ttsplayer/models/media_item.dart';
 import 'package:ttsplayer/models/media_kind.dart';
 import 'package:ttsplayer/services/media_access/media_access_config.dart';
@@ -26,7 +24,6 @@ import 'support/comic_test_fixtures.dart';
 /// ```powershell
 /// cd client\ttsplayer
 /// $env:PHASE_63_READER='1'
-/// $env:PHASE_63_UNRAR_EXE=(Resolve-Path 'third_party\unrar_cli\UnRAR.exe').Path
 /// flutter test test/phase_63_comic_reader_windows_runtime_test.dart --tags phase63-reader
 /// ```
 void main() {
@@ -171,36 +168,6 @@ void main() {
     expect(find.byKey(const Key('comic_reader_page_indicator')), findsOneWidget);
   });
 
-  test('CBR lists when PHASE_63_UNRAR_EXE is set', () async {
-    final unrar = Platform.environment[UnrarCliResolver.overrideEnvKey];
-    if (unrar == null || unrar.isEmpty || !File(unrar).existsSync()) {
-      // ignore: avoid_print
-      print('G0-CBR skip — set PHASE_63_UNRAR_EXE');
-      return;
-    }
-    final fixture = File('test/support/cbr_gate0_fixtures/rar5_pages.cbr');
-    if (!fixture.existsSync()) {
-      // ignore: avoid_print
-      print('G0-CBR skip — rar5_pages.cbr missing');
-      return;
-    }
-    final opener = ComicArchiveOpener(
-      mediaLocationResolver: resolver,
-      cbrBackendResolver: CbrBackendResolver(
-        cliResolver: UnrarCliResolver(
-          overrideExecutablePath: unrar,
-          expectedSha256Hex: UnrarCliResolver.gate0ExpectedSha256,
-        ),
-      ),
-    );
-    final source = opener.openPath(fixture.path);
-    final pages = await source.listPages();
-    expect(pages, isNotEmpty);
-    final bytes = await source.loadPageBytes(pages.first.entryName);
-    expect(bytes, isNotEmpty);
-    await source.dispose();
-  });
-
   test('corrupt CBZ fails with controlled archive error', () async {
     final bad = File('${tmp.path}${Platform.pathSeparator}corrupt.cbz')
       ..writeAsBytesSync(List<int>.filled(64, 0x7F));
@@ -221,62 +188,5 @@ void main() {
       ),
     );
     controller.dispose();
-  });
-
-  test('missing CBR executable is controlled', () async {
-    final opener = ComicArchiveOpener(
-      mediaLocationResolver: resolver,
-      cbrBackendResolver: CbrBackendResolver(
-        cliResolver: UnrarCliResolver(
-          overrideExecutablePath: r'C:\ttsplayer_missing\UnRAR.exe',
-        ),
-      ),
-    );
-    expect(
-      () => opener.openPath(r'C:\fake\book.cbr'),
-      throwsA(
-        isA<ComicArchiveException>().having(
-          (e) => e.kind,
-          'kind',
-          ComicArchiveErrorKind.cbrSupportUnavailable,
-        ),
-      ),
-    );
-  });
-
-  test('encrypted and multi-volume CBR fail safely when UnRAR present', () async {
-    final unrar = Platform.environment[UnrarCliResolver.overrideEnvKey];
-    if (unrar == null || !File(unrar).existsSync()) return;
-    final opener = ComicArchiveOpener(
-      mediaLocationResolver: resolver,
-      cbrBackendResolver: CbrBackendResolver(
-        cliResolver: UnrarCliResolver(
-          overrideExecutablePath: unrar,
-          expectedSha256Hex: UnrarCliResolver.gate0ExpectedSha256,
-        ),
-      ),
-    );
-    for (final name in ['encrypted.cbr', 'multivolume_missing_part.cbr']) {
-      final path = 'test/support/cbr_gate0_fixtures/$name';
-      if (!File(path).existsSync()) continue;
-      final source = opener.openPath(path);
-      try {
-        await source.listPages();
-        fail('expected failure for $name');
-      } on ComicArchiveException catch (e) {
-        expect(
-          e.kind,
-          anyOf(
-            ComicArchiveErrorKind.encryptedArchive,
-            ComicArchiveErrorKind.multiVolumeUnsupported,
-            ComicArchiveErrorKind.corruptArchive,
-          ),
-        );
-        // ignore: avoid_print
-        print('P63 $name -> ${e.kind}');
-      } finally {
-        await source.dispose();
-      }
-    }
   });
 }

@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ttsplayer/features/comics/archive/comic_archive_opener.dart';
 import 'package:ttsplayer/features/reading/models/reading_location_payload.dart';
 import 'package:ttsplayer/features/reading/services/continue_reading_projection.dart';
 import 'package:ttsplayer/models/catalog.dart';
@@ -209,7 +210,7 @@ void main() {
       expect(entry.unavailabilityReason, isNotNull);
     });
 
-    test('cbr tooling unavailable when flag is false', () async {
+    test('unsupported comic format surfaces conversion guidance', () async {
       final repository = await initializedReadingProgressRepository();
       await repository.upsert(
         phase65ComicRecord(
@@ -220,9 +221,7 @@ void main() {
         ),
       );
 
-      final entry = ContinueReadingProjection(
-        cbrToolingAvailable: false,
-      ).build(
+      final entry = ContinueReadingProjection().build(
         catalog: phase65ReadingCatalog(),
         repository: repository,
       ).single;
@@ -230,9 +229,10 @@ void main() {
       expect(entry.item.id, 'comic-cbr');
       expect(
         entry.availability,
-        ContinueReadingAvailability.cbrToolingUnavailable,
+        ContinueReadingAvailability.unsupportedComicFormat,
       );
       expect(entry.isPlayable, isFalse);
+      expect(entry.unavailabilityReason, kCbrConversionGuidance);
     });
 
     test('location labels reflect saved payload', () async {

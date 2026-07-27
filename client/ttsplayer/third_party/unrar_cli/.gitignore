@@ -1,6 +1,0 @@
-# Executable must not be committed until redistribution of the exact binary is approved.
-UnRAR.exe
-*.exe
-*.dll
-*.zip
-*~

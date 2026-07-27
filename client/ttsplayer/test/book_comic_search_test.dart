@@ -94,6 +94,7 @@ void main() {
 
   test('extensions list includes book and comic formats', () {
     final extensions = searchService.extensionsFor(catalog);
-    expect(extensions, containsAll(['pdf', 'epub', 'cbz', 'cbr', 'mp4', 'mp3']));
+    expect(extensions, containsAll(['pdf', 'epub', 'cbz', 'mp4', 'mp3']));
+    expect(extensions, contains('cbr'));
   });
 }

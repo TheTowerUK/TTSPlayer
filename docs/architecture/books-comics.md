@@ -1,10 +1,10 @@
 # Books & Comics Architecture (M6)
 
-**Status:** Active — Phase 6.3 **In Progress** (comic reader implementation checkpoint, 2026-07-25); Phase 6.4 ✅ **Complete** (book reader, 2026-07-26); UnRAR.exe **redistribution unresolved/blocking** for production packaging; ADR-026 **Proposed** (comic + book reader architecture provisionally validated)  
+**Status:** Active — Phase 6.3 ✅ **Complete** (CBZ comic reader, 2026-07-27); Phase 6.4 ✅ **Complete** (book reader, 2026-07-26); ADR-026 **Accepted** (CBZ-only production comic format)  
 **Milestone plan:** [m6-plan.md](../roadmap/m6-plan.md)  
 **Related ADRs:** [ADR-024](./decisions/ADR-024-book-comic-catalogue-schema-and-media-kind.md) · [ADR-025](./decisions/ADR-025-book-comic-identity-and-metadata-precedence.md) · [ADR-026](./decisions/ADR-026-reader-surface-architecture.md) · [ADR-027](./decisions/ADR-027-reading-progress-and-continue-reading.md)
 
-> Phases 6.1–6.2, **6.4**, and **6.5** complete. Phase 6.3 comic reader landed as an **implementation checkpoint** on `m6-development`; phase **not closed** while UnRAR redistribution approval remains blocking.
+> Phases 6.1–6.6 complete on `m6-development`. Comic production format is **CBZ only**; CBR removed from scope (external conversion + rescan).
 
 ---
 
@@ -33,15 +33,13 @@ Describe how books and comics fit into TTSPlayer’s existing folder-first, prov
 
 | Kind | Typical formats (M6 baseline) | Primary surface |
 |---|---|---|
-| `comic` | **`.cbz`**, **`.cbr`** (both required) | Comic archive reader (Phase 6.3) |
+| `comic` | **`.cbz`** (ZIP-based) | Comic archive reader (Phase 6.3) |
 | `book` | `.pdf`, `.epub` | Document reader (Phase 6.4) |
 | existing | `video`, `audio`, `image`, `unknown` | Unchanged |
 
 **Recommendation:** Keep `book` and `comic` distinct. Presentation, progress units, and reader stacks differ enough that a single `document` kind would force awkward branching.
 
-**Comic formats:** `.cbz` (ZIP) and `.cbr` (RAR) are the two primary comic archive formats and are **required M6 baseline scope**. CBR is an implementation/dependency risk, not optional product scope. Any later deferral of CBR requires an explicit documented decision, rationale, known limitation, and approval before M6 closure.
-
-**CBR/RAR stack:** `package:unrar` Gate 0 **Fail**; official UnRAR CLI Gate 0 **Conditional pass** (2026-07-25). See [cbr-rar-evaluation.md](./cbr-rar-evaluation.md). CBR remains required.
+**Comic format:** `.cbz` is the supported production comic archive format. **CBR/RAR is not supported** — convert externally to CBZ and rescan. See [ADR-026 Accepted](./decisions/ADR-026-reader-surface-architecture.md).
 
 ### Catalogue versions
 
@@ -80,7 +78,7 @@ Loose image sequences in a folder remain `image` items (M4 behaviour). Promoting
 
 | Surface | Behaviour |
 |---|---|
-| Folder browse | `.pdf`/`.epub` → Book; `.cbz`/`.cbr` → Comic; mixed folders show all kinds; filters `Books` / `Comics` |
+| Folder browse | `.pdf`/`.epub` → Book; `.cbz` → Comic; mixed folders show all kinds; filters `Books` / `Comics` |
 | Cards / list rows | Kind badge + subtitle (author/series when present); distinct literature vs comics placeholders |
 | Search | Kind chips in TYPE filter row; author/series in search blob (6.1); no path leakage |
 | Item detail | Comics: **Open Comic** → comic reader; Books: **Open Book** → PDF/EPUB reader |

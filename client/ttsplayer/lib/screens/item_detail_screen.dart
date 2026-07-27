@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../features/reading/reading_navigation.dart';
 import '../features/books/reader/book_navigation.dart';
+import '../features/comics/archive/comic_archive_opener.dart';
 import '../features/comics/reader/comic_navigation.dart';
 import '../models/media_item.dart';
 import '../services/artwork/artwork_decode_size.dart';
@@ -209,7 +210,7 @@ class _MetadataPanel extends StatelessWidget {
   static String _comicArchiveType(String extension) {
     return switch (extension.toLowerCase()) {
       'cbz' => 'ZIP archive',
-      'cbr' => 'RAR archive',
+      'cbr' => 'CBR (unsupported)',
       _ => 'Comic archive',
     };
   }
@@ -421,6 +422,8 @@ class _PlaySection extends StatelessWidget {
   }
 
   Widget _buildOpenComic(BuildContext context) {
+    final ext = item.extension.toLowerCase();
+    final supported = isSupportedComicArchiveExtension(ext);
     final progress = readingProgressSummaryForItem(context, item: item);
     final hasResume = progress != null &&
         progress.hasMeaningfulProgress &&
@@ -432,6 +435,20 @@ class _PlaySection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (!supported) ...[
+            Text(
+              ext == 'cbr' || ext == 'rar'
+                  ? kCbrConversionGuidance
+                  : 'This comic format is not supported. Use CBZ and rescan the library.',
+              key: const Key('item_detail_comic_unsupported'),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppColors.textLow,
+                fontSize: AppTypography.size13,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+          ],
           if (progress != null && (hasResume || completed)) ...[
             Text(
               completed
@@ -466,14 +483,16 @@ class _PlaySection extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              onPressed: () {
-                // ignore: discarded_futures
-                openComicReaderScreen(
-                  context,
-                  item: item,
-                  startFromBeginning: completed,
-                );
-              },
+              onPressed: supported
+                  ? () {
+                      // ignore: discarded_futures
+                      openComicReaderScreen(
+                        context,
+                        item: item,
+                        startFromBeginning: completed,
+                      );
+                    }
+                  : null,
             ),
           ),
           if (hasResume) ...[

@@ -215,7 +215,7 @@ void main() {
       expect(semantics.hasFlag(SemanticsFlag.isButton), isTrue);
     });
 
-    testWidgets('CBR unavailable Continue Reading card is not a button',
+    testWidgets('unsupported comic format Continue Reading card is not a button',
         (tester) async {
       await readingRepository.upsert(
         phase65ComicRecord(
@@ -224,9 +224,7 @@ void main() {
           lastReadAt: phase65Utc(2026, 7, 27, 12),
         ),
       );
-      final entries = ContinueReadingProjection(
-        cbrToolingAvailable: false,
-      ).build(
+      final entries = ContinueReadingProjection().build(
         catalog: catalog,
         repository: readingRepository,
       );
@@ -240,7 +238,7 @@ void main() {
         find.byKey(const Key('continue_reading_card_comic-cbr')),
       );
       expect(semantics.hasFlag(SemanticsFlag.isButton), isFalse);
-      expect(semantics.label, contains('UnRAR'));
+      expect(semantics.label, contains('CBR archives are not supported'));
     });
 
     testWidgets('Open Book button has accessible label', (tester) async {

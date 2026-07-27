@@ -145,7 +145,7 @@ class ArtworkService {
     if (_containsAny(lower, ['book', 'literature', 'ebook', 'epub'])) {
       return LibraryVisualKind.literature;
     }
-    if (_containsAny(lower, ['comic', 'manga', 'cbz', 'cbr'])) {
+    if (_containsAny(lower, ['comic', 'manga', 'cbz'])) {
       return LibraryVisualKind.comics;
     }
     if (_containsAny(lower, ['game'])) {
@@ -206,7 +206,6 @@ class ArtworkService {
       case 'mobi':
         return LibraryVisualKind.literature;
       case 'cbz':
-      case 'cbr':
         return LibraryVisualKind.comics;
       case 'doc':
       case 'docx':

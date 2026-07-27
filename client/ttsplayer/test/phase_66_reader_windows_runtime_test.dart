@@ -7,11 +7,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:ttsplayer/features/books/epub/epub_parser.dart';
 import 'package:ttsplayer/features/books/reader/book_pdf_viewer_params.dart';
-import 'package:ttsplayer/features/comics/archive/cbr_cli_archive_source.dart';
-import 'package:ttsplayer/features/comics/archive/comic_archive_errors.dart';
 import 'package:ttsplayer/features/comics/archive/cbz_zip_archive_source.dart';
 import 'package:ttsplayer/features/comics/reader/comic_reader_controller.dart';
-import 'package:ttsplayer/features/comics/spike/unrar_cli_cbr_adapter.dart';
 import 'package:ttsplayer/features/reading/services/reader_session_telemetry.dart';
 
 import 'support/phase_66_long_session_harness.dart';
@@ -40,8 +37,6 @@ void main() {
 
   late Directory tmp;
   final baseline = Phase66PerformanceBaseline();
-  final unrarExe = Platform.environment['PHASE_63_UNRAR_EXE'];
-  final cbrFixture = File('test/support/cbr_gate0_fixtures/rar5_pages.cbr');
 
   setUp(() {
     tmp = Directory.systemTemp.createTempSync('tts_p66_rt_');
@@ -195,60 +190,6 @@ void main() {
     expect(await doc.loadChapterHtml(0), contains('caf'));
     doc.dispose();
     await source.dispose();
-  });
-
-  test('P66-RT-CBR when UnRAR configured', () async {
-    if (unrarExe == null || !File(unrarExe).existsSync()) {
-      print('P66-RT-CBR skip — PHASE_63_UNRAR_EXE not set');
-      return;
-    }
-    if (!cbrFixture.existsSync()) {
-      print('P66-RT-CBR skip — rar5_pages.cbr missing');
-      return;
-    }
-
-    Platform.environment['PHASE_63_UNRAR_EXE'] = unrarExe;
-    final adapter = UnrarCliCbrAdapter();
-    final source = CbrCliArchiveSource(
-      archivePath: cbrFixture.path,
-      adapter: adapter,
-    );
-    final controller = ComicReaderController(source: source);
-
-    final invocationsBefore = adapter.processInvocations;
-    await controller.open();
-    expect(controller.pageCount, greaterThan(0));
-
-    for (var i = 0; i < 20; i++) {
-      await controller.goToIndex(i % controller.pageCount);
-    }
-    await controller.goToIndex(0);
-
-    expect(adapter.processInvocations, greaterThan(invocationsBefore));
-    expect(adapter.sessionTempResidueCount, 0);
-
-    controller.dispose();
-    await source.dispose();
-    await adapter.dispose();
-
-    expect(adapter.sessionTempResidueCount, 0);
-    ReaderSessionTelemetry.instance.updateCbrSession(
-      processInvocations: adapter.processInvocations,
-      tempDirectoryCount: adapter.sessionTempResidueCount,
-    );
-  }, skip: unrarExe == null ? 'UnRAR not configured' : false);
-
-  test('P66-RT-CBR unavailable retains controlled failure', () async {
-    if (unrarExe != null && File(unrarExe).existsSync()) {
-      return;
-    }
-    final source = CbrCliArchiveSource(
-      archivePath: cbrFixture.path,
-    );
-    expect(
-      () => source.listPages(),
-      throwsA(isA<ComicArchiveException>()),
-    );
   });
 
   test('P66-RT-Mixed format session alternation', () async {

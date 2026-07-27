@@ -3,9 +3,6 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ttsplayer/features/comics/archive/comic_archive_errors.dart';
 import 'package:ttsplayer/features/comics/archive/comic_archive_opener.dart';
-import 'package:ttsplayer/features/comics/archive/cbr/cbr_backend_resolver.dart';
-import 'package:ttsplayer/features/comics/archive/cbr/unrar_dll/unrar_dll_loader.dart';
-import 'package:ttsplayer/features/comics/spike/unrar_cli_resolver.dart';
 import 'package:ttsplayer/models/media_item.dart';
 import 'package:ttsplayer/models/media_kind.dart';
 import 'package:ttsplayer/services/media_access/media_access_config.dart';
@@ -78,26 +75,44 @@ void main() {
     await source.dispose();
   });
 
-  test('missing CBR backend fails before reader construction', () {
-    final opener = ComicArchiveOpener(
-      mediaLocationResolver: resolver,
-      cbrBackendResolver: CbrBackendResolver(
-        dllLoader: UnrarDllLoader(
-          overrideDllPath: r'C:\ttsplayer_missing\UnRAR64.dll',
-        ),
-        cliResolver: UnrarCliResolver(
-          overrideExecutablePath: r'C:\ttsplayer_missing\UnRAR.exe',
-        ),
-      ),
-    );
-    expect(
-      () => opener.openPath(r'C:\library\issue.cbr'),
+  test('renamed RAR with .cbz extension fails as invalid ZIP', () async {
+    final mislabeled = File('${tmp.path}${Platform.pathSeparator}mislabeled.cbz')
+      ..writeAsBytesSync(const [0x52, 0x61, 0x72, 0x21, 0x1a, 0x07, 0x00]);
+    final opener = ComicArchiveOpener(mediaLocationResolver: resolver);
+    final source = opener.openPath(mislabeled.path);
+    await expectLater(
+      source.listPages(),
       throwsA(
         isA<ComicArchiveException>().having(
           (e) => e.kind,
           'kind',
-          ComicArchiveErrorKind.cbrSupportUnavailable,
+          anyOf(
+            ComicArchiveErrorKind.corruptArchive,
+            ComicArchiveErrorKind.emptyArchive,
+            ComicArchiveErrorKind.noReadableImages,
+          ),
         ),
+      ),
+    );
+    await source.dispose();
+  });
+
+  test('CBR path throws conversion guidance message', () {
+    final opener = ComicArchiveOpener(mediaLocationResolver: resolver);
+    expect(
+      () => opener.openPath(r'C:\library\issue.cbr'),
+      throwsA(
+        isA<ComicArchiveException>()
+            .having(
+              (e) => e.kind,
+              'kind',
+              ComicArchiveErrorKind.unsupportedArchiveType,
+            )
+            .having(
+              (e) => e.userMessage,
+              'userMessage',
+              kCbrConversionGuidance,
+            ),
       ),
     );
   });

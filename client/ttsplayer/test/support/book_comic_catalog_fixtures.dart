@@ -8,7 +8,7 @@ const kCatalogV4BookComicFixture = r'''
     "scanner_version": "0.5.0",
     "catalogue_version": 4,
     "supported_extensions": [
-      "aac", "avi", "bmp", "cbr", "cbz", "epub", "flac", "gif", "jpeg", "jpg",
+      "aac", "avi", "bmp", "cbz", "epub", "flac", "gif", "jpeg", "jpg",
       "m4a", "m4v", "mkv", "mov", "mp3", "mp4", "ogg", "opus", "pdf", "png",
       "tif", "tiff", "wav", "webp", "wma"
     ]

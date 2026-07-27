@@ -60,7 +60,7 @@ _IMAGE_EXTENSIONS = frozenset({
     ".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp", ".tif", ".tiff",
 })
 _BOOK_EXTENSIONS = frozenset({".pdf", ".epub"})
-_COMIC_EXTENSIONS = frozenset({".cbz", ".cbr"})
+_COMIC_EXTENSIONS = frozenset({".cbz"})
 SUPPORTED_EXTENSIONS = (
     _VIDEO_EXTENSIONS
     | _AUDIO_EXTENSIONS

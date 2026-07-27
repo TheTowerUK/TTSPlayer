@@ -1,6 +1,7 @@
 import '../../../models/catalog.dart';
 import '../../../models/media_item.dart';
 import '../../../models/media_kind.dart';
+import '../../comics/archive/comic_archive_opener.dart';
 import '../models/reading_location_payload.dart';
 import '../models/reading_progress_record.dart';
 import 'reading_progress_repository.dart';
@@ -21,8 +22,8 @@ class ReadingProgressRepositoryDiagnosticsProjection {
     required this.pdfRecordCount,
     required this.epubRecordCount,
     required this.cbzRecordCount,
-    required this.cbrRecordCount,
-    required this.cbrUnavailableRecordCount,
+    required this.legacyCbrRecordCount,
+    required this.unsupportedComicFormatRecordCount,
     required this.recoveryWarningPresent,
     this.lastSuccessfulWriteAt,
     this.lastRepositoryErrorClassification,
@@ -39,8 +40,8 @@ class ReadingProgressRepositoryDiagnosticsProjection {
   final int pdfRecordCount;
   final int epubRecordCount;
   final int cbzRecordCount;
-  final int cbrRecordCount;
-  final int cbrUnavailableRecordCount;
+  final int legacyCbrRecordCount;
+  final int unsupportedComicFormatRecordCount;
   final bool recoveryWarningPresent;
   final DateTime? lastSuccessfulWriteAt;
   final String? lastRepositoryErrorClassification;
@@ -54,7 +55,7 @@ class ReadingProgressReconciliationSummary {
     required this.refreshedCount,
     required this.removedMissingCount,
     required this.removedFormatMismatchCount,
-    required this.cbrUnavailableRetainedCount,
+    required this.unsupportedComicFormatRetainedCount,
     this.persistenceFailed = false,
   });
 
@@ -62,19 +63,19 @@ class ReadingProgressReconciliationSummary {
   final int refreshedCount;
   final int removedMissingCount;
   final int removedFormatMismatchCount;
-  final int cbrUnavailableRetainedCount;
+  final int unsupportedComicFormatRetainedCount;
   final bool persistenceFailed;
 
   factory ReadingProgressReconciliationSummary.fromValidationResult(
     ReadingProgressValidationResult result, {
-    required int cbrUnavailableRetainedCount,
+    required int unsupportedComicFormatRetainedCount,
   }) {
     return ReadingProgressReconciliationSummary(
       retainedCount: result.retainedCount,
       refreshedCount: result.metadataRefreshedCount,
       removedMissingCount: result.removedMissingCount,
       removedFormatMismatchCount: result.removedFormatMismatchCount,
-      cbrUnavailableRetainedCount: cbrUnavailableRetainedCount,
+      unsupportedComicFormatRetainedCount: unsupportedComicFormatRetainedCount,
       persistenceFailed: result.persistenceFailed,
     );
   }
@@ -85,7 +86,6 @@ abstract final class ReadingProgressDiagnosticsProjection {
   static ReadingProgressRepositoryDiagnosticsProjection build({
     required ReadingProgressRepository repository,
     Catalog? catalog,
-    required bool cbrToolingAvailable,
   }) {
     final records = repository.allRecords;
     final formatCounts = _formatCounts(records);
@@ -93,20 +93,16 @@ abstract final class ReadingProgressDiagnosticsProjection {
         ? 0
         : _countStaleOrUnmatched(records, catalog);
 
-    final cbrUnavailable = cbrToolingAvailable
+    final unsupportedComic = catalog == null
         ? 0
-        : records
-            .where(
-              (record) => record.readerFormat == ReadingReaderFormat.cbr,
-            )
-            .length;
+        : _countUnsupportedComicRecords(records, catalog);
 
     final validation = repository.lastValidationResult;
     ReadingProgressReconciliationSummary? reconciliation;
     if (validation != null) {
       reconciliation = ReadingProgressReconciliationSummary.fromValidationResult(
         validation,
-        cbrUnavailableRetainedCount: cbrUnavailable,
+        unsupportedComicFormatRetainedCount: unsupportedComic,
       );
     }
 
@@ -121,12 +117,39 @@ abstract final class ReadingProgressDiagnosticsProjection {
       pdfRecordCount: formatCounts.pdf,
       epubRecordCount: formatCounts.epub,
       cbzRecordCount: formatCounts.cbz,
-      cbrRecordCount: formatCounts.cbr,
-      cbrUnavailableRecordCount: cbrUnavailable,
+      legacyCbrRecordCount: formatCounts.cbr,
+      unsupportedComicFormatRecordCount: unsupportedComic,
       recoveryWarningPresent: repository.recoveryWarningPresent,
       lastSuccessfulWriteAt: repository.lastSuccessfulWriteAt,
       lastRepositoryErrorClassification: repository.lastRepositoryError,
       lastReconciliation: reconciliation,
+    );
+  }
+
+  static int _countUnsupportedComicRecords(
+    List<ReadingProgressRecord> records,
+    Catalog catalog,
+  ) {
+    final itemsById = {
+      for (final item in catalog.allItems)
+        if (item.isComic) item.id: item,
+    };
+    var count = 0;
+    for (final record in records) {
+      if (record.mediaKind != MediaKind.comic) continue;
+      final item = itemsById[record.mediaId];
+      if (item != null && !_isSupportedComicItem(item)) {
+        count++;
+      }
+    }
+    return count;
+  }
+
+  static bool _isSupportedComicItem(MediaItem item) {
+    final dot = item.filePath.lastIndexOf('.');
+    if (dot < 0 || dot == item.filePath.length - 1) return false;
+    return isSupportedComicArchiveExtension(
+      item.filePath.substring(dot + 1),
     );
   }
 
@@ -183,8 +206,7 @@ abstract final class ReadingProgressDiagnosticsProjection {
     return switch (ext) {
       'pdf' => ReadingReaderFormat.pdf,
       'epub' => ReadingReaderFormat.epub,
-      'cbz' => ReadingReaderFormat.cbz,
-      'cbr' => ReadingReaderFormat.cbr,
+      'cbz' || 'zip' => ReadingReaderFormat.cbz,
       _ => null,
     };
   }

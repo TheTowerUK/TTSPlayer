@@ -1025,15 +1025,17 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
           value: DiagnosticsFormatters.intValue(reading.cbzRecordCount),
         ),
         DiagnosticsValueRow(
-          label: 'CBR record count',
-          value: DiagnosticsFormatters.intValue(reading.cbrRecordCount),
+          label: 'Legacy CBR record count',
+          value: DiagnosticsFormatters.intValue(reading.legacyCbrRecordCount),
         ),
         DiagnosticsValueRow(
-          label: 'CBR records unavailable (tooling absent)',
+          label: 'Unsupported comic format record count',
           value: DiagnosticsFormatters.intValue(
-            reading.cbrUnavailableRecordCount,
+            reading.unsupportedComicFormatRecordCount,
           ),
-          valueKey: const Key('diagnostics_reading_progress_cbr_unavailable'),
+          valueKey: const Key(
+            'diagnostics_reading_progress_unsupported_comic_format',
+          ),
         ),
         DiagnosticsValueRow(
           label: 'Coordinator attached',
@@ -1080,9 +1082,9 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
           ),
         ),
         DiagnosticsValueRow(
-          label: 'Reconciliation CBR unavailable retained count',
+          label: 'Reconciliation unsupported comic format retained count',
           value: DiagnosticsFormatters.intValue(
-            reading.reconciliationCbrUnavailableRetainedCount,
+            reading.reconciliationUnsupportedComicFormatRetainedCount,
           ),
         ),
         DiagnosticsValueRow(
@@ -1182,16 +1184,6 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
           label: 'PDF max image bytes cached on memory',
           value: DiagnosticsFormatters.intValue(
             session.pdfMaxImageBytesCachedOnMemory,
-          ),
-        ),
-        DiagnosticsValueRow(
-          label: 'CBR process invocations',
-          value: DiagnosticsFormatters.intValue(session.cbrProcessInvocations),
-        ),
-        DiagnosticsValueRow(
-          label: 'CBR temp directory residue count',
-          value: DiagnosticsFormatters.intValue(
-            session.cbrTempDirectoryResidueCount,
           ),
         ),
       ],

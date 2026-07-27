@@ -38,7 +38,6 @@ abstract final class SupportedExtensions {
   };
 
   static const Set<String> comic = {
-    'cbr',
     'cbz',
   };
 
@@ -46,7 +45,6 @@ abstract final class SupportedExtensions {
     'aac',
     'avi',
     'bmp',
-    'cbr',
     'cbz',
     'epub',
     'flac',

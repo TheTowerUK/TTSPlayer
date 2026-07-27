@@ -6,7 +6,6 @@ const _expectedExtensions = [
   'aac',
   'avi',
   'bmp',
-  'cbr',
   'cbz',
   'epub',
   'flac',
@@ -33,7 +32,7 @@ const _expectedExtensions = [
 void main() {
   test('SupportedExtensions matches indexer including book/comic', () {
     expect(SupportedExtensions.all, _expectedExtensions);
-    for (final ext in ['pdf', 'epub', 'cbz', 'cbr']) {
+    for (final ext in ['pdf', 'epub', 'cbz']) {
       expect(
         SupportedExtensions.all,
         contains(ext),

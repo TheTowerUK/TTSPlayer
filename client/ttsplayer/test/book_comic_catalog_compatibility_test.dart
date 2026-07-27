@@ -14,8 +14,8 @@ void main() {
   group('SupportedExtensions book/comic', () {
     test('includes required comic and book formats', () {
       expect(SupportedExtensions.book, containsAll(['pdf', 'epub']));
-      expect(SupportedExtensions.comic, containsAll(['cbz', 'cbr']));
-      expect(SupportedExtensions.all, containsAll(['pdf', 'epub', 'cbz', 'cbr']));
+      expect(SupportedExtensions.comic, containsAll(['cbz']));
+      expect(SupportedExtensions.all, containsAll(['pdf', 'epub', 'cbz']));
     });
 
     test('categoryFor classifies book and comic extensions', () {
@@ -42,8 +42,12 @@ void main() {
         MediaKind.book,
       );
       expect(
-        inferMediaKind(filePath: r'Y:\Media\Comics\a.cbr', rawKind: null),
+        inferMediaKind(filePath: r'Y:\Media\Comics\a.cbr', rawKind: 'comic'),
         MediaKind.comic,
+      );
+      expect(
+        inferMediaKind(filePath: r'Y:\Media\Comics\a.cbr', rawKind: null),
+        MediaKind.unknown,
       );
     });
 
@@ -103,7 +107,7 @@ void main() {
       expect(kinds, contains(MediaKind.audio));
       expect(
         catalog.supportedExtensions,
-        containsAll(['pdf', 'epub', 'cbz', 'cbr']),
+        containsAll(['pdf', 'epub', 'cbz']),
       );
     });
 

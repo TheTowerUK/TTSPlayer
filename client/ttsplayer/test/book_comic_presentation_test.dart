@@ -159,7 +159,7 @@ void main() {
   });
 
   group('Artwork placeholders', () {
-    test('pdf/epub map to literature; cbz/cbr map to comics', () {
+    test('pdf/epub map to literature; cbz maps to comics', () {
       final artwork = ArtworkService(fileExists: (_) => false);
       expect(
         artwork.visualKindForExtension('pdf'),
@@ -170,7 +170,7 @@ void main() {
         LibraryVisualKind.literature,
       );
       expect(artwork.visualKindForExtension('cbz'), LibraryVisualKind.comics);
-      expect(artwork.visualKindForExtension('cbr'), LibraryVisualKind.comics);
+      expect(artwork.visualKindForExtension('cbr'), LibraryVisualKind.unknown);
     });
   });
 

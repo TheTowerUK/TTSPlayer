@@ -1,5 +1,6 @@
 import '../../../models/catalog.dart';
 import '../../../models/media_item.dart';
+import '../../comics/archive/comic_archive_opener.dart';
 import '../models/reading_location_payload.dart';
 import '../models/reading_progress_record.dart';
 import '../models/reading_progress_policy.dart';
@@ -10,7 +11,7 @@ enum ContinueReadingAvailability {
   missing,
   unavailable,
   restricted,
-  cbrToolingUnavailable,
+  unsupportedComicFormat,
 }
 
 /// Catalogue-backed Continue Reading row (M6.5).
@@ -36,11 +37,7 @@ class ContinueReadingEntry {
 
 /// Joins persisted reading progress with the current catalogue (M6.5).
 class ContinueReadingProjection {
-  const ContinueReadingProjection({
-    this.cbrToolingAvailable = true,
-  });
-
-  final bool cbrToolingAvailable;
+  const ContinueReadingProjection();
 
   List<ContinueReadingEntry> build({
     required Catalog catalog,
@@ -86,12 +83,17 @@ class ContinueReadingProjection {
         _ => ContinueReadingAvailability.unavailable,
       };
     }
-    if (item.isComic &&
-        item.filePath.toLowerCase().endsWith('.cbr') &&
-        !cbrToolingAvailable) {
-      return ContinueReadingAvailability.cbrToolingUnavailable;
+    if (item.isComic && !_isSupportedComic(item)) {
+      return ContinueReadingAvailability.unsupportedComicFormat;
     }
     return ContinueReadingAvailability.available;
+  }
+
+  bool _isSupportedComic(MediaItem item) {
+    final dot = item.filePath.lastIndexOf('.');
+    if (dot < 0 || dot == item.filePath.length - 1) return false;
+    final ext = item.filePath.substring(dot + 1);
+    return isSupportedComicArchiveExtension(ext);
   }
 
   String? _unavailabilityReason(
@@ -103,8 +105,7 @@ class ContinueReadingProjection {
       ContinueReadingAvailability.unavailable =>
         'This item is currently unavailable.',
       ContinueReadingAvailability.restricted => 'Access to this item is restricted.',
-      ContinueReadingAvailability.cbrToolingUnavailable =>
-        'CBR reading requires local UnRAR tooling.',
+      ContinueReadingAvailability.unsupportedComicFormat => kCbrConversionGuidance,
       ContinueReadingAvailability.available => null,
     };
   }
@@ -118,9 +119,9 @@ class ContinueReadingProjection {
         :final spineCountAtSave,
         :final chapterTitle,
       ) =>
-        chapterTitle != null && chapterTitle.isNotEmpty
-            ? chapterTitle
-            : 'Chapter ${spineIndex + 1} of $spineCountAtSave',
+        chapterTitle?.isNotEmpty == true
+            ? chapterTitle!
+            : 'Section ${spineIndex + 1} of $spineCountAtSave',
       ComicReadingLocationPayload(:final pageIndex, :final pageCountAtSave) =>
         'Page ${pageIndex + 1} of $pageCountAtSave',
     };

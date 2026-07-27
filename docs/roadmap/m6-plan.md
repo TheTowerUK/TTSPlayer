@@ -1,13 +1,13 @@
 # M6 — Books & Comics
 
-**Status:** **IN PROGRESS** — Phase 6.3 **In Progress** (Gate 1 Technical Pass; redistribution blocked); Phase 6.6 complete; **M6 blocked** pending publisher/legal confirmation  
+**Status:** **IN PROGRESS** — Phase 6.3 ✅ **Complete** (CBZ-only); Phase 6.6 complete; M6 closure audit pending  
 **CBR production path:** Official **UnRAR64.dll** FFI — **Technical Pass**; bundled redistribution **Awaiting publisher/legal confirmation**
 **Branch:** `m6-development`  
 **Development version:** `v0.7.0-dev` (proposed; app remains `0.6.0+1` until release)  
 **Predecessor:** M5 — tags `v0.6.0` / `m5-complete` (2026-07-24)  
 **Phase 6.1:** ✅ Complete (2026-07-24) — catalogue v4 / books & comics indexing  
 **Phase 6.2:** ✅ Complete (2026-07-24) — browse / search / detail presentation (no readers)  
-**Phase 6.3:** **In Progress** — Gate 1 Technical Pass (UnRAR64.dll); ADR-026 **Proposed**; bundled redistribution **blocking** closure.
+**Phase 6.3:** ✅ **Complete** — CBZ-only comic reader; ADR-026 **Accepted**; CBR removed from production scope.
 
 → [Books & comics architecture](../architecture/books-comics.md)  
 → [CBR/RAR evaluation](../architecture/cbr-rar-evaluation.md)  
@@ -105,7 +105,7 @@ M6 extends TTSPlayer from a **video + music** personal media application into a 
 | **6.0** | Planning and Architecture | ✅ Complete |
 | **6.1** | Catalogue schema, media kinds, indexer formats (+ RAR/CBR provisional preferred) | ✅ **Complete** |
 | **6.2** | Books & comics library browsing / presentation | ✅ Complete |
-| **6.3** | Comic archive reader (CBZ and CBR required) | **In Progress** — implementation checkpoint; Conditional-pass; UnRAR redistribution blocking closure |
+| **6.3** | Comic archive reader (CBZ) | ✅ **Complete** — CBZ production format; CBR removed |
 | **6.4** | Book document reader (PDF/EPUB) | ✅ **Complete** (2026-07-26) |
 | **6.5** | Reading progress and Continue Reading | **Complete** (2026-07-27) — persistence, Continue Reading, diagnostics |
 | **6.6** | Performance, diagnostics, and Windows runtime validation | ✅ Complete (2026-07-27) — lazy CBZ/EPUB, cache bounds, reader diagnostics, UX/a11y matrix |
@@ -227,73 +227,38 @@ M6 extends TTSPlayer from a **video + music** personal media application into a 
 
 ---
 
-### Phase 6.3 — Comic archive reader (CBZ/CBR)
+### Phase 6.3 — Comic archive reader (CBZ)
 
-**Status:** **In Progress** (implementation checkpoint, 2026-07-25). Gate 0 Candidate E = **Conditional pass**. ADR-026 remains **Proposed** (comic reader architecture provisionally validated). Production redistribution of `UnRAR.exe` remains **unresolved/blocking** — Phase 6.3 Definition of Done is **not complete**.
+**Status:** ✅ **Complete** (2026-07-27). ADR-026 **Accepted** — CBZ-only production comic format. CBR/RAR removed from scope; external conversion + rescan required for legacy libraries.
 
 **Checkpoint record:**
 
 | Item | Status |
 |---|---|
-| CBZ reader | Fully implemented; runtime validated |
-| CBR reader | Technically implemented; locally validated with approved UnRAR; production distribution **blocked** |
-| Missing CBR tooling | Production controlled unavailable (not test-only) |
-| Unicode entry names | Fixture-set validation only; broader Unicode follow-up |
-| Phase 6.3 DoD | **Open** — redistribution approval and remaining checklist items |
+| CBZ reader | Production format; runtime validated |
+| CBR reader | **Removed from production scope** — conversion guidance in UI |
+| Legacy `.cbr` in catalogue | Open Comic disabled; Continue Reading shows conversion guidance |
+| UnRAR / native RAR dependency | **Removed** — no DLL, CLI, or packaging hooks |
 
-**Objective:** Open **both** `.cbz` and `.cbr` comic archives in a dedicated paged reader on Windows, with graceful failure for bad archives.
-
-**Gate 0 (blocking — before reader Accept):**
-
-1. Minimal Windows **Release** spike with a RAR stack that builds on MSVC (fallback after `package:unrar` Fail)
-2. Correct native library / binary bundling for Release
-3. List a representative CBR without full extraction
-4. Extract or stream selected image entries
-5. Validate **RAR4 and RAR5** fixtures
-6. Test corrupt, encrypted, and multi-volume fixtures (graceful failure)
-7. Confirm licensing and redistribution acceptability
-8. Confirm acceptable memory behaviour for large archives (lazy/selective access; no unbounded full-archive RAM load)
-
-Failed Gate 0 → evaluate documented fallback from [cbr-rar-evaluation.md](../architecture/cbr-rar-evaluation.md). **Do not silently remove CBR.**
+**Objective:** Open `.cbz` comic archives in a dedicated paged reader on Windows, with graceful failure for bad archives.
 
 **Scope:**
 
-- Dedicated comic reader surface (ADR-026)
-- **CBZ (ZIP)** page extraction and **CBR (RAR)** page extraction via the stack that **passes Gate 0** — both formats required
-- Next/previous page, scrubber/page indicator, fullscreen-friendly controls
+- Dedicated comic reader surface (ADR-026 Accepted)
+- **CBZ (ZIP)** page extraction via lazy in-process reader
+- Next/previous page, page indicator, fullscreen-friendly controls
+- Path-safety, natural ordering, bounded page cache (Phase 6.6)
 - Local + HTTPS file access via `MediaLocationResolver`
-- Failure states: missing file; corrupt archive; unsupported archive variant; encrypted archive; multi-volume archive — user-visible recovery, **no crash**, catalogue remainder unaffected
-- Windows runtime fixtures for both CBZ and CBR
-
-**Out of scope:** PDF/EPUB; dual-page advanced modes (unless trivial); download-to-cache redesign; music/video changes; loose image-folder “virtual comics”.
-
-**Architecture impact:** New reader module; RAR dependency packaging after Gate 0; temp extraction policy; memory bounds for large archives; extraction security controls.
-
-**Automated tests:** Archive open/parse unit tests for CBZ and CBR; widget tests for page nav; failure fixtures (corrupt, encrypted, multi-volume, unsupported).
-
-**Runtime:** Phase-specific opt-in Windows harness (name locked at 6.3 planning) covering open + page turn for **both** CBZ and CBR fixtures.
+- Failure states: missing file; corrupt/invalid ZIP; empty archive; unsafe entry paths — user-visible recovery, **no crash**
 
 **Definition of done:**
 
-- [x] Gate 0 checklist complete with evidence (Candidate E **Conditional pass** recorded; Candidate B Fail retained)
-- [ ] **Redistribution approval** for the exact shipping `UnRAR.exe` (identity + SHA-256) — **blocking** for production packaging / release distribution and **phase closure**
-- [ ] Validated UnRAR binary shipped only after redistribution approval, with `License.txt` + runtime SHA-256 gate
-- [x] Builds omit optional CBR native tool predictably when approved binary absent; adapter reports controlled CBR-unavailable (production path)
-- [x] Accept process-per-page + temp-dir selective extract for CBR (documented timeouts/bounds)
-- [x] Multi-volume and encrypted archives remain non-openable with taxonomy mapping
-- [ ] Unicode entry-name behaviour revalidated before claiming full Unicode comic support (fixture-set only so far)
-- [ ] Legal/policy review complete for any channel that distributes `UnRAR.exe` (incl. Store if applicable)
 - [x] User can open a **CBZ** from browse/detail and turn pages
-- [x] User can open a **CBR** from browse/detail and turn pages (when approved/local UnRAR present)
-- [x] Windows runtime validation passes for both CBZ and CBR fixtures (opt-in harness)
-- [x] Unsupported, encrypted, corrupt, or multi-volume archives fail gracefully (no crash; catalogue elsewhere unaffected)
-- [x] No writes to video/music preference keys
-- [x] Suite + Release build green with documented optional UnRAR dependency (exe absent in repo)
-- [ ] ADR-026 **Accepted** and Phase 6.3 marked complete (blocked by redistribution approval and remaining DoD)
-- [x] CBR remains in scope unless an explicit approved deferral document exists (none by default)
-- [ ] CBZ large-archive memory validated or replacement strategy chosen (Phase 6.6 action)
-
-**Dependencies:** Phase 6.2; Gate 0 Conditional pass (technical); **redistribution approval** before shipping UnRAR in production channels and closing Phase 6.3.
+- [x] Windows runtime validation passes for CBZ fixtures
+- [x] Unsupported/corrupt archives fail gracefully (no crash)
+- [x] Legacy CBR items show conversion guidance; Open Comic disabled
+- [x] No UnRAR dependency in build, packaging, or runtime
+- [x] ADR-026 **Accepted**; Phase 6.3 marked complete
 
 ---
 

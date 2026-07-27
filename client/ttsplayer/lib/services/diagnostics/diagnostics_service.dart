@@ -13,7 +13,6 @@ import '../../features/music/services/music_playback_session_restorer.dart';
 import '../../features/reading/services/reading_progress_coordinator.dart';
 import '../../features/reading/services/reading_progress_diagnostics_projection.dart';
 import '../../features/reading/services/reading_progress_repository.dart';
-import '../../features/comics/archive/cbr/cbr_backend_resolver.dart';
 import '../../features/reading/services/reader_session_telemetry.dart';
 import '../../features/books/reader/book_pdf_viewer_params.dart';
 import '../../features/search/search_service.dart';
@@ -114,7 +113,6 @@ class DiagnosticsService {
     final musicPlaybackSession = _captureMusicPlaybackSession();
     final readingProgress = _captureReadingProgress();
     final readerSession = _captureReaderSession();
-    final cbrBackend = await _captureCbrBackend();
     final library = _captureLibrary(catalogue);
 
     return RuntimeDiagnosticsSnapshot(
@@ -129,7 +127,6 @@ class DiagnosticsService {
       musicPlaybackSession: musicPlaybackSession,
       readingProgress: readingProgress,
       readerSession: readerSession,
-      cbrBackend: cbrBackend,
       library: library,
     );
   }
@@ -530,11 +527,9 @@ class DiagnosticsService {
       }
 
       final catalog = _catalogService.catalog;
-      final cbrToolingAvailable = CbrBackendResolver().isAvailable;
       final projection = ReadingProgressDiagnosticsProjection.build(
         repository: repository,
         catalog: catalog,
-        cbrToolingAvailable: cbrToolingAvailable,
       );
       final reconciliation = projection.lastReconciliation;
 
@@ -559,8 +554,9 @@ class DiagnosticsService {
         pdfRecordCount: projection.pdfRecordCount,
         epubRecordCount: projection.epubRecordCount,
         cbzRecordCount: projection.cbzRecordCount,
-        cbrRecordCount: projection.cbrRecordCount,
-        cbrUnavailableRecordCount: projection.cbrUnavailableRecordCount,
+        legacyCbrRecordCount: projection.legacyCbrRecordCount,
+        unsupportedComicFormatRecordCount:
+            projection.unsupportedComicFormatRecordCount,
         coordinatorAttached: coordinatorAttached,
         sessionActive: sessionActive,
         persistenceWarningPresent: persistenceWarningPresent,
@@ -570,41 +566,14 @@ class DiagnosticsService {
         reconciliationRemovedMissingCount: reconciliation?.removedMissingCount,
         reconciliationRemovedFormatMismatchCount:
             reconciliation?.removedFormatMismatchCount,
-        reconciliationCbrUnavailableRetainedCount:
-            reconciliation?.cbrUnavailableRetainedCount,
+        reconciliationUnsupportedComicFormatRetainedCount:
+            reconciliation?.unsupportedComicFormatRetainedCount,
         reconciliationPersistenceFailed: reconciliation?.persistenceFailed,
       );
     } catch (_) {
       return const ReadingProgressDiagnostics(
         status: DiagnosticSectionStatus.unavailable,
         repositoryInitialized: false,
-      );
-    }
-  }
-
-  Future<CbrBackendDiagnostics> _captureCbrBackend() async {
-    try {
-      final resolver = CbrBackendResolver();
-      final readerSnap = ReaderSessionTelemetry.instance.snapshot();
-      final snap = await resolver.snapshot(
-        activeArchiveHandleCount: readerSnap.cbrDllActiveHandles,
-        lastErrorClassification: readerSnap.lastCleanupResult,
-      );
-      return CbrBackendDiagnostics(
-        status: DiagnosticSectionStatus.complete,
-        backendType: snap.backendType.name,
-        backendAvailable: snap.available,
-        backendVersion: snap.backendVersion,
-        provenance: snap.provenance.name,
-        verificationResult: snap.verificationResult,
-        lastErrorClassification: snap.lastErrorClassification,
-        activeArchiveHandleCount: snap.activeArchiveHandleCount,
-        tempDirectoryResidueCount: readerSnap.cbrTempDirectoryCount,
-        licenceNoticePresent: snap.licenceNoticePresent,
-      );
-    } catch (_) {
-      return const CbrBackendDiagnostics(
-        status: DiagnosticSectionStatus.unavailable,
       );
     }
   }
@@ -629,8 +598,6 @@ class DiagnosticsService {
         pdfLimitRenderingCache: TtsPlayerPdfViewerPolicy.limitRenderingCache,
         pdfMaxImageBytesCachedOnMemory:
             TtsPlayerPdfViewerPolicy.maxImageBytesCachedOnMemory,
-        cbrProcessInvocations: snap.cbrProcessInvocations,
-        cbrTempDirectoryResidueCount: snap.cbrTempDirectoryCount,
       );
     } catch (_) {
       return const ReaderSessionDiagnostics(

@@ -15,7 +15,7 @@ enum LibraryFilter {
   /// Book extension items (`.pdf`, `.epub`); subfolders remain visible.
   books('books'),
 
-  /// Comic archive items (`.cbz`, `.cbr`); subfolders remain visible.
+  /// Comic archive items (`.cbz`); subfolders remain visible.
   comics('comics');
 
   const LibraryFilter(this.storageKey);

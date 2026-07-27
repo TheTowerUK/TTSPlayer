@@ -5,7 +5,6 @@ Lightweight stdlib-only enrichment (ADR-025):
 - EPUB: OPF title / creator via zipfile + ElementTree
 - PDF: filename stem only (no heavy PDF parsing in Phase 6.1)
 - CBZ: optional ComicInfo.xml title / writer / series / page count
-- CBR: filename stem only (RAR extraction is a reader-phase concern)
 
 Failures always fall back to deterministic filename-based fields.
 """
@@ -179,7 +178,7 @@ def build_comic_metadata(file_path: Path) -> dict:
     """
     Emit optional comic enrichment fields.
 
-    CBZ may include ComicInfo.xml. CBR uses filename-only metadata in Phase 6.1.
+    CBZ may include ComicInfo.xml.
     """
     stem_title = clean_title(file_path.stem)
     suffix = file_path.suffix.lower()

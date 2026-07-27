@@ -67,8 +67,8 @@ void main() {
       expect(reading?.pdfRecordCount, 0);
       expect(reading?.epubRecordCount, 0);
       expect(reading?.cbzRecordCount, 0);
-      expect(reading?.cbrRecordCount, 0);
-      expect(reading?.cbrUnavailableRecordCount, 0);
+      expect(reading?.legacyCbrRecordCount, 0);
+      expect(reading?.unsupportedComicFormatRecordCount, 0);
     });
 
     test('maps mixed format aggregates and continue versus completed counts',
@@ -106,11 +106,11 @@ void main() {
       expect(reading?.pdfRecordCount, 2);
       expect(reading?.epubRecordCount, 1);
       expect(reading?.cbzRecordCount, 1);
-      expect(reading?.cbrRecordCount, 1);
+      expect(reading?.legacyCbrRecordCount, 1);
       expect(reading?.coordinatorAttached, isTrue);
     });
 
-    test('counts CBR records unavailable when tooling is absent', () async {
+    test('counts unsupported comic format records', () async {
       final repository = await _repositoryWithRecords([
         phase65ComicRecord(
           mediaId: 'comic-cbr',
@@ -120,13 +120,14 @@ void main() {
         ),
       ]);
       final service = await buildDiagnosticsHarness(
+        catalog: phase65ReadingCatalog(),
         readingProgressRepository: repository,
       );
 
       final reading = (await service.captureSnapshot()).readingProgress;
 
-      expect(reading?.cbrRecordCount, 1);
-      expect(reading?.cbrUnavailableRecordCount, 1);
+      expect(reading?.legacyCbrRecordCount, 1);
+      expect(reading?.unsupportedComicFormatRecordCount, 1);
     });
 
     test('maps malformed-entry recovery count from last load', () async {
@@ -378,7 +379,8 @@ void main() {
           findsOneWidget);
       expect(find.byKey(const Key('diagnostics_reading_progress_continue')),
           findsOneWidget);
-      expect(find.byKey(const Key('diagnostics_reading_progress_cbr_unavailable')),
+      expect(find.byKey(
+          const Key('diagnostics_reading_progress_unsupported_comic_format')),
           findsOneWidget);
 
       final stored = tester.widget<SelectableText>(

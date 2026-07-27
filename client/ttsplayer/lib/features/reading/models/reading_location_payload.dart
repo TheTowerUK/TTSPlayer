@@ -198,8 +198,7 @@ ReadingReaderFormat? readerFormatForBook(BookFormat format) =>
 ReadingReaderFormat? readerFormatForComicExtension(String extension) {
   final lower = extension.toLowerCase();
   return switch (lower) {
-    'cbz' => ReadingReaderFormat.cbz,
-    'cbr' => ReadingReaderFormat.cbr,
+    'cbz' || 'zip' => ReadingReaderFormat.cbz,
     _ => null,
   };
 }

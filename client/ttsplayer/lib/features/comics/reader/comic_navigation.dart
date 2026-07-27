@@ -8,7 +8,6 @@ import '../../reading/reading_navigation.dart';
 import '../../reading/services/reading_progress_coordinator.dart';
 import '../../reading/services/reading_progress_repository.dart';
 import '../archive/comic_archive_errors.dart';
-import '../archive/cbr/cbr_backend_resolver.dart';
 import '../archive/comic_archive_opener.dart';
 import 'comic_reader_screen.dart';
 
@@ -21,11 +20,24 @@ Future<void> openComicReaderScreen(
   if (!item.isComic) return;
   if (!item.status.isPlayable) return;
 
+  final ext = _extension(item.filePath);
+  if (!isSupportedComicArchiveExtension(ext)) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          ext == 'cbr' || ext == 'rar'
+              ? kCbrConversionGuidance
+              : 'This comic format is not supported. Use CBZ and rescan the library.',
+        ),
+        action: SnackBarAction(label: 'Dismiss', onPressed: () {}),
+      ),
+    );
+    return;
+  }
+
   final resolver = context.read<MediaLocationResolver>();
-  final opener = ComicArchiveOpener(
-    mediaLocationResolver: resolver,
-    cbrBackendResolver: CbrBackendResolver(),
-  );
+  final opener = ComicArchiveOpener(mediaLocationResolver: resolver);
 
   try {
     final source = opener.openItem(item);
@@ -41,8 +53,8 @@ Future<void> openComicReaderScreen(
     );
 
     if (startFromBeginning && context.mounted) {
-      final ext = _extension(item.filePath);
-      final format = readerFormatForComicExtension(ext) ?? ReadingReaderFormat.cbz;
+      final format =
+          readerFormatForComicExtension(ext) ?? ReadingReaderFormat.cbz;
       final coordinator = context.read<ReadingProgressCoordinator>();
       coordinator.beginSession(
         item: item,

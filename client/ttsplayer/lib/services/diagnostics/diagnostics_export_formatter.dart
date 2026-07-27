@@ -561,13 +561,13 @@ String formatDiagnosticsExport(RuntimeDiagnosticsSnapshot snapshot) {
     );
     _writeLine(
       buffer,
-      'CBR record count',
-      _formatInt(readingProgress.cbrRecordCount),
+      'Legacy CBR record count',
+      _formatInt(readingProgress.legacyCbrRecordCount),
     );
     _writeLine(
       buffer,
-      'CBR records unavailable (tooling absent)',
-      _formatInt(readingProgress.cbrUnavailableRecordCount),
+      'Unsupported comic format record count',
+      _formatInt(readingProgress.unsupportedComicFormatRecordCount),
     );
     _writeLine(
       buffer,
@@ -611,8 +611,8 @@ String formatDiagnosticsExport(RuntimeDiagnosticsSnapshot snapshot) {
     );
     _writeLine(
       buffer,
-      'Reconciliation CBR unavailable retained count',
-      _formatInt(readingProgress.reconciliationCbrUnavailableRetainedCount),
+      'Reconciliation unsupported comic format retained count',
+      _formatInt(readingProgress.reconciliationUnsupportedComicFormatRetainedCount),
     );
     _writeLine(
       buffer,
@@ -697,58 +697,6 @@ String formatDiagnosticsExport(RuntimeDiagnosticsSnapshot snapshot) {
       buffer,
       'PDF max image bytes cached on memory',
       _formatInt(readerSession.pdfMaxImageBytesCachedOnMemory),
-    );
-    _writeLine(
-      buffer,
-      'CBR process invocations (session aggregate)',
-      _formatInt(readerSession.cbrProcessInvocations),
-    );
-    _writeLine(
-      buffer,
-      'CBR temp directory residue count',
-      _formatInt(readerSession.cbrTempDirectoryResidueCount),
-    );
-  });
-
-  final cbrBackend = snapshot.cbrBackend;
-  _writeSection(buffer, 'CBR backend', () {
-    if (cbrBackend == null) {
-      _writeLine(buffer, 'Status', 'Unavailable');
-      return;
-    }
-    _writeLine(buffer, 'Status', _sectionStatusLabel(cbrBackend.status));
-    _writeLine(buffer, 'Backend type', cbrBackend.backendType);
-    _writeLine(
-      buffer,
-      'Backend available',
-      _formatBool(cbrBackend.backendAvailable),
-    );
-    _writeLine(buffer, 'Backend version', cbrBackend.backendVersion);
-    _writeLine(buffer, 'Provenance', cbrBackend.provenance);
-    _writeLine(
-      buffer,
-      'Verification result',
-      cbrBackend.verificationResult,
-    );
-    _writeLine(
-      buffer,
-      'Last error classification',
-      cbrBackend.lastErrorClassification,
-    );
-    _writeLine(
-      buffer,
-      'Active archive handle count',
-      _formatInt(cbrBackend.activeArchiveHandleCount),
-    );
-    _writeLine(
-      buffer,
-      'Temp directory residue count',
-      _formatInt(cbrBackend.tempDirectoryResidueCount),
-    );
-    _writeLine(
-      buffer,
-      'Licence notice present',
-      _formatBool(cbrBackend.licenceNoticePresent),
     );
   });
 

@@ -24,11 +24,6 @@ class ReaderSessionTelemetry {
   int _epubCacheEntryCount = 0;
   int _epubCacheEstimatedBytes = 0;
 
-  int _cbrProcessInvocations = 0;
-  int _cbrTempDirectoryCount = 0;
-  int _cbrDllActiveHandles = 0;
-  String? _cbrBackendType;
-
   void recordReaderOpen({
     required ReadingReaderFormat format,
     required Duration openDuration,
@@ -67,22 +62,6 @@ class ReaderSessionTelemetry {
     _epubCacheEstimatedBytes = estimatedBytes;
   }
 
-  void updateCbrSession({
-    required int processInvocations,
-    required int tempDirectoryCount,
-  }) {
-    _cbrProcessInvocations = processInvocations;
-    _cbrTempDirectoryCount = tempDirectoryCount;
-  }
-
-  void recordCbrDllHandles(int handleCount) {
-    _cbrDllActiveHandles = handleCount;
-  }
-
-  void recordCbrBackendType(String backendType) {
-    _cbrBackendType = backendType;
-  }
-
   ReaderSessionTelemetrySnapshot snapshot() {
     return ReaderSessionTelemetrySnapshot(
       lastReaderFormat: _lastReaderFormat?.name,
@@ -97,10 +76,6 @@ class ReaderSessionTelemetry {
       epubCacheMaxBytes: _epubCacheMaxBytes,
       epubCacheEntryCount: _epubCacheEntryCount,
       epubCacheEstimatedBytes: _epubCacheEstimatedBytes,
-      cbrProcessInvocations: _cbrProcessInvocations,
-      cbrTempDirectoryCount: _cbrTempDirectoryCount,
-      cbrDllActiveHandles: _cbrDllActiveHandles,
-      cbrBackendType: _cbrBackendType,
     );
   }
 
@@ -114,10 +89,6 @@ class ReaderSessionTelemetry {
     _comicCacheEstimatedBytes = 0;
     _epubCacheEntryCount = 0;
     _epubCacheEstimatedBytes = 0;
-    _cbrProcessInvocations = 0;
-    _cbrTempDirectoryCount = 0;
-    _cbrDllActiveHandles = 0;
-    _cbrBackendType = null;
   }
 }
 
@@ -135,10 +106,6 @@ class ReaderSessionTelemetrySnapshot {
     required this.epubCacheMaxBytes,
     required this.epubCacheEntryCount,
     required this.epubCacheEstimatedBytes,
-    required this.cbrProcessInvocations,
-    required this.cbrTempDirectoryCount,
-    this.cbrDllActiveHandles,
-    this.cbrBackendType,
   });
 
   final String? lastReaderFormat;
@@ -153,10 +120,6 @@ class ReaderSessionTelemetrySnapshot {
   final int epubCacheMaxBytes;
   final int epubCacheEntryCount;
   final int epubCacheEstimatedBytes;
-  final int cbrProcessInvocations;
-  final int cbrTempDirectoryCount;
-  final int? cbrDllActiveHandles;
-  final String? cbrBackendType;
 }
 
 /// Maps [MediaKind] + extension to [ReadingReaderFormat] label for telemetry.
@@ -174,8 +137,7 @@ ReadingReaderFormat? readerFormatForTelemetry({
   }
   if (kind == MediaKind.comic) {
     return switch (ext) {
-      'cbz' => ReadingReaderFormat.cbz,
-      'cbr' => ReadingReaderFormat.cbr,
+      'cbz' || 'zip' => ReadingReaderFormat.cbz,
       _ => null,
     };
   }

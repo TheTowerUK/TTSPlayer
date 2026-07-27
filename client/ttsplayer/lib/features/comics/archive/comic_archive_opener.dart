@@ -2,22 +2,28 @@ import 'dart:io';
 
 import '../../../models/media_item.dart';
 import '../../../services/media_access/media_location_resolver.dart';
-import 'cbz_zip_archive_source.dart';import 'cbr/cbr_backend_resolver.dart';
-import 'cbr_dll_archive_source.dart';
+import 'cbz_zip_archive_source.dart';
 import 'comic_archive_errors.dart';
 import 'comic_archive_source.dart';
 import 'comic_path_safety.dart';
+
+/// User-facing guidance when a legacy CBR/RAR comic is encountered.
+const String kCbrConversionGuidance =
+    'CBR archives are not supported. Convert this comic to ZIP/CBZ and rescan the library.';
+
+/// Returns true when [extension] is a production-supported comic archive type.
+bool isSupportedComicArchiveExtension(String extension) {
+  final ext = extension.toLowerCase();
+  return ext == 'cbz' || ext == 'zip';
+}
 
 /// Resolves a catalogue comic [MediaItem] to a [ComicArchiveSource].
 class ComicArchiveOpener {
   ComicArchiveOpener({
     required MediaLocationResolver mediaLocationResolver,
-    CbrBackendResolver? cbrBackendResolver,
-  })  : _resolver = mediaLocationResolver,
-        _cbrBackend = cbrBackendResolver ?? CbrBackendResolver();
+  }) : _resolver = mediaLocationResolver;
 
   final MediaLocationResolver _resolver;
-  final CbrBackendResolver _cbrBackend;
 
   /// Returns a local filesystem path suitable for archive APIs.
   String resolveLocalArchivePath(MediaItem item) {
@@ -65,25 +71,19 @@ class ComicArchiveOpener {
     final ext = archivePath.contains('.')
         ? archivePath.split('.').last.toLowerCase()
         : '';
-    if (ext == 'cbz' || ext == 'zip') {
+    if (isSupportedComicArchiveExtension(ext)) {
       return CbzZipArchiveSource(archivePath);
     }
     if (ext == 'cbr' || ext == 'rar') {
-      if (!_cbrBackend.isAvailable) {
-        throw ComicArchiveException(
-          kind: ComicArchiveErrorKind.cbrSupportUnavailable,
-          userMessage: 'CBR support unavailable in this installation.',
-          diagnosticDetail: 'cbr_backend_unavailable',
-        );
-      }
-      return openCbrArchiveSource(
-        archivePath: archivePath,
-        resolver: _cbrBackend,
+      throw ComicArchiveException(
+        kind: ComicArchiveErrorKind.unsupportedArchiveType,
+        userMessage: kCbrConversionGuidance,
+        diagnosticDetail: 'cbr_unsupported',
       );
     }
     throw ComicArchiveException(
       kind: ComicArchiveErrorKind.unsupportedArchiveType,
-      userMessage: 'This file is not a readable comic archive.',
+      userMessage: 'This file is not a readable CBZ comic archive.',
       diagnosticDetail: 'bad_ext:$ext',
     );
   }

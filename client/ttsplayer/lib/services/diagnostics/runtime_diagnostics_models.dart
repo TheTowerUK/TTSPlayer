@@ -334,8 +334,8 @@ class ReadingProgressDiagnostics {
     this.pdfRecordCount,
     this.epubRecordCount,
     this.cbzRecordCount,
-    this.cbrRecordCount,
-    this.cbrUnavailableRecordCount,
+    this.legacyCbrRecordCount,
+    this.unsupportedComicFormatRecordCount,
     this.coordinatorAttached,
     this.sessionActive,
     this.persistenceWarningPresent,
@@ -344,7 +344,7 @@ class ReadingProgressDiagnostics {
     this.reconciliationRefreshedCount,
     this.reconciliationRemovedMissingCount,
     this.reconciliationRemovedFormatMismatchCount,
-    this.reconciliationCbrUnavailableRetainedCount,
+    this.reconciliationUnsupportedComicFormatRetainedCount,
     this.reconciliationPersistenceFailed,
   });
 
@@ -366,8 +366,8 @@ class ReadingProgressDiagnostics {
   final int? pdfRecordCount;
   final int? epubRecordCount;
   final int? cbzRecordCount;
-  final int? cbrRecordCount;
-  final int? cbrUnavailableRecordCount;
+  final int? legacyCbrRecordCount;
+  final int? unsupportedComicFormatRecordCount;
   final bool? coordinatorAttached;
   final bool? sessionActive;
   final bool? persistenceWarningPresent;
@@ -376,7 +376,7 @@ class ReadingProgressDiagnostics {
   final int? reconciliationRefreshedCount;
   final int? reconciliationRemovedMissingCount;
   final int? reconciliationRemovedFormatMismatchCount;
-  final int? reconciliationCbrUnavailableRetainedCount;
+  final int? reconciliationUnsupportedComicFormatRetainedCount;
   final bool? reconciliationPersistenceFailed;
 }
 
@@ -400,8 +400,6 @@ class ReaderSessionDiagnostics {
     this.epubCacheEstimatedBytes,
     this.pdfLimitRenderingCache,
     this.pdfMaxImageBytesCachedOnMemory,
-    this.cbrProcessInvocations,
-    this.cbrTempDirectoryResidueCount,
   });
 
   final DiagnosticSectionStatus status;
@@ -419,37 +417,6 @@ class ReaderSessionDiagnostics {
   final int? epubCacheEstimatedBytes;
   final bool? pdfLimitRenderingCache;
   final int? pdfMaxImageBytesCachedOnMemory;
-  final int? cbrProcessInvocations;
-  final int? cbrTempDirectoryResidueCount;
-}
-
-/// CBR backend provenance and availability (M6 Phase 6.3 Gate 1).
-///
-/// No full DLL/executable paths, archive paths, or entry names.
-class CbrBackendDiagnostics {
-  const CbrBackendDiagnostics({
-    required this.status,
-    this.backendType,
-    this.backendAvailable,
-    this.backendVersion,
-    this.provenance,
-    this.verificationResult,
-    this.lastErrorClassification,
-    this.activeArchiveHandleCount,
-    this.tempDirectoryResidueCount,
-    this.licenceNoticePresent,
-  });
-
-  final DiagnosticSectionStatus status;
-  final String? backendType;
-  final bool? backendAvailable;
-  final String? backendVersion;
-  final String? provenance;
-  final String? verificationResult;
-  final String? lastErrorClassification;
-  final int? activeArchiveHandleCount;
-  final int? tempDirectoryResidueCount;
-  final bool? licenceNoticePresent;
 }
 
 /// Immutable point-in-time diagnostics snapshot (ADR-018).
@@ -466,7 +433,6 @@ class RuntimeDiagnosticsSnapshot {
     this.musicPlaybackSession,
     this.readingProgress,
     this.readerSession,
-    this.cbrBackend,
     this.library,
   });
 
@@ -481,6 +447,5 @@ class RuntimeDiagnosticsSnapshot {
   final MusicPlaybackSessionDiagnostics? musicPlaybackSession;
   final ReadingProgressDiagnostics? readingProgress;
   final ReaderSessionDiagnostics? readerSession;
-  final CbrBackendDiagnostics? cbrBackend;
   final LibraryDiagnostics? library;
 }

@@ -6,8 +6,6 @@ enum ComicArchiveErrorKind {
   emptyArchive,
   noReadableImages,
   unsafeEntryPath,
-  cbrSupportUnavailable,
-  cbrExecutableMismatch,
   encryptedArchive,
   multiVolumeUnsupported,
   pageExtractFailed,

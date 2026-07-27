@@ -94,14 +94,6 @@ class DocumentMetadataTests(unittest.TestCase):
             self.assertEqual(meta["series"], "City Watch")
             self.assertEqual(meta["page_count"], 22)
 
-    def test_cbr_uses_filename_only(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp) / "Hero_02.cbr"
-            path.write_bytes(b"Rar!")
-            meta = document_metadata.build_comic_metadata(path)
-            self.assertEqual(meta["title"], "Hero 02")
-            self.assertNotIn("author", meta)
-
 
 if __name__ == "__main__":
     unittest.main()

@@ -23,8 +23,6 @@ void main() {
       epubCacheEstimatedBytes: 512,
       pdfLimitRenderingCache: true,
       pdfMaxImageBytesCachedOnMemory: 48 * 1024 * 1024,
-      cbrProcessInvocations: 3,
-      cbrTempDirectoryResidueCount: 0,
     );
 
     final export = formatDiagnosticsExport(
