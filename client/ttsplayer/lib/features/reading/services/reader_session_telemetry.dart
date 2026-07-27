@@ -26,6 +26,8 @@ class ReaderSessionTelemetry {
 
   int _cbrProcessInvocations = 0;
   int _cbrTempDirectoryCount = 0;
+  int _cbrDllActiveHandles = 0;
+  String? _cbrBackendType;
 
   void recordReaderOpen({
     required ReadingReaderFormat format,
@@ -73,6 +75,14 @@ class ReaderSessionTelemetry {
     _cbrTempDirectoryCount = tempDirectoryCount;
   }
 
+  void recordCbrDllHandles(int handleCount) {
+    _cbrDllActiveHandles = handleCount;
+  }
+
+  void recordCbrBackendType(String backendType) {
+    _cbrBackendType = backendType;
+  }
+
   ReaderSessionTelemetrySnapshot snapshot() {
     return ReaderSessionTelemetrySnapshot(
       lastReaderFormat: _lastReaderFormat?.name,
@@ -89,6 +99,8 @@ class ReaderSessionTelemetry {
       epubCacheEstimatedBytes: _epubCacheEstimatedBytes,
       cbrProcessInvocations: _cbrProcessInvocations,
       cbrTempDirectoryCount: _cbrTempDirectoryCount,
+      cbrDllActiveHandles: _cbrDllActiveHandles,
+      cbrBackendType: _cbrBackendType,
     );
   }
 
@@ -104,6 +116,8 @@ class ReaderSessionTelemetry {
     _epubCacheEstimatedBytes = 0;
     _cbrProcessInvocations = 0;
     _cbrTempDirectoryCount = 0;
+    _cbrDllActiveHandles = 0;
+    _cbrBackendType = null;
   }
 }
 
@@ -123,6 +137,8 @@ class ReaderSessionTelemetrySnapshot {
     required this.epubCacheEstimatedBytes,
     required this.cbrProcessInvocations,
     required this.cbrTempDirectoryCount,
+    this.cbrDllActiveHandles,
+    this.cbrBackendType,
   });
 
   final String? lastReaderFormat;
@@ -139,6 +155,8 @@ class ReaderSessionTelemetrySnapshot {
   final int epubCacheEstimatedBytes;
   final int cbrProcessInvocations;
   final int cbrTempDirectoryCount;
+  final int? cbrDllActiveHandles;
+  final String? cbrBackendType;
 }
 
 /// Maps [MediaKind] + extension to [ReadingReaderFormat] label for telemetry.

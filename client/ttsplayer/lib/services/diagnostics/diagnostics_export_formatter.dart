@@ -710,6 +710,48 @@ String formatDiagnosticsExport(RuntimeDiagnosticsSnapshot snapshot) {
     );
   });
 
+  final cbrBackend = snapshot.cbrBackend;
+  _writeSection(buffer, 'CBR backend', () {
+    if (cbrBackend == null) {
+      _writeLine(buffer, 'Status', 'Unavailable');
+      return;
+    }
+    _writeLine(buffer, 'Status', _sectionStatusLabel(cbrBackend.status));
+    _writeLine(buffer, 'Backend type', cbrBackend.backendType);
+    _writeLine(
+      buffer,
+      'Backend available',
+      _formatBool(cbrBackend.backendAvailable),
+    );
+    _writeLine(buffer, 'Backend version', cbrBackend.backendVersion);
+    _writeLine(buffer, 'Provenance', cbrBackend.provenance);
+    _writeLine(
+      buffer,
+      'Verification result',
+      cbrBackend.verificationResult,
+    );
+    _writeLine(
+      buffer,
+      'Last error classification',
+      cbrBackend.lastErrorClassification,
+    );
+    _writeLine(
+      buffer,
+      'Active archive handle count',
+      _formatInt(cbrBackend.activeArchiveHandleCount),
+    );
+    _writeLine(
+      buffer,
+      'Temp directory residue count',
+      _formatInt(cbrBackend.tempDirectoryResidueCount),
+    );
+    _writeLine(
+      buffer,
+      'Licence notice present',
+      _formatBool(cbrBackend.licenceNoticePresent),
+    );
+  });
+
   final library = snapshot.library;
   _writeSection(buffer, 'Library', () {
     if (library == null) {

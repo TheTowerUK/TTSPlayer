@@ -102,7 +102,7 @@ Every ADR must include these headings (use [ADR-template.md](./ADR-template.md))
 |---|---|---|
 | [ADR-024](./ADR-024-book-comic-catalogue-schema-and-media-kind.md) | Book/Comic Catalogue Schema and Media Kind | **Proposed** (6.1 catalogue done; CBR stack **provisional** · [CBR eval](../cbr-rar-evaluation.md)) |
 | [ADR-025](./ADR-025-book-comic-identity-and-metadata-precedence.md) | Book/Comic Identity and Metadata Precedence | **Proposed** |
-| [ADR-026](./ADR-026-reader-surface-architecture.md) | Reader Surface Architecture | **Proposed** (comic + book readers provisionally validated; Phase 6.3 in progress; Phase 6.4 complete) |
+| [ADR-026](./ADR-026-reader-surface-architecture.md) | Reader Surface Architecture | **Proposed** (UnRAR64.dll preferred; Gate 1 Technical Pass; redistribution awaiting confirmation) |
 | [ADR-027](./ADR-027-reading-progress-and-continue-reading.md) | Reading Progress and Continue Reading | **Accepted** |
 
 ---

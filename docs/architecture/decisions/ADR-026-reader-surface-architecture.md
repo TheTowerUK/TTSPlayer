@@ -1,12 +1,24 @@
 # ADR-026: Reader Surface Architecture
 
-**Status:** Proposed — comic + book reader architecture **provisionally validated** (comic 2026-07-25, book 2026-07-26); Phase 6.3 **In Progress**; Phase 6.4 ✅ **Complete**  
-**Shipping constraint:** Production redistribution of `UnRAR.exe` remains **unresolved/blocking**; builds must not claim redistribution is approved.  
-**Date:** 2026-07-24 (proposed) / 2026-07-25 (comic reader checkpoint)  
-**Milestone:** M6 — Phase 6.3 (comics, in progress); Phase 6.4 (books) **complete**  
-**Related:** [books-comics.md](../books-comics.md) · [cbr-rar-evaluation.md](../cbr-rar-evaluation.md) · [ADR-023](./ADR-023-music-player-surface-architecture.md)
+**Status:** **Proposed** — preferred production CBR backend identified (UnRAR64.dll FFI, Gate 1 **Technical Pass**); Phase 6.3 **In Progress**; Phase 6.4 ✅ **Complete**  
+**Release condition (blocking Accept):** Bundled redistribution of official `UnRAR64.dll` **awaiting publisher/legal confirmation** — see [unrar-dll-provenance.md](../unrar-dll-provenance.md). Public Release packages must **not** include the DLL until confirmed.  
+**Date:** 2026-07-24 (proposed) / 2026-07-27 (Gate 1 technical checkpoint)  
+**Milestone:** M6 — Phase 6.3 **In Progress** (engineering complete; governance open); Phase 6.4 **complete**  
+**Related:** [books-comics.md](../books-comics.md) · [cbr-rar-evaluation.md](../cbr-rar-evaluation.md) · [unrar-dll-provenance.md](../unrar-dll-provenance.md) · [ADR-023](./ADR-023-music-player-surface-architecture.md)
 
 ---
+
+## Preferred candidate (not yet Accepted)
+
+**Candidate A — Official RARLab `UnRAR64.dll` via FFI** earned Gate 1 **Technical Pass** (2026-07-27).
+
+Unresolved before **Accept**:
+
+1. Explicit publisher or qualified legal confirmation for bundling the unmodified DLL + `license.txt` in TTSPlayer Windows installers/ZIP/Store packages.
+2. Release-layout packaging proof with bundled DLL (no environment override).
+3. Formal security-update ownership sign-off for production channels.
+
+Until resolved: ADR remains **Proposed**; Phase 6.3 remains **In Progress**; M6 closure **blocked**.
 
 ## Context
 
@@ -14,7 +26,7 @@ Video uses `video_player` / MediaKit on `PlayerScreen`. Music uses a dedicated l
 
 Reusing the video player for PDFs or forcing comics through the music shell would create brittle abstractions and regress A/V behaviour.
 
-Gate 0: `package:unrar` **Fail**; official UnRAR CLI **Conditional pass** (technical only).
+Gate 0: `package:unrar` **Fail**; official UnRAR CLI **Conditional pass** (dev/fallback only). Gate 1 (2026-07-27): official **UnRAR64.dll** FFI adapter — **Technical Pass**; bundled redistribution **awaiting confirmation**.
 
 ---
 
@@ -27,11 +39,11 @@ Gate 0: `package:unrar` **Fail**; official UnRAR CLI **Conditional pass** (techn
 3. Open actions route by `media_kind` from folder/detail/search→detail.
 4. All media access uses existing **MediaLocationResolver** / provider stack.
 5. Comic archives use an implementation-neutral `ComicArchiveSource`:
-   - CBZ: in-process ZIP (`package:archive`) — see memory caveat in [books-comics.md](../books-comics.md)
-   - CBR: replaceable CLI adapter (`CbrCliArchiveSource` → `UnrarCliCbrAdapter`) under Conditional-pass rules (no PATH fallback, hash gate, timeouts, owned temps)
+   - CBZ: in-process ZIP (`package:archive` / lazy reader — Phase 6.6)
+   - CBR: `CbrBackendResolver` selects **UnRAR64.dll FFI** (preferred) → **UnRAR CLI fallback** → controlled unavailable (no PATH)
 6. Comic reader validation checkpoint (not final Accept): Windows validation of **both** CBZ and CBR open + page navigation under documented Conditional-pass constraints.
 7. Failure modes: missing file; corrupt archive; unsupported archive variant; **encrypted** archive; **multi-volume** archive; missing CBR tooling → dismissible error with recovery (back / dismiss), **never crash**, and **never affect** the rest of the catalogue or other media kinds.
-8. **Shipping:** Do not redistribute `UnRAR.exe` in production/release channels until formal approval of the exact binary. Local/dev may use `PHASE_63_UNRAR_EXE` or an optional CMake copy when present.
+8. **Shipping:** Optional CMake install of `UnRAR64.dll` + `license.txt` when present under `third_party/unrar_dll/`. **Legal review required** before committing/shipping the binary. Dev harness: `PHASE_63_UNRAR_DLL`, `PHASE_63_UNRAR_EXE`.
 
 ---
 
@@ -40,10 +52,10 @@ Gate 0: `package:unrar` **Fail**; official UnRAR CLI **Conditional pass** (techn
 | Format | Status |
 |---|---|
 | **CBZ** | Fully implemented; runtime validated (unit + opt-in Windows harness) |
-| **CBR** | Technically implemented; locally validated when approved UnRAR present; **production distribution blocked** pending approval for the exact `UnRAR.exe` |
-| **Missing CBR tooling** | Production `ComicArchiveOpener` + `openComicReaderScreen` surface controlled unavailable state (not test-only) |
-| **Unicode entry names** | Validated for current fixture set only; broader archive-entry Unicode is follow-up |
-| **ADR Accept / Phase 6.3 close** | **Not yet** — redistribution approval and remaining DoD items block closure |
+| **CBR** | Gate 1 **Technical Pass** — `UnrarDllCbrAdapter`; CLI dev/fallback only; **bundled ship blocked** |
+| **Missing CBR tooling** | Production controlled unavailable (not test-only) |
+| **Unicode entry names** | Gate 1 fixture pass when generated locally; broader matrix in harness |
+| **ADR Accept / Phase 6.3 close** | **Not yet** — publisher/legal redistribution confirmation required |
 
 ### Provisional validation record (Phase 6.4 checkpoint — 2026-07-26)
 
@@ -93,5 +105,6 @@ Gate 0: `package:unrar` **Fail**; official UnRAR CLI **Conditional pass** (techn
 - [x] Widget + runtime smoke coverage for open/navigate/fail
 - [x] Release build documents optional UnRAR native dep (omit when absent)
 - [x] Book reader (Phase 6.4 checkpoint — PDF + EPUB; no persistence)
-- [ ] Production UnRAR redistribution approval — **blocking for shipping and final Accept**
+- [x] Production UnRAR **technical** path selected and validated (Gate 1 DLL)
+- [ ] Publisher/legal redistribution confirmation — **blocking for Accept and Phase 6.3 close**
 - [ ] Phase 6.3 Definition of Done complete (see [m6-plan.md](../../roadmap/m6-plan.md))

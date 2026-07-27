@@ -8,8 +8,8 @@ import '../../reading/reading_navigation.dart';
 import '../../reading/services/reading_progress_coordinator.dart';
 import '../../reading/services/reading_progress_repository.dart';
 import '../archive/comic_archive_errors.dart';
+import '../archive/cbr/cbr_backend_resolver.dart';
 import '../archive/comic_archive_opener.dart';
-import '../spike/unrar_cli_resolver.dart';
 import 'comic_reader_screen.dart';
 
 /// Opens the comic reader for [item], or shows a controlled error snackbar.
@@ -24,9 +24,7 @@ Future<void> openComicReaderScreen(
   final resolver = context.read<MediaLocationResolver>();
   final opener = ComicArchiveOpener(
     mediaLocationResolver: resolver,
-    cbrResolver: UnrarCliResolver(
-      expectedSha256Hex: UnrarCliResolver.gate0ExpectedSha256,
-    ),
+    cbrBackendResolver: CbrBackendResolver(),
   );
 
   try {

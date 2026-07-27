@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ttsplayer/features/comics/archive/comic_archive_errors.dart';
 import 'package:ttsplayer/features/comics/archive/comic_archive_opener.dart';
+import 'package:ttsplayer/features/comics/archive/cbr/cbr_backend_resolver.dart';
+import 'package:ttsplayer/features/comics/archive/cbr/unrar_dll/unrar_dll_loader.dart';
 import 'package:ttsplayer/features/comics/spike/unrar_cli_resolver.dart';
 import 'package:ttsplayer/models/media_item.dart';
 import 'package:ttsplayer/models/media_kind.dart';
@@ -76,11 +78,16 @@ void main() {
     await source.dispose();
   });
 
-  test('missing CBR executable fails before reader construction', () {
+  test('missing CBR backend fails before reader construction', () {
     final opener = ComicArchiveOpener(
       mediaLocationResolver: resolver,
-      cbrResolver: UnrarCliResolver(
-        overrideExecutablePath: r'C:\ttsplayer_missing\UnRAR.exe',
+      cbrBackendResolver: CbrBackendResolver(
+        dllLoader: UnrarDllLoader(
+          overrideDllPath: r'C:\ttsplayer_missing\UnRAR64.dll',
+        ),
+        cliResolver: UnrarCliResolver(
+          overrideExecutablePath: r'C:\ttsplayer_missing\UnRAR.exe',
+        ),
       ),
     );
     expect(

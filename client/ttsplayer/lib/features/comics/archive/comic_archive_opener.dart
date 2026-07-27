@@ -2,9 +2,8 @@ import 'dart:io';
 
 import '../../../models/media_item.dart';
 import '../../../services/media_access/media_location_resolver.dart';
-import '../spike/unrar_cli_resolver.dart';
-import 'cbz_zip_archive_source.dart';
-import 'cbr_cli_archive_source.dart';
+import 'cbz_zip_archive_source.dart';import 'cbr/cbr_backend_resolver.dart';
+import 'cbr_dll_archive_source.dart';
 import 'comic_archive_errors.dart';
 import 'comic_archive_source.dart';
 import 'comic_path_safety.dart';
@@ -13,12 +12,12 @@ import 'comic_path_safety.dart';
 class ComicArchiveOpener {
   ComicArchiveOpener({
     required MediaLocationResolver mediaLocationResolver,
-    UnrarCliResolver? cbrResolver,
+    CbrBackendResolver? cbrBackendResolver,
   })  : _resolver = mediaLocationResolver,
-        _cbrResolver = cbrResolver;
+        _cbrBackend = cbrBackendResolver ?? CbrBackendResolver();
 
   final MediaLocationResolver _resolver;
-  final UnrarCliResolver? _cbrResolver;
+  final CbrBackendResolver _cbrBackend;
 
   /// Returns a local filesystem path suitable for archive APIs.
   String resolveLocalArchivePath(MediaItem item) {
@@ -70,21 +69,16 @@ class ComicArchiveOpener {
       return CbzZipArchiveSource(archivePath);
     }
     if (ext == 'cbr' || ext == 'rar') {
-      // Probe CBR tooling before constructing a broken reader session.
-      final resolver = _cbrResolver ??
-          UnrarCliResolver(
-            expectedSha256Hex: UnrarCliResolver.gate0ExpectedSha256,
-          );
-      if (resolver.resolvePath() == null) {
+      if (!_cbrBackend.isAvailable) {
         throw ComicArchiveException(
           kind: ComicArchiveErrorKind.cbrSupportUnavailable,
           userMessage: 'CBR support unavailable in this installation.',
-          diagnosticDetail: 'unrar_cli_missing',
+          diagnosticDetail: 'cbr_backend_unavailable',
         );
       }
-      return CbrCliArchiveSource(
+      return openCbrArchiveSource(
         archivePath: archivePath,
-        resolver: resolver,
+        resolver: _cbrBackend,
       );
     }
     throw ComicArchiveException(

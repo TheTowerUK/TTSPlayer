@@ -124,3 +124,33 @@ if(EXISTS "${UNRAR_CLI_SOURCE}")
 else()
   message(STATUS "UnRAR CLI not present at third_party/unrar_cli/UnRAR.exe — omitting optional CBR native tool")
 endif()
+
+# Optional CBR support: official RARLab UnRAR64.dll in approved production subdirectory.
+# Staging ONLY: client/ttsplayer/third_party/unrar_dll/ (never _gate1_eval).
+# Do not ship until redistribution is formally approved.
+# See docs/architecture/unrar-dll-provenance.md
+set(UNRAR_DLL_STAGING_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../third_party/unrar_dll")
+set(UNRAR_DLL_SOURCE "${UNRAR_DLL_STAGING_DIR}/UnRAR64.dll")
+set(UNRAR_DLL_LICENSE "${UNRAR_DLL_STAGING_DIR}/license.txt")
+set(UNRAR_DLL_EXPECTED_SHA256 "894b7d2db8d6363eb12f30c7b89f48eab9e71963b8b438675bdd64c12dd59bcc")
+set(UNRAR_DLL_INSTALL_SUBDIR "unrar")
+
+if(EXISTS "${UNRAR_DLL_SOURCE}")
+  if(NOT EXISTS "${UNRAR_DLL_LICENSE}")
+    message(FATAL_ERROR "UnRAR64.dll staged but license.txt missing at ${UNRAR_DLL_LICENSE}. DLL and licence must be packaged together.")
+  endif()
+  file(SHA256 "${UNRAR_DLL_SOURCE}" UNRAR_DLL_ACTUAL_SHA256)
+  string(TOLOWER "${UNRAR_DLL_ACTUAL_SHA256}" UNRAR_DLL_ACTUAL_SHA256)
+  if(NOT "${UNRAR_DLL_ACTUAL_SHA256}" STREQUAL "${UNRAR_DLL_EXPECTED_SHA256}")
+    message(FATAL_ERROR "UnRAR64.dll SHA-256 mismatch. Expected ${UNRAR_DLL_EXPECTED_SHA256}, got ${UNRAR_DLL_ACTUAL_SHA256}. Update provenance or remove unexpected binary.")
+  endif()
+  message(STATUS "UnRAR64.dll verified — will install to ${UNRAR_DLL_INSTALL_SUBDIR}/ (optional CBR DLL support)")
+  install(FILES "${UNRAR_DLL_SOURCE}"
+    DESTINATION "${INSTALL_BUNDLE_LIB_DIR}/${UNRAR_DLL_INSTALL_SUBDIR}"
+    COMPONENT Runtime)
+  install(FILES "${UNRAR_DLL_LICENSE}"
+    DESTINATION "${INSTALL_BUNDLE_LIB_DIR}/${UNRAR_DLL_INSTALL_SUBDIR}"
+    COMPONENT Runtime)
+else()
+  message(STATUS "UnRAR64.dll not staged at third_party/unrar_dll/UnRAR64.dll — CBR DLL support omitted (non-CBR build OK)")
+endif()

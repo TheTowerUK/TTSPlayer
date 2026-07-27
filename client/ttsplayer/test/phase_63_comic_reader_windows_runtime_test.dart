@@ -12,6 +12,7 @@ import 'package:ttsplayer/features/comics/archive/comic_archive_opener.dart';
 import 'package:ttsplayer/features/comics/archive/comic_archive_errors.dart';
 import 'package:ttsplayer/features/comics/reader/comic_reader_controller.dart';
 import 'package:ttsplayer/features/comics/reader/comic_reader_screen.dart';
+import 'package:ttsplayer/features/comics/archive/cbr/cbr_backend_resolver.dart';
 import 'package:ttsplayer/features/comics/spike/unrar_cli_resolver.dart';
 import 'package:ttsplayer/models/media_item.dart';
 import 'package:ttsplayer/models/media_kind.dart';
@@ -185,9 +186,11 @@ void main() {
     }
     final opener = ComicArchiveOpener(
       mediaLocationResolver: resolver,
-      cbrResolver: UnrarCliResolver(
-        overrideExecutablePath: unrar,
-        expectedSha256Hex: UnrarCliResolver.gate0ExpectedSha256,
+      cbrBackendResolver: CbrBackendResolver(
+        cliResolver: UnrarCliResolver(
+          overrideExecutablePath: unrar,
+          expectedSha256Hex: UnrarCliResolver.gate0ExpectedSha256,
+        ),
       ),
     );
     final source = opener.openPath(fixture.path);
@@ -223,8 +226,10 @@ void main() {
   test('missing CBR executable is controlled', () async {
     final opener = ComicArchiveOpener(
       mediaLocationResolver: resolver,
-      cbrResolver: UnrarCliResolver(
-        overrideExecutablePath: r'C:\ttsplayer_missing\UnRAR.exe',
+      cbrBackendResolver: CbrBackendResolver(
+        cliResolver: UnrarCliResolver(
+          overrideExecutablePath: r'C:\ttsplayer_missing\UnRAR.exe',
+        ),
       ),
     );
     expect(
@@ -244,9 +249,11 @@ void main() {
     if (unrar == null || !File(unrar).existsSync()) return;
     final opener = ComicArchiveOpener(
       mediaLocationResolver: resolver,
-      cbrResolver: UnrarCliResolver(
-        overrideExecutablePath: unrar,
-        expectedSha256Hex: UnrarCliResolver.gate0ExpectedSha256,
+      cbrBackendResolver: CbrBackendResolver(
+        cliResolver: UnrarCliResolver(
+          overrideExecutablePath: unrar,
+          expectedSha256Hex: UnrarCliResolver.gate0ExpectedSha256,
+        ),
       ),
     );
     for (final name in ['encrypted.cbr', 'multivolume_missing_part.cbr']) {
