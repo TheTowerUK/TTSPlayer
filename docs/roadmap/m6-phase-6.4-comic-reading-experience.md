@@ -556,15 +556,107 @@ Active CBZ reader sessions expose: active flag, archive type, redacted item iden
 
 Windows runtime harness extension; final phase closure documentation.
 
-### Step 6 — Windows runtime and regression
+### Step 6 — Windows runtime and regression ✅ (implementation complete; pending review)
 
 | | |
 |---|---|
-| **Scope** | Extend phase 63 harness; full suite + analyze + Release build |
-| **Files** | `phase_63_comic_reader_windows_runtime_test.dart` |
-| **Tests** | Opt-in runtime + default CI suite |
-| **DoD** | Matrix pass; video/music suites unchanged |
-| **Exclusions** | Phase 7 work |
+| **Scope** | Extend Phase 6.3 opt-in harness for Phase 6.4C closure scenarios |
+| **Files** | `phase_63_comic_reader_windows_runtime_test.dart`, `phase_64c_comic_progress_test.dart` (session wiring regression), `comic_reader_screen.dart` (progress-session race fix) |
+| **Tests** | 13 opt-in runtime cases + default CI suite |
+| **DoD** | Matrix documented; runtime evidence recorded; no CBR/UnRAR |
+| **Exclusions** | Phase 7 closure sign-off |
+
+#### Runtime environment (2026-07-28)
+
+| Item | Value |
+|---|---|
+| OS | Windows 10.0.26200 |
+| Flutter | 3.44.4 (stable) |
+| Dart | 3.12.2 |
+| Build | `flutter build windows --release` → `build\windows\x64\runner\Release\ttsplayer.exe` ✅ |
+| Runtime command | `$env:PHASE_63_READER='1'; flutter test test/phase_63_comic_reader_windows_runtime_test.dart --tags phase63-reader` |
+| Runtime result | **Run 1:** 13 passed, 0 failed · **Run 2:** 13 passed, 0 failed |
+| Default suite | **1423 passed, 16 skipped** (includes opt-in skip when `PHASE_63_READER` unset) |
+| CBR / UnRAR | Not required |
+
+#### Runtime hardening notes (resolved before final runs)
+
+During harness extension, interim failures exposed and resolved:
+
+- progress coordinator provider wiring (`ChangeNotifierProvider` for coordinator);
+- a fast-open progress-session race when archive listing completed before coordinator binding (production fix + regression test);
+- deterministic async waits for production-path CBZ open and page-indicator readiness.
+
+These were fixed before the final successful Run 1 and Run 2 executions above. Interim development failures are not recorded as final validation results.
+
+#### Fixtures (runtime-generated under `%TEMP%`)
+
+| Fixture | Purpose |
+|---|---|
+| **Multi-page CBZ** (8 pages, byte-distinct `tinyPng`) | Ordering, navigation, restore, completion, diagnostics |
+| **Single-page CBZ** | Step 2 completion-on-close policy |
+| **Partially corrupt CBZ** (`page_001` valid, `page_002` invalid bytes, `page_003` valid) | Page-level failure placeholder |
+| **Invalid archive CBZ** (64 × `0x7F` bytes) | Controlled pre-open archive error (Phase 6.3 baseline retained) |
+
+#### Scenario matrix (C1–C34)
+
+| ID | Scenario | Classification |
+|---|---|---|
+| C1 | Production path opens valid CBZ | Automated runtime |
+| C2 | Page 1 / total indicator | Automated runtime |
+| C3 | Contain default fit mode | Automated runtime |
+| C4 | Chrome visible on open | Automated runtime |
+| C5 | Active telemetry: CBZ, redacted identity | Automated runtime |
+| C6 | Right Arrow forward | Automated runtime |
+| C7 | Left Arrow back | Automated runtime |
+| C8 | Home first page | Automated runtime |
+| C9 | End last page | Automated runtime |
+| C10 | Bounded at edges | Automated runtime |
+| C11 | Mouse wheel at base transform | Widget automated (`phase_64c_comic_reader_interaction_test.dart`, `debugWheelDelta`) |
+| C12 | Fit Width via toolbar | Automated runtime |
+| C13 | Fit Height via toolbar | Widget automated (`phase_64c_comic_reader_interaction_test.dart`; popup exceeds 800px test surface) |
+| C14 | Immersive toggle hides/restores chrome | Automated runtime |
+| C15 | Escape restores hidden chrome | Automated runtime |
+| C16 | Navigate + close flush | Automated runtime |
+| C17 | Reopen restores saved page | Automated runtime |
+| C18 | Close before debounce persists latest page | Automated runtime |
+| C19 | Final page completion | Automated runtime |
+| C20 | Completed comic excluded from Continue Reading | Automated runtime |
+| C21 | Read Again opens page 1 | Automated runtime |
+| C22 | Single-page not complete on open | Automated runtime |
+| C23 | Single-page completes on close | Automated runtime |
+| C24 | Single-page Read Again | Widget automated (`phase_64c_comic_progress_test.dart`) |
+| C25 | Open partially corrupt CBZ | Automated runtime |
+| C26 | Navigate to corrupt logical page | Automated runtime |
+| C27 | Page failure placeholder | Automated runtime |
+| C28 | Page indicator remains correct | Automated runtime |
+| C29 | Navigate to valid page after corrupt page | Widget automated (`phase_64c_comic_page_error_test.dart`) |
+| C30 | Retry safe on failed page | Automated runtime (retry control present) |
+| C31 | Close on failed page flushes logical progress | Automated runtime |
+| C32 | Active diagnostics fields | Automated runtime |
+| C33 | Export redaction (no temp paths) | Automated runtime |
+| C34 | Telemetry cleared after reader dispose | Automated runtime |
+| — | Invalid archive graceful error | Automated runtime (Phase 6.3 baseline) |
+| — | Debug-controller keyboard path | Support-hook validated (Phase 6.3 baseline retained) |
+
+#### Production paths exercised
+
+Real `ComicArchiveOpener`, lazy CBZ source, `ComicReaderController`, `ComicReaderScreen`, `ComicViewport`, `ReadingProgressRepository`, `ReadingProgressCoordinator`, `ReaderSessionTelemetry`, diagnostics export formatter, toolbar and keyboard routing.
+
+#### Runtime defect found and fixed
+
+**Progress session race:** when CBZ `open()` completed before `ReadingProgressCoordinator` was bound, `_ensureProgressSessionStarted()` could mark the session begun without calling `beginSession`, leaving progress writes disabled. Fixed by deferring `_progressSessionBegun` until `_coordinator` is non-null. Regression: `phase_64c_comic_progress_test.dart` — “fast CBZ open still begins coordinator session”.
+
+#### Known limitations
+
+- Native pointer-wheel dispatch under `flutter test` not asserted (C11).
+- Fit Height menu item clipped at default 800px surface height (C13).
+- Post-corrupt navigation to next valid page validated in widget tests with fake source (C29).
+- Visual zoom/pan smoothness: not required.
+
+#### Deferred to Step 7
+
+Formal phase closure sign-off and Definition of Done checklist completion.
 
 ### Step 7 — Closure documentation
 

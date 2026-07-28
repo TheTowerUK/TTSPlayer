@@ -109,6 +109,9 @@ class _ComicReaderScreenState extends State<ComicReaderScreen> {
     if (_progressSessionBegun || !_layoutReady || _controller.pageCount <= 0) {
       return;
     }
+    if (_coordinator == null) {
+      return;
+    }
     _progressSessionBegun = true;
     _beginProgressSession();
     _coordinator?.markLayoutReady();

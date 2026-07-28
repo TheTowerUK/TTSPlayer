@@ -1,8 +1,12 @@
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ttsplayer/features/comics/archive/comic_archive_opener.dart';
+import 'package:ttsplayer/features/comics/reader/comic_reader_screen.dart';
 import 'package:ttsplayer/features/music/services/music_listening_repository.dart';
 import 'package:ttsplayer/features/music/services/music_playback_session_repository.dart';
 import 'package:ttsplayer/features/reading/models/reading_location_payload.dart';
@@ -13,9 +17,13 @@ import 'package:ttsplayer/features/reading/services/continue_reading_projection.
 import 'package:ttsplayer/features/reading/services/reading_location_reconciliation.dart';
 import 'package:ttsplayer/features/reading/services/reading_progress_coordinator.dart';
 import 'package:ttsplayer/features/reading/services/reading_progress_repository.dart';
+import 'package:ttsplayer/models/media_item.dart';
 import 'package:ttsplayer/models/media_kind.dart';
+import 'package:ttsplayer/services/media_access/media_access_config.dart';
+import 'package:ttsplayer/services/media_access/media_location_resolver.dart';
 
 import 'support/book_comic_catalog_fixtures.dart';
+import 'support/comic_test_fixtures.dart';
 import 'support/reading_progress_test_support.dart';
 
 void main() {
@@ -651,6 +659,64 @@ void main() {
         repository.allRecords.map((r) => r.mediaKind).toSet(),
         {MediaKind.book, MediaKind.comic},
       );
+    });
+  });
+
+  group('Phase 6.4C progress session wiring', () {
+    testWidgets('fast CBZ open still begins coordinator session', (tester) async {
+      final tmp = Directory.systemTemp.createTempSync('tts_p64c_prog_');
+      addTearDown(() {
+        try {
+          if (tmp.existsSync()) tmp.deleteSync(recursive: true);
+        } catch (_) {}
+      });
+      final file = writeCbz(tmp, 'fast.cbz', {
+        'page_001.png': tinyPng(1),
+        'page_002.png': tinyPng(2),
+      });
+      SharedPreferences.setMockInitialValues({});
+      final repository = ReadingProgressRepository();
+      await repository.initialize();
+      final coordinator = ReadingProgressCoordinator(repository: repository);
+      addTearDown(coordinator.dispose);
+
+      final resolver = MediaLocationResolver(
+        config: MediaAccessConfig.defaults(),
+        isWindowsDesktop: Platform.isWindows,
+      );
+      final source = ComicArchiveOpener(mediaLocationResolver: resolver)
+          .openPath(file.path);
+      final item = MediaItem(
+        id: 'fast-comic',
+        title: 'Fast',
+        filePath: file.path,
+        mediaKindRaw: MediaKind.comic.name,
+        status: MediaItemStatus.available,
+      );
+
+      await tester.binding.setSurfaceSize(const Size(1280, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        ChangeNotifierProvider<ReadingProgressCoordinator>.value(
+          value: coordinator,
+          child: MaterialApp(
+            home: ComicReaderScreen(item: item, source: source),
+          ),
+        ),
+      );
+
+      var ready = false;
+      await tester.runAsync(() async {
+        for (var i = 0; i < 40; i++) {
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          await tester.pump();
+          if (coordinator.sessionActive) {
+            ready = true;
+            return;
+          }
+        }
+      });
+      expect(ready, isTrue);
     });
   });
 
