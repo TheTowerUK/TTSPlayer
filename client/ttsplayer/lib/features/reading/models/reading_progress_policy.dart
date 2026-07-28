@@ -24,4 +24,10 @@ abstract final class ReadingProgressPolicy {
 
   /// Minimum progress fraction before Continue Reading eligibility (non-start).
   static const minContinueReadingProgress = 0.02;
+
+  /// In-progress fraction for a single-page comic while the reader is open.
+  ///
+  /// Stays below [completionThreshold] until the reader closes after layout is
+  /// ready ([ReadingProgressCoordinator.onReaderClosed]).
+  static const singlePageComicInProgressFraction = 0.5;
 }

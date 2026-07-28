@@ -1,6 +1,6 @@
 # M6 Phase 6.4C — Comic Reading Experience Closure
 
-**Status:** Planning (2026-07-27) — **not started**  
+**Status:** Step 2 ✅ Complete (2026-07-28) — progress gap audit and comic validation tests
 **Branch:** `m6-development`  
 **Predecessor:** Phase 6.3 ✅ Complete (CBZ archive reader foundation)  
 **Related:** [m6-plan.md](./m6-plan.md) · [books-comics.md](../architecture/books-comics.md) · [ADR-026 Accepted](../architecture/decisions/ADR-026-reader-surface-architecture.md) · [ADR-027 Accepted](../architecture/decisions/ADR-027-reading-progress-and-continue-reading.md)
@@ -386,7 +386,7 @@ flutter test test/phase_63_comic_reader_windows_runtime_test.dart --tags phase63
 
 Add scenarios: persist → simulated relaunch restore; completion → Continue Reading exclusion; wheel navigation smoke.
 
-Optional: **`phase_64_comic_progress_windows_runtime_test.dart`** only if 6.3 harness becomes overcrowded — prefer extending 6.3 tag.
+Optional: **`phase_64c_comic_progress_test.dart`** for progress-only validation; extend **`phase_63_comic_reader_windows_runtime_test.dart`** for reader UX runtime (Step 6).
 
 ---
 
@@ -402,15 +402,50 @@ Optional: **`phase_64_comic_progress_windows_runtime_test.dart`** only if 6.3 ha
 | **DoD** | Stakeholder review; phase numbering note acknowledged |
 | **Exclusions** | No production code |
 
-### Step 2 — Progress gap audit and comic validation
+### Step 2 — Progress gap audit and comic validation ✅
 
 | | |
 |---|---|
 | **Scope** | Verify 6.5 comic paths; add missing unit tests for restore/clamp/completion |
-| **Files** | `reading_progress_*_test.dart`, `continue_reading_projection_test.dart` |
-| **Tests** | Page restore, count change, completion, isolation |
-| **DoD** | All comic progress unit tests green; gaps documented |
-| **Exclusions** | No new repository type |
+| **Files** | `phase_64c_comic_progress_test.dart`, `reading_progress_coordinator.dart`, `reading_progress_record.dart`, `reading_progress_policy.dart`, `reading_progress_test_support.dart` |
+| **Tests** | 33-scenario matrix in `phase_64c_comic_progress_test.dart` (31 automated cases + shared helpers) |
+| **DoD** | All comic progress unit tests green; gaps documented below |
+| **Exclusions** | No new repository type; no reader UI changes |
+
+#### Step 2 audit — existing behaviour confirmed
+
+| Area | Finding |
+|---|---|
+| Restore path | `openComicReaderScreen` → `resolveReadingRestore` → `ComicReaderScreen` restore via `ReadingProgressRestorePlan.comicLocation` |
+| Debounced save | `ComicReaderScreen._persistProgress` → `ReadingProgressCoordinator.onLocationChanged` (2 s debounce) |
+| Close flush | `onReaderClosed` drains debounce then flushes |
+| Multi-page completion | Last page fraction ≥ 0.95 marks complete immediately |
+| Continue Reading | Completed records excluded; legacy CBR → `unsupportedComicFormat` |
+| Isolation | `ttsplayer_reading_progress_v1` only; video/music keys untouched |
+| Reconciliation | Entry-name match, index clamp, document-changed fallback — covered in Phase 6.5 |
+
+#### Step 2 gaps fixed (production)
+
+| Gap | Fix |
+|---|---|
+| Single-page comic marked complete on open (`fractionForComic(0,1)==1.0`) | `fractionForComic` returns `singlePageComicInProgressFraction` (0.5) for one-page comics; completion on `onReaderClosed` after layout ready |
+| Completion cleared when navigating back from last page | Sticky completion: `session.completed \|\| isCompletedFraction(...)` until explicit restart |
+| Stale controller doc comment | Updated `comic_reader_controller.dart` |
+
+#### Step 2 single-page completion policy (confirmed)
+
+- **While open:** progress fraction stays at **0.5** (below 0.95 threshold); `completed` remains false.
+- **On close:** after layout ready, single-page comic is marked complete and flushed.
+- **Read Again:** `comic_navigation` calls `beginSession` + `onReaderRestarted` before opening reader (clears completion, page 0).
+
+#### Step 2 tests added
+
+- `test/phase_64c_comic_progress_test.dart` — restore/reconciliation, lifecycle, completion, isolation, legacy CBR projection.
+- `phase65BeginComicSession` helper in `reading_progress_test_support.dart`.
+
+#### Deferred to Step 3
+
+Fit modes, mouse wheel, tap zones, swipe, immersive chrome, zoom/pan input policy.
 
 ### Step 3 — Reader presentation and navigation
 

@@ -252,6 +252,9 @@ class ReadingProgressRecord {
 
   static double fractionForComic(int pageIndex, int pageCount) {
     if (pageCount <= 0) return 0;
+    if (pageCount == 1) {
+      return ReadingProgressPolicy.singlePageComicInProgressFraction;
+    }
     return ((pageIndex + 1) / pageCount).clamp(0.0, 1.0);
   }
 

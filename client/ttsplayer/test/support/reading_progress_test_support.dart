@@ -269,6 +269,39 @@ Future<void> phase65AssertIsolationMarkersUnchanged({
   }
 }
 
+void phase65BeginComicSession(
+  ReadingProgressCoordinator coordinator, {
+  required MediaItem item,
+  int pageIndex = 0,
+  int pageCount = 22,
+  String? entryName,
+  double? progressFraction,
+  ReadingReaderFormat archiveFormat = ReadingReaderFormat.cbz,
+}) {
+  final fraction = progressFraction ??
+      ReadingProgressRecord.fractionForComic(pageIndex, pageCount);
+  coordinator.beginSession(
+    item: item,
+    readerFormat: archiveFormat,
+    initialLocation: ComicReadingLocationPayload(
+      pageIndex: 0,
+      pageCountAtSave: pageCount,
+      archiveFormat: archiveFormat,
+    ),
+    progressFraction: 0,
+  );
+  coordinator.markLayoutReady();
+  coordinator.onLocationChanged(
+    location: ComicReadingLocationPayload(
+      pageIndex: pageIndex,
+      pageCountAtSave: pageCount,
+      entryName: entryName,
+      archiveFormat: archiveFormat,
+    ),
+    progressFraction: fraction,
+  );
+}
+
 void phase65BeginPdfSession(
   ReadingProgressCoordinator coordinator, {
   required MediaItem item,

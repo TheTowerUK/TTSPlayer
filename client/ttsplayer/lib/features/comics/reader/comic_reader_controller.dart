@@ -13,7 +13,7 @@ enum ComicReaderLoadState {
   error,
 }
 
-/// Session state for a single open comic (no Phase 6.5 progress persistence).
+/// Session state for a single open comic (page navigation and cache).
 class ComicReaderController extends ChangeNotifier {
   ComicReaderController({
     required ComicArchiveSource source,

@@ -99,7 +99,7 @@ class ReadingProgressCoordinator extends ChangeNotifier {
     if (!session.layoutReady && !force) return;
 
     final normalizedFraction = progressFraction.clamp(0.0, 1.0);
-    final completed =
+    final completed = session.completed ||
         ReadingLocationReconciliation.isCompletedFraction(normalizedFraction);
 
     if (_locationsEquivalent(session.location, location) &&
@@ -132,9 +132,23 @@ class ReadingProgressCoordinator extends ChangeNotifier {
     if (_disposed) return;
     await drainPendingWrites();
     if (_session != null && !_session!.completed) {
+      _maybeCompleteSinglePageComicOnClose();
+      await _flushNow(reason: ReadingProgressFlushReason.readerClose);
+    } else if (_session != null && _session!.completed) {
       await _flushNow(reason: ReadingProgressFlushReason.readerClose);
     }
     _session = null;
+  }
+
+  /// Single-page comics complete on close after layout was ready — not on open.
+  void _maybeCompleteSinglePageComicOnClose() {
+    final session = _session;
+    if (session == null || !session.layoutReady) return;
+    final location = session.location;
+    if (location is! ComicReadingLocationPayload) return;
+    if (location.pageCountAtSave != 1) return;
+    session.completed = true;
+    session.progressFraction = 1.0;
   }
 
   Future<void> onReaderRestarted() async {
