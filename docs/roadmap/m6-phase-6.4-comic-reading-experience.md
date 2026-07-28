@@ -1,6 +1,6 @@
 # M6 Phase 6.4C — Comic Reading Experience Closure
 
-**Status:** Step 2 ✅ Complete (2026-07-28) — progress gap audit and comic validation tests
+**Status:** Step 3 ✅ Complete (2026-07-28) — reader presentation and navigation
 **Branch:** `m6-development`  
 **Predecessor:** Phase 6.3 ✅ Complete (CBZ archive reader foundation)  
 **Related:** [m6-plan.md](./m6-plan.md) · [books-comics.md](../architecture/books-comics.md) · [ADR-026 Accepted](../architecture/decisions/ADR-026-reader-surface-architecture.md) · [ADR-027 Accepted](../architecture/decisions/ADR-027-reading-progress-and-continue-reading.md)
@@ -443,9 +443,49 @@ Optional: **`phase_64c_comic_progress_test.dart`** for progress-only validation;
 - `test/phase_64c_comic_progress_test.dart` — restore/reconciliation, lifecycle, completion, isolation, legacy CBR projection.
 - `phase65BeginComicSession` helper in `reading_progress_test_support.dart`.
 
-#### Deferred to Step 3
+#### Deferred to Step 4
 
-Fit modes, mouse wheel, tap zones, swipe, immersive chrome, zoom/pan input policy.
+Per-page corrupt-image resilience.
+
+### Step 3 — Reader presentation and navigation ✅
+
+| | |
+|---|---|
+| **Scope** | Fit modes, wheel, tap zones, swipe, zoom/pan contract, immersive chrome |
+| **Files** | `comic_fit_mode.dart`, `comic_viewport.dart`, `comic_reader_screen.dart`, `phase_64c_comic_reader_interaction_test.dart` |
+| **Tests** | 16 widget scenarios in `phase_64c_comic_reader_interaction_test.dart` |
+| **DoD** | Input routing deterministic; progress unchanged by display settings |
+| **Exclusions** | Corrupt-page resilience (Step 4) |
+
+#### Step 3 input contract (implemented)
+
+| Input | At base transform | When zoomed |
+|---|---|---|
+| ← / → / Page Up / Down / Home / End | One bounded page change | Same (keyboard unaffected) |
+| Escape | Show chrome if hidden; else close | Same |
+| Mouse wheel | Previous / next (120 px threshold) | No page change |
+| Tap left 25% / right 25% | Previous / next | Disabled |
+| Tap centre 50% | Toggle chrome | Disabled |
+| Horizontal swipe (contain only) | Previous / next (48 px min) | Pan only; no page change |
+| Pinch / drag in viewer | Zoom / pan | — |
+
+#### Fit modes
+
+- **Contain** (default) — `BoxFit.contain`
+- **Fit width** — `BoxFit.fitWidth`
+- **Fit height** — `BoxFit.fitHeight`
+
+Fit mode and page changes reset `InteractiveViewer` transform. Zoom/pan/fit/chrome are **not** persisted.
+
+#### Known limitations (Step 3)
+
+- Swipe page turns enabled only in **Contain** at base transform (conflict-safe subset with `InteractiveViewer`).
+- Wheel routing uses `Listener.onPointerSignal` in production; widget tests use `debugWheelDelta`.
+- Fit-width/height overflow pans via `InteractiveViewer`; no separate scroll view.
+
+#### Deferred to Step 4
+
+Per-page corrupt-image resilience; Step 5 diagnostics/docs sync for `books-comics.md`.
 
 ### Step 3 — Reader presentation and navigation
 

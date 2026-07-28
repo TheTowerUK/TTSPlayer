@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -10,16 +12,20 @@ import '../../reading/reading_navigation.dart';
 import '../../reading/services/reading_progress_coordinator.dart';
 import '../archive/comic_archive_errors.dart';
 import '../archive/comic_archive_source.dart';
+import 'comic_fit_mode.dart';
 import 'comic_reader_controller.dart';
+import 'comic_viewport.dart';
 
 /// Fullscreen paged comic reader (CBZ).
 ///
-/// Keyboard (when no text field owns focus):
+/// Input routing (when no text field owns focus):
 /// - Left / PageUp: previous page
 /// - Right / PageDown: next page
-/// - Home: first page
-/// - End: last page
-/// - Escape: pop reader
+/// - Home / End: first / last page
+/// - Escape: show chrome if hidden, else close
+/// - Wheel at base transform: previous / next page
+/// - Side tap zones: previous / next; centre toggles chrome
+/// - Horizontal swipe (contain, base transform): previous / next page
 class ComicReaderScreen extends StatefulWidget {
   const ComicReaderScreen({
     super.key,
@@ -35,8 +41,6 @@ class ComicReaderScreen extends StatefulWidget {
   final ReadingProgressRestorePlan? restorePlan;
   final bool startFromBeginning;
 
-  /// When set (tests only), skips [ComicReaderController.open] so real dart:io
-  /// work can be completed outside the widget-test fake-async zone.
   @visibleForTesting
   final ComicReaderController? debugController;
 
@@ -47,15 +51,26 @@ class ComicReaderScreen extends StatefulWidget {
 class _ComicReaderScreenState extends State<ComicReaderScreen> {
   late final ComicReaderController _controller;
   final FocusNode _focusNode = FocusNode();
+  final GlobalKey<ComicViewportState> _viewportKey =
+      GlobalKey<ComicViewportState>();
   late final bool _ownsController;
   ReadingProgressCoordinator? _coordinator;
   ReadingReaderFormat? _readerFormat;
   bool _layoutReady = false;
   bool _closeHandled = false;
   int? _lastPageIndex;
+  ComicFitMode _fitMode = ComicFitMode.contain;
+  bool _chromeVisible = true;
+  bool _progressSessionBegun = false;
 
   ReadingReaderFormat get readerFormat =>
       _readerFormat ?? ReadingReaderFormat.cbz;
+
+  @visibleForTesting
+  ComicFitMode get fitMode => _fitMode;
+
+  @visibleForTesting
+  bool get chromeVisible => _chromeVisible;
 
   @override
   void initState() {
@@ -68,6 +83,7 @@ class _ComicReaderScreenState extends State<ComicReaderScreen> {
       _controller = injected;
       _ownsController = false;
       _layoutReady = _controller.state == ComicReaderLoadState.ready;
+      _lastPageIndex = _controller.pageIndex;
     } else {
       _controller = ComicReaderController(source: widget.source);
       _ownsController = true;
@@ -81,6 +97,16 @@ class _ComicReaderScreenState extends State<ComicReaderScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _coordinator ??= context.read<ReadingProgressCoordinator>();
+    _ensureProgressSessionStarted();
+  }
+
+  void _ensureProgressSessionStarted() {
+    if (_progressSessionBegun || !_layoutReady || _controller.pageCount <= 0) {
+      return;
+    }
+    _progressSessionBegun = true;
+    _beginProgressSession();
+    _coordinator?.markLayoutReady();
   }
 
   Future<void> _openWithRestore() async {
@@ -96,15 +122,35 @@ class _ComicReaderScreenState extends State<ComicReaderScreen> {
         currentPageCount: _controller.pageCount,
       );
       if (restored != null && restored.pageIndex > 0) {
-        await _controller.goToIndex(restored.pageIndex);
+        await _navigatePage(() => _controller.goToIndex(restored.pageIndex));
       }
     }
     _layoutReady = _controller.state == ComicReaderLoadState.ready;
     if (_layoutReady) {
-      _beginProgressSession();
-      _coordinator?.markLayoutReady();
+      _ensureProgressSessionStarted();
       _persistProgress(force: true);
     }
+  }
+
+  Future<void> _navigatePage(Future<void> Function() action) async {
+    await action();
+    _resetViewportForPageChange();
+  }
+
+  void _resetViewportForPageChange() {
+    _viewportKey.currentState?.resetTransform();
+  }
+
+  void _setFitMode(ComicFitMode mode) {
+    if (_fitMode == mode) return;
+    setState(() {
+      _fitMode = mode;
+    });
+    _viewportKey.currentState?.resetTransform();
+  }
+
+  void _toggleChrome() {
+    setState(() => _chromeVisible = !_chromeVisible);
   }
 
   void _beginProgressSession() {
@@ -160,10 +206,13 @@ class _ComicReaderScreenState extends State<ComicReaderScreen> {
   void _onChanged() {
     if (_controller.state == ComicReaderLoadState.ready && !_layoutReady) {
       _layoutReady = true;
-      _beginProgressSession();
-      _coordinator?.markLayoutReady();
+      _ensureProgressSessionStarted();
       _persistProgress(force: true);
     } else if (_layoutReady) {
+      if (_lastPageIndex != null &&
+          _lastPageIndex != _controller.pageIndex) {
+        _resetViewportForPageChange();
+      }
       _persistProgress();
     }
     if (mounted) setState(() {});
@@ -200,26 +249,30 @@ class _ComicReaderScreenState extends State<ComicReaderScreen> {
     if (key == LogicalKeyboardKey.arrowLeft ||
         key == LogicalKeyboardKey.pageUp) {
       // ignore: discarded_futures
-      _controller.previousPage();
+      _navigatePage(_controller.previousPage);
       return KeyEventResult.handled;
     }
     if (key == LogicalKeyboardKey.arrowRight ||
         key == LogicalKeyboardKey.pageDown) {
       // ignore: discarded_futures
-      _controller.nextPage();
+      _navigatePage(_controller.nextPage);
       return KeyEventResult.handled;
     }
     if (key == LogicalKeyboardKey.home) {
       // ignore: discarded_futures
-      _controller.firstPage();
+      _navigatePage(_controller.firstPage);
       return KeyEventResult.handled;
     }
     if (key == LogicalKeyboardKey.end) {
       // ignore: discarded_futures
-      _controller.lastPage();
+      _navigatePage(_controller.lastPage);
       return KeyEventResult.handled;
     }
     if (key == LogicalKeyboardKey.escape) {
+      if (!_chromeVisible) {
+        setState(() => _chromeVisible = true);
+        return KeyEventResult.handled;
+      }
       // ignore: discarded_futures
       _handleClose();
       return KeyEventResult.handled;
@@ -235,28 +288,37 @@ class _ComicReaderScreenState extends State<ComicReaderScreen> {
       onKeyEvent: _onKey,
       child: Scaffold(
         backgroundColor: Colors.black,
-        appBar: AppBar(
-          backgroundColor: Colors.black87,
-          foregroundColor: AppColors.textPrimary,
-          title: Text(
-            widget.item.title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          leading: IconButton(
-            key: const Key('comic_reader_back'),
-            tooltip: 'Close reader',
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () {
-              // ignore: discarded_futures
-              _handleClose();
-            },
-          ),
-        ),
+        appBar: _chromeVisible
+            ? AppBar(
+                backgroundColor: Colors.black87,
+                foregroundColor: AppColors.textPrimary,
+                title: Text(
+                  widget.item.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                leading: IconButton(
+                  key: const Key('comic_reader_back'),
+                  tooltip: 'Close reader',
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () {
+                    // ignore: discarded_futures
+                    _handleClose();
+                  },
+                ),
+              )
+            : null,
         body: Column(
           children: [
             Expanded(child: _buildBody()),
-            _ControlsBar(controller: _controller),
+            if (_chromeVisible)
+              _ControlsBar(
+                controller: _controller,
+                fitMode: _fitMode,
+                onFitModeSelected: _setFitMode,
+                onToggleChrome: _toggleChrome,
+                onNavigatePage: _navigatePage,
+              ),
           ],
         ),
       ),
@@ -291,31 +353,28 @@ class _ComicReaderScreenState extends State<ComicReaderScreen> {
     }
 
     final bytes = _controller.currentPageBytes;
-    final imageBytes =
-        bytes == null ? null : Uint8List.fromList(bytes);
+    final imageBytes = bytes == null ? null : Uint8List.fromList(bytes);
 
     return Stack(
       fit: StackFit.expand,
       children: [
         if (imageBytes != null)
-          InteractiveViewer(
-            minScale: 0.5,
-            maxScale: 4,
-            child: Center(
-              child: Image.memory(
-                key: ValueKey(_controller.currentPage?.entryName),
-                imageBytes,
-                fit: BoxFit.contain,
-                gaplessPlayback: true,
-                errorBuilder: (_, __, ___) => const Center(
-                  child: Text(
-                    'This page image could not be displayed.',
-                    style: TextStyle(color: Colors.white70),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ),
-            ),
+          ComicViewport(
+            key: _viewportKey,
+            imageBytes: imageBytes,
+            pageKey: _controller.currentPage?.entryName ?? _controller.pageIndex,
+            fitMode: _fitMode,
+            canGoPrevious: _controller.canGoPrevious,
+            canGoNext: _controller.canGoNext,
+            onPreviousPage: () {
+              // ignore: discarded_futures
+              _navigatePage(_controller.previousPage);
+            },
+            onNextPage: () {
+              // ignore: discarded_futures
+              _navigatePage(_controller.nextPage);
+            },
+            onToggleChrome: _toggleChrome,
           )
         else if (state == ComicReaderLoadState.loadingPage)
           const Center(child: CircularProgressIndicator())
@@ -327,9 +386,9 @@ class _ComicReaderScreenState extends State<ComicReaderScreen> {
               _controller.retryCurrentPage();
             },
             onClose: () {
-          // ignore: discarded_futures
-          _handleClose();
-        },
+              // ignore: discarded_futures
+              _handleClose();
+            },
           ),
         if (state == ComicReaderLoadState.loadingPage && imageBytes != null)
           const Positioned(
@@ -347,9 +406,19 @@ class _ComicReaderScreenState extends State<ComicReaderScreen> {
 }
 
 class _ControlsBar extends StatelessWidget {
-  const _ControlsBar({required this.controller});
+  const _ControlsBar({
+    required this.controller,
+    required this.fitMode,
+    required this.onFitModeSelected,
+    required this.onToggleChrome,
+    required this.onNavigatePage,
+  });
 
   final ComicReaderController controller;
+  final ComicFitMode fitMode;
+  final ValueChanged<ComicFitMode> onFitModeSelected;
+  final VoidCallback onToggleChrome;
+  final Future<void> Function(Future<void> Function()) onNavigatePage;
 
   @override
   Widget build(BuildContext context) {
@@ -370,7 +439,7 @@ class _ControlsBar extends StatelessWidget {
                 onPressed: ready && controller.canGoPrevious
                     ? () {
                         // ignore: discarded_futures
-                        controller.firstPage();
+                        onNavigatePage(controller.firstPage);
                       }
                     : null,
               ),
@@ -382,7 +451,7 @@ class _ControlsBar extends StatelessWidget {
                 onPressed: ready && controller.canGoPrevious
                     ? () {
                         // ignore: discarded_futures
-                        controller.previousPage();
+                        onNavigatePage(controller.previousPage);
                       }
                     : null,
               ),
@@ -409,7 +478,7 @@ class _ControlsBar extends StatelessWidget {
                 onPressed: ready && controller.canGoNext
                     ? () {
                         // ignore: discarded_futures
-                        controller.nextPage();
+                        onNavigatePage(controller.nextPage);
                       }
                     : null,
               ),
@@ -421,9 +490,32 @@ class _ControlsBar extends StatelessWidget {
                 onPressed: ready && controller.canGoNext
                     ? () {
                         // ignore: discarded_futures
-                        controller.lastPage();
+                        onNavigatePage(controller.lastPage);
                       }
                     : null,
+              ),
+              PopupMenuButton<ComicFitMode>(
+                key: const Key('comic_reader_fit_mode_menu'),
+                tooltip: fitMode.semanticsLabel,
+                icon: const Icon(Icons.aspect_ratio, color: Colors.white),
+                initialValue: fitMode,
+                onSelected: onFitModeSelected,
+                itemBuilder: (context) => ComicFitMode.values
+                    .map(
+                      (mode) => PopupMenuItem<ComicFitMode>(
+                        key: Key('comic_reader_fit_${mode.name}'),
+                        value: mode,
+                        child: Text(mode.label),
+                      ),
+                    )
+                    .toList(),
+              ),
+              IconButton(
+                key: const Key('comic_reader_immersive_toggle'),
+                tooltip: 'Hide reader controls',
+                icon: const Icon(Icons.fullscreen),
+                color: Colors.white,
+                onPressed: onToggleChrome,
               ),
             ],
           ),
