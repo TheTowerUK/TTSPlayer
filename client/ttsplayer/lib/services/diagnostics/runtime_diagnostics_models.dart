@@ -419,6 +419,53 @@ class ReaderSessionDiagnostics {
   final int? pdfMaxImageBytesCachedOnMemory;
 }
 
+/// Active CBZ comic reader diagnostics (Phase 6.4C Step 5).
+///
+/// No paths, archive entry names, page bytes, or exception text.
+class ComicReaderDiagnostics {
+  const ComicReaderDiagnostics({
+    required this.status,
+    required this.active,
+    this.archiveType,
+    this.itemIdentity,
+    this.pageNumber,
+    this.pageCount,
+    this.fitMode,
+    this.chromeVisible,
+    this.viewState,
+    this.cacheEntryCount,
+    this.cacheEstimatedBytes,
+    this.cacheMaxEntries,
+    this.cacheMaxBytes,
+    this.failedPagesTracked,
+    this.currentPageFailureCategory,
+    this.retryAvailable,
+    this.lastSafeErrorCategory,
+    this.progressSessionActive,
+    this.sessionCompleted,
+  });
+
+  final DiagnosticSectionStatus status;
+  final bool active;
+  final String? archiveType;
+  final String? itemIdentity;
+  final int? pageNumber;
+  final int? pageCount;
+  final String? fitMode;
+  final bool? chromeVisible;
+  final String? viewState;
+  final int? cacheEntryCount;
+  final int? cacheEstimatedBytes;
+  final int? cacheMaxEntries;
+  final int? cacheMaxBytes;
+  final int? failedPagesTracked;
+  final String? currentPageFailureCategory;
+  final bool? retryAvailable;
+  final String? lastSafeErrorCategory;
+  final bool? progressSessionActive;
+  final bool? sessionCompleted;
+}
+
 /// Immutable point-in-time diagnostics snapshot (ADR-018).
 class RuntimeDiagnosticsSnapshot {
   const RuntimeDiagnosticsSnapshot({
@@ -433,6 +480,7 @@ class RuntimeDiagnosticsSnapshot {
     this.musicPlaybackSession,
     this.readingProgress,
     this.readerSession,
+    this.comicReader,
     this.library,
   });
 
@@ -447,5 +495,6 @@ class RuntimeDiagnosticsSnapshot {
   final MusicPlaybackSessionDiagnostics? musicPlaybackSession;
   final ReadingProgressDiagnostics? readingProgress;
   final ReaderSessionDiagnostics? readerSession;
+  final ComicReaderDiagnostics? comicReader;
   final LibraryDiagnostics? library;
 }

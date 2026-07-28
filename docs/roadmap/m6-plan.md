@@ -479,6 +479,8 @@ Each checkbox must point to a test, runtime scenario, document section, build re
 
 ## Handoff
 
-**Next:** Continue Phase **6.3** closure items (UnRAR redistribution approval, Unicode revalidation, legal review). Phase **6.6** complete. M6 closure blocked on UnRAR production path.
+**Current production (2026-07-28):** Comic reader is **CBZ-only** (ADR-026 Accepted). Phase 6.3, 6.4, 6.5, and 6.6 are complete. Phase **6.4C** (comic reading experience closure) is in progress on `m6-development`.
 
-Phase 6.3 implementation checkpoint landed. Gate 0 Conditional pass (technical) does **not** authorize shipping UnRAR or closing Phase 6.3.
+**Historical note:** Sections below that reference `.cbr` as required baseline scope, Gate 0 UnRAR, or UnRAR redistribution record **original M6 planning and investigation**. They are retained for audit. Current production architecture does not ship CBR/UnRAR tooling.
+
+**Next (6.4C):** Steps 6–7 — Windows runtime harness extension and phase closure documentation.

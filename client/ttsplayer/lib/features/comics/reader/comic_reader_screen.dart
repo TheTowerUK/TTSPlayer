@@ -10,6 +10,7 @@ import '../../reading/models/reading_location_payload.dart';
 import '../../reading/models/reading_progress_record.dart';
 import '../../reading/reading_navigation.dart';
 import '../../reading/services/reading_progress_coordinator.dart';
+import '../../reading/services/reader_session_telemetry.dart';
 import '../archive/comic_archive_errors.dart';
 import '../archive/comic_archive_source.dart';
 import 'comic_fit_mode.dart';
@@ -63,6 +64,7 @@ class _ComicReaderScreenState extends State<ComicReaderScreen> {
   ComicFitMode _fitMode = ComicFitMode.contain;
   bool _chromeVisible = true;
   bool _progressSessionBegun = false;
+  late final int _diagnosticsSessionId;
 
   ReadingReaderFormat get readerFormat =>
       _readerFormat ?? ReadingReaderFormat.cbz;
@@ -76,6 +78,8 @@ class _ComicReaderScreenState extends State<ComicReaderScreen> {
   @override
   void initState() {
     super.initState();
+    _diagnosticsSessionId =
+        ReaderSessionTelemetry.instance.beginComicReaderSession();
     _readerFormat =
         readerFormatForComicExtension(_extension(widget.item.filePath)) ??
             ReadingReaderFormat.cbz;
@@ -108,6 +112,7 @@ class _ComicReaderScreenState extends State<ComicReaderScreen> {
     _progressSessionBegun = true;
     _beginProgressSession();
     _coordinator?.markLayoutReady();
+    _publishDiagnostics();
   }
 
   Future<void> _openWithRestore() async {
@@ -152,6 +157,30 @@ class _ComicReaderScreenState extends State<ComicReaderScreen> {
 
   void _toggleChrome() {
     setState(() => _chromeVisible = !_chromeVisible);
+    _publishDiagnostics();
+  }
+
+  void _publishDiagnostics() {
+    if (!mounted || !_layoutReady || _controller.pageCount <= 0) {
+      return;
+    }
+    final failure = _controller.currentPageFailure;
+    ReaderSessionTelemetry.instance.updateComicReaderSession(
+      sessionId: _diagnosticsSessionId,
+      active: true,
+      itemIdentity: widget.item.id,
+      archiveType: 'cbz',
+      pageIndex: _controller.pageIndex,
+      pageCount: _controller.pageCount,
+      fitMode: _fitMode.label,
+      chromeVisible: _chromeVisible,
+      zoomedBeyondBase: _viewportKey.currentState?.isZoomedBeyondBase ?? false,
+      failedPagesTracked: _controller.pageFailures.length,
+      currentPageFailureCategory: failure?.category.diagnosticLabel,
+      retryAvailable: failure?.canRetry,
+      progressSessionActive: _coordinator?.sessionActive ?? false,
+      sessionCompleted: _coordinator?.sessionCompleted ?? false,
+    );
   }
 
   void _beginProgressSession() {
@@ -216,11 +245,13 @@ class _ComicReaderScreenState extends State<ComicReaderScreen> {
       }
       _persistProgress();
     }
+    _publishDiagnostics();
     if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    ReaderSessionTelemetry.instance.clearComicReaderSession(_diagnosticsSessionId);
     if (!_closeHandled) {
       // ignore: discarded_futures
       _coordinator?.onReaderClosed();
@@ -378,6 +409,7 @@ class _ComicReaderScreenState extends State<ComicReaderScreen> {
               _navigatePage(_controller.nextPage);
             },
             onToggleChrome: _toggleChrome,
+            onViewStateChanged: _publishDiagnostics,
           )
         else if (pageFailure != null && state == ComicReaderLoadState.ready)
           _PageFailurePane(

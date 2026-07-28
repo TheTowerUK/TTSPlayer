@@ -30,6 +30,7 @@ class ComicViewport extends StatefulWidget {
     required this.canGoPrevious,
     required this.canGoNext,
     this.onImageDecodeFailed,
+    this.onViewStateChanged,
     this.enableSwipeNavigation = true,
   });
 
@@ -42,6 +43,7 @@ class ComicViewport extends StatefulWidget {
   final bool canGoPrevious;
   final bool canGoNext;
   final VoidCallback? onImageDecodeFailed;
+  final VoidCallback? onViewStateChanged;
 
   /// Swipe page turns are enabled only at the base transform in [ComicFitMode.contain].
   final bool enableSwipeNavigation;
@@ -108,6 +110,7 @@ class ComicViewportState extends State<ComicViewport> {
   void _setZoomedBeyondBase(bool value) {
     if (_zoomedBeyondBase == value) return;
     setState(() => _zoomedBeyondBase = value);
+    widget.onViewStateChanged?.call();
   }
 
   void _onTransformChanged() {

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../../reading/models/reading_location_payload.dart';
 import '../../reading/services/reader_session_telemetry.dart';
 import '../archive/comic_archive_errors.dart';
 import '../archive/comic_archive_source.dart';
@@ -92,6 +93,7 @@ class ComicReaderController extends ChangeNotifier {
   }
 
   Future<void> open({int initialPageIndex = 0}) async {
+    final openStarted = DateTime.now();
     _state = ComicReaderLoadState.loadingPages;
     _error = null;
     _pageFailures.clear();
@@ -103,6 +105,10 @@ class ComicReaderController extends ChangeNotifier {
       _index = initialPageIndex.clamp(0, _pages.length - 1);
       await _loadCurrent(prefetch: true);
       _publishCacheTelemetry();
+      ReaderSessionTelemetry.instance.recordReaderOpen(
+        format: ReadingReaderFormat.cbz,
+        openDuration: DateTime.now().difference(openStarted),
+      );
     } on ComicArchiveException catch (e) {
       _error = e;
       _state = ComicReaderLoadState.error;
@@ -160,6 +166,9 @@ class ComicReaderController extends ChangeNotifier {
     _error = null;
     _pageFailures[page.entryName] =
         ComicPageFailure.decodeFailure(page.entryName);
+    ReaderSessionTelemetry.instance.recordComicReaderSafeError(
+      ComicPageFailureCategory.decodeFailure.diagnosticLabel,
+    );
     _state = ComicReaderLoadState.ready;
     _loadingEntry = null;
     _notify();
@@ -250,8 +259,12 @@ class ComicReaderController extends ChangeNotifier {
     _cache.remove(entryName);
     _currentBytes = null;
     _error = null;
-    _pageFailures[entryName] =
+    final failure =
         ComicPageFailure.fromArchiveException(entryName, exception);
+    _pageFailures[entryName] = failure;
+    ReaderSessionTelemetry.instance.recordComicReaderSafeError(
+      failure.category.diagnosticLabel,
+    );
     _state = ComicReaderLoadState.ready;
     _notify();
     if (prefetchAdjacent &&
@@ -280,9 +293,15 @@ class ComicReaderController extends ChangeNotifier {
         if (_disposed) return;
         _pageFailures[name] =
             ComicPageFailure.fromArchiveException(name, e);
+        ReaderSessionTelemetry.instance.recordComicReaderSafeError(
+          _pageFailures[name]!.category.diagnosticLabel,
+        );
       } catch (_) {
         if (_disposed) return;
         _pageFailures[name] = ComicPageFailure.unknown(name);
+        ReaderSessionTelemetry.instance.recordComicReaderSafeError(
+          ComicPageFailureCategory.unknownPageError.diagnosticLabel,
+        );
       }
     }
   }

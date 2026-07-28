@@ -1,6 +1,6 @@
 # M6 Phase 6.4C — Comic Reading Experience Closure
 
-**Status:** Step 4 ✅ Complete (2026-07-28) — per-page error resilience (not milestone-complete)
+**Status:** Step 5 ✅ Complete (2026-07-28) — diagnostics and architecture docs (not milestone-complete)
 **Branch:** `m6-development`  
 **Predecessor:** Phase 6.3 ✅ Complete (CBZ archive reader foundation)  
 **Related:** [m6-plan.md](./m6-plan.md) · [books-comics.md](../architecture/books-comics.md) · [ADR-026 Accepted](../architecture/decisions/ADR-026-reader-surface-architecture.md) · [ADR-027 Accepted](../architecture/decisions/ADR-027-reading-progress-and-continue-reading.md)
@@ -535,23 +535,26 @@ Diagnostics expansion; `books-comics.md` CBZ-only refresh.
 
 #### Known limitations (Step 4)
 
-- No per-page diagnostic detail in export (Step 5)
 - No live archive rebuild when source changes mid-session
 - Widget-level decode placeholder text is transient until controller state updates
 
-#### Deferred to Step 5
-
-Diagnostics aggregates for page failure categories; `books-comics.md` architecture refresh.
-
-### Step 5 — Diagnostics and docs sync
+### Step 5 — Diagnostics and docs sync ✅
 
 | | |
 |---|---|
-| **Scope** | Align `books-comics.md` comic section with CBZ-only + 6.4 capabilities; reader telemetry if gaps |
-| **Files** | `docs/architecture/books-comics.md`, diagnostics if needed |
-| **Tests** | Diagnostics export regression |
-| **DoD** | No stale CBR/UnRAR references in active architecture docs |
-| **Exclusions** | ADR-026 rewrite |
+| **Scope** | Redacted comic-reader diagnostics; `books-comics.md` CBZ-only refresh; roadmap terminology |
+| **Files** | Telemetry, diagnostics service/export/UI, comic reader wiring, `phase_64c_comic_reader_diagnostics_test.dart`, `books-comics.md`, `m6-plan.md` |
+| **Tests** | 10 scenarios in `phase_64c_comic_reader_diagnostics_test.dart`; diagnostics/redaction/screen tests updated |
+| **DoD** | Comic reader diagnostics subsection; architecture doc matches production CBZ-only reader |
+| **Exclusions** | Windows runtime (Step 6); phase closure (Step 7) |
+
+#### Step 5 diagnostics contract
+
+Active CBZ reader sessions expose: active flag, archive type, redacted item identity, page N/M, fit mode, chrome visibility, base/zoomed view state, successful cache metrics and limits, failed-page count, current failure category, retry availability, last safe error category, progress session flags. Pull-only via `ReaderSessionTelemetry`; cleared on reader dispose.
+
+#### Deferred to Step 6
+
+Windows runtime harness extension; final phase closure documentation.
 
 ### Step 6 — Windows runtime and regression
 

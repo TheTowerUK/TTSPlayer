@@ -113,6 +113,7 @@ class DiagnosticsService {
     final musicPlaybackSession = _captureMusicPlaybackSession();
     final readingProgress = _captureReadingProgress();
     final readerSession = _captureReaderSession();
+    final comicReader = _captureComicReader();
     final library = _captureLibrary(catalogue);
 
     return RuntimeDiagnosticsSnapshot(
@@ -127,6 +128,7 @@ class DiagnosticsService {
       musicPlaybackSession: musicPlaybackSession,
       readingProgress: readingProgress,
       readerSession: readerSession,
+      comicReader: comicReader,
       library: library,
     );
   }
@@ -602,6 +604,51 @@ class DiagnosticsService {
     } catch (_) {
       return const ReaderSessionDiagnostics(
         status: DiagnosticSectionStatus.unavailable,
+      );
+    }
+  }
+
+  ComicReaderDiagnostics _captureComicReader() {
+    try {
+      final snap = ReaderSessionTelemetry.instance.comicReaderSnapshot();
+      if (snap == null) {
+        return const ComicReaderDiagnostics(
+          status: DiagnosticSectionStatus.complete,
+          active: false,
+        );
+      }
+      return ComicReaderDiagnostics(
+        status: DiagnosticSectionStatus.complete,
+        active: true,
+        archiveType: snap.archiveType,
+        itemIdentity: redactIdentity(snap.itemIdentity),
+        pageNumber:
+            snap.pageIndex == null ? null : snap.pageIndex! + 1,
+        pageCount: snap.pageCount,
+        fitMode: snap.fitMode,
+        chromeVisible: snap.chromeVisible,
+        viewState: snap.zoomedBeyondBase == null
+            ? null
+            : (snap.zoomedBeyondBase! ? 'Zoomed' : 'Base'),
+        cacheEntryCount: snap.cacheEntryCount,
+        cacheEstimatedBytes: snap.cacheEstimatedBytes,
+        cacheMaxEntries: snap.cacheMaxEntries,
+        cacheMaxBytes: snap.cacheMaxBytes,
+        failedPagesTracked: snap.failedPagesTracked,
+        currentPageFailureCategory: snap.currentPageFailureCategory == null
+            ? null
+            : redactSensitiveText(snap.currentPageFailureCategory),
+        retryAvailable: snap.retryAvailable,
+        lastSafeErrorCategory: snap.lastSafeErrorCategory == null
+            ? null
+            : redactSensitiveText(snap.lastSafeErrorCategory),
+        progressSessionActive: snap.progressSessionActive,
+        sessionCompleted: snap.sessionCompleted,
+      );
+    } catch (_) {
+      return const ComicReaderDiagnostics(
+        status: DiagnosticSectionStatus.unavailable,
+        active: false,
       );
     }
   }

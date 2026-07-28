@@ -276,6 +276,8 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
                 _buildReadingProgressSection(snapshot),
                 _buildReaderSessionSection(snapshot),
                 const SizedBox(height: AppSpacing.section),
+                _buildComicReaderSection(snapshot),
+                const SizedBox(height: AppSpacing.section),
                 _buildLibrarySection(snapshot),
                 const SizedBox(height: AppSpacing.section),
                 Tooltip(
@@ -1185,6 +1187,117 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
           value: DiagnosticsFormatters.intValue(
             session.pdfMaxImageBytesCachedOnMemory,
           ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildComicReaderSection(RuntimeDiagnosticsSnapshot snapshot) {
+    final comic = snapshot.comicReader;
+    if (comic == null) {
+      return const DiagnosticsSection(
+        sectionKey: Key('diagnostics_section_comic_reader'),
+        title: 'Comic reader',
+        status: DiagnosticSectionStatus.unavailable,
+        children: [
+          DiagnosticsValueRow(
+            label: 'Availability',
+            value: 'Unavailable',
+          ),
+        ],
+      );
+    }
+
+    if (!comic.active) {
+      return DiagnosticsSection(
+        sectionKey: const Key('diagnostics_section_comic_reader'),
+        title: 'Comic reader',
+        status: comic.status,
+        children: [
+          DiagnosticsValueRow(
+            label: 'Active',
+            value: DiagnosticsFormatters.boolValue(comic.active),
+          ),
+        ],
+      );
+    }
+
+    final pageLabel = comic.pageNumber == null || comic.pageCount == null
+        ? 'Unavailable'
+        : '${comic.pageNumber} / ${comic.pageCount}';
+
+    return DiagnosticsSection(
+      sectionKey: const Key('diagnostics_section_comic_reader'),
+      title: 'Comic reader',
+      status: comic.status,
+      children: [
+        DiagnosticsValueRow(
+          label: 'Active',
+          value: DiagnosticsFormatters.boolValue(comic.active),
+        ),
+        DiagnosticsValueRow(
+          label: 'Archive type',
+          value: comic.archiveType ?? 'Unavailable',
+        ),
+        DiagnosticsValueRow(
+          label: 'Item',
+          value: comic.itemIdentity ?? 'Unavailable',
+        ),
+        DiagnosticsValueRow(
+          label: 'Page',
+          value: pageLabel,
+        ),
+        DiagnosticsValueRow(
+          label: 'Fit mode',
+          value: comic.fitMode ?? 'Unavailable',
+        ),
+        DiagnosticsValueRow(
+          label: 'Chrome visible',
+          value: DiagnosticsFormatters.boolValue(comic.chromeVisible),
+        ),
+        DiagnosticsValueRow(
+          label: 'View state',
+          value: comic.viewState ?? 'Unavailable',
+        ),
+        DiagnosticsValueRow(
+          label: 'Cache entries',
+          value: DiagnosticsFormatters.intValue(comic.cacheEntryCount),
+        ),
+        DiagnosticsValueRow(
+          label: 'Cache bytes',
+          value: DiagnosticsFormatters.intValue(comic.cacheEstimatedBytes),
+        ),
+        DiagnosticsValueRow(
+          label: 'Cache max entries',
+          value: DiagnosticsFormatters.intValue(comic.cacheMaxEntries),
+        ),
+        DiagnosticsValueRow(
+          label: 'Cache max bytes',
+          value: DiagnosticsFormatters.intValue(comic.cacheMaxBytes),
+        ),
+        DiagnosticsValueRow(
+          label: 'Failed pages tracked',
+          value: DiagnosticsFormatters.intValue(comic.failedPagesTracked),
+        ),
+        DiagnosticsValueRow(
+          label: 'Current page failure',
+          value: comic.currentPageFailureCategory ?? 'Unavailable',
+        ),
+        DiagnosticsValueRow(
+          label: 'Retry available',
+          value: DiagnosticsFormatters.boolValue(comic.retryAvailable),
+        ),
+        DiagnosticsValueRow(
+          label: 'Last safe error category',
+          value: comic.lastSafeErrorCategory ?? 'Unavailable',
+        ),
+        DiagnosticsValueRow(
+          label: 'Progress session',
+          value: DiagnosticsFormatters.boolValue(comic.progressSessionActive),
+        ),
+        DiagnosticsValueRow(
+          label: 'Session completed',
+          value: DiagnosticsFormatters.boolValue(comic.sessionCompleted),
         ),
       ],
     );

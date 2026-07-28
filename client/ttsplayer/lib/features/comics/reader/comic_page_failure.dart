@@ -84,3 +84,16 @@ extension ComicPageLoadStatusX on ComicPageLoadStatus {
   bool get isTerminal =>
       this == ComicPageLoadStatus.loaded || this == ComicPageLoadStatus.failed;
 }
+
+extension ComicPageFailureCategoryX on ComicPageFailureCategory {
+  /// Stable label for diagnostics export (Phase 6.4C Step 5).
+  String get diagnosticLabel => switch (this) {
+        ComicPageFailureCategory.sourceMissing => 'Source missing',
+        ComicPageFailureCategory.archiveReadFailure => 'Archive read failure',
+        ComicPageFailureCategory.unsupportedImage => 'Unsupported image',
+        ComicPageFailureCategory.corruptImageData => 'Corrupt image data',
+        ComicPageFailureCategory.decodeFailure => 'Decode failure',
+        ComicPageFailureCategory.archiveChanged => 'Archive changed',
+        ComicPageFailureCategory.unknownPageError => 'Unknown page error',
+      };
+}

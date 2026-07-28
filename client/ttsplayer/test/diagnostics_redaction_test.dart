@@ -61,7 +61,14 @@ void main() {
       expect(export, contains('=== Playback ==='));
       expect(export, contains('=== Music Listening ==='));
       expect(export, contains('=== Reading progress ==='));
+      expect(export, contains('=== Reader session ==='));
+      expect(export, contains('=== Comic reader ==='));
       expect(export, contains('=== Library ==='));
+      final readerIdx = export.indexOf('=== Reader session ===');
+      final comicIdx = export.indexOf('=== Comic reader ===');
+      final libraryIdx = export.indexOf('=== Library ===');
+      expect(readerIdx, lessThan(comicIdx));
+      expect(comicIdx, lessThan(libraryIdx));
       expect(exportContainsSensitiveData(export), isFalse);
     });
 

@@ -700,6 +700,85 @@ String formatDiagnosticsExport(RuntimeDiagnosticsSnapshot snapshot) {
     );
   });
 
+  final comicReader = snapshot.comicReader;
+  _writeSection(buffer, 'Comic reader', () {
+    if (comicReader == null) {
+      _writeLine(buffer, 'Status', 'Unavailable');
+      return;
+    }
+    _writeLine(buffer, 'Status', _sectionStatusLabel(comicReader.status));
+    _writeLine(buffer, 'Active', _formatBool(comicReader.active));
+    if (!comicReader.active) {
+      return;
+    }
+    _writeLine(buffer, 'Archive type', comicReader.archiveType);
+    _writeLine(buffer, 'Item', comicReader.itemIdentity);
+    _writeLine(
+      buffer,
+      'Page',
+      comicReader.pageNumber == null || comicReader.pageCount == null
+          ? 'Unavailable'
+          : '${comicReader.pageNumber} / ${comicReader.pageCount}',
+    );
+    _writeLine(buffer, 'Fit mode', comicReader.fitMode);
+    _writeLine(
+      buffer,
+      'Chrome visible',
+      _formatBool(comicReader.chromeVisible),
+    );
+    _writeLine(buffer, 'View state', comicReader.viewState);
+    _writeLine(
+      buffer,
+      'Cache entries',
+      _formatInt(comicReader.cacheEntryCount),
+    );
+    _writeLine(
+      buffer,
+      'Cache bytes',
+      _formatBytes(comicReader.cacheEstimatedBytes),
+    );
+    _writeLine(
+      buffer,
+      'Cache max entries',
+      _formatInt(comicReader.cacheMaxEntries),
+    );
+    _writeLine(
+      buffer,
+      'Cache max bytes',
+      _formatBytes(comicReader.cacheMaxBytes),
+    );
+    _writeLine(
+      buffer,
+      'Failed pages tracked',
+      _formatInt(comicReader.failedPagesTracked),
+    );
+    _writeLine(
+      buffer,
+      'Current page failure',
+      comicReader.currentPageFailureCategory,
+    );
+    _writeLine(
+      buffer,
+      'Retry available',
+      _formatBool(comicReader.retryAvailable),
+    );
+    _writeLine(
+      buffer,
+      'Last safe error category',
+      comicReader.lastSafeErrorCategory,
+    );
+    _writeLine(
+      buffer,
+      'Progress session',
+      _formatBool(comicReader.progressSessionActive),
+    );
+    _writeLine(
+      buffer,
+      'Session completed',
+      _formatBool(comicReader.sessionCompleted),
+    );
+  });
+
   final library = snapshot.library;
   _writeSection(buffer, 'Library', () {
     if (library == null) {

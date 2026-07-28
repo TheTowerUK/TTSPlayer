@@ -40,6 +40,7 @@ class ReadingProgressCoordinator extends ChangeNotifier {
 
   String? get lastPersistenceWarning => _lastPersistenceWarning;
   bool get sessionActive => _session != null;
+  bool get sessionCompleted => _session?.completed ?? false;
   bool get pendingWrite => pendingDebounceWrite || writeInFlight;
   bool get pendingDebounceWrite => _debounceTimer?.isActive == true;
   bool get writeInFlight => _inFlightWrite != null;
