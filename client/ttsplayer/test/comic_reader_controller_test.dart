@@ -77,7 +77,9 @@ void main() {
     );
     final controller = ComicReaderController(source: source, cache: cache);
     await controller.open();
-    expect(controller.state, ComicReaderLoadState.error);
+    expect(controller.state, ComicReaderLoadState.ready);
+    expect(controller.currentPageFailure, isNotNull);
+    expect(controller.currentPageBytes, isNull);
     expect(cache.get('bad.png'), isNull);
     controller.dispose();
   });

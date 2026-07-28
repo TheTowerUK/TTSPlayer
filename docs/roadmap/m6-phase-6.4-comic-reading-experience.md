@@ -1,6 +1,6 @@
 # M6 Phase 6.4C — Comic Reading Experience Closure
 
-**Status:** Step 3 ✅ Complete (2026-07-28) — reader presentation and navigation
+**Status:** Step 4 ✅ Complete (2026-07-28) — per-page error resilience (not milestone-complete)
 **Branch:** `m6-development`  
 **Predecessor:** Phase 6.3 ✅ Complete (CBZ archive reader foundation)  
 **Related:** [m6-plan.md](./m6-plan.md) · [books-comics.md](../architecture/books-comics.md) · [ADR-026 Accepted](../architecture/decisions/ADR-026-reader-surface-architecture.md) · [ADR-027 Accepted](../architecture/decisions/ADR-027-reading-progress-and-continue-reading.md)
@@ -483,29 +483,65 @@ Fit mode and page changes reset `InteractiveViewer` transform. Zoom/pan/fit/chro
 - Wheel routing uses `Listener.onPointerSignal` in production; widget tests use `debugWheelDelta`.
 - Fit-width/height overflow pans via `InteractiveViewer`; no separate scroll view.
 
-#### Deferred to Step 4
+#### Deferred to Step 5
 
-Per-page corrupt-image resilience; Step 5 diagnostics/docs sync for `books-comics.md`.
+Diagnostics expansion; `books-comics.md` CBZ-only refresh.
 
-### Step 3 — Reader presentation and navigation
-
-| | |
-|---|---|
-| **Scope** | Fit modes, wheel, tap zones, immersive toggle, gesture/zoom policy |
-| **Files** | `comic_reader_screen.dart`, possible `comic_viewport.dart` |
-| **Tests** | Widget tests for new inputs |
-| **DoD** | Navigation contract §8 satisfied; no accidental double page turns |
-| **Exclusions** | RTL, dual-page |
-
-### Step 4 — Per-page error resilience
+### Step 4 — Per-page error resilience ✅
 
 | | |
 |---|---|
-| **Scope** | Corrupt page does not block navigation; cache does not store failures |
-| **Files** | `comic_reader_controller.dart`, fixtures in `comic_test_fixtures.dart` |
-| **Tests** | Multi-page CBZ with one bad entry |
-| **DoD** | User can skip past bad page |
-| **Exclusions** | Archive repair |
+| **Scope** | Distinguish archive-level vs page-level failures; placeholder, retry, preload and progress on failed pages |
+| **Files** | `comic_page_failure.dart`, `comic_reader_controller.dart`, `comic_reader_screen.dart`, `comic_viewport.dart`, `phase_64c_comic_page_error_test.dart`, `comic_reader_controller_test.dart` |
+| **Tests** | 28 scenarios in `phase_64c_comic_page_error_test.dart`; archive-level cases reuse `comic_archive_cbz_test.dart` / `comic_archive_opener_test.dart` |
+| **DoD** | One corrupt page does not block navigation, retry, or progress; archive open failures unchanged |
+| **Exclusions** | Diagnostics expansion (Step 5); live archive rebuild |
+
+#### Step 4 error boundaries (implemented)
+
+| Layer | Failure | Behaviour |
+|---|---|---|
+| **Archive (pre-open)** | Missing file, invalid ZIP, empty archive, no image entries, path traversal, CBR | Existing opener/detail path; reader does not open without a page list |
+| **Archive (post-open)** | Source removed/changed on uncached load | Page-level `sourceMissing` / `archiveReadFailure`; cached pages still readable |
+| **Page load** | Entry extract failure, unsupported bytes | `_pageFailures` map; controller stays `ready`; `_ErrorPane` only when `pages.isEmpty` |
+| **Page decode** | `Image.memory` decode failure | `reportCurrentPageDecodeFailed()` → `decodeFailure` category; single callback via `errorBuilder` |
+| **Preload** | Adjacent page fails | Recorded silently; current page undisturbed; no cache entry for failed load |
+
+#### Page-load state contract
+
+- `ComicPageLoadStatus`: `notRequested`, `loading`, `loaded`, `failed`
+- `ComicPageFailure`: entry name, `ComicPageFailureCategory`, safe `userMessage`, `canRetry`
+- Failures are **not** stored in `ComicPageCache`; failed entries do not consume LRU slots
+
+#### Current-page failure UI
+
+- `_PageFailurePane`: user message, `Page N of M`, optional **Retry** button
+- Toolbar navigation, back, and Escape (immersive) remain available
+- Page count and indices unchanged when pages fail (stable progress identity)
+
+#### Retry policy
+
+- User-initiated only via toolbar placeholder or `retryCurrentPage()`
+- Clears failure + cache entry for that page; reloads one page only
+- Ignored while the same page is already loading; repeated failures return to stable placeholder
+- Does not write reading progress or change page index
+
+#### Progress on failed pages
+
+- Navigation onto a failed page persists logical `pageIndex` through existing coordinator path
+- Retry does not create duplicate progress writes
+- Close on failed page flushes progress normally
+- Completion policy unchanged (Step 2); decode failure alone does not mark complete
+
+#### Known limitations (Step 4)
+
+- No per-page diagnostic detail in export (Step 5)
+- No live archive rebuild when source changes mid-session
+- Widget-level decode placeholder text is transient until controller state updates
+
+#### Deferred to Step 5
+
+Diagnostics aggregates for page failure categories; `books-comics.md` architecture refresh.
 
 ### Step 5 — Diagnostics and docs sync
 

@@ -13,6 +13,7 @@ import '../../reading/services/reading_progress_coordinator.dart';
 import '../archive/comic_archive_errors.dart';
 import '../archive/comic_archive_source.dart';
 import 'comic_fit_mode.dart';
+import 'comic_page_failure.dart';
 import 'comic_reader_controller.dart';
 import 'comic_viewport.dart';
 
@@ -353,6 +354,7 @@ class _ComicReaderScreenState extends State<ComicReaderScreen> {
     }
 
     final bytes = _controller.currentPageBytes;
+    final pageFailure = _controller.currentPageFailure;
     final imageBytes = bytes == null ? null : Uint8List.fromList(bytes);
 
     return Stack(
@@ -366,6 +368,7 @@ class _ComicReaderScreenState extends State<ComicReaderScreen> {
             fitMode: _fitMode,
             canGoPrevious: _controller.canGoPrevious,
             canGoNext: _controller.canGoNext,
+            onImageDecodeFailed: _controller.reportCurrentPageDecodeFailed,
             onPreviousPage: () {
               // ignore: discarded_futures
               _navigatePage(_controller.previousPage);
@@ -376,20 +379,19 @@ class _ComicReaderScreenState extends State<ComicReaderScreen> {
             },
             onToggleChrome: _toggleChrome,
           )
+        else if (pageFailure != null && state == ComicReaderLoadState.ready)
+          _PageFailurePane(
+            failure: pageFailure,
+            pageIndicator: _controller.pageIndicatorLabel,
+            onRetry: pageFailure.canRetry
+                ? () {
+                    // ignore: discarded_futures
+                    _controller.retryCurrentPage();
+                  }
+                : null,
+          )
         else if (state == ComicReaderLoadState.loadingPage)
-          const Center(child: CircularProgressIndicator())
-        else if (_controller.error != null)
-          _ErrorPane(
-            error: _controller.error,
-            onRetry: () {
-              // ignore: discarded_futures
-              _controller.retryCurrentPage();
-            },
-            onClose: () {
-              // ignore: discarded_futures
-              _handleClose();
-            },
-          ),
+          const Center(child: CircularProgressIndicator()),
         if (state == ComicReaderLoadState.loadingPage && imageBytes != null)
           const Positioned(
             top: 12,
@@ -519,6 +521,52 @@ class _ControlsBar extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PageFailurePane extends StatelessWidget {
+  const _PageFailurePane({
+    required this.failure,
+    required this.pageIndicator,
+    this.onRetry,
+  });
+
+  final ComicPageFailure failure;
+  final String pageIndicator;
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              key: const Key('comic_reader_page_failure_message'),
+              failure.userMessage,
+              style: const TextStyle(color: Colors.white, fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              key: const Key('comic_reader_page_failure_indicator'),
+              pageIndicator,
+              style: const TextStyle(color: Colors.white70),
+            ),
+            if (onRetry != null) ...[
+              const SizedBox(height: 16),
+              FilledButton(
+                key: const Key('comic_reader_page_retry'),
+                onPressed: onRetry,
+                child: const Text('Retry'),
+              ),
+            ],
+          ],
         ),
       ),
     );

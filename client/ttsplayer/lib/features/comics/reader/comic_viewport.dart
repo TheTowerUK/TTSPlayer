@@ -29,6 +29,7 @@ class ComicViewport extends StatefulWidget {
     required this.onToggleChrome,
     required this.canGoPrevious,
     required this.canGoNext,
+    this.onImageDecodeFailed,
     this.enableSwipeNavigation = true,
   });
 
@@ -40,6 +41,7 @@ class ComicViewport extends StatefulWidget {
   final VoidCallback onToggleChrome;
   final bool canGoPrevious;
   final bool canGoNext;
+  final VoidCallback? onImageDecodeFailed;
 
   /// Swipe page turns are enabled only at the base transform in [ComicFitMode.contain].
   final bool enableSwipeNavigation;
@@ -57,6 +59,7 @@ class ComicViewportState extends State<ComicViewport> {
   Offset? _pointerDown;
   double _horizontalDrag = 0;
   bool _dragExceededTapThreshold = false;
+  bool _decodeErrorReported = false;
 
   TransformationController get transformController => _transformController;
   bool get isZoomedBeyondBase => _zoomedBeyondBase;
@@ -73,6 +76,7 @@ class ComicViewportState extends State<ComicViewport> {
     if (oldWidget.pageKey != widget.pageKey ||
         oldWidget.fitMode != widget.fitMode) {
       resetTransform();
+      _decodeErrorReported = false;
     }
   }
 
@@ -231,13 +235,21 @@ class ComicViewportState extends State<ComicViewport> {
                   widget.imageBytes,
                   fit: widget.fitMode.boxFit,
                   gaplessPlayback: true,
-                  errorBuilder: (_, __, ___) => const Center(
-                    child: Text(
-                      'This page image could not be displayed.',
-                      style: TextStyle(color: Colors.white70),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
+                  errorBuilder: (_, __, ___) {
+                    if (!_decodeErrorReported) {
+                      _decodeErrorReported = true;
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        widget.onImageDecodeFailed?.call();
+                      });
+                    }
+                    return const Center(
+                      child: Text(
+                        'This page image could not be displayed.',
+                        style: TextStyle(color: Colors.white70),
+                        textAlign: TextAlign.center,
+                      ),
+                    );
+                  },
                 ),
               ),
             ),

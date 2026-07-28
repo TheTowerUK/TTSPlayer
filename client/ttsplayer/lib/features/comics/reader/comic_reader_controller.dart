@@ -5,6 +5,7 @@ import '../archive/comic_archive_errors.dart';
 import '../archive/comic_archive_source.dart';
 import '../archive/comic_page_ref.dart';
 import 'comic_page_cache.dart';
+import 'comic_page_failure.dart';
 
 enum ComicReaderLoadState {
   loadingPages,
@@ -33,6 +34,8 @@ class ComicReaderController extends ChangeNotifier {
   ComicReaderLoadState _state = ComicReaderLoadState.loadingPages;
   ComicArchiveException? _error;
   List<int>? _currentBytes;
+  final Map<String, ComicPageFailure> _pageFailures = {};
+  String? _loadingEntry;
   bool _disposed = false;
 
   List<ComicPageRef> get pages => _pages;
@@ -43,6 +46,35 @@ class ComicReaderController extends ChangeNotifier {
   List<int>? get currentPageBytes => _currentBytes;
   ComicPageRef? get currentPage =>
       _pages.isEmpty ? null : _pages[_index.clamp(0, _pages.length - 1)];
+
+  ComicPageFailure? get currentPageFailure {
+    final page = currentPage;
+    if (page == null) return null;
+    return _pageFailures[page.entryName];
+  }
+
+  ComicPageLoadStatus get currentPageLoadStatus {
+    final page = currentPage;
+    if (page == null) return ComicPageLoadStatus.notRequested;
+    if (_loadingEntry == page.entryName) return ComicPageLoadStatus.loading;
+    if (_currentBytes != null) return ComicPageLoadStatus.loaded;
+    if (_pageFailures.containsKey(page.entryName)) {
+      return ComicPageLoadStatus.failed;
+    }
+    if (_state == ComicReaderLoadState.loadingPage) {
+      return ComicPageLoadStatus.loading;
+    }
+    return ComicPageLoadStatus.notRequested;
+  }
+
+  @visibleForTesting
+  Map<String, ComicPageFailure> get pageFailures =>
+      Map.unmodifiable(_pageFailures);
+
+  @visibleForTesting
+  ComicPageFailure? failureForEntry(String entryName) =>
+      _pageFailures[entryName];
+
   bool get canGoPrevious => _index > 0;
   bool get canGoNext => _index < _pages.length - 1;
   String get pageIndicatorLabel {
@@ -62,6 +94,9 @@ class ComicReaderController extends ChangeNotifier {
   Future<void> open({int initialPageIndex = 0}) async {
     _state = ComicReaderLoadState.loadingPages;
     _error = null;
+    _pageFailures.clear();
+    _currentBytes = null;
+    _loadingEntry = null;
     _notify();
     try {
       _pages = await _source.listPages();
@@ -85,7 +120,17 @@ class ComicReaderController extends ChangeNotifier {
   Future<void> goToIndex(int index) async {
     if (_pages.isEmpty) return;
     final next = index.clamp(0, _pages.length - 1);
-    if (next == _index && _currentBytes != null) return;
+    final entryName = _pages[next].entryName;
+    if (next == _index &&
+        _currentBytes != null &&
+        _loadingEntry != entryName) {
+      return;
+    }
+    if (next == _index &&
+        _pageFailures.containsKey(entryName) &&
+        _loadingEntry == null) {
+      return;
+    }
     _index = next;
     await _loadCurrent(prefetch: true);
   }
@@ -95,16 +140,62 @@ class ComicReaderController extends ChangeNotifier {
   Future<void> firstPage() => goToIndex(0);
   Future<void> lastPage() => goToIndex(_pages.length - 1);
 
-  Future<void> retryCurrentPage() => _loadCurrent(prefetch: false);
+  Future<void> retryCurrentPage() async {
+    final page = currentPage;
+    if (page == null || _disposed) return;
+    if (_loadingEntry == page.entryName) return;
+    _pageFailures.remove(page.entryName);
+    _cache.remove(page.entryName);
+    _currentBytes = null;
+    _error = null;
+    await _loadCurrent(prefetch: false, forceRetry: true);
+  }
 
-  Future<void> _loadCurrent({required bool prefetch}) async {
+  /// Called when [Image.memory] fails to decode loaded bytes.
+  void reportCurrentPageDecodeFailed() {
+    final page = currentPage;
+    if (page == null || _disposed) return;
+    _cache.remove(page.entryName);
+    _currentBytes = null;
+    _error = null;
+    _pageFailures[page.entryName] =
+        ComicPageFailure.decodeFailure(page.entryName);
+    _state = ComicReaderLoadState.ready;
+    _loadingEntry = null;
+    _notify();
+    if (prefetchAdjacent) {
+      // ignore: unawaited_futures
+      _prefetchNeighbors();
+    }
+  }
+
+  Future<void> _loadCurrent({
+    required bool prefetch,
+    bool forceRetry = false,
+  }) async {
     if (_pages.isEmpty) return;
     final ref = _pages[_index];
-    final cached = _cache.get(ref.entryName);
-    if (cached != null) {
-      _currentBytes = cached;
-      _state = ComicReaderLoadState.ready;
+    final entryName = ref.entryName;
+
+    if (!forceRetry && _pageFailures.containsKey(entryName)) {
+      _currentBytes = null;
       _error = null;
+      _state = ComicReaderLoadState.ready;
+      _notify();
+      if (prefetch) {
+        // ignore: unawaited_futures
+        _prefetchNeighbors();
+      }
+      return;
+    }
+
+    final cached = _cache.get(entryName);
+    if (cached != null) {
+      _pageFailures.remove(entryName);
+      _currentBytes = cached;
+      _error = null;
+      _state = ComicReaderLoadState.ready;
+      _loadingEntry = null;
       _notify();
       if (prefetch) {
         // ignore: unawaited_futures
@@ -114,15 +205,22 @@ class ComicReaderController extends ChangeNotifier {
       return;
     }
 
+    if (_loadingEntry == entryName) return;
+
+    _loadingEntry = entryName;
     _state = ComicReaderLoadState.loadingPage;
     _error = null;
+    _currentBytes = null;
     _notify();
+
     try {
-      final bytes = await _source.loadPageBytes(ref.entryName);
-      if (_disposed) return;
-      _cache.put(ref.entryName, bytes);
+      final bytes = await _source.loadPageBytes(entryName);
+      if (_disposed || _pages[_index].entryName != entryName) return;
+      _cache.put(entryName, bytes);
+      _pageFailures.remove(entryName);
       _currentBytes = bytes;
       _state = ComicReaderLoadState.ready;
+      _loadingEntry = null;
       _notify();
       if (prefetch) {
         // ignore: unawaited_futures
@@ -130,22 +228,37 @@ class ComicReaderController extends ChangeNotifier {
       }
       _publishCacheTelemetry();
     } on ComicArchiveException catch (e) {
-      if (_disposed) return;
-      _cache.remove(ref.entryName);
-      _currentBytes = null;
-      _error = e;
-      _state = ComicReaderLoadState.error;
-      _notify();
+      if (_disposed || _pages[_index].entryName != entryName) return;
+      _applyPageFailure(entryName, e);
     } catch (_) {
-      if (_disposed) return;
-      _cache.remove(ref.entryName);
-      _currentBytes = null;
-      _error = ComicArchiveException(
-        kind: ComicArchiveErrorKind.pageExtractFailed,
-        userMessage: 'That comic page could not be opened.',
+      if (_disposed || _pages[_index].entryName != entryName) return;
+      _applyPageFailure(
+        entryName,
+        ComicArchiveException(
+          kind: ComicArchiveErrorKind.pageExtractFailed,
+          userMessage: 'This page could not be displayed.',
+        ),
       );
-      _state = ComicReaderLoadState.error;
-      _notify();
+    } finally {
+      if (_loadingEntry == entryName) {
+        _loadingEntry = null;
+      }
+    }
+  }
+
+  void _applyPageFailure(String entryName, ComicArchiveException exception) {
+    _cache.remove(entryName);
+    _currentBytes = null;
+    _error = null;
+    _pageFailures[entryName] =
+        ComicPageFailure.fromArchiveException(entryName, exception);
+    _state = ComicReaderLoadState.ready;
+    _notify();
+    if (prefetchAdjacent &&
+        _pages.isNotEmpty &&
+        _pages[_index].entryName == entryName) {
+      // ignore: unawaited_futures
+      _prefetchNeighbors();
     }
   }
 
@@ -154,13 +267,22 @@ class ComicReaderController extends ChangeNotifier {
     for (final i in [_index - 1, _index + 1]) {
       if (i < 0 || i >= _pages.length) continue;
       final name = _pages[i].entryName;
-      if (_cache.get(name) != null) continue;
+      if (_cache.get(name) != null || _pageFailures.containsKey(name)) {
+        continue;
+      }
+      if (_loadingEntry == name) continue;
       try {
         final bytes = await _source.loadPageBytes(name);
         if (_disposed) return;
         _cache.put(name, bytes);
+        _pageFailures.remove(name);
+      } on ComicArchiveException catch (e) {
+        if (_disposed) return;
+        _pageFailures[name] =
+            ComicPageFailure.fromArchiveException(name, e);
       } catch (_) {
-        // Prefetch failures are silent; explicit navigation surfaces errors.
+        if (_disposed) return;
+        _pageFailures[name] = ComicPageFailure.unknown(name);
       }
     }
   }
@@ -174,6 +296,7 @@ class ComicReaderController extends ChangeNotifier {
     _disposed = true;
     _publishCacheTelemetry();
     _cache.clear();
+    _pageFailures.clear();
     ReaderSessionTelemetry.instance.recordCleanupResult('comic_reader_disposed');
     // ignore: discarded_futures
     _source.dispose();
