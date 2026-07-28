@@ -1,6 +1,6 @@
 # Books & Comics Architecture (M6)
 
-**Status:** Active — Phase 6.3 ✅ **Complete** (CBZ comic reader); Phase 6.4 ✅ **Complete** (book reader); Phase 6.5 ✅ **Complete** (reading progress); Phase 6.6 ✅ **Complete** (reader hardening); Phase 6.4C in progress (comic reading experience closure)
+**Status:** Active — Phase 6.3 ✅ **Complete** (CBZ comic reader); Phase 6.4 ✅ **Complete** (book reader); Phase 6.5 ✅ **Complete** (reading progress); Phase 6.6 ✅ **Complete** (reader hardening); Phase **6.4C** ✅ **Complete** (2026-07-28)
 
 **Milestone plan:** [m6-plan.md](../roadmap/m6-plan.md) · [Phase 6.4C](../roadmap/m6-phase-6.4-comic-reading-experience.md)
 **Related ADRs:** [ADR-024](./decisions/ADR-024-book-comic-catalogue-schema-and-media-kind.md) · [ADR-025](./decisions/ADR-025-book-comic-identity-and-metadata-precedence.md) · [ADR-026](./decisions/ADR-026-reader-surface-architecture.md) · [ADR-027](./decisions/ADR-027-reading-progress-and-continue-reading.md)

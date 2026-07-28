@@ -1,6 +1,6 @@
 # M6 Phase 6.4C — Comic Reading Experience Closure
 
-**Status:** Step 5 ✅ Complete (2026-07-28) — diagnostics and architecture docs (not milestone-complete)
+**Status:** ✅ **Complete** (2026-07-28) — Steps 1–7 closed on `m6-development`
 **Branch:** `m6-development`  
 **Predecessor:** Phase 6.3 ✅ Complete (CBZ archive reader foundation)  
 **Related:** [m6-plan.md](./m6-plan.md) · [books-comics.md](../architecture/books-comics.md) · [ADR-026 Accepted](../architecture/decisions/ADR-026-reader-surface-architecture.md) · [ADR-027 Accepted](../architecture/decisions/ADR-027-reading-progress-and-continue-reading.md)
@@ -408,7 +408,7 @@ Optional: **`phase_64c_comic_progress_test.dart`** for progress-only validation;
 |---|---|
 | **Scope** | Verify 6.5 comic paths; add missing unit tests for restore/clamp/completion |
 | **Files** | `phase_64c_comic_progress_test.dart`, `reading_progress_coordinator.dart`, `reading_progress_record.dart`, `reading_progress_policy.dart`, `reading_progress_test_support.dart` |
-| **Tests** | 33-scenario matrix in `phase_64c_comic_progress_test.dart` (31 automated cases + shared helpers) |
+| **Tests** | 32 scenarios in `phase_64c_comic_progress_test.dart` |
 | **DoD** | All comic progress unit tests green; gaps documented below |
 | **Exclusions** | No new repository type; no reader UI changes |
 
@@ -544,7 +544,7 @@ Diagnostics expansion; `books-comics.md` CBZ-only refresh.
 |---|---|
 | **Scope** | Redacted comic-reader diagnostics; `books-comics.md` CBZ-only refresh; roadmap terminology |
 | **Files** | Telemetry, diagnostics service/export/UI, comic reader wiring, `phase_64c_comic_reader_diagnostics_test.dart`, `books-comics.md`, `m6-plan.md` |
-| **Tests** | 10 scenarios in `phase_64c_comic_reader_diagnostics_test.dart`; diagnostics/redaction/screen tests updated |
+| **Tests** | 12 scenarios in `phase_64c_comic_reader_diagnostics_test.dart`; diagnostics/redaction/screen tests updated |
 | **DoD** | Comic reader diagnostics subsection; architecture doc matches production CBZ-only reader |
 | **Exclusions** | Windows runtime (Step 6); phase closure (Step 7) |
 
@@ -556,7 +556,7 @@ Active CBZ reader sessions expose: active flag, archive type, redacted item iden
 
 Windows runtime harness extension; final phase closure documentation.
 
-### Step 6 — Windows runtime and regression ✅ (implementation complete; pending review)
+### Step 6 — Windows runtime and regression ✅
 
 | | |
 |---|---|
@@ -656,35 +656,152 @@ Real `ComicArchiveOpener`, lazy CBZ source, `ComicReaderController`, `ComicReade
 
 #### Deferred to Step 7
 
-Formal phase closure sign-off and Definition of Done checklist completion.
+~~Formal phase closure sign-off and Definition of Done checklist completion.~~ → **Complete** (see §15).
 
-### Step 7 — Closure documentation
+### Step 7 — Closure audit and documentation ✅
 
 | | |
 |---|---|
-| **Scope** | Mark Phase 6.4C (this document) complete in release tracker; update `m6-plan.md` comic experience row |
-| **Files** | `v0.7.0-dev.md`, `m6-plan.md` |
-| **DoD** | Measured results recorded; known limitations listed |
+| **Scope** | Definition-of-done audit; test/evidence inventory; limitations disposition; release and M6 plan sync |
+| **Files** | This document, `v0.7.0-dev.md`, `m6-plan.md` |
+| **DoD** | All §14 items verified with cited evidence; phase status → **Complete** |
 | **Exclusions** | M6 milestone audit (separate) |
 
 ---
 
 ## 14. Definition of done
 
-Phase 6.4C (comic reading experience closure) is **complete** when:
+Phase 6.4C (comic reading experience closure) is **complete** (2026-07-28):
 
-- [ ] CBZ comics open through the production reader path
-- [ ] Last-read page saves and restores reliably (ADR-027 repository)
-- [ ] Progress uses shared schema-versioned store; **no** video/music key writes
-- [ ] Navigation is deterministic and bounded (keyboard, wheel, tap, swipe per §8)
-- [ ] Fit modes and zoom/pan follow §9 without accidental page changes
-- [ ] Completion policy §6 implemented and tested
-- [ ] Large comics remain responsive under cache bounds
-- [ ] Malformed archives and single bad pages fail gracefully
-- [ ] Diagnostics remain redacted
-- [ ] Unit + widget tests pass; Windows opt-in harness extended and documented
-- [ ] Architecture docs updated; **no CBR/UnRAR reintroduction**
-- [ ] This document status → **Complete**
+- [x] CBZ comics open through the production reader path
+- [x] Last-read page saves and restores reliably (ADR-027 repository)
+- [x] Progress uses shared schema-versioned store; **no** video/music key writes
+- [x] Navigation is deterministic and bounded (keyboard, wheel, tap, swipe per §8)
+- [x] Fit modes and zoom/pan follow §9 without accidental page changes
+- [x] Completion policy §6 implemented and tested
+- [x] Large comics remain responsive under cache bounds
+- [x] Malformed archives and single bad pages fail gracefully
+- [x] Diagnostics remain redacted
+- [x] Unit + widget tests pass; Windows opt-in harness extended and documented
+- [x] Architecture docs updated; **no CBR/UnRAR reintroduction**
+- [x] This document status → **Complete**
+
+Full evidence: §15.
+
+---
+
+## 15. Phase closure (2026-07-28)
+
+### 15.1 Objective outcome
+
+Phase **6.4C** closes the comic-specific reading experience on the existing Phase 6.3 CBZ foundation: production-path progress persistence, reader interaction contract, per-page error resilience, redacted diagnostics, and Windows runtime validation — **CBZ-only**, with no CBR/UnRAR production dependency.
+
+### 15.2 Implementation summary
+
+| Area | Outcome |
+|---|---|
+| Progress | ADR-027 repository; debounced writes; close flush; restore/reconciliation; single-page completion-on-close; multi-page threshold completion |
+| Interaction | Contain default; fit width/height; keyboard/wheel/tap/swipe contract; immersive chrome; zoom/pan without accidental page turns |
+| Resilience | Archive-level block; page-level placeholders; retry; preload isolation |
+| Diagnostics | Pull-based snapshot + session-scoped telemetry; redacted export |
+| Runtime | Extended Phase 6.3 opt-in harness; progress-session race fix |
+
+### 15.3 Commit matrix
+
+| Step | SHA | Message (summary) |
+|---|---|---|
+| Planning | `0a8b0a4bd68881143e06f5914f6390d24077e712` | `docs(m6): plan Phase 6.4C comic reading closure` |
+| Step 2 | `a12a1e25e2a52f2f2abf3209de84149c3e4bb230` | `feat(m6.4c): validate comic progress and fix completion gaps` |
+| Step 3 | `f9f9f728f9de3842c0ee62ea2406913e826e9052` | `feat(m6.4c): add comic reader fit modes and input routing` |
+| Step 4 | `4d3ac927113cddc3ff27f3734d849e8b4d02f91e` | `feat(m6.4c): add per-page comic error resilience` |
+| Step 5 | `90554cdaaa01eb04ff827e3bd8836ffc6f00d2f3` | `feat(m6.4c): add comic reader diagnostics and refresh architecture docs` |
+| Step 6 | `bc015c32dc5529983b85a8595d1edb81b368a30d` | `test(m6.4c): extend Windows comic reader runtime validation` |
+| Step 7 | *(this closure commit)* | `docs(m6.4c): close comic reading experience phase` |
+
+### 15.4 Test and runtime evidence inventory
+
+| Evidence | Count / result | Primary files |
+|---|---|---|
+| Step 2 progress tests | 32 scenarios | `phase_64c_comic_progress_test.dart` |
+| Step 3 interaction tests | 16 scenarios | `phase_64c_comic_reader_interaction_test.dart` |
+| Step 4 page-error tests | 28 scenarios | `phase_64c_comic_page_error_test.dart` |
+| Step 5 diagnostics tests | 12 scenarios | `phase_64c_comic_reader_diagnostics_test.dart` |
+| Step 6 Windows runtime | 13 passed ×2 | `phase_63_comic_reader_windows_runtime_test.dart` |
+| Archive / opener / controller / cache (reused) | existing suite | `comic_archive_*`, `comic_reader_controller_test.dart` |
+| **Phase 6.4C focused total** | **88 widget/unit scenarios** | four `phase_64c_*` files |
+| **Default Flutter suite (2026-07-28)** | **1423 passed, 16 skipped** | `flutter test` |
+| **Windows Release build** | ✅ | `flutter build windows --release` |
+| **Runtime Run 1** | 13 passed, 0 failed | `PHASE_63_READER=1`, tag `phase63-reader` |
+| **Runtime Run 2** | 13 passed, 0 failed | consecutive repeatability |
+
+### 15.5 Definition-of-done matrix
+
+| Requirement | Status | Implementation | Automated tests | Runtime | Limitation / disposition |
+|---|---|---|---|---|---|
+| CBZ production reader path | ✅ | `comic_navigation.dart`, `ComicReaderScreen` | progress, interaction, page-error | C1 | — |
+| CBR blocked from reader | ✅ | `isSupportedComicArchiveExtension`, detail UI | progress legacy CBR projection | — | Conversion guidance only |
+| No UnRAR dependency | ✅ | CBR code removed; ADR-026 Accepted | opener rejects `.cbr` | — | Out of scope |
+| Save / restore last page | ✅ | `ReadingProgressCoordinator`, restore plan | `phase_64c_comic_progress_test.dart` | C16–C17 | — |
+| Entry-name reconciliation | ✅ | `resolveReadingRestore`, `comicLocation` | progress restore tests | C17 | — |
+| Close flush before debounce | ✅ | `onReaderClosed`, `drainPendingWrites` | progress + close tests | C18 | — |
+| Multi-page completion threshold | ✅ | `ReadingProgressPolicy.completionThreshold` | progress completion tests | C19–C21 | — |
+| Single-page complete on close | ✅ | `_maybeCompleteSinglePageComicOnClose` | progress single-page tests | C22–C23 | — |
+| Completed excluded from Continue Reading | ✅ | `ContinueReadingProjection` | progress projection tests | C20 | — |
+| Read Again page one | ✅ | `onReaderRestarted`, `startFromBeginning` | progress Read Again tests | C21 | C24 widget-automated |
+| Completion sticky until restart | ✅ | coordinator session policy | progress tests | — | — |
+| Comic isolation from video/music | ✅ | `ttsplayer_reading_progress_v1` key only | isolation tests | — | — |
+| Contain default fit | ✅ | `ComicFitMode.contain` | interaction tests | C3 | — |
+| Fit Width / Fit Height | ✅ | toolbar menu | interaction tests | C12 | C13 fit height: widget-automated (800px surface) |
+| Bounded keyboard navigation | ✅ | `ComicReaderScreen` key routing | interaction + runtime | C6–C10 | — |
+| Wheel at base transform | ✅ | `ComicViewport` wheel handler | interaction (`debugWheelDelta`) | — | C11 widget-automated |
+| Tap zones / chrome toggle | ✅ | viewport + toolbar | interaction tests | C14 | — |
+| Swipe (contain, base transform) | ✅ | viewport drag | interaction tests | — | No swipe in fit width/height overflow |
+| Zoom/pan no accidental page turn | ✅ | transform gate in viewport | interaction tests | — | Accepted limitation |
+| Page/fit change resets transform | ✅ | `_resetViewportForPageChange` | interaction tests | — | — |
+| Immersive chrome hide/restore | ✅ | `_toggleChrome`, Escape | interaction tests | C14–C15 | — |
+| Central `_navigatePage` path | ✅ | all input routes | interaction tests | — | — |
+| Lazy CBZ access | ✅ | `CbzZipArchiveSource` | archive tests | production path | — |
+| Bounded cache | ✅ | `ComicPageCache` limits | controller/cache tests | diagnostics C32 | — |
+| Adjacent preload | ✅ | `prefetchAdjacent` | controller tests | C1 multi-page | — |
+| Failed pages excluded from cache metrics | ✅ | cache + telemetry | page-error, diagnostics | C32 | — |
+| No eager full-archive decode | ✅ | lazy per-page load | archive tests | — | — |
+| Archive-level failure blocks open | ✅ | `ComicArchiveOpener` | opener tests | invalid archive | — |
+| Page failure keeps reader open | ✅ | `_PageFailurePane` | page-error tests | C25–C28 | — |
+| Stable page count | ✅ | controller index bounds | page-error tests | C28 | — |
+| Retry user-initiated | ✅ | `retryCurrentPage` | page-error tests | C30 | — |
+| Preload failure isolated | ✅ | controller prefetch logic | page-error preload tests | — | — |
+| Safe failure categories | ✅ | `ComicPageFailureCategory` | diagnostics tests | C32 | — |
+| Close on failed page flushes progress | ✅ | coordinator on close | page-error tests | C31 | — |
+| Active comic diagnostics | ✅ | `ReaderSessionTelemetry` | diagnostics tests | C32–C34 | — |
+| Redaction / session ownership | ✅ | session IDs, redaction helpers | diagnostics + redaction tests | C33–C34 | — |
+| `books-comics.md` CBZ-only | ✅ | architecture refresh Step 5 | — | — | — |
+| Full suite green | ✅ | — | 1423 passed, 16 skipped | — | — |
+| Runtime harness ×2 | ✅ | — | — | Run 1 & Run 2: 13/13 | — |
+
+### 15.6 Known limitations and disposition
+
+| Limitation | Disposition |
+|---|---|
+| C11 wheel not runtime-automated under `flutter test` | **Accepted** — widget-automated via `debugWheelDelta` in Step 3 |
+| C13 fit-height menu clipped at 800px test surface | **Accepted** — fit height validated in widget tests |
+| C24 single-page Read Again | **Widget automated** — `phase_64c_comic_progress_test.dart` |
+| C29 navigate past corrupt page in real CBZ | **Widget automated** — fake source in page-error tests |
+| Swipe page turns only in Contain at base transform | **Accepted limitation** — documented §8/§9 |
+| No swipe in Fit Width/Height overflow | **Approved deferral** — conflict-safe subset |
+| No live archive rebuild after source replacement | **Accepted limitation** — Step 4 |
+| Brief widget decode fallback before controller placeholder | **Accepted limitation** — Step 4 |
+| Cross-format reader-session aggregates separate from comic subsection | **Accepted** — diagnostics architecture |
+| No bookmarks, annotations, dual-page, RTL, cloud sync | **Out of scope** — M6 |
+| No CBR production support | **Out of scope** — ADR-026 Accepted; external conversion |
+| Visual zoom/pan smoothness | **Not required** — runtime observational |
+
+### 15.7 Format and dependency confirmation
+
+- **Production comic format:** CBZ only (`.cbz`).
+- **CBR/RAR:** not supported; users convert externally to CBZ and rescan.
+- **UnRAR:** no runtime, packaging, or Release-build dependency remains.
+
+**Phase 6.4C is formally closed.** M6 milestone completion remains subject to separate M6 closure audit.
 
 ---
 
@@ -704,11 +821,11 @@ Phase 6.4C (comic reading experience closure) is **complete** when:
 
 | Item | Status |
 |---|---|
-| Single-page comic completion rule | Proposed §6 — confirm during Step 2 |
-| Mouse wheel at zoom == 1 only | Proposed §8 — confirm UX |
-| Immersive chrome hide | In scope but optional for Step 3 MVP |
-| Separate `phase_64` harness file | Defer unless 6.3 harness exceeds ~400 lines |
-| Phase numbering vs `m6-plan.md` | Documented §alignment — no renumbering of book reader phase |
+| Single-page comic completion rule | **Implemented** §6 — Step 2 |
+| Mouse wheel at zoom == 1 only | **Implemented** §8 — Step 3 |
+| Immersive chrome hide | **Implemented** — Step 3 |
+| Separate `phase_64` harness file | **Not needed** — extended Phase 6.3 harness |
+| Phase numbering vs `m6-plan.md` | **Resolved** — 6.4C distinct from repo Phase 6.4 |
 
 ---
 

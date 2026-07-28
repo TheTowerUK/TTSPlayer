@@ -1,6 +1,6 @@
 # M6 — Books & Comics
 
-**Status:** **IN PROGRESS** — Phase 6.3 ✅ **Complete** (CBZ-only); Phase 6.6 complete; Phase 6.4C comic UX closure planning; M6 closure audit pending
+**Status:** **IN PROGRESS** — Phase 6.3 ✅ **Complete** (CBZ-only); Phase 6.6 complete; Phase **6.4C** ✅ **Complete** (2026-07-28); M6 closure audit pending
 **Comic format:** **CBZ-only** production — CBR removed; external conversion + rescan for legacy libraries (ADR-026 **Accepted**)
 **Branch:** `m6-development`  
 **Development version:** `v0.7.0-dev` (proposed; app remains `0.6.0+1` until release)  
@@ -8,7 +8,7 @@
 **Phase 6.1:** ✅ Complete (2026-07-24) — catalogue v4 / books & comics indexing  
 **Phase 6.2:** ✅ Complete (2026-07-24) — browse / search / detail presentation (no readers)  
 **Phase 6.3:** ✅ **Complete** — CBZ-only comic reader; ADR-026 **Accepted**; CBR removed from production scope.
-**Phase 6.4C (planning):** [m6-phase-6.4-comic-reading-experience.md](./m6-phase-6.4-comic-reading-experience.md) — comic reading experience closure (not started).
+**Phase 6.4C:** ✅ **Complete** (2026-07-28) — [m6-phase-6.4-comic-reading-experience.md](./m6-phase-6.4-comic-reading-experience.md) — comic reading experience closure (CBZ production reader UX, progress, resilience, diagnostics, Windows runtime).
 
 → [Books & comics architecture](../architecture/books-comics.md)
 → [Comic reading experience closure plan (6.4C)](./m6-phase-6.4-comic-reading-experience.md)
@@ -232,7 +232,7 @@ M6 extends TTSPlayer from a **video + music** personal media application into a 
 
 **Status:** ✅ **Complete** (2026-07-27). ADR-026 **Accepted** — CBZ-only production comic format. CBR/RAR removed from scope; external conversion + rescan required for legacy libraries.
 
-→ **Follow-on (planning):** [Phase 6.4C — Comic reading experience closure](./m6-phase-6.4-comic-reading-experience.md) — formal UX + progress closure (not started; distinct from repo Phase 6.4 book reader below).
+→ **Follow-on:** [Phase 6.4C — Comic reading experience closure](./m6-phase-6.4-comic-reading-experience.md) — ✅ **Complete** (2026-07-28); distinct from repo Phase 6.4 book reader below.
 
 **Checkpoint record:**
 
@@ -479,8 +479,8 @@ Each checkbox must point to a test, runtime scenario, document section, build re
 
 ## Handoff
 
-**Current production (2026-07-28):** Comic reader is **CBZ-only** (ADR-026 Accepted). Phase 6.3, 6.4, 6.5, and 6.6 are complete. Phase **6.4C** (comic reading experience closure) is in progress on `m6-development`.
+**Current production (2026-07-28):** Comic reader is **CBZ-only** (ADR-026 Accepted). Phases 6.3, 6.4, 6.5, 6.6, and **6.4C** are complete on `m6-development`.
 
 **Historical note:** Sections below that reference `.cbr` as required baseline scope, Gate 0 UnRAR, or UnRAR redistribution record **original M6 planning and investigation**. They are retained for audit. Current production architecture does not ship CBR/UnRAR tooling.
 
-**Next (6.4C):** Steps 6–7 — Windows runtime harness extension and phase closure documentation.
+**Next:** M6 milestone closure audit (separate from 6.4C).
