@@ -100,8 +100,8 @@ Every ADR must include these headings (use [ADR-template.md](./ADR-template.md))
 
 | ADR | Title | Status |
 |---|---|---|
-| [ADR-024](./ADR-024-book-comic-catalogue-schema-and-media-kind.md) | Book/Comic Catalogue Schema and Media Kind | **Proposed** (6.1 catalogue done; CBR stack **provisional** · [CBR eval](../cbr-rar-evaluation.md)) |
-| [ADR-025](./ADR-025-book-comic-identity-and-metadata-precedence.md) | Book/Comic Identity and Metadata Precedence | **Proposed** |
+| [ADR-024](./ADR-024-book-comic-catalogue-schema-and-media-kind.md) | Book/Comic Catalogue Schema and Media Kind | **Accepted** (CBZ-only comic production; ADR-026) |
+| [ADR-025](./ADR-025-book-comic-identity-and-metadata-precedence.md) | Book/Comic Identity and Metadata Precedence | **Accepted** |
 | [ADR-026](./ADR-026-reader-surface-architecture.md) | Reader Surface Architecture | **Accepted** (CBZ-only comic production format; CBR removed) |
 | [ADR-027](./ADR-027-reading-progress-and-continue-reading.md) | Reading Progress and Continue Reading | **Accepted** |
 

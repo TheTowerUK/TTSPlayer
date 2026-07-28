@@ -18,9 +18,9 @@ Shipping history and milestone snapshots for TTSPlayer.
 
 ## Current development focus
 
-**M6 — Books & Comics** — Phase 6.0 Planning and Architecture (not implementation-complete).
+**M6 — Books & Comics** — Closure audit complete (2026-07-28); release finalisation pending.
 
-→ [M6 plan](../roadmap/m6-plan.md) · [v0.7.0-dev tracker](./v0.7.0-dev.md) · [Books & comics architecture](../architecture/books-comics.md)
+→ [M6 closure audit](../roadmap/m6-closure-report.md) · [M6 plan](../roadmap/m6-plan.md) · [v0.7.0-dev tracker](./v0.7.0-dev.md) · [Books & comics architecture](../architecture/books-comics.md)
 
 Deferred M5 music features (playlists, shuffle/repeat, favourites redesign, etc.) remain a **separate backlog** — not silent M6 scope ([m5-complete.md §4](./m5-complete.md)).
 

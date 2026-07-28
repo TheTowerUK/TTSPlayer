@@ -9,7 +9,7 @@ Canonical milestone detail lives in [`docs/roadmap/`](docs/roadmap/).
 | M3.5 | [Network Client Foundation](docs/roadmap/network-client-foundation.md) | ✅ `m3.5-complete` |
 | M4 | [User Experience and Platform Integration](docs/roadmap/m4-plan.md) | ✅ `v0.5.0` — [release summary](docs/release/m4-release-summary.md) |
 | M5 | [Music](docs/roadmap/m5-plan.md) | ✅ Complete — `v0.6.0` / `m5-complete` (2026-07-24) — [release](docs/release/m5-complete.md) |
-| M6 | [Books & Comics](docs/roadmap/m6-plan.md) | 🔄 In progress — Phase 6.0 Planning — [plan](docs/roadmap/m6-plan.md) · [v0.7.0-dev](docs/release/v0.7.0-dev.md) |
+| M6 | [Books & Comics](docs/roadmap/m6-plan.md) | 🔄 Closure audit complete — release pending — [audit](docs/roadmap/m6-closure-report.md) · [v0.7.0-dev](docs/release/v0.7.0-dev.md) |
 | M7 | [Multi-device Experience](docs/roadmap/mobile-delivery.md#m7--multi-device-experience) | Planned |
 
 → [Roadmap principles](docs/roadmap/principles.md)
@@ -120,28 +120,32 @@ Sprint checkpoints: `m3-sprint-3`, `m3-complete`. Sprint 4 delivered Featured Fo
 
 ## M6 — Books & Comics
 
-**Status:** 🔄 In progress — Phase 6.0 Planning and Architecture (2026-07-24)  
-**Branch:** `m6-development`  
-**Development tracker:** [v0.7.0-dev](docs/release/v0.7.0-dev.md)  
-**Baseline:** M5 — `v0.6.0` / `m5-complete`  
-**App version:** remains `0.6.0+1` until an implementation phase bumps it  
+**Status:** 🔄 **Closure audit complete** (2026-07-28) — implementation phases complete; **release finalisation pending**
+**Branch:** `m6-development`
+**Development tracker:** [v0.7.0-dev](docs/release/v0.7.0-dev.md)
+**Closure audit:** [m6-closure-report.md](docs/roadmap/m6-closure-report.md)
+**Baseline:** M5 — `v0.6.0` / `m5-complete`
+**App version:** remains `0.6.0+1` until release finalisation
+**Production comic format:** **CBZ only** (ADR-026 Accepted)
 
 ### M6 progress
 
 | Sub-phase | Focus | Status |
 |---|---|---|
 | **6.0** | Planning and Architecture | ✅ Complete |
-| **6.1** | Catalogue schema, media kinds, indexer formats (+ RAR/CBR provisional preferred) | ✅ Complete |
-| **6.2** | Books & comics library browsing / presentation | Planned |
-| **6.3** | Comic archive reader (CBZ **and** CBR required) | Planned |
-| **6.4** | Book document reader (PDF/EPUB) | Planned |
-| **6.5** | Reading progress and Continue Reading | Planned |
-| **6.6** | Performance, diagnostics, and Windows runtime validation | Planned |
-| **Release** | M6 release and documentation | Planned |
+| **6.1** | Catalogue schema, media kinds, indexer formats | ✅ Complete |
+| **6.2** | Books & comics library browsing / presentation | ✅ Complete |
+| **6.3** | Comic archive reader (CBZ) | ✅ Complete — CBZ-only |
+| **6.4** | Book document reader (PDF/EPUB) | ✅ Complete |
+| **6.4C** | Comic reading experience closure | ✅ Complete (2026-07-28) |
+| **6.5** | Reading progress and Continue Reading | ✅ Complete |
+| **6.6** | Performance, diagnostics, Windows runtime | ✅ Complete |
+| **Release** | Tags, version, release summary | ⏳ Pending |
 
-→ [M6 plan](docs/roadmap/m6-plan.md)  
-→ [Books & comics architecture](docs/architecture/books-comics.md)  
-→ [ADR-024–027 (Proposed)](docs/architecture/decisions/README.md#m6--books--comics)  
-→ **Next:** Phase 6.2  
+→ [M6 plan](docs/roadmap/m6-plan.md)
+→ [M6 closure audit](docs/roadmap/m6-closure-report.md)
+→ [Books & comics architecture](docs/architecture/books-comics.md)
+→ [ADR-024–027 Accepted](docs/architecture/decisions/README.md#m6--books--comics)
+→ **Next:** Release finalisation (version bump, tags, `m6-complete.md`)
 
 **Not silent M6 scope:** M5 deferred music features (playlists, shuffle/repeat, favourites redesign, lyrics, etc.) remain a separate backlog — see [m5-complete.md §4](docs/release/m5-complete.md).

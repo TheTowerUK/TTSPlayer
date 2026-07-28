@@ -1,6 +1,6 @@
 # M6 — Books & Comics
 
-**Status:** **IN PROGRESS** — Phase 6.3 ✅ **Complete** (CBZ-only); Phase 6.6 complete; Phase **6.4C** ✅ **Complete** (2026-07-28); M6 closure audit pending
+**Status:** **CLOSURE AUDIT COMPLETE** (2026-07-28) — Phases 6.0–6.6 and **6.4C** complete on `m6-development`; **release finalisation pending** (no tags/version bump in audit)
 **Comic format:** **CBZ-only** production — CBR removed; external conversion + rescan for legacy libraries (ADR-026 **Accepted**)
 **Branch:** `m6-development`  
 **Development version:** `v0.7.0-dev` (proposed; app remains `0.6.0+1` until release)  
@@ -110,7 +110,8 @@ M6 extends TTSPlayer from a **video + music** personal media application into a 
 | **6.4** | Book document reader (PDF/EPUB) | ✅ **Complete** (2026-07-26) |
 | **6.5** | Reading progress and Continue Reading | **Complete** (2026-07-27) — persistence, Continue Reading, diagnostics |
 | **6.6** | Performance, diagnostics, and Windows runtime validation | ✅ Complete (2026-07-27) — lazy CBZ/EPUB, cache bounds, reader diagnostics, UX/a11y matrix |
-| **Release** | M6 release and documentation | Planned |
+| **6.4C** | Comic reading experience closure (UX, progress, resilience) | ✅ **Complete** (2026-07-28) — [spec](./m6-phase-6.4-comic-reading-experience.md) · distinct from repo Phase 6.4 book reader |
+| **Release** | M6 release and documentation | ⏳ Pending — [closure audit](./m6-closure-report.md) |
 
 ---
 
@@ -368,10 +369,10 @@ M6 extends TTSPlayer from a **video + music** personal media application into a 
 
 | ADR | Title | Status | Why needed |
 |---|---|---|---|
-| [ADR-024](../architecture/decisions/ADR-024-book-comic-catalogue-schema-and-media-kind.md) | Book/Comic Catalogue Schema and Media Kind | **Proposed** | New kinds + extensions + catalogue version policy |
-| [ADR-025](../architecture/decisions/ADR-025-book-comic-identity-and-metadata-precedence.md) | Book/Comic Identity and Metadata Precedence | **Proposed** | Stable ids; tag/archive metadata vs filename |
-| [ADR-026](../architecture/decisions/ADR-026-reader-surface-architecture.md) | Reader Surface Architecture | **Proposed** (comic reader provisionally validated; Phase 6.3 in progress) | Dedicated readers vs reuse of video/music surfaces |
-| [ADR-027](../architecture/decisions/ADR-027-reading-progress-and-continue-reading.md) | Reading Progress and Continue Reading | **Accepted** | Persistence ownership and isolation |
+| [ADR-024](../architecture/decisions/ADR-024-book-comic-catalogue-schema-and-media-kind.md) | Book/Comic Catalogue Schema and Media Kind | **Accepted** (2026-07-28; comic production `.cbz` only per ADR-026) |
+| [ADR-025](../architecture/decisions/ADR-025-book-comic-identity-and-metadata-precedence.md) | Book/Comic Identity and Metadata Precedence | **Accepted** (2026-07-28) |
+| [ADR-026](../architecture/decisions/ADR-026-reader-surface-architecture.md) | Reader Surface Architecture | **Accepted** (CBZ-only comic production format; CBR removed) |
+| [ADR-027](../architecture/decisions/ADR-027-reading-progress-and-continue-reading.md) | Reading Progress and Continue Reading | **Accepted** |
 
 No M4/M5 ADRs require amendment for planning; implementation may reference ADR-007/014/020 patterns without superseding them.
 
@@ -379,55 +380,57 @@ No M4/M5 ADRs require amendment for planning; implementation may reference ADR-0
 
 ## Milestone Definition of Done (M6)
 
-M6 is complete when:
+**Audit:** ✅ Complete (2026-07-28) — full disposition matrix in [m6-closure-report.md](./m6-closure-report.md) §4.
+
+M6 implementation is **complete** on `m6-development`. Original DoD items referencing **mandatory production CBR** are **superseded by ADR-026 Accepted** (CBZ-only). Historical wording is retained below where noted; closure dispositions apply.
 
 ### Architecture and ADR governance
 
-- [ ] ADR-024–027 Accepted (or explicitly superseded) with evidence
-- [ ] `books-comics.md` reflects implemented architecture
-- [ ] No parallel catalogue/search/diagnostics systems introduced
+- [x] ADR-024–027 **Accepted** (ADR-024 amended for CBZ-only comic production)
+- [x] `books-comics.md` reflects implemented architecture
+- [x] No parallel catalogue/search/diagnostics systems introduced
 
 ### Functional behaviour
 
-- [ ] Supported book and comic files are indexed with correct `media_kind` (comics include **`.cbz` and `.cbr`**)
-- [ ] Users can browse items via real folders without invented categories
-- [ ] Users can open and navigate a comic archive reader for **both CBZ and CBR**
-- [ ] Unsupported, encrypted, corrupt, or multi-volume comic archives fail gracefully without crashing or affecting the rest of the catalogue
-- [ ] Users can open and navigate a book reader (PDF and EPUB)
-- [ ] Reading progress persists and Continue Reading works
-- [ ] Missing metadata does not hide items
+- [x] Supported book and comic files indexed with correct `media_kind` (comics: **`.cbz`** production)
+- [x] ~~Comics include `.cbz` and `.cbr`~~ → **Superseded:** `.cbz` indexed; legacy `.cbr` catalogue entries show conversion guidance
+- [x] Users browse via real folders without invented categories
+- [x] ~~Comic reader for both CBZ and CBR~~ → **Superseded:** CBZ production reader; CBR blocked (ADR-026)
+- [x] Unsupported/corrupt comic archives fail gracefully
+- [x] PDF/EPUB book reader open and navigate
+- [x] Reading progress and Continue Reading
+- [x] Missing metadata does not hide items
 
 ### Compatibility and isolation
 
-- [ ] Video folder browse, Continue Watching, and playback remain correct
-- [ ] Music browse, playback, listening history, and session persistence remain correct
-- [ ] Reading-progress keys never write video or music namespaces
+- [x] Video Continue Watching and playback unchanged
+- [x] Music playback, history, and session persistence unchanged
+- [x] Reading-progress keys isolated from video/music namespaces
 
 ### Automated regression
 
-- [ ] Focused M6 suites pass
-- [ ] Full Flutter test suite passes (no failed default-suite tests)
+- [x] Focused M6 suites pass
+- [x] Full Flutter suite passes — **1402 passed, 19 skipped, 0 failed** (2026-07-28 audit)
 
 ### Windows runtime validation
 
-- [ ] Opt-in M6 runtime harness(es) pass on Windows
-- [ ] Comic reader Windows runtime validation includes **both CBZ and CBR** fixtures (open + page navigation)
-- [ ] Windows Release build succeeds with required native/RAR dependencies documented
+- [x] Core M6 opt-in harnesses pass (P63–P66) on Windows
+- [x] ~~Comic runtime CBZ + CBR fixtures~~ → **Superseded:** CBZ-only; CBR unavailable UI in widget tests
+- [x] Windows Release build succeeds — no UnRAR/RAR dependency
+- [ ] Phase 6.2 browse harness (P62) — **4/6 pass**; harness stale (provider gap) — **non-blocking**; refresh before release optional
 
 ### Performance and UX
 
-- [ ] Large mixed catalogues remain usable (informational baselines acceptable)
-- [ ] Reader failures show recovery actions; no blank dead-ends
+- [x] Reader failures show recovery actions (informational large-catalogue baselines acceptable)
 
 ### Diagnostics and documentation
 
-- [ ] Diagnostics expose aggregate reading stats without secrets/paths/titles where policy requires redaction
-- [ ] Release notes, architecture, and roadmap indexes updated
-- [ ] Version and tags published (`m6-complete`, semver tag)
-- [ ] Working tree clean aside from intentionally excluded files
-- [ ] Branch/tag governance followed (closure on `m6-development` or release process of record)
+- [x] Redacted reading/reader diagnostics
+- [ ] Release notes, `m6-complete.md`, indexes — **deferred** to release-finalisation task
+- [ ] Version and tags (`m6-complete`, `v0.7.0`) — **deferred** to release-finalisation task
+- [x] Working tree clean at audit entry
 
-Each checkbox must point to a test, runtime scenario, document section, build result, or measured report at closure.
+Each checkbox must point to a test, runtime scenario, document section, build result, or measured report at closure — see [m6-closure-report.md](./m6-closure-report.md).
 
 ---
 
@@ -483,4 +486,4 @@ Each checkbox must point to a test, runtime scenario, document section, build re
 
 **Historical note:** Sections below that reference `.cbr` as required baseline scope, Gate 0 UnRAR, or UnRAR redistribution record **original M6 planning and investigation**. They are retained for audit. Current production architecture does not ship CBR/UnRAR tooling.
 
-**Next:** M6 milestone closure audit (separate from 6.4C).
+**Next:** M6 **release finalisation** (version bump, tags, `m6-complete.md`) — see [m6-closure-report.md](./m6-closure-report.md) §10.

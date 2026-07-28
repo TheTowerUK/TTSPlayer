@@ -1,9 +1,9 @@
 # ADR-024: Book/Comic Catalogue Schema and Media Kind
 
-**Status:** Proposed (catalogue landed in 6.1; CBR Gate 0 Candidate E **Conditional pass** 2026-07-25 — Accept still deferred until reader closure)  
-**Date:** 2026-07-24  
+**Status:** **Accepted** (2026-07-28) — catalogue v4 implemented in Phase 6.1; **comic production extension amended to `.cbz` only** per [ADR-026 Accepted](./ADR-026-reader-surface-architecture.md)
+**Date:** 2026-07-24 (proposed) / 2026-07-28 (accepted)
 **Milestone:** M6 — Phase 6.1  
-**Related:** [books-comics.md](../books-comics.md) · [cbr-rar-evaluation.md](../cbr-rar-evaluation.md) · [m6-plan.md](../../roadmap/m6-plan.md) · [ADR-020](./ADR-020-music-catalogue-schema-and-media-kind.md)
+**Related:** [books-comics.md](../books-comics.md) · [cbr-rar-evaluation.md](../cbr-rar-evaluation.md) · [m6-plan.md](../../roadmap/m6-plan.md) · [ADR-020](./ADR-020-music-catalogue-schema-and-media-kind.md) · [ADR-026](./ADR-026-reader-surface-architecture.md)
 
 ---
 
@@ -11,27 +11,23 @@
 
 M5 introduced `media_kind: audio` and expanded the catalogue for music. M6 must index books and comics without inventing categories or breaking existing video/audio/image catalogues.
 
-`.cbz` and `.cbr` are the two primary comic archive formats. Both belong in M6 baseline product scope. CBR’s greater technical risk is an **implementation and dependency** concern, not optional product scope.
+`.cbz` and `.cbr` were both considered primary comic archive formats during M6 planning. Gate 0 CBR investigation and [ADR-026 Accepted](./ADR-026-reader-surface-architecture.md) (2026-07-27) changed **production comic support to CBZ-only**. This ADR records the accepted catalogue architecture with that amendment.
 
 ---
 
 ## Decision
 
 1. Distinct `media_kind` values: **`book`** and **`comic`** (alongside `video`, `audio`, `image`, `unknown`).
-2. M6 supported extensions:
+2. M6 **production** supported extensions:
    - Books: `.pdf`, `.epub`
-   - Comics: **`.cbz`** and **`.cbr`** — **both required**
-3. **`catalogue_version: 4`**, scanner **`0.5.0`**.
-4. Emit `supported_extensions` including the new formats.
-5. Unknown future kinds remain non-fatal on the client (`MediaKind.unknown`).
-6. Client refuses catalogues with `catalogue_version` **greater than** `CatalogueInfo.maxSupportedCatalogueVersion` (currently 4) via `UnsupportedCatalogueVersionException`, preserving the previous catalogue through existing `CatalogService` error handling.
-7. Do **not** invent a `media_type` / category field on folders.
-8. Do **not** silently defer `.cbr`. Any later deferral requires an explicit documented decision, rationale, known limitation, and approval before M6 closure.
-9. **Windows CBR/RAR approach (Phase 6.1 — provisional preferred, not Gate-0 validated):**
-   - **Provisional preferred:** [`package:unrar`](https://pub.dev/packages/unrar) — Dart FFI to the **official UnRAR library** (RARLab). Published docs claim Windows / macOS / Linux support, list + selective extract APIs, and RAR4/RAR5.
-   - **Not preferred for Windows:** [`package:rar`](https://pub.dev/packages/rar) — published platform support is Android / iOS / macOS / Web only; do not treat it as a Windows implementation without evidence.
-   - **Documented fallbacks:** bundled UnRAR CLI (subprocess), or first-party FFI to UnRAR / libarchive if Gate 0 rejects `unrar`.
-   - **Dependency is not added in Phase 6.1.** Phase **6.3 Gate 0** (Release spike + fixtures + licensing) is **blocking** before CBR reader Accept. See [cbr-rar-evaluation.md](../cbr-rar-evaluation.md).
+   - Comics: **`.cbz`** (ZIP-based comic archive)
+3. **Legacy `.cbr`:** not indexed on new scans; existing catalogue entries may remain until rescanned after external conversion to CBZ (client shows conversion guidance).
+4. **`catalogue_version: 4`**, scanner **`0.5.0`**.
+5. Emit `supported_extensions` including the new formats.
+6. Unknown future kinds remain non-fatal on the client (`MediaKind.unknown`).
+7. Client refuses catalogues with `catalogue_version` **greater than** `CatalogueInfo.maxSupportedCatalogueVersion` (currently 4) via `UnsupportedCatalogueVersionException`, preserving the previous catalogue through existing `CatalogService` error handling.
+8. Do **not** invent a `media_type` / category field on folders.
+9. **CBR/RAR production (superseded):** Original M6 planning required in-app CBR support. ADR-026 **Accepted** removed CBR from production scope. Historical Gate 0 investigation is archived under `docs/architecture/archive/unrar-evaluation/`.
 
 ---
 
@@ -39,16 +35,14 @@ M5 introduced `media_kind: audio` and expanded the catalogue for music. M6 must 
 
 ### Positive
 
-- Clear routing to future comic vs book readers
+- Clear routing to comic vs book readers
 - Additive catalogue evolution with an explicit version bump
-- Both primary comic formats indexed today
-- Honest Windows CBR plan (provisional + Gate 0) rather than assuming an unsupported plugin platform
+- CBZ comic indexing in production; honest CBR disposition via ADR-026
 
 ### Negative / risks
 
 - Older clients may ignore book/comic items until updated (acceptable)
-- `package:unrar` is early (`0.1.x`) and unverified until Gate 0
-- Packaging / UnRAR redistribution diligence remains open until 6.3
+- Legacy `.cbr` catalogue entries require user conversion + rescan
 
 ### Compatibility
 
@@ -65,7 +59,7 @@ M5 introduced `media_kind: audio` and expanded the catalogue for music. M6 must 
 |---|---|
 | Single `document` kind | Collapses different reader/progress models |
 | Treat CBZ as `image` | Breaks browse semantics |
-| CBZ-only comics; defer CBR | Rejected — both formats are primary |
+| CBZ-only comics; defer CBR in production | **Accepted** (2026-07-27) — ADR-026; external conversion for legacy libraries |
 | `package:rar` for Windows | Published platforms omit Windows |
 | Bundle UnRAR.exe as primary | Heavier ops; kept as Gate 0 fallback |
 | Custom libarchive FFI as primary | More ownership; keep as alternate if UnRAR FFI fails |
@@ -74,11 +68,9 @@ M5 introduced `media_kind: audio` and expanded the catalogue for music. M6 must 
 
 ## Acceptance criteria
 
-- [x] Indexer emits `book` / `comic` with `.pdf`/`.epub`/`.cbz`/`.cbr`
+- [x] Indexer emits `book` / `comic` with `.pdf`/`.epub`/`.cbz`
 - [x] Client parses kinds without crashing on mixed catalogues
 - [x] Automated tests cover emission + parse + mixed-media isolation
-- [x] Windows CBR approach recorded as **provisional preferred** with Gate 0 defined (not falsely marked validated)
-- [x] Caddy/media allowlists aligned (incl. pre-existing audio gap)
+- [x] ~~Windows CBR approach Gate 0~~ → **Superseded** by ADR-026 (CBZ-only production)
 - [x] Phase 6.1 review approved and committed
-- [ ] Phase 6.3 Gate 0 passes before CBR reader Accept
-- [ ] ADR-024 formal **Accepted** (remains Proposed until Gate 0 / explicit Accept)
+- [x] ADR-024 formal **Accepted** (2026-07-28; comic extension CBZ-only)

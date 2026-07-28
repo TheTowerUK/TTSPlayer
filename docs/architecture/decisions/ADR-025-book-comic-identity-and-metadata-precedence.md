@@ -1,7 +1,7 @@
 # ADR-025: Book/Comic Identity and Metadata Precedence
 
-**Status:** Proposed (identity/metadata behaviour implemented for 6.1 indexing)  
-**Date:** 2026-07-24  
+**Status:** **Accepted** (2026-07-28) — identity and metadata precedence implemented in Phases 6.1–6.2
+**Date:** 2026-07-24 (proposed) / 2026-07-28 (accepted)
 **Milestone:** M6 — Phase 6.1–6.2  
 **Related:** [books-comics.md](../books-comics.md) · [ADR-021](./ADR-021-music-metadata-precedence-and-identity.md) · [ADR-024](./ADR-024-book-comic-catalogue-schema-and-media-kind.md)
 
@@ -11,11 +11,11 @@
 
 Books and comics often carry embedded metadata (EPUB OPF, PDF info, ComicInfo.xml inside CBZ). Users also name files and folders deliberately. TTSPlayer must not let enrichment override filesystem identity or invent library structure.
 
-Music already established path-based identity with enrichment precedence (ADR-021). Books/comics should follow the same philosophy.
+Music already established path-based identity with enrichment precedence (ADR-021). Books/comics follow the same philosophy.
 
 ---
 
-## Decision (proposed)
+## Decision
 
 1. **Stable item identity** remains path-derived (existing MD5-of-file-path pattern). Renames create new identities (same as music/video).
 2. **Display title precedence:**
@@ -53,8 +53,9 @@ Music already established path-based identity with enrichment precedence (ADR-02
 
 ---
 
-## Acceptance criteria (for later Accept)
+## Acceptance criteria
 
-- [ ] Progress and favourites (if any) key by stable item id
-- [ ] Title fallback never blanks the UI
-- [ ] Tests cover missing metadata and rename-as-new-id behaviour documentation
+- [x] Progress keys by stable item id (ADR-027)
+- [x] Title fallback never blanks the UI
+- [x] Tests cover missing metadata; rename-as-new-id documented limitation
+- [x] ADR-025 formal **Accepted** (2026-07-28)
