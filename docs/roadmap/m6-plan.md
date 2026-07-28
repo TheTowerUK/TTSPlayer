@@ -1,16 +1,17 @@
 # M6 — Books & Comics
 
-**Status:** **IN PROGRESS** — Phase 6.3 ✅ **Complete** (CBZ-only); Phase 6.6 complete; M6 closure audit pending  
-**CBR production path:** Official **UnRAR64.dll** FFI — **Technical Pass**; bundled redistribution **Awaiting publisher/legal confirmation**
+**Status:** **IN PROGRESS** — Phase 6.3 ✅ **Complete** (CBZ-only); Phase 6.6 complete; Phase 6.4C comic UX closure planning; M6 closure audit pending
+**Comic format:** **CBZ-only** production — CBR removed; external conversion + rescan for legacy libraries (ADR-026 **Accepted**)
 **Branch:** `m6-development`  
 **Development version:** `v0.7.0-dev` (proposed; app remains `0.6.0+1` until release)  
 **Predecessor:** M5 — tags `v0.6.0` / `m5-complete` (2026-07-24)  
 **Phase 6.1:** ✅ Complete (2026-07-24) — catalogue v4 / books & comics indexing  
 **Phase 6.2:** ✅ Complete (2026-07-24) — browse / search / detail presentation (no readers)  
 **Phase 6.3:** ✅ **Complete** — CBZ-only comic reader; ADR-026 **Accepted**; CBR removed from production scope.
+**Phase 6.4C (planning):** [m6-phase-6.4-comic-reading-experience.md](./m6-phase-6.4-comic-reading-experience.md) — comic reading experience closure (not started).
 
-→ [Books & comics architecture](../architecture/books-comics.md)  
-→ [CBR/RAR evaluation](../architecture/cbr-rar-evaluation.md)  
+→ [Books & comics architecture](../architecture/books-comics.md)
+→ [Comic reading experience closure plan (6.4C)](./m6-phase-6.4-comic-reading-experience.md)
 → [M5 complete](../release/m5-complete.md)  
 → [Roadmap principles](./principles.md)  
 → [Architecture index](../architecture/README.md)  
@@ -230,6 +231,8 @@ M6 extends TTSPlayer from a **video + music** personal media application into a 
 ### Phase 6.3 — Comic archive reader (CBZ)
 
 **Status:** ✅ **Complete** (2026-07-27). ADR-026 **Accepted** — CBZ-only production comic format. CBR/RAR removed from scope; external conversion + rescan required for legacy libraries.
+
+→ **Follow-on (planning):** [Phase 6.4C — Comic reading experience closure](./m6-phase-6.4-comic-reading-experience.md) — formal UX + progress closure (not started; distinct from repo Phase 6.4 book reader below).
 
 **Checkpoint record:**
 

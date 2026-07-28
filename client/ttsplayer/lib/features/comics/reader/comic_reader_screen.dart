@@ -12,7 +12,7 @@ import '../archive/comic_archive_errors.dart';
 import '../archive/comic_archive_source.dart';
 import 'comic_reader_controller.dart';
 
-/// Fullscreen paged comic reader (CBZ / CBR).
+/// Fullscreen paged comic reader (CBZ).
 ///
 /// Keyboard (when no text field owns focus):
 /// - Left / PageUp: previous page
