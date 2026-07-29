@@ -455,8 +455,8 @@ Music is the second candidate; video and comics deferred until matching UX and a
 
 | Sub-phase | Focus | Status |
 |---|---|---|
-| **7.0** | Planning, provider research criteria, architecture, Proposed ADRs | 🟡 **In progress** |
-| **7.1** | Enrichment models, provenance schema, persistence repository | Planned |
+| **7.0** | Planning, provider research criteria, architecture, Proposed ADRs | ✅ Complete |
+| **7.1** | Enrichment models, provenance schema, persistence repository | ✅ Complete |
 | **7.2** | Provider abstraction + **books** vertical slice (one provider after evaluation) | Planned |
 | **7.3** | Matching, confidence scoring, manual correction, ignore/stale | Planned |
 | **7.4** | Artwork enrichment, download cache, precedence integration | Planned |
@@ -481,6 +481,22 @@ Music is the second candidate; video and comics deferred until matching UX and a
 **Out of scope:** Provider dependencies, API clients, schema migrations in production code, UI implementation.
 
 **Definition of done:** Architecture reviewed; ADRs Proposed; no pubspec version bump; no provider packages added.
+
+### Phase 7.1 — Enrichment Models and Persistence ✅
+
+**Objective:** Local persistence foundation for optional metadata enrichment.
+
+**Delivered:**
+
+- Domain models: match state, match method, field provenance, enrichment record
+- `MetadataEnrichmentRepository` — `ttsplayer_metadata_enrichment_v1`
+- Catalogue-replacement pruning via `CatalogCacheCoordinator`
+- Composition-root wiring in `main.dart`
+- Automated tests (31 focused + full suite green)
+
+**Closure:** [m7-phase-7.1-closure-report.md](./m7-phase-7.1-closure-report.md)
+
+**Out of scope:** Provider HTTP, credentials, matching UI, artwork download, enriched detail screens.
 
 ---
 

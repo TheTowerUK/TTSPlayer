@@ -4,7 +4,7 @@
 **Milestone:** M7 — Metadata Enrichment and Library Experience
 **Related ADRs:** [ADR-028](./decisions/ADR-028-external-metadata-enrichment-boundary.md) (Proposed), [ADR-029](./decisions/ADR-029-metadata-precedence-provenance-and-matching.md) (Proposed)
 
-→ [M7 plan](../roadmap/m7-plan.md)
+→ [M7 plan](../roadmap/m7-plan.md) · [Phase 7.1 closure](../roadmap/m7-phase-7.1-closure-report.md)
 → [Books & comics](./books-comics.md) · [Music](./music.md)
 → [Artwork caching ADR-015](./decisions/ADR-015-artwork-and-image-decode-caching.md)
 → [Diagnostics ADR-017](./decisions/ADR-017-diagnostics-architecture.md)
@@ -79,9 +79,11 @@ Unchanged from catalogue v4 / indexer contract:
 
 ## Enrichment store (proposed)
 
-**Key:** `ttsplayer_metadata_enrichment_v1` (SharedPreferences or successor SQLite — decision in Phase 7.1)
+**Key:** `ttsplayer_metadata_enrichment_v1` (SharedPreferences JSON envelope — **implemented Phase 7.1**)
 
 **Record key:** catalogue item `id`
+
+**Field locks:** `lockedFields` on the enrichment record is authoritative; per-field `locked` flags are derived on normalization and must not disagree after `normalized()`.
 
 | Field group | Examples |
 |---|---|
@@ -95,9 +97,11 @@ Unchanged from catalogue v4 / indexer contract:
 On `CatalogCacheCoordinator` catalogue replace (existing ADR-014 pattern):
 
 1. Load new catalogue ids
-2. Prune enrichment records whose `itemId` absent
+2. Prune enrichment records whose `itemId` absent via `MetadataEnrichmentRepository.validateAgainstCatalog`
 3. Do **not** block catalogue load on enrichment I/O failure
-4. Invalidate artwork decode cache; optionally prune provider artwork disk cache for removed ids
+4. Invalidate artwork decode cache (provider artwork disk cache deferred to Phase 7.4)
+
+**Rename/move:** Item id is md5(path). Old enrichment records are pruned when the old id disappears; automatic transfer to a new id is Phase 7.3 stale handling.
 
 ---
 

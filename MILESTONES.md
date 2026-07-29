@@ -164,8 +164,8 @@ Sprint checkpoints: `m3-sprint-3`, `m3-complete`. Sprint 4 delivered Featured Fo
 
 | Sub-phase | Focus | Status |
 |---|---|---|
-| **7.0** | Planning and Architecture | 🟡 In progress |
-| **7.1** | Enrichment models, provenance, persistence | Planned |
+| **7.0** | Planning and Architecture | ✅ Complete |
+| **7.1** | Enrichment models, provenance, persistence | ✅ Complete |
 | **7.2** | Provider abstraction + books vertical slice | Planned |
 | **7.3** | Matching, confidence, manual correction | Planned |
 | **7.4** | Artwork enrichment and cache management | Planned |
@@ -177,6 +177,7 @@ Sprint checkpoints: `m3-sprint-3`, `m3-complete`. Sprint 4 delivered Featured Fo
 → [M7 plan](docs/roadmap/m7-plan.md)
 → [v0.8.0-dev tracker](docs/release/v0.8.0-dev.md)
 → [Metadata enrichment architecture](docs/architecture/metadata-enrichment.md)
+→ [Phase 7.1 closure](docs/roadmap/m7-phase-7.1-closure-report.md)
 → [ADR-028–029 Proposed](docs/architecture/decisions/README.md#m7--metadata-enrichment)
 
 **Renumbering note:** Prior roadmap **M7 Multi-device** is now **M8** — see [mobile-delivery.md](docs/roadmap/mobile-delivery.md#m8--multi-device-experience).
