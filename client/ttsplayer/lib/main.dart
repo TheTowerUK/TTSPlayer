@@ -14,6 +14,7 @@ import 'features/music/services/music_playback_queue_controller.dart';
 import 'features/music/services/music_playback_session_coordinator.dart';
 import 'features/music/services/music_playback_session_restorer.dart';
 import 'features/music/services/music_playback_session_repository.dart';
+import 'features/metadata_enrichment/services/metadata_enrichment_repository.dart';
 import 'features/reading/services/reading_progress_coordinator.dart';
 import 'features/reading/services/reading_progress_repository.dart';
 import 'features/search/search_service.dart';
@@ -70,6 +71,9 @@ Future<void> main() async {
   final readingProgressRepository = ReadingProgressRepository();
   await readingProgressRepository.initialize();
 
+  final metadataEnrichmentRepository = MetadataEnrichmentRepository();
+  await metadataEnrichmentRepository.initialize();
+
   final readingProgressCoordinator = ReadingProgressCoordinator(
     repository: readingProgressRepository,
   );
@@ -115,6 +119,7 @@ Future<void> main() async {
     musicListeningRepository: musicListeningRepository,
     musicPlaybackSessionRepository: musicPlaybackSessionRepository,
     readingProgressRepository: readingProgressRepository,
+    metadataEnrichmentRepository: metadataEnrichmentRepository,
   );
 
   final catalogService = CatalogService(
@@ -182,6 +187,9 @@ Future<void> main() async {
         ),
         ChangeNotifierProvider<ReadingProgressRepository>.value(
           value: readingProgressRepository,
+        ),
+        ChangeNotifierProvider<MetadataEnrichmentRepository>.value(
+          value: metadataEnrichmentRepository,
         ),
         ChangeNotifierProvider<ReadingProgressCoordinator>.value(
           value: readingProgressCoordinator,

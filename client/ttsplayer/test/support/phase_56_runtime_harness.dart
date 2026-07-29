@@ -7,6 +7,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ttsplayer/features/metadata_enrichment/services/metadata_enrichment_repository.dart';
 import 'package:ttsplayer/features/music/models/music_library_projection.dart';
 import 'package:ttsplayer/features/music/music_library_service.dart';
 import 'package:ttsplayer/features/music/services/music_listening_coordinator.dart';
@@ -265,6 +266,7 @@ class Phase56RuntimeContext {
       musicListeningRepository: listeningRepository,
       musicPlaybackSessionRepository: sessionRepository,
       readingProgressRepository: ReadingProgressRepository(),
+      metadataEnrichmentRepository: MetadataEnrichmentRepository(),
     );
 
     final catalogService = CatalogService(

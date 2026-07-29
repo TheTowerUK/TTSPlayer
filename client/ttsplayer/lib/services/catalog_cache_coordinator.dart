@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import '../features/metadata_enrichment/services/metadata_enrichment_repository.dart';
 import '../features/music/music_library_service.dart';
 import '../features/music/services/music_listening_repository.dart';
 import '../features/music/services/music_playback_queue_controller.dart';
@@ -24,6 +25,7 @@ class CatalogCacheCoordinator {
     required MusicListeningRepository musicListeningRepository,
     required MusicPlaybackSessionRepository musicPlaybackSessionRepository,
     required ReadingProgressRepository readingProgressRepository,
+    required MetadataEnrichmentRepository metadataEnrichmentRepository,
   })  : _artworkService = artworkService,
         _searchService = searchService,
         _musicLibraryService = musicLibraryService,
@@ -31,7 +33,8 @@ class CatalogCacheCoordinator {
         _musicPlaybackQueueController = musicPlaybackQueueController,
         _musicListeningRepository = musicListeningRepository,
         _musicPlaybackSessionRepository = musicPlaybackSessionRepository,
-        _readingProgressRepository = readingProgressRepository;
+        _readingProgressRepository = readingProgressRepository,
+        _metadataEnrichmentRepository = metadataEnrichmentRepository;
 
   final ArtworkService _artworkService;
   final SearchService _searchService;
@@ -41,6 +44,7 @@ class CatalogCacheCoordinator {
   final MusicListeningRepository _musicListeningRepository;
   final MusicPlaybackSessionRepository _musicPlaybackSessionRepository;
   final ReadingProgressRepository _readingProgressRepository;
+  final MetadataEnrichmentRepository _metadataEnrichmentRepository;
 
   /// Runs artwork, search, music projection, favourites, listening history,
   /// playback session, and live queue reconciliation.
@@ -53,6 +57,7 @@ class CatalogCacheCoordinator {
     unawaited(_validateListeningHistory(catalog));
     unawaited(_validatePlaybackSession(catalog));
     unawaited(_validateReadingProgress(catalog));
+    unawaited(_validateMetadataEnrichment(catalog));
   }
 
   Future<void> _validateLibraryMetadata(Catalog catalog) async {
@@ -93,6 +98,17 @@ class CatalogCacheCoordinator {
     } catch (e, stackTrace) {
       debugPrint(
         '[CatalogCacheCoordinator] reading progress validateAgainstCatalog '
+        'failed: $e\n$stackTrace',
+      );
+    }
+  }
+
+  Future<void> _validateMetadataEnrichment(Catalog catalog) async {
+    try {
+      await _metadataEnrichmentRepository.validateAgainstCatalog(catalog);
+    } catch (e, stackTrace) {
+      debugPrint(
+        '[CatalogCacheCoordinator] metadata enrichment validateAgainstCatalog '
         'failed: $e\n$stackTrace',
       );
     }

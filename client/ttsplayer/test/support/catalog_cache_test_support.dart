@@ -1,3 +1,4 @@
+import 'package:ttsplayer/features/metadata_enrichment/services/metadata_enrichment_repository.dart';
 import 'package:ttsplayer/features/music/music_library_service.dart';
 import 'package:ttsplayer/features/music/services/music_listening_repository.dart';
 import 'package:ttsplayer/features/music/services/music_playback_queue_controller.dart';
@@ -17,6 +18,7 @@ CatalogCacheCoordinator createTestCatalogCacheCoordinator({
   MusicListeningRepository? musicListeningRepository,
   MusicPlaybackSessionRepository? musicPlaybackSessionRepository,
   ReadingProgressRepository? readingProgressRepository,
+  MetadataEnrichmentRepository? metadataEnrichmentRepository,
   PlaybackService? playbackService,
   MusicPlaybackQueueController? musicPlaybackQueueController,
 }) {
@@ -28,6 +30,8 @@ CatalogCacheCoordinator createTestCatalogCacheCoordinator({
       musicPlaybackSessionRepository ?? MusicPlaybackSessionRepository();
   final reading =
       readingProgressRepository ?? ReadingProgressRepository();
+  final enrichment =
+      metadataEnrichmentRepository ?? MetadataEnrichmentRepository();
   return CatalogCacheCoordinator(
     artworkService: artworkService,
     searchService: searchService,
@@ -37,5 +41,6 @@ CatalogCacheCoordinator createTestCatalogCacheCoordinator({
     musicListeningRepository: listening,
     musicPlaybackSessionRepository: session,
     readingProgressRepository: reading,
+    metadataEnrichmentRepository: enrichment,
   );
 }
