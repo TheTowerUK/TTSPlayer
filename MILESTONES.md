@@ -10,7 +10,8 @@ Canonical milestone detail lives in [`docs/roadmap/`](docs/roadmap/).
 | M4 | [User Experience and Platform Integration](docs/roadmap/m4-plan.md) | ✅ `v0.5.0` — [release summary](docs/release/m4-release-summary.md) |
 | M5 | [Music](docs/roadmap/m5-plan.md) | ✅ Complete — `v0.6.0` / `m5-complete` (2026-07-24) — [release](docs/release/m5-complete.md) |
 | M6 | [Books & Comics](docs/roadmap/m6-plan.md) | ✅ Complete — `v0.7.0` / `m6-complete` (2026-07-29) — [release](docs/release/m6-complete.md) |
-| M7 | [Multi-device Experience](docs/roadmap/mobile-delivery.md#m7--multi-device-experience) | Planned |
+| M7 | [Metadata Enrichment and Library Experience](docs/roadmap/m7-plan.md) | 🟡 Planning — `v0.8.0-dev` |
+| M8 | [Multi-device Experience](docs/roadmap/mobile-delivery.md#m8--multi-device-experience) | Planned |
 
 → [Roadmap principles](docs/roadmap/principles.md)
 → [Mobile delivery (future — not M3 scope)](docs/roadmap/mobile-delivery.md)
@@ -146,6 +147,36 @@ Sprint checkpoints: `m3-sprint-3`, `m3-complete`. Sprint 4 delivered Featured Fo
 → [M6 closure audit](docs/roadmap/m6-closure-report.md)
 → [Books & comics architecture](docs/architecture/books-comics.md)
 → [ADR-024–027 Accepted](docs/architecture/decisions/README.md#m6--books--comics)
-→ **Next milestone:** to be planned
+→ **Next milestone:** [M7 — Metadata Enrichment](docs/roadmap/m7-plan.md) (planning)
 
 **Not silent M6 scope:** M5 deferred music features remain a separate backlog — see [m5-complete.md §4](docs/release/m5-complete.md).
+
+---
+
+## M7 — Metadata Enrichment and Library Experience
+
+**Status:** 🟡 **Planning** — Phase 7.0 (architecture only)
+**Branch:** `m7-development`
+**Development version:** `v0.8.0-dev`
+**Baseline:** M6 — `v0.7.0` / `m6-complete` (2026-07-29)
+
+### M7 progress
+
+| Sub-phase | Focus | Status |
+|---|---|---|
+| **7.0** | Planning and Architecture | 🟡 In progress |
+| **7.1** | Enrichment models, provenance, persistence | Planned |
+| **7.2** | Provider abstraction + books vertical slice | Planned |
+| **7.3** | Matching, confidence, manual correction | Planned |
+| **7.4** | Artwork enrichment and cache management | Planned |
+| **7.5** | Search, filtering, enriched detail presentation | Planned |
+| **7.6** | UX/workflow refinements (post-M6 tracker) | Planned |
+| **7.7** | Privacy, diagnostics, performance, resilience | Planned |
+| **7.8** | Windows runtime validation and milestone closure | Planned |
+
+→ [M7 plan](docs/roadmap/m7-plan.md)
+→ [v0.8.0-dev tracker](docs/release/v0.8.0-dev.md)
+→ [Metadata enrichment architecture](docs/architecture/metadata-enrichment.md)
+→ [ADR-028–029 Proposed](docs/architecture/decisions/README.md#m7--metadata-enrichment)
+
+**Renumbering note:** Prior roadmap **M7 Multi-device** is now **M8** — see [mobile-delivery.md](docs/roadmap/mobile-delivery.md#m8--multi-device-experience).

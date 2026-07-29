@@ -105,9 +105,16 @@ Every ADR must include these headings (use [ADR-template.md](./ADR-template.md))
 | [ADR-026](./ADR-026-reader-surface-architecture.md) | Reader Surface Architecture | **Accepted** (CBZ-only comic production format; CBR removed) |
 | [ADR-027](./ADR-027-reading-progress-and-continue-reading.md) | Reading Progress and Continue Reading | **Accepted** |
 
+### M7 — Metadata Enrichment
+
+| ADR | Title | Status |
+|---|---|---|
+| [ADR-028](./ADR-028-external-metadata-enrichment-boundary.md) | External Metadata Enrichment Boundary | **Proposed** |
+| [ADR-029](./ADR-029-metadata-precedence-provenance-and-matching.md) | Metadata Precedence, Provenance, and Matching | **Proposed** |
+
 ---
 
 ## Related documents
 
-- [M4 plan](../roadmap/m4-plan.md) · [M5 plan](../roadmap/m5-plan.md) · [M6 plan](../roadmap/m6-plan.md)
+- [M4 plan](../roadmap/m4-plan.md) · [M5 plan](../roadmap/m5-plan.md) · [M6 plan](../roadmap/m6-plan.md) · [M7 plan](../roadmap/m7-plan.md)
 - [Architecture index](../README.md)

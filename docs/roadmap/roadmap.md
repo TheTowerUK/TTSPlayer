@@ -15,7 +15,8 @@ Living milestone plan. Each milestone builds on the previous without changing th
 | Personal UX | M3 | Polished personal media experience |
 | Network access | M3.5 | Network-aware media access |
 | Content expansion | M5–M6 | Music, books (images deferred) |
-| Multi-device | M7 | Multi-device media ecosystem |
+| Metadata enrichment | M7 | Optional external metadata; local authority preserved |
+| Multi-device | M8 | Multi-device media ecosystem |
 
 ---
 
@@ -92,7 +93,20 @@ Books and comics reading on the folder-tree platform: catalogue v4, CBZ comic re
 
 ---
 
-## M7 — Multi-device Experience
+## M7 — Metadata Enrichment and Library Experience
+
+**Status:** 🟡 Planning — Phase 7.0 (architecture only)
+
+Optional external metadata providers enrich library presentation — descriptions, artwork, cast/creators, genres — while local files and `catalog.json` remain authoritative for identity, browsing, and playback.
+
+→ [M7 plan](./m7-plan.md)
+→ [Metadata enrichment architecture](../architecture/metadata-enrichment.md)
+→ [v0.8.0-dev tracker](../release/v0.8.0-dev.md)
+→ [ADR-028–029 Proposed](../architecture/decisions/README.md#m7--metadata-enrichment)
+
+---
+
+## M8 — Multi-device Experience
 
 **Status:** Planned
 
@@ -104,4 +118,4 @@ Only after M3.5 — mobile can browse and play over HTTPS:
 - Profiles
 - Cast / TV companion behaviour
 
-→ [Mobile delivery — M7 scope](./mobile-delivery.md#m7--multi-device-experience)
+→ [Mobile delivery — M8 scope](./mobile-delivery.md#m8--multi-device-experience)

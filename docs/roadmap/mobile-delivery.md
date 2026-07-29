@@ -10,12 +10,12 @@
 
 M3 is Windows-first polish on the existing local/UNC model. Mobile support is a real and agreed direction, but it must not pull M3 into premature platform work.
 
-Mobile delivery **starts with infrastructure on the NAS**, then a bridge milestone (M3.5), then multi-device features (M7). UI patterns built in M3 (folder tree, dashboard, Continue Watching) carry forward; the access layer changes.
+Mobile delivery **starts with infrastructure on the NAS**, then a bridge milestone (M3.5), then metadata enrichment (M7), then multi-device features (M8). UI patterns built in M3 (folder tree, dashboard, Continue Watching) carry forward; the access layer changes.
 
 → [Roadmap principles](./principles.md)  
 → [M3 — Personal Media Experience](./m3-personal-media-experience.md)  
 → [M3.5 — Network Client Foundation](./network-client-foundation.md)  
-→ [M7 in roadmap](./roadmap.md#m7--multi-device-experience)
+→ [M7 metadata enrichment](./m7-plan.md) · [M8 in roadmap](./roadmap.md#m8--multi-device-experience)
 
 ---
 
@@ -50,7 +50,7 @@ Scanning stays on the NAS (scheduled, manual, or triggered from Windows). Mobile
 
 ## M3.5 — Network Client Foundation (bridge milestone)
 
-Bridge work before true multi-device behaviour (M7). Acceptance is **smoke builds that browse and play over the network**, not App Store polish.
+Bridge work before true multi-device behaviour (M8). Acceptance is **smoke builds that browse and play over the network**, not App Store polish.
 
 | Area | Deliverable |
 |---|---|
@@ -64,11 +64,11 @@ Bridge work before true multi-device behaviour (M7). Acceptance is **smoke build
 | Resilience | Cached last-good catalogue; bounded HTTP timeouts |
 | Playback | `video_player` + network URLs (already the non-Windows path) |
 
-**Explicitly not in M3.5:** remote control, device discovery, cast, profiles, shared sync — those belong to M7.
+**Explicitly not in M3.5:** remote control, device discovery, cast, profiles, shared sync — those belong to M8.
 
 ---
 
-## M7 — Multi-device Experience
+## M8 — Multi-device Experience
 
 Only after mobile can browse and play over HTTPS:
 
@@ -113,7 +113,9 @@ M3.5 (network client — same app, HTTP access mode)
     ↓
 M4–M6 (media type expansion — independent axis)
     ↓
-M7 (multi-device experience)
+M7 (optional metadata enrichment — independent axis)
+    ↓
+M8 (multi-device experience)
 ```
 
 **Do not** start M3.5 platform work until the NAS can serve catalogue + media over HTTPS on the home network. UI work alone does not unblock mobile.

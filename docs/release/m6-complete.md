@@ -170,7 +170,7 @@ All implementation phases are delivered. Final automated and Windows runtime val
 
 Tags `m6-complete` and `v0.7.0` are created locally; remote push is a separate authorised step.
 
-**Next milestone:** to be planned (M7 multi-device experience per [mobile delivery](../roadmap/mobile-delivery.md)).
+**Next milestone:** [M7 — Metadata Enrichment](../roadmap/m7-plan.md) (planning). Former roadmap M7 multi-device scope is [M8](../roadmap/mobile-delivery.md#m8--multi-device-experience).
 
 ---
 

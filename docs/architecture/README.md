@@ -46,6 +46,14 @@ Architecture for [M6 — Books & Comics](../roadmap/m6-plan.md). **M6 complete**
 |---|---|---|
 | [Books & comics](./books-comics.md) | M6 ✅ | CBZ-only comic reader · PDF/EPUB books · ADR-024–027 **Accepted** · [m6-plan](../roadmap/m6-plan.md) |
 
+## M7 — Metadata Enrichment (planning)
+
+Architecture for [M7 — Metadata Enrichment](../roadmap/m7-plan.md). **Phase 7.0** — planning only; no implementation.
+
+| Document | Phase | Status |
+|---|---|---|
+| [Metadata enrichment](./metadata-enrichment.md) | M7 🟡 | Optional external providers · client-primary boundary · ADR-028/029 **Proposed** · [m7-plan](../roadmap/m7-plan.md) |
+
 ## Architecture Decision Records
 
 Significant cross-layer decisions are recorded as ADRs:

@@ -34,8 +34,8 @@ Shipping history and milestone snapshots for TTSPlayer.
 |---|---|
 | Latest release | M6 — `v0.7.0` — [m6-complete.md](./m6-complete.md) |
 | Previous release | M5 — `v0.6.0` — [m5-complete.md](./m5-complete.md) |
-| Development branch | `m6-development` (local tags created; push when authorised) |
-| Next milestone | To be planned |
+| Development branch | `m7-development` (planning) |
+| Next milestone | M7 — [m7-plan.md](../roadmap/m7-plan.md) · [v0.8.0-dev.md](./v0.8.0-dev.md) |
 
 Deferred M5 music features (playlists, shuffle/repeat, favourites redesign, etc.) remain a **separate backlog** — not silent M6 scope ([m5-complete.md §4](./m5-complete.md)).
 
@@ -47,6 +47,7 @@ Post-milestone UX refinements: [post-milestone-ux-workflow-review.md](../roadmap
 
 | Document | Milestone | Tag |
 |---|---|---|
+| [v0.8.0-dev — M7 development tracker](./v0.8.0-dev.md) | M7 (planning) | — |
 | [M6 — Books & Comics](./m6-complete.md) | M6 | `v0.7.0` / `m6-complete` |
 | [v0.7.0-dev — M6 development tracker (archive)](./v0.7.0-dev.md) | M6 (development cycle) | — |
 | [M5 — Music](./m5-complete.md) | M5 | `v0.6.0` / `m5-complete` |
@@ -58,7 +59,7 @@ Post-milestone UX refinements: [post-milestone-ux-workflow-review.md](../roadmap
 | [v0.4.0-dev — M3.5 development cycle](./v0.4.0-dev.md) | M3.5 (archived) | — |
 | [Release history](./release-history.md) | All versions | — |
 
-The `v0.4.0-dev`, `v0.5.0-dev`, and `v0.7.0-dev` documents are **historical records** of development cycles — not active version lines.
+The `v0.4.0-dev`, `v0.5.0-dev`, `v0.7.0-dev`, and active `v0.8.0-dev` documents are **development cycle trackers** — historical archives once the milestone ships.
 
 ---
 

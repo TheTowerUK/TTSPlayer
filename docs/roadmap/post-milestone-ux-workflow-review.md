@@ -105,7 +105,7 @@ Single-action items open or play directly when selected, reducing unnecessary na
 |---|---|
 | Presentation and navigation UX | New reader features (bookmarks, annotations) |
 | Folder-level rescan parity | Full catalogue schema changes |
-| Direct-open vs detail-screen routing policy | Cloud sync or multi-device resume (M7) |
+| Direct-open vs detail-screen routing policy | Cloud sync or multi-device resume (M8) |
 
 ---
 
@@ -114,3 +114,13 @@ Single-action items open or play directly when selected, reducing unnecessary na
 - Items remain **open** until a dedicated implementation task is approved.
 - None of these items block M6 milestone closure, release tagging, or the Phase 6.2 runtime harness refresh.
 - Implementation should follow existing stack conventions (`ChangeNotifier` + `provider`, folder-first catalogue, graceful degradation).
+
+### M7 placement (approved in M7 planning)
+
+| Item | Phase | Notes |
+|---|---|---|
+| Continue Watching aspect ratio | **M7.6** | Presentation fix; not a provider dependency |
+| Literature folder rescan | **M7.6** | Scanner `--library-path` parity for book/comic folders |
+| Direct open/play vs detail screen | **M7.6** | Navigation policy; orthogonal to metadata enrichment |
+
+See [m7-plan.md § Post-M6 UX tracker disposition](./m7-plan.md#post-m6-ux-tracker-disposition).
