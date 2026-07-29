@@ -38,13 +38,13 @@ Planning and catalogue foundation for [M5 — Music](../roadmap/m5-plan.md). **M
 |---|---|---|
 | [Music](./music.md) | M5 ✅ | [M5 plan](../roadmap/m5-plan.md) · [M5 complete](../release/m5-complete.md) · ADR-020/021/022/023 **Accepted** |
 
-## M6 — Books & Comics (planning)
+## M6 — Books & Comics (complete)
 
-Planning documents for [M6 — Books & Comics](../roadmap/m6-plan.md). **Phase 6.0 in progress** — no implementation claimed.
+Architecture for [M6 — Books & Comics](../roadmap/m6-plan.md). **M6 complete** (2026-07-29) — [release](../release/m6-complete.md).
 
 | Document | Phase | Status |
 |---|---|---|
-| [Books & comics](./books-comics.md) | 6.1 ✅ | Catalogue v4 complete — ADR-024/025/026 **Proposed** · [CBR eval](./cbr-rar-evaluation.md) · [m6-plan](../roadmap/m6-plan.md) |
+| [Books & comics](./books-comics.md) | M6 ✅ | CBZ-only comic reader · PDF/EPUB books · ADR-024–027 **Accepted** · [m6-plan](../roadmap/m6-plan.md) |
 
 ## Architecture Decision Records
 

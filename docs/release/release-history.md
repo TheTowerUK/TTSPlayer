@@ -1,5 +1,37 @@
 # Release History
 
+## M6 — Books & Comics
+
+**Version:** `v0.7.0`
+**Milestone:** M6 — **Complete** 2026-07-29
+**Tags:** `v0.7.0` / `m6-complete`
+
+### Added
+
+- Catalogue schema v4 and scanner 0.5.0 with `book` and `comic` media kinds
+- Book/comic browse filters, search presentation, and detail actions
+- CBZ comic reader (lazy archive, fit modes, progress, per-page resilience)
+- PDF and EPUB book readers on Windows
+- Shared reading progress repository and Continue Reading (ADR-027)
+- Reader diagnostics and hardening (cache bounds, lazy loaders)
+- Opt-in Windows runtime harnesses P62–P66
+
+### Changed
+
+- ADR-024–027 Accepted; production comics **CBZ-only** (ADR-026)
+- CBR/RAR native support removed; external conversion guidance for legacy items
+
+### Known limitations
+
+- CBZ-only comics; convert CBR externally and rescan
+- EPUB full-archive memory model for very large files
+- No bookmarks, annotations, dual-page, RTL, or cloud sync
+- PDF password UI deferred
+
+→ [M6 complete](./m6-complete.md)
+
+---
+
 ## M5 — Music
 
 **Version:** `v0.6.0`  

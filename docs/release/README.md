@@ -6,6 +6,18 @@ Shipping history and milestone snapshots for TTSPlayer.
 
 ## Current stable milestone
 
+**M6 — Books & Comics**
+
+| | |
+|---|---|
+| **Status** | ✅ Complete |
+| **Tag** | `v0.7.0` / `m6-complete` |
+| **Snapshot** | [M6 complete](./m6-complete.md) |
+
+---
+
+## Previous stable milestone
+
 **M5 — Music**
 
 | | |
@@ -16,29 +28,18 @@ Shipping history and milestone snapshots for TTSPlayer.
 
 ---
 
-## Current development focus
-
-**M6 — Books & Comics** — Closure audit complete (2026-07-28); release finalisation pending.
-
-→ [M6 closure audit](../roadmap/m6-closure-report.md) · [M6 plan](../roadmap/m6-plan.md) · [v0.7.0-dev tracker](./v0.7.0-dev.md) · [Books & comics architecture](../architecture/books-comics.md)
-
-Deferred M5 music features (playlists, shuffle/repeat, favourites redesign, etc.) remain a **separate backlog** — not silent M6 scope ([m5-complete.md §4](./m5-complete.md)).
-
-**Branch:** `m6-development`
-
----
-
 ## Project state
-
-Milestones and development branches are tracked separately: a completed milestone is tagged and documented here; active work happens on a named branch until the next milestone ships.
 
 | State | Value |
 |---|---|
-| Latest release | M5 — `v0.6.0` — [m5-complete.md](./m5-complete.md) |
-| Previous release | M4 — `v0.5.0` — [m4-release-summary.md](./m4-release-summary.md) |
-| Current work | M6 Phase 6.0 — Planning and Architecture |
-| Development branch | `m6-development` |
-| Previous validated tag | `v0.6.0` / `m5-complete` |
+| Latest release | M6 — `v0.7.0` — [m6-complete.md](./m6-complete.md) |
+| Previous release | M5 — `v0.6.0` — [m5-complete.md](./m5-complete.md) |
+| Development branch | `m6-development` (local tags created; push when authorised) |
+| Next milestone | To be planned |
+
+Deferred M5 music features (playlists, shuffle/repeat, favourites redesign, etc.) remain a **separate backlog** — not silent M6 scope ([m5-complete.md §4](./m5-complete.md)).
+
+Post-milestone UX refinements: [post-milestone-ux-workflow-review.md](../roadmap/post-milestone-ux-workflow-review.md).
 
 ---
 
@@ -46,7 +47,8 @@ Milestones and development branches are tracked separately: a completed mileston
 
 | Document | Milestone | Tag |
 |---|---|---|
-| [v0.7.0-dev — M6 development tracker](./v0.7.0-dev.md) | M6 (active) | — |
+| [M6 — Books & Comics](./m6-complete.md) | M6 | `v0.7.0` / `m6-complete` |
+| [v0.7.0-dev — M6 development tracker (archive)](./v0.7.0-dev.md) | M6 (development cycle) | — |
 | [M5 — Music](./m5-complete.md) | M5 | `v0.6.0` / `m5-complete` |
 | [M4 — User Experience and Platform Integration](./m4-release-summary.md) | M4 | `v0.5.0` / `m4-complete` |
 | [v0.5.0-dev — M4/M5 development cycle notes](./v0.5.0-dev.md) | M4–M5 (archive) | — |
@@ -56,7 +58,7 @@ Milestones and development branches are tracked separately: a completed mileston
 | [v0.4.0-dev — M3.5 development cycle](./v0.4.0-dev.md) | M3.5 (archived) | — |
 | [Release history](./release-history.md) | All versions | — |
 
-The `v0.4.0-dev` and `v0.5.0-dev` documents are **historical records** of development cycles — not active version lines.
+The `v0.4.0-dev`, `v0.5.0-dev`, and `v0.7.0-dev` documents are **historical records** of development cycles — not active version lines.
 
 ---
 

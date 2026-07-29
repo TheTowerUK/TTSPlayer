@@ -1,8 +1,8 @@
 # TTSPlayer
 
-A lightweight, **local-first** home media platform. Browse your own folder structure, play video from local paths or a NAS, and optionally stream over HTTPS — without Plex-style daemons, transcoding, or metadata scrapers.
+A lightweight, **local-first** home media platform. Browse your own folder structure, play video and music from local paths or a NAS, read **PDF/EPUB books** and **CBZ comics**, and optionally stream over HTTPS — without Plex-style daemons, transcoding, or metadata scrapers.
 
-**Current release line:** `v0.6.0` · **M5 complete** ([release summary](docs/release/m5-complete.md)) · tags [`v0.6.0`](https://github.com/TheTowerUK/TTSPlayer/releases/tag/v0.6.0) / [`m5-complete`](https://github.com/TheTowerUK/TTSPlayer/releases/tag/m5-complete)
+**Current release line:** `v0.7.0` · **M6 complete** ([release summary](docs/release/m6-complete.md)) · tags `v0.7.0` / `m6-complete` (local; push when authorised)
 
 ---
 
@@ -78,7 +78,7 @@ flowchart TB
 
 **Data flow (browse → play):**
 
-1. **Indexer** scans supported video (and image) extensions under a root path → atomic write of `catalog.json`.
+1. **Indexer** scans supported video, audio, image, book, and comic extensions under a root path → atomic write of `catalog.json`.
 2. **CatalogService** loads catalogue from local file, configured HTTPS URL, or bundled demo.
 3. **MediaLocationResolver** maps catalogue `file_path` values to `file://` (desktop) or `https://host/media/…` (remote mode).
 4. **PlaybackService** streams via `media_kit` (Windows) or `video_player` (mobile).
@@ -178,7 +178,7 @@ Trust the Caddy internal CA on clients, or use a certificate your OS already tru
 | **M3.5** Network access | ✅ [`m3.5-complete`](docs/release/m3.5-media-access-complete.md) | HTTPS catalogue, provider config, TNAS validation |
 | **M4** UX & platform | ✅ [v0.5.0](docs/release/m4-release-summary.md) | Providers, settings, library, caching, diagnostics |
 | **M5** Music library | ✅ [v0.6.0](docs/release/m5-complete.md) | Catalogue, browse, playback, listening state |
-| **M6** Books & comics | 🔄 Planning | [m6-plan.md](docs/roadmap/m6-plan.md) · [v0.7.0-dev](docs/release/v0.7.0-dev.md) |
+| **M6** Books & comics | ✅ [v0.7.0](docs/release/m6-complete.md) | CBZ comics, PDF/EPUB books, reading progress |
 | **M7** Multi-device | 📋 Planned | Remote control, sync, profiles — [mobile delivery](docs/roadmap/mobile-delivery.md) |
 
 Full living roadmap: [`docs/roadmap/roadmap.md`](docs/roadmap/roadmap.md)

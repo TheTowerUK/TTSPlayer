@@ -1,9 +1,10 @@
 # M6 — Books & Comics
 
-**Status:** **READY FOR CLOSURE** (2026-07-29) — Phases 6.0–6.6 and **6.4C** complete; P62–P66 runtime green; **release finalisation pending**
+**Status:** ✅ **COMPLETE** (2026-07-29) — Release `v0.7.0` / `m6-complete`
 **Comic format:** **CBZ-only** production — CBR removed; external conversion + rescan for legacy libraries (ADR-026 **Accepted**)
-**Branch:** `m6-development`  
-**Development version:** `v0.7.0-dev` (proposed; app remains `0.6.0+1` until release)  
+**Branch:** `m6-development`
+**Application version:** `0.7.0+1`
+**Release summary:** [m6-complete.md](../release/m6-complete.md)
 **Predecessor:** M5 — tags `v0.6.0` / `m5-complete` (2026-07-24)  
 **Phase 6.1:** ✅ Complete (2026-07-24) — catalogue v4 / books & comics indexing  
 **Phase 6.2:** ✅ Complete (2026-07-24) — browse / search / detail presentation (no readers)  
@@ -111,7 +112,7 @@ M6 extends TTSPlayer from a **video + music** personal media application into a 
 | **6.5** | Reading progress and Continue Reading | **Complete** (2026-07-27) — persistence, Continue Reading, diagnostics |
 | **6.6** | Performance, diagnostics, and Windows runtime validation | ✅ Complete (2026-07-27) — lazy CBZ/EPUB, cache bounds, reader diagnostics, UX/a11y matrix |
 | **6.4C** | Comic reading experience closure (UX, progress, resilience) | ✅ **Complete** (2026-07-28) — [spec](./m6-phase-6.4-comic-reading-experience.md) · distinct from repo Phase 6.4 book reader |
-| **Release** | M6 release and documentation | ⏳ Pending — [closure audit](./m6-closure-report.md) |
+| **Release** | M6 release and documentation | ✅ Complete (2026-07-29) — [m6-complete.md](../release/m6-complete.md) |
 
 ---
 
@@ -426,8 +427,8 @@ M6 implementation is **complete** on `m6-development`. Original DoD items refere
 ### Diagnostics and documentation
 
 - [x] Redacted reading/reader diagnostics
-- [ ] Release notes, `m6-complete.md`, indexes — **deferred** to release-finalisation task
-- [ ] Version and tags (`m6-complete`, `v0.7.0`) — **deferred** to release-finalisation task
+- [x] Release notes, `m6-complete.md`, indexes — **Complete** (2026-07-29)
+- [x] Version and tags (`m6-complete`, `v0.7.0`) — **Complete** (local tags; push when authorised)
 - [x] Working tree clean at audit entry
 
 Each checkbox must point to a test, runtime scenario, document section, build result, or measured report at closure — see [m6-closure-report.md](./m6-closure-report.md).
@@ -486,6 +487,4 @@ Each checkbox must point to a test, runtime scenario, document section, build re
 
 **Historical note:** Sections below that reference `.cbr` as required baseline scope, Gate 0 UnRAR, or UnRAR redistribution record **original M6 planning and investigation**. They are retained for audit. Current production architecture does not ship CBR/UnRAR tooling.
 
-**Next:** M6 **release finalisation** (version bump, tags, `m6-complete.md`) — see [m6-closure-report.md](./m6-closure-report.md) §10.
-
-**Post-release UX:** [Post-Milestone UX and Workflow Review](./post-milestone-ux-workflow-review.md) — tracked refinements, not blockers.
+**Next:** M7 or follow-on work — to be planned. See [post-milestone-ux-workflow-review.md](./post-milestone-ux-workflow-review.md) for tracked UX refinements.

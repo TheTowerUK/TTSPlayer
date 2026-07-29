@@ -18,7 +18,7 @@ Milestone 6 delivers a **Windows-first books and comics reading experience** on 
 
 **Regression (final evidence 2026-07-29):** Flutter **1415 passed, 18 skipped, 0 failed** (~68s). Backend unittest **31 passed, 0 failed** (2026-07-28 audit — unchanged). Windows Release build **succeeded** (2026-07-28 audit). All M6 opt-in Windows runtime harnesses **P62–P66 passed** on this host (P62 refreshed commit `b6ce503`).
 
-**Verdict:** **Ready for closure.** All implementation phases are complete with evidence. Release finalisation (version bump, tags, `m6-complete.md`, index/README sync) is the only remaining work before shipping `v0.7.0`.
+**Verdict:** **Complete** — M6 shipped as `v0.7.0` (2026-07-29). See [m6-complete.md](../release/m6-complete.md).
 
 ---
 
@@ -239,6 +239,6 @@ Disposition key: **Met** · **Superseded** · **Deferral** · **Limitation** · 
 
 ## 12. Final verdict
 
-**Ready for closure.**
+**Complete** — M6 milestone formally closed as **`v0.7.0`** (2026-07-29).
 
-All M6 implementation phases (6.0–6.6, 6.4C) are complete with verified automated evidence and full Windows runtime sign-off (P62–P66). CBR requirements are reconciled as **superseded by ADR-026**, not open blockers. Remaining work before public release: **release finalisation** only (version, tags, `m6-complete.md`, index sync).
+All M6 implementation phases (6.0–6.6, 6.4C) are complete with verified automated evidence and full Windows runtime sign-off (P62–P66). Release summary: [m6-complete.md](../release/m6-complete.md).
