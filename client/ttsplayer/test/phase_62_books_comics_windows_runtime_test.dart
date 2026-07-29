@@ -9,6 +9,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ttsplayer/features/reading/services/reading_progress_coordinator.dart';
+import 'package:ttsplayer/features/reading/services/reading_progress_repository.dart';
 import 'package:ttsplayer/features/search/models/search_filters.dart';
 import 'package:ttsplayer/features/search/search_screen.dart';
 import 'package:ttsplayer/features/search/search_service.dart';
@@ -83,6 +85,8 @@ void main() {
   late SettingsRepository settings;
   late LibraryMetadataRepository metadata;
   late SearchService search;
+  late ReadingProgressRepository readingRepository;
+  late ReadingProgressCoordinator readingCoordinator;
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
@@ -91,6 +95,11 @@ void main() {
     await settings.initialize();
     metadata = LibraryMetadataRepository();
     await metadata.initialize();
+    readingRepository = ReadingProgressRepository();
+    await readingRepository.initialize();
+    readingCoordinator = ReadingProgressCoordinator(
+      repository: readingRepository,
+    );
     search = SearchService();
     search.buildIndex(catalog);
   });
@@ -99,37 +108,47 @@ void main() {
     search.invalidateIndex();
   });
 
+  runtimeProviders() {
+    return [
+      ChangeNotifierProvider(create: (_) => MediaProviderConfigService()),
+      ChangeNotifierProvider<SettingsRepository>.value(value: settings),
+      ChangeNotifierProvider<LibraryMetadataRepository>.value(
+        value: metadata,
+      ),
+      Provider(
+        create: (context) => MediaLocationResolver(
+          config: context.read<MediaProviderConfigService>().mediaAccess,
+          isWindowsDesktop: true,
+        ),
+      ),
+      Provider(create: (_) => ArtworkService(fileExists: (_) => false)),
+      ChangeNotifierProvider<CatalogService>.value(
+        value: _InlineCatalogService(catalog),
+      ),
+      ChangeNotifierProvider(
+        create: (context) => PlaybackService(
+          mediaLocationResolver: context.read<MediaLocationResolver>(),
+        ),
+      ),
+      ChangeNotifierProvider(create: (_) => ScannerService()),
+      ChangeNotifierProvider<ScanHistoryService>.value(
+        value: _FakeScanHistoryService(),
+      ),
+      Provider.value(value: search),
+      ChangeNotifierProvider<ReadingProgressRepository>.value(
+        value: readingRepository,
+      ),
+      ChangeNotifierProvider<ReadingProgressCoordinator>.value(
+        value: readingCoordinator,
+      ),
+    ];
+  }
+
   Widget harness({required Widget home, Size size = const Size(1280, 800)}) {
     return MediaQuery(
       data: MediaQueryData(size: size),
       child: MultiProvider(
-        providers: [
-          ChangeNotifierProvider(create: (_) => MediaProviderConfigService()),
-          ChangeNotifierProvider<SettingsRepository>.value(value: settings),
-          ChangeNotifierProvider<LibraryMetadataRepository>.value(
-            value: metadata,
-          ),
-          Provider(
-            create: (context) => MediaLocationResolver(
-              config: context.read<MediaProviderConfigService>().mediaAccess,
-              isWindowsDesktop: true,
-            ),
-          ),
-          Provider(create: (_) => ArtworkService(fileExists: (_) => false)),
-          ChangeNotifierProvider<CatalogService>.value(
-            value: _InlineCatalogService(catalog),
-          ),
-          ChangeNotifierProvider(
-            create: (context) => PlaybackService(
-              mediaLocationResolver: context.read<MediaLocationResolver>(),
-            ),
-          ),
-          ChangeNotifierProvider(create: (_) => ScannerService()),
-          ChangeNotifierProvider<ScanHistoryService>.value(
-            value: _FakeScanHistoryService(),
-          ),
-          Provider.value(value: search),
-        ],
+        providers: runtimeProviders(),
         child: MaterialApp(
           theme: AppTheme.dark,
           home: home,
@@ -223,7 +242,8 @@ void main() {
     final comic = catalog.allItems.firstWhere((i) => i.isComic);
 
     await pumpHarness(tester, home: ItemDetailScreen(item: book));
-    expect(find.byKey(const Key('item_detail_reader_pending')), findsOneWidget);
+    expect(find.byKey(const Key('item_detail_open_book')), findsOneWidget);
+    expect(find.byKey(const Key('item_detail_reader_pending')), findsNothing);
     expect(find.byType(PlayerScreen), findsNothing);
 
     await pumpHarness(tester, home: ItemDetailScreen(item: comic));
@@ -251,34 +271,7 @@ void main() {
           textScaler: TextScaler.linear(1.25),
         ),
         child: MultiProvider(
-          providers: [
-            ChangeNotifierProvider(create: (_) => MediaProviderConfigService()),
-            ChangeNotifierProvider<SettingsRepository>.value(value: settings),
-            ChangeNotifierProvider<LibraryMetadataRepository>.value(
-              value: metadata,
-            ),
-            Provider(
-              create: (context) => MediaLocationResolver(
-                config:
-                    context.read<MediaProviderConfigService>().mediaAccess,
-                isWindowsDesktop: true,
-              ),
-            ),
-            Provider(create: (_) => ArtworkService(fileExists: (_) => false)),
-            ChangeNotifierProvider<CatalogService>.value(
-              value: _InlineCatalogService(catalog),
-            ),
-            ChangeNotifierProvider(
-              create: (context) => PlaybackService(
-                mediaLocationResolver: context.read<MediaLocationResolver>(),
-              ),
-            ),
-            ChangeNotifierProvider(create: (_) => ScannerService()),
-            ChangeNotifierProvider<ScanHistoryService>.value(
-              value: _FakeScanHistoryService(),
-            ),
-            Provider.value(value: search),
-          ],
+          providers: runtimeProviders(),
           child: MaterialApp(
             theme: AppTheme.dark,
             home: FolderScreen.fromFolder(mixed),
