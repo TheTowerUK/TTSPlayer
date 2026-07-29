@@ -195,6 +195,7 @@ Disposition key: **Met** · **Superseded** · **Deferral** · **Limitation** · 
 | PDF password UI | Post-M6 UX |
 | In-app CBZ conversion | Out of scope |
 | M5 music deferrals | Separate backlog |
+| Post-milestone UX and workflow | [post-milestone-ux-workflow-review.md](./post-milestone-ux-workflow-review.md) — not blocking release |
 
 ### Genuine blockers
 

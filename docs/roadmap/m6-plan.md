@@ -487,3 +487,5 @@ Each checkbox must point to a test, runtime scenario, document section, build re
 **Historical note:** Sections below that reference `.cbr` as required baseline scope, Gate 0 UnRAR, or UnRAR redistribution record **original M6 planning and investigation**. They are retained for audit. Current production architecture does not ship CBR/UnRAR tooling.
 
 **Next:** M6 **release finalisation** (version bump, tags, `m6-complete.md`) — see [m6-closure-report.md](./m6-closure-report.md) §10.
+
+**Post-release UX:** [Post-Milestone UX and Workflow Review](./post-milestone-ux-workflow-review.md) — tracked refinements, not blockers.
