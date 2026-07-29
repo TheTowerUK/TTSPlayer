@@ -1,6 +1,6 @@
 # M6 — Books & Comics
 
-**Status:** **CLOSURE AUDIT COMPLETE** (2026-07-28) — Phases 6.0–6.6 and **6.4C** complete on `m6-development`; **release finalisation pending** (no tags/version bump in audit)
+**Status:** **READY FOR CLOSURE** (2026-07-29) — Phases 6.0–6.6 and **6.4C** complete; P62–P66 runtime green; **release finalisation pending**
 **Comic format:** **CBZ-only** production — CBR removed; external conversion + rescan for legacy libraries (ADR-026 **Accepted**)
 **Branch:** `m6-development`  
 **Development version:** `v0.7.0-dev` (proposed; app remains `0.6.0+1` until release)  
@@ -410,14 +410,14 @@ M6 implementation is **complete** on `m6-development`. Original DoD items refere
 ### Automated regression
 
 - [x] Focused M6 suites pass
-- [x] Full Flutter suite passes — **1402 passed, 19 skipped, 0 failed** (2026-07-28 audit)
+- [x] Full Flutter suite passes — **1415 passed, 18 skipped, 0 failed** (2026-07-29)
 
 ### Windows runtime validation
 
-- [x] Core M6 opt-in harnesses pass (P63–P66) on Windows
+- [x] M6 opt-in harnesses pass (P62–P66) on Windows
 - [x] ~~Comic runtime CBZ + CBR fixtures~~ → **Superseded:** CBZ-only; CBR unavailable UI in widget tests
 - [x] Windows Release build succeeds — no UnRAR/RAR dependency
-- [ ] Phase 6.2 browse harness (P62) — **4/6 pass**; harness stale (provider gap) — **non-blocking**; refresh before release optional
+- [x] Phase 6.2 browse harness (P62) — **6/6 pass** (`b6ce503`, 2026-07-29)
 
 ### Performance and UX
 

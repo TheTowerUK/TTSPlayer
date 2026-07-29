@@ -16,9 +16,9 @@ Milestone 6 delivers a **Windows-first books and comics reading experience** on 
 
 **Production comic format:** **CBZ only** (ADR-026 **Accepted**, 2026-07-27). CBR/RAR production support was investigated, rejected for redistribution reasons, and removed. Legacy `.cbr` catalogue entries show external conversion guidance.
 
-**Regression (2026-07-28 audit run):** Flutter **1402 passed, 19 skipped, 0 failed** (~66s). Backend unittest **31 passed, 0 failed**. Windows Release build **succeeded**. Core M6 opt-in runtime harnesses **P63–P66 passed** on this host. Phase **6.2** opt-in browse harness **4 passed, 2 failed** — stale test harness (missing `ReadingProgressCoordinator` provider after Phase 6.5); **not a product regression** (default-suite presentation tests green).
+**Regression (final evidence 2026-07-29):** Flutter **1415 passed, 18 skipped, 0 failed** (~68s). Backend unittest **31 passed, 0 failed** (2026-07-28 audit — unchanged). Windows Release build **succeeded** (2026-07-28 audit). All M6 opt-in Windows runtime harnesses **P62–P66 passed** on this host (P62 refreshed commit `b6ce503`).
 
-**Verdict:** **Conditionally ready for milestone closure.** All implementation phases are complete with evidence. Release finalisation (version bump, tags, `m6-complete.md`, index/README sync) and Phase 6.2 runtime harness refresh are named follow-ups before shipping `v0.7.0`.
+**Verdict:** **Ready for closure.** All implementation phases are complete with evidence. Release finalisation (version bump, tags, `m6-complete.md`, index/README sync) is the only remaining work before shipping `v0.7.0`.
 
 ---
 
@@ -40,7 +40,7 @@ Milestone 6 delivers a **Windows-first books and comics reading experience** on 
 |---|---|---|---|---|---|---|
 | **6.0** | Planning and architecture | Complete | `b3e844a` | Docs only | ✅ Complete | — |
 | **6.1** | Catalogue schema, indexer, metadata | Complete | `e20e1e0` | `test_indexer.py`, `test_document_metadata.py`, catalogue compatibility tests | ✅ Complete | ADR-024 acceptance doc sync (this audit) |
-| **6.2** | Browse, search, detail presentation | Complete | `eab1751` | `book_comic_presentation_test.dart`, `book_comic_search_test.dart`; P62 runtime **4/6** (harness stale) | ✅ Complete (product) | P62 harness provider refresh — **non-blocking** |
+| **6.2** | Browse, search, detail presentation | Complete | `eab1751` | `book_comic_presentation_test.dart`, `book_comic_search_test.dart`; P62 runtime **6/6** (`b6ce503`) | ✅ Complete | — |
 | **6.3** | CBZ comic reader foundation | Complete — CBZ-only | `b9c048c` (CBR removal) | Archive/opener/controller tests; P63 runtime **13/13** | ✅ Complete | — |
 | **6.4** | PDF/EPUB book reader | Complete | `c73e7c7` | Book reader tests; P64 runtime **4/4** | ✅ Complete | — |
 | **6.4C** | Comic UX, progress, resilience, diagnostics | Complete | `1fc643d` (+ Steps 2–6 chain) | 88 `phase_64c_*` scenarios; P63 extended **13/13 ×2** (prior) | ✅ Complete | Accepted limitations documented §6.4C |
@@ -88,13 +88,13 @@ Disposition key: **Met** · **Superseded** · **Deferral** · **Limitation** · 
 | Item | Disposition | Evidence / notes |
 |---|---|---|
 | Focused M6 suites pass | **Met** | Book/comic, progress, reader, archive suites in default run |
-| Full Flutter suite passes | **Met** | **1402 passed, 19 skipped, 0 failed** (2026-07-28) |
+| Full Flutter suite passes | **Met** | **1415 passed, 18 skipped, 0 failed** (2026-07-29) |
 
 ### Windows runtime validation
 
 | Item | Disposition | Evidence / notes |
 |---|---|---|
-| Opt-in M6 runtime harnesses pass | **Met** (core) | P63 **13/13**, P64 **4/4**, P65 **8/8**, P66 **9/9** (this audit) |
+| Opt-in M6 runtime harnesses pass | **Met** | P62 **6/6**, P63 **13/13**, P64 **4/4**, P65 **8/8**, P66 **9/9** (2026-07-29) |
 | Comic runtime includes **CBZ and CBR** fixtures (original DoD) | **Superseded** | CBZ-only; CBR unavailable UI validated in widget/UX tests |
 | Windows Release build succeeds | **Met** | `flutter build windows --release` ✅ (this audit) |
 | No UnRAR/RAR native dependency | **Met** | No UnRAR in `lib/` production paths; Release build without RAR tooling |
@@ -141,15 +141,14 @@ Disposition key: **Met** · **Superseded** · **Deferral** · **Limitation** · 
 
 ---
 
-## 7. Regression evidence (2026-07-28)
+## 7. Regression evidence
 
-| Suite | Command | Result | Duration |
+| Suite | Command | Result | When |
 |---|---|---|---|
-| Flutter (full) | `cd client/ttsplayer && flutter test` | **1402 passed, 19 skipped, 0 failed** | ~66s |
-| Backend indexer + metadata | `cd backend && python -m unittest test_indexer test_document_metadata` | **31 passed, 0 failed** | ~0.1s |
-| Windows Release | `flutter build windows --release` | **Success** → `build\windows\x64\runner\Release\ttsplayer.exe` | ~49s |
-
-**Baseline comparison:** Phase 6.4C closure recorded **1423 passed, 16 skipped**. Current audit **1402/19** — difference reflects suite evolution (test count/reorganisation), not failures. Both runs: **0 failed**.
+| Flutter (full) | `cd client/ttsplayer && flutter test` | **1415 passed, 18 skipped, 0 failed** (~68s) | 2026-07-29 final |
+| Flutter (full) | prior audit run | 1402 passed, 19 skipped, 0 failed | 2026-07-28 |
+| Backend indexer + metadata | `cd backend && python -m unittest test_indexer test_document_metadata` | **31 passed, 0 failed** | 2026-07-28 (unchanged) |
+| Windows Release | `flutter build windows --release` | **Success** | 2026-07-28 (unchanged) |
 
 **Environment:** Windows 10.0.26200, Flutter 3.44.4, Dart 3.12.2.
 
@@ -157,15 +156,15 @@ Disposition key: **Met** · **Superseded** · **Deferral** · **Limitation** · 
 
 ## 8. Windows runtime harness inventory
 
-| Harness | Gate | Tag | Scenarios | Prior recorded | **Audit run (2026-07-28)** | Rerun required? | Release build? |
-|---|---|---|---|---|---|---|---|
-| `phase_62_books_comics_windows_runtime_test.dart` | `PHASE_62_RUNTIME=1` | `phase62-runtime` | R1–R6 (6) | Not in 6.4C baseline | **4 passed, 2 failed** (R4, R6 — harness provider gap) | Refresh harness; **non-blocking** | No |
-| `phase_63_comic_reader_windows_runtime_test.dart` | `PHASE_63_READER=1` | `phase63-reader` | 13 (6.3 + 6.4C) | 13/13 ×2 | **13 passed, 0 failed** | ✅ Done | No |
-| `phase_64_book_reader_windows_runtime_test.dart` | `PHASE_64_READER=1` | `phase64-reader` | 4 | Phase 6.4 closure | **4 passed, 0 failed** | ✅ Done | No |
-| `phase_65_reading_progress_windows_runtime_test.dart` | `PHASE_65_READING_PROGRESS=1` | `phase65-reader` | 8 | Phase 6.5 closure | **8 passed, 0 failed** | ✅ Done | No |
-| `phase_66_reader_windows_runtime_test.dart` | `PHASE_66_READER_HARDENING=1` | `phase66-reader` | 9 | Phase 6.6 closure | **9 passed, 0 failed** | ✅ Done | Informational RSS baselines |
+| Harness | Gate | Tag | Scenarios | **Final run (2026-07-29)** |
+|---|---|---|---|---|
+| `phase_62_books_comics_windows_runtime_test.dart` | `PHASE_62_RUNTIME=1` | `phase62-runtime` | R1–R6 (6) | **6 passed, 0 failed** (`b6ce503`) |
+| `phase_63_comic_reader_windows_runtime_test.dart` | `PHASE_63_READER=1` | `phase63-reader` | 13 | **13 passed, 0 failed** |
+| `phase_64_book_reader_windows_runtime_test.dart` | `PHASE_64_READER=1` | `phase64-reader` | 4 | **4 passed, 0 failed** |
+| `phase_65_reading_progress_windows_runtime_test.dart` | `PHASE_65_READING_PROGRESS=1` | `phase65-reader` | 8 | **8 passed, 0 failed** |
+| `phase_66_reader_windows_runtime_test.dart` | `PHASE_66_READER_HARDENING=1` | `phase66-reader` | 9 | **9 passed, 0 failed** |
 
-**P62 failure analysis:** `ItemDetailScreen` now calls `readingProgressSummaryForItem()` (Phase 6.5). Harness lacks `ReadingProgressCoordinator` provider → `ProviderNotFoundException`. Default-suite `book_comic_presentation_test.dart` covers detail surfaces with correct providers.
+**P62 resolution (2026-07-29):** Harness provider tree aligned with Phase 6.5 reading-progress architecture (`ReadingProgressRepository` + `ReadingProgressCoordinator`, mock `SharedPreferences`). R4 assertion updated to expect `item_detail_open_book` (Phase 6.4 reader shipped; obsolete `item_detail_reader_pending` stub removed from contract). Commit `b6ce503`.
 
 ---
 
@@ -217,31 +216,29 @@ Disposition key: **Met** · **Superseded** · **Deferral** · **Limitation** · 
 
 ### Recommended release-finalisation sequence (later task)
 
-1. Refresh `phase_62` runtime harness (`ReadingProgressCoordinator` in provider tree); re-run P62.
-2. Bump `pubspec.yaml` to `0.7.0+1`.
-3. Create `docs/release/m6-complete.md` (mirror `m5-complete.md` structure).
-4. Update `MILESTONES.md`, `docs/release/README.md`, `README.md` roadmap table.
-5. Final `flutter test` + M6 runtime harness sweep on Windows.
-6. Commit: `docs(m6): close books and comics milestone` (+ version bump commit if separated).
-7. Tag `m6-complete` and `v0.7.0` on closure commit.
-8. Push branch and tags when authorised.
+1. Bump `pubspec.yaml` to `0.7.0+1`.
+2. Create `docs/release/m6-complete.md` (mirror `m5-complete.md` structure).
+3. Update `MILESTONES.md`, `docs/release/README.md`, `README.md` roadmap table.
+4. Final `flutter test` + M6 runtime harness sweep on Windows.
+5. Commit: `docs(m6): close books and comics milestone` (+ version bump commit if separated).
+6. Tag `m6-complete` and `v0.7.0` on closure commit.
+7. Push branch and tags when authorised.
 
 ---
 
-## 11. Proposed documentation commit message
+## 11. Closure documentation commits
 
-```
-docs(m6): milestone closure audit — CBZ-only reconciliation
-
-Record phase completion matrix, DoD disposition (ADR-026 CBR supersession),
-ADR-024/025 acceptance, regression/runtime evidence, limitations, and
-conditional release readiness. No version bump or tags.
-```
+| Commit | SHA | Scope |
+|---|---|---|
+| Milestone closure audit | `7f3e376` | Initial audit, ADR acceptance |
+| Post-milestone UX tracker | `44ca227` | UX workflow deferrals |
+| P62 harness refresh | `b6ce503` | Runtime provider alignment |
+| Final closure evidence | *(this commit)* | P62 pass, ready-for-closure verdict |
 
 ---
 
 ## 12. Final verdict
 
-**Conditionally ready for milestone closure.**
+**Ready for closure.**
 
-All M6 implementation phases (6.0–6.6, 6.4C) are complete with verified automated evidence and core Windows runtime sign-off. CBR requirements are reconciled as **superseded by ADR-026**, not open blockers. Follow before public release: release-finalisation (version, tags, `m6-complete.md`, index sync) and optional Phase 6.2 runtime harness provider refresh.
+All M6 implementation phases (6.0–6.6, 6.4C) are complete with verified automated evidence and full Windows runtime sign-off (P62–P66). CBR requirements are reconciled as **superseded by ADR-026**, not open blockers. Remaining work before public release: **release finalisation** only (version, tags, `m6-complete.md`, index sync).
