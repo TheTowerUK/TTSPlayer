@@ -105,7 +105,7 @@ void main() {
       expect(record.fields[EnrichmentBookFieldKeys.authors], isNotNull);
     });
 
-    test('empty lookup does not create a record', () async {
+    test('empty lookup persists unmatched on new item', () async {
       provider.lookupResult = const BookMetadataLookupSuccess(null);
 
       final result = await service.refreshByIsbn(
@@ -114,10 +114,28 @@ void main() {
       );
 
       expect(result, isA<BookMetadataRefreshEmpty>());
-      expect(repository.getByItemId('book-1'), isNull);
+      final record = repository.getByItemId('book-1');
+      expect(record, isNotNull);
+      expect(record!.matchState, EnrichmentMatchState.unmatched);
     });
 
-    test('empty lookup clears linkage on existing record', () async {
+    test('ISBN conflict returns conflict without persisting', () async {
+      provider.lookupResult = BookMetadataLookupSuccess(
+        FakeBookMetadataProvider.sampleMetadata(
+          isbn13: const ['9780000000000'],
+        ),
+      );
+
+      final result = await service.refreshByIsbn(
+        item: bookItem(),
+        isbnInput: '9780140449136',
+      );
+
+      expect(result, isA<BookMetadataRefreshConflict>());
+      expect(repository.storedRecordCount, 0);
+    });
+
+    test('empty lookup preserves linkage on existing linked record', () async {
       await repository.upsert(
         MetadataEnrichmentRecord(
           itemId: 'book-1',
@@ -137,8 +155,8 @@ void main() {
 
       expect(result, isA<BookMetadataRefreshEmpty>());
       final record = repository.getByItemId('book-1')!;
-      expect(record.matchState, EnrichmentMatchState.unmatched);
-      expect(record.providerId, isNull);
+      expect(record.matchState, EnrichmentMatchState.linkedByIdentifier);
+      expect(record.providerId, 'fake_books');
     });
 
     test('failure updates last error without overwriting fields', () async {

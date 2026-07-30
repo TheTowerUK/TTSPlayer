@@ -1,8 +1,6 @@
 import '../../../models/media_item.dart';
 import '../../../models/media_kind.dart';
 import '../models/book_search_request.dart';
-import '../models/enrichment_match_method.dart';
-import '../models/enrichment_match_state.dart';
 import '../models/isbn_lookup_request.dart';
 import '../models/metadata_enrichment_record.dart';
 import '../models/normalized_book_metadata.dart';
@@ -10,7 +8,7 @@ import '../models/provider_book_candidate.dart';
 import '../providers/book_metadata_provider.dart';
 import '../providers/book_metadata_provider_failure.dart';
 import '../providers/book_metadata_provider_result.dart';
-import 'book_metadata_enrichment_mapper.dart';
+import 'book_metadata_match_transition.dart';
 import 'metadata_enrichment_repository.dart';
 
 /// Result of an explicit ISBN refresh request (M7.2).
@@ -25,7 +23,15 @@ class BookMetadataRefreshSuccess extends BookMetadataRefreshResult {
 }
 
 class BookMetadataRefreshEmpty extends BookMetadataRefreshResult {
-  const BookMetadataRefreshEmpty();
+  const BookMetadataRefreshEmpty({this.record});
+
+  final MetadataEnrichmentRecord? record;
+}
+
+class BookMetadataRefreshConflict extends BookMetadataRefreshResult {
+  const BookMetadataRefreshConflict({this.existingRecord});
+
+  final MetadataEnrichmentRecord? existingRecord;
 }
 
 class BookMetadataRefreshFailure extends BookMetadataRefreshResult {
@@ -71,19 +77,23 @@ class BookMetadataSearchRefreshRejected extends BookMetadataSearchRefreshResult 
   final String reason;
 }
 
-/// Connects explicit book lookup requests to enrichment persistence (M7.2).
+/// Lower-level explicit ISBN refresh service (M7.2).
+///
+/// Application workflows must use [BookMetadataMatchingCoordinator] instead.
+/// This service exists for compatibility, focused tests, and shared ISBN
+/// persistence policy — not as an alternative UI orchestration path.
 class BookMetadataRefreshService {
   BookMetadataRefreshService({
     required BookMetadataProvider provider,
     required MetadataEnrichmentRepository repository,
-    BookMetadataEnrichmentMapper? mapper,
+    BookMetadataMatchTransition? transition,
   })  : _provider = provider,
         _repository = repository,
-        _mapper = mapper ?? const BookMetadataEnrichmentMapper();
+        _transition = transition ?? const BookMetadataMatchTransition();
 
   final BookMetadataProvider _provider;
   final MetadataEnrichmentRepository _repository;
-  final BookMetadataEnrichmentMapper _mapper;
+  final BookMetadataMatchTransition _transition;
 
   Future<BookMetadataRefreshResult> refreshByIsbn({
     required MediaItem item,
@@ -107,6 +117,15 @@ class BookMetadataRefreshService {
       case BookMetadataLookupSuccess(:final metadata):
         if (metadata == null) {
           return _handleEmptyIsbnLookup(item);
+        }
+        if (!_transition.isbnResponseConfirmed(
+          metadata,
+          request,
+          lookupKeyConfirmed: false,
+        )) {
+          return BookMetadataRefreshConflict(
+            existingRecord: _repository.getByItemId(item.id),
+          );
         }
         return _persistIsbnSuccess(item, metadata, request);
       case BookMetadataLookupFailure(:final failure):
@@ -147,30 +166,19 @@ class BookMetadataRefreshService {
     NormalizedBookMetadata metadata,
     IsbnLookupRequest request,
   ) async {
-    final fetchedAt = metadata.fetchedAt;
-    final confidence = _mapper.confidenceForExactIsbn(
-      metadata,
-      request.normalizedIsbn,
-      lookupKeyConfirmed: true,
-    );
-
     final existing = _repository.getByItemId(item.id);
-    final record = existing == null
-        ? _mapper.createLinkedRecord(
-            itemId: item.id,
-            metadata: metadata,
-            matchMethod: EnrichmentMatchMethod.identifier,
-            confidence: confidence,
-            fetchedAt: fetchedAt,
-          )
-        : _mapper.mergeProviderFields(
-            existing: existing,
-            metadata: metadata,
-            matchState: EnrichmentMatchState.linkedByIdentifier,
-            matchMethod: EnrichmentMatchMethod.identifier,
-            confidence: confidence,
-            fetchedAt: fetchedAt,
-          );
+    final record = _transition.applyIsbnLink(
+      existing: existing,
+      itemId: item.id,
+      metadata: metadata,
+      request: request,
+      fetchedAt: metadata.fetchedAt,
+      lookupKeyConfirmed: _transition.isbnResponseConfirmed(
+        metadata,
+        request,
+        lookupKeyConfirmed: false,
+      ),
+    );
 
     final saveResult = await _repository.upsert(record);
     if (!saveResult.success) {
@@ -182,28 +190,26 @@ class BookMetadataRefreshService {
   }
 
   Future<BookMetadataRefreshResult> _handleEmptyIsbnLookup(MediaItem item) async {
-    // Empty lookup is not an error. Do not create a record when none exists.
     final existing = _repository.getByItemId(item.id);
+    if (BookMetadataMatchTransition.isProviderLinked(existing)) {
+      return BookMetadataRefreshEmpty(record: existing);
+    }
+
     if (existing == null) {
-      return const BookMetadataRefreshEmpty();
-    }
-
-    final updated = existing.copyWith(
-      matchState: EnrichmentMatchState.unmatched,
-      clearProviderId: true,
-      clearProviderRecordId: true,
-      clearProviderMediaType: true,
-      clearMatchMethod: true,
-      clearConfidence: true,
-      clearLastErrorCategory: true,
-    ).normalized();
-
-    final saveResult = await _repository.upsert(updated);
-    if (!saveResult.success) {
-      return const BookMetadataRefreshFailure(
-        category: BookMetadataProviderFailureCategory.unknown,
+      final record = _transition.applyNoMatch(
+        existing: null,
+        itemId: item.id,
+        updatedAt: DateTime.now().toUtc(),
       );
+      final saveResult = await _repository.upsert(record);
+      if (!saveResult.success) {
+        return const BookMetadataRefreshFailure(
+          category: BookMetadataProviderFailureCategory.unknown,
+        );
+      }
+      return BookMetadataRefreshEmpty(record: record);
     }
+
     return const BookMetadataRefreshEmpty();
   }
 
