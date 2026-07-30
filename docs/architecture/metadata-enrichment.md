@@ -119,23 +119,20 @@ Search index extension (Phase 7.5): append provider keywords to `searchBlob` at 
 
 ---
 
-## Provider abstraction (Phase 7.2)
+## Provider abstraction (Phase 7.2B — implemented)
 
-**Selected books provider (Phase 7.2A):** [Open Library](https://openlibrary.org/developers/api) — see [books-metadata-provider-evaluation.md](./books-metadata-provider-evaluation.md).
+**Selected books provider:** [Open Library](https://openlibrary.org/developers/api) — see [books-metadata-provider-evaluation.md](./books-metadata-provider-evaluation.md).
 
-```dart
-// Illustrative — not implemented
-abstract class MetadataProvider {
-  String get id;
-  Set<MediaKind> get supportedKinds;
-  Future<ProviderSearchResult> search(MatchQuery query, {CancelToken? cancel});
-  Future<EnrichmentPayload?> fetchRecord(String providerRecordId, {CancelToken? cancel});
-}
-```
+Production contract (client):
 
-- One interface; per-provider adapters
-- Fake implementations for unit/integration tests
-- No live network in default `flutter test` CI
+- `BookMetadataProvider` — `lookupByIsbn`, `search`
+- `MetadataHttpTransport` — injectable GET transport with timeout and cancellation
+- `BookMetadataRefreshService` — explicit ISBN refresh → `MetadataEnrichmentRepository.upsert`
+- Open Library adapter isolated under `providers/open_library/`
+
+**Not wired in `main.dart` yet** — enrichment is service-level only until Phase 7.3+ UI. No live network in default CI; fake HTTP transport in tests.
+
+→ [Phase 7.2B closure](../roadmap/m7-phase-7.2b-closure-report.md)
 
 ---
 

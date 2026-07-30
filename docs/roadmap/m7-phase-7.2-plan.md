@@ -1,11 +1,11 @@
-﻿# M7 Phase 7.2 — Books Provider Vertical Slice
+# M7 Phase 7.2 — Books Provider Vertical Slice
 
-**Status:** Planned — provider selected (Open Library); implementation not started
+**Status:** In Progress — 7.2B Complete (2026-07-30); matching UI deferred to 7.3
 **Prerequisite:** [Books metadata provider evaluation](../architecture/books-metadata-provider-evaluation.md) (Phase 7.2A complete)
 **Branch:** `m7-development`
 **Provider decision:** **Open Library — Selected**
 
-→ [M7 plan](./m7-plan.md) · [Provider evaluation](../architecture/books-metadata-provider-evaluation.md) · [Phase 7.1 closure](./m7-phase-7.1-closure-report.md)
+→ [M7 plan](./m7-plan.md) · [Provider evaluation](../architecture/books-metadata-provider-evaluation.md) · [Phase 7.2B closure](./m7-phase-7.2b-closure-report.md) · [Phase 7.1 closure](./m7-phase-7.1-closure-report.md)
 
 ---
 
@@ -18,8 +18,8 @@ Phase 7.2 is split:
 | Sub-phase | Focus | Status |
 |---|---|---|
 | **7.2A** | Provider evaluation and selection | Complete (2026-07-30) |
-| **7.2B** | Provider abstraction + Open Library adapter + fake HTTP tests | Planned |
-| **7.2C** | Wire explicit refresh to enrichment repository (no auto-match UI) | Planned |
+| **7.2B** | Provider abstraction + Open Library adapter + refresh service + fake HTTP tests | Complete (2026-07-30) |
+| **7.2C** | Explicit refresh wiring (merged into 7.2B — service-level only) | Complete |
 
 ---
 
@@ -33,14 +33,15 @@ Phase 7.2 is split:
 
 ---
 
-## In scope (Phase 7.2B–7.2C)
+## Implemented (Phase 7.2B)
 
 - `BookMetadataProvider` abstraction (books only)
 - Open Library adapter (Books API ISBN lookup; Search API for explicit queries)
-- Fake HTTP provider for unit/integration tests
-- Map responses → `NormalizedBookMetadata` → `MetadataEnrichmentRecord` upsert
+- `MetadataHttpTransport` + `HttpMetadataHttpTransport` + `FakeMetadataHttpTransport`
+- `NormalizedBookMetadata` → `MetadataEnrichmentRecord` mapper
+- `BookMetadataRefreshService` (explicit ISBN refresh + search candidates)
+- Fake provider and fixture-backed tests
 - User-Agent identification (no secret)
-- Explicit user-initiated refresh entry point (minimal — settings/debug or dev hook acceptable before full UI)
 - Rate-limit aware error categories
 
 ## Out of scope
@@ -50,6 +51,7 @@ Phase 7.2 is split:
 - Match confirmation UI (Phase 7.3)
 - Enriched detail presentation (Phase 7.5)
 - Credential storage (Phase 7.7)
+- Production UI wiring / `main.dart` provider registration (deferred)
 - ISBNdb or Google Books adapters
 - Background refresh queue
 - Live provider calls in default CI
@@ -68,12 +70,13 @@ See [evaluation doc § Phase 7.2 controlled vertical slice](../architecture/book
 
 ## Validation gates (Phase 7.2 closure)
 
-- Fake HTTP test suite passes
-- No live provider HTTP in default `flutter test`
-- No credentials in repo, prefs, or diagnostics
-- Enrichment records persist via Phase 7.1 repository
-- Ordinary catalogue load triggers zero provider calls
-- ADR-028/029 remain Proposed unless governance accepts at phase closure
+- [x] Fake HTTP test suite passes (33 focused)
+- [x] No live provider HTTP in default `flutter test`
+- [x] No credentials in repo, prefs, or diagnostics
+- [x] Enrichment records persist via Phase 7.1 repository
+- [x] Ordinary catalogue load triggers zero provider calls
+- [ ] Windows runtime harness with fake provider (Phase 7.8)
+- [ ] ADR-028/029 remain Proposed unless governance accepts at phase closure
 
 ---
 

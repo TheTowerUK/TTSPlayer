@@ -457,7 +457,7 @@ Music is the second candidate; video and comics deferred until matching UX and a
 |---|---|---|
 | **7.0** | Planning, provider research criteria, architecture, Proposed ADRs | ✅ Complete |
 | **7.1** | Enrichment models, provenance schema, persistence repository | ✅ Complete |
-| **7.2** | Provider abstraction + **books** vertical slice (Open Library after evaluation) | 🟡 7.2A Complete — 7.2B Planned |
+| **7.2** | Provider abstraction + **books** vertical slice (Open Library) | 🟡 7.2B Complete — Phase 7.2 In Progress |
 | **7.3** | Matching, confidence scoring, manual correction, ignore/stale | Planned |
 | **7.4** | Artwork enrichment, download cache, precedence integration | Planned |
 | **7.5** | Search enrichment terms, filtered browsing, enriched detail surfaces | Planned |
@@ -511,6 +511,20 @@ Music is the second candidate; video and comics deferred until matching UX and a
 - **Future secondary:** ISBNdb (paid credentials)
 
 **Out of scope:** Adapter implementation, live HTTP, credentials.
+
+### Phase 7.2B — Open Library Adapter Foundation ✅
+
+**Objective:** Provider-neutral books metadata abstraction, Open Library adapter, explicit refresh service, fake HTTP tests.
+
+**Delivered:**
+
+- `BookMetadataProvider`, transport boundary, Open Library adapter
+- `BookMetadataRefreshService` + enrichment field mapper
+- 33 focused tests; full suite **1470 passed, 19 skipped**
+
+**Closure:** [m7-phase-7.2b-closure-report.md](./m7-phase-7.2b-closure-report.md)
+
+**Out of scope:** Production UI wiring, automatic matching, covers, credentials, live CI HTTP.
 
 ---
 
