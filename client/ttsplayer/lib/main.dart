@@ -14,6 +14,8 @@ import 'features/music/services/music_playback_queue_controller.dart';
 import 'features/music/services/music_playback_session_coordinator.dart';
 import 'features/music/services/music_playback_session_restorer.dart';
 import 'features/music/services/music_playback_session_repository.dart';
+import 'features/metadata_enrichment/config/metadata_enrichment_feature_config.dart';
+import 'features/metadata_enrichment/services/book_metadata_matching_coordinator.dart';
 import 'features/metadata_enrichment/services/metadata_enrichment_repository.dart';
 import 'features/reading/services/reading_progress_coordinator.dart';
 import 'features/reading/services/reading_progress_repository.dart';
@@ -191,6 +193,10 @@ Future<void> main() async {
         ChangeNotifierProvider<MetadataEnrichmentRepository>.value(
           value: metadataEnrichmentRepository,
         ),
+        Provider<MetadataEnrichmentFeatureConfig>.value(
+          value: MetadataEnrichmentFeatureConfig.defaults,
+        ),
+        Provider<BookMetadataMatchingCoordinator?>.value(value: null),
         ChangeNotifierProvider<ReadingProgressCoordinator>.value(
           value: readingProgressCoordinator,
         ),

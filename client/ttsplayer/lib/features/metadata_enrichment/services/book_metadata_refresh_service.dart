@@ -44,6 +44,12 @@ class BookMetadataRefreshFailure extends BookMetadataRefreshResult {
   final Duration? retryAfter;
 }
 
+class BookMetadataRefreshRepositoryFailure extends BookMetadataRefreshResult {
+  const BookMetadataRefreshRepositoryFailure([this.message]);
+
+  final String? message;
+}
+
 class BookMetadataRefreshRejected extends BookMetadataRefreshResult {
   const BookMetadataRefreshRejected(this.reason);
 
@@ -182,9 +188,7 @@ class BookMetadataRefreshService {
 
     final saveResult = await _repository.upsert(record);
     if (!saveResult.success) {
-      return const BookMetadataRefreshFailure(
-        category: BookMetadataProviderFailureCategory.unknown,
-      );
+      return BookMetadataRefreshRepositoryFailure(saveResult.errorMessage);
     }
     return BookMetadataRefreshSuccess(record);
   }
@@ -203,9 +207,7 @@ class BookMetadataRefreshService {
       );
       final saveResult = await _repository.upsert(record);
       if (!saveResult.success) {
-        return const BookMetadataRefreshFailure(
-          category: BookMetadataProviderFailureCategory.unknown,
-        );
+        return BookMetadataRefreshRepositoryFailure(saveResult.errorMessage);
       }
       return BookMetadataRefreshEmpty(record: record);
     }

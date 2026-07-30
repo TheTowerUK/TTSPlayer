@@ -144,6 +144,21 @@ void main() {
         expect(result, isA<BookIsbnMatchConflict>());
         expect(repository.storedRecordCount, 0);
       });
+
+      test('repository persist failure returns RepositoryFailure', () async {
+        provider.lookupResult = BookMetadataLookupSuccess(
+          FakeBookMetadataProvider.sampleMetadata(),
+        );
+        repository.simulatePersistFailure = true;
+
+        final result = await coordinator.lookupByIsbn(
+          item: bookItem(),
+          isbnInput: '9780140449136',
+        );
+
+        expect(result, isA<BookIsbnMatchRepositoryFailure>());
+        expect(repository.storedRecordCount, 0);
+      });
     });
 
     group('ISBN parity with refresh service', () {

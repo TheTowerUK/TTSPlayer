@@ -374,6 +374,10 @@ class BookMetadataMatchingCoordinator {
           category: category,
           retryAfter: retryAfter,
         );
+      case BookMetadataRefreshRepositoryFailure(:final message):
+        return BookIsbnMatchRepositoryFailure(
+          message ?? 'Could not save metadata enrichment.',
+        );
       case BookMetadataRefreshRejected(:final reason):
         return BookIsbnMatchRejected(reason);
     }

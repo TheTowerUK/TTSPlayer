@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../features/reading/reading_navigation.dart';
+import '../features/metadata_enrichment/widgets/book_metadata_enrichment_section.dart';
 import '../features/books/reader/book_navigation.dart';
 import '../features/comics/archive/comic_archive_opener.dart';
 import '../features/comics/reader/comic_navigation.dart';
+import '../features/reading/reading_navigation.dart';
 import '../models/media_item.dart';
 import '../services/artwork/artwork_decode_size.dart';
 import '../services/artwork/artwork_service.dart';
@@ -37,6 +38,7 @@ class ItemDetailScreen extends StatelessWidget {
           children: [
             _PosterArea(item: item),
             _MetadataPanel(item: item),
+            BookMetadataEnrichmentSection(item: item),
             _PlaySection(item: item),
             _FileInfo(item: item),
           ],

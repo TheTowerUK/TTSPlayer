@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ttsplayer/features/metadata_enrichment/config/metadata_enrichment_feature_config.dart';
 
 void main() {
   group('book metadata matching coordinator isolation', () {
@@ -57,6 +58,8 @@ void main() {
       final tests = [
         'test/book_metadata_matching_coordinator_test.dart',
         'test/book_metadata_matching_transitions_test.dart',
+        'test/book_metadata_enrichment_section_test.dart',
+        'test/item_detail_screen_test.dart',
       ];
       final forbidden = [
         'open_library_book_metadata_provider.dart',
@@ -73,6 +76,35 @@ void main() {
           );
         }
       }
+    });
+
+    test('enrichment section widget avoids provider implementation imports', () {
+      final widgetFile = File(
+        'lib/features/metadata_enrichment/widgets/book_metadata_enrichment_section.dart',
+      );
+      final contents = widgetFile.readAsStringSync();
+      final forbidden = [
+        'open_library_book_metadata_provider.dart',
+        'http_metadata_http_transport.dart',
+        'package:http/',
+      ];
+      for (final token in forbidden) {
+        expect(
+          contents.contains(token),
+          isFalse,
+          reason: '${widgetFile.path} must not reference $token',
+        );
+      }
+      expect(contents.contains('selectCandidate'), isFalse);
+      expect(contents.contains('Timer('), isFalse);
+    });
+
+    test('feature gate defaults off', () {
+      expect(
+        MetadataEnrichmentFeatureConfig.defaults
+            .metadataEnrichmentDevelopmentEnabled,
+        isFalse,
+      );
     });
   });
 }

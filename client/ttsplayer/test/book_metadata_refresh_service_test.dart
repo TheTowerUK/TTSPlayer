@@ -135,6 +135,34 @@ void main() {
       expect(repository.storedRecordCount, 0);
     });
 
+    test('ISBN success persist failure returns repository failure', () async {
+      provider.lookupResult = BookMetadataLookupSuccess(
+        FakeBookMetadataProvider.sampleMetadata(),
+      );
+      repository.simulatePersistFailure = true;
+
+      final result = await service.refreshByIsbn(
+        item: bookItem(),
+        isbnInput: '9780140449136',
+      );
+
+      expect(result, isA<BookMetadataRefreshRepositoryFailure>());
+      expect(repository.storedRecordCount, 0);
+    });
+
+    test('empty lookup persist failure returns repository failure', () async {
+      provider.lookupResult = const BookMetadataLookupSuccess(null);
+      repository.simulatePersistFailure = true;
+
+      final result = await service.refreshByIsbn(
+        item: bookItem(),
+        isbnInput: '9780140449136',
+      );
+
+      expect(result, isA<BookMetadataRefreshRepositoryFailure>());
+      expect(repository.storedRecordCount, 0);
+    });
+
     test('empty lookup preserves linkage on existing linked record', () async {
       await repository.upsert(
         MetadataEnrichmentRecord(
