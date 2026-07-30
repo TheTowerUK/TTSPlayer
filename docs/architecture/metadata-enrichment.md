@@ -134,6 +134,20 @@ Production contract (client):
 
 → [Phase 7.2B closure](../roadmap/m7-phase-7.2b-closure-report.md)
 
+## Matching and manual selection (Phase 7.3 — planned)
+
+Phase 7.3 adds deterministic candidate scoring, confidence bands, ambiguity detection, and manual link persistence.
+
+**Conservative auto-apply policy (Phase 7.3):**
+
+- **Explicit ISBN refresh** → auto-persist `linkedByIdentifier`, `matchMethod.identifier`, confidence `1.0` (Phase 7.2)
+- **Search candidates** → evaluate transient confidence band (including high confidence ≥ 0.85); **never silently persist**
+- **User selects/confirms any search candidate** → persist `linkedManual`, `matchMethod.manual` — even when score is high-confidence
+- **`linkedHighConfidence`** → reserved for a future approved automatic-match workflow; **not written** by Phase 7.3
+- **Ambiguous sets** → `ambiguous` state; no provider fields applied until manual selection
+
+→ [Phase 7.3 plan](../roadmap/m7-phase-7.3-plan.md)
+
 ---
 
 ## Artwork integration
@@ -156,6 +170,8 @@ Provider URLs are never passed directly to widgets — download worker writes to
 
 - Master opt-in default **off**
 - **Credential storage:** requires an OS-backed secure-storage mechanism. Windows options (Credential Manager, DPAPI-backed storage) must be evaluated during implementation — not decided in Phase 7.0. Application-managed reversible encryption is not an acceptable fallback without a separately approved key-protection design. **Until secure storage is available, provider credentials must not be persisted.** Credentials are redacted in diagnostics ([ADR-017](./decisions/ADR-017-diagnostics-architecture.md), [ADR-019](./decisions/ADR-019-diagnostics-export-support-strategy.md))
+- **Provider query inputs (Open Library):** explicit ISBN, normalized title, author, and optional year only — never full paths, filenames, or file stems
+- **Local-only comparison:** filename stem may be used locally as a weak title fallback signal during candidate evaluation; derived text is never transmitted to the provider
 - Matching queries use normalized titles and basenames — not full paths
 - Export bundle includes enrichment **counts and states** only
 

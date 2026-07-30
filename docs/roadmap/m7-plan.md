@@ -209,7 +209,7 @@ Link local items to remote records **without** making remote identifiers authori
 | State | Meaning | UX |
 |---|---|---|
 | `linked_by_identifier` | ISBN, MusicBrainz ID, TMDB ID in embedded tags | Auto-apply if configured |
-| `linked_high_confidence` | Strong multi-field match | Auto-apply if user enabled auto-match |
+| `linked_high_confidence` | Strong multi-field match (transient band) | Future auto-match only — Phase 7.3 persists manual confirmation as `linked_manual` |
 | `linked_manual` | User selected from search results | Always respected |
 | `ambiguous` | Multiple plausible results | Confirmation required |
 | `unmatched` | No acceptable candidate | Local metadata only |
@@ -457,8 +457,8 @@ Music is the second candidate; video and comics deferred until matching UX and a
 |---|---|---|
 | **7.0** | Planning, provider research criteria, architecture, Proposed ADRs | ✅ Complete |
 | **7.1** | Enrichment models, provenance schema, persistence repository | ✅ Complete |
-| **7.2** | Provider abstraction + **books** vertical slice (Open Library) | 🟡 7.2B Complete — Phase 7.2 In Progress |
-| **7.3** | Matching, confidence scoring, manual correction, ignore/stale | Planned |
+| **7.2** | Provider abstraction + **books** vertical slice (Open Library) | ✅ Complete |
+| **7.3** | Matching, confidence scoring, manual correction, ignore/stale | 🟡 Planned — see [m7-phase-7.3-plan.md](./m7-phase-7.3-plan.md) |
 | **7.4** | Artwork enrichment, download cache, precedence integration | Planned |
 | **7.5** | Search enrichment terms, filtered browsing, enriched detail surfaces | Planned |
 | **7.6** | UX/workflow refinements ([post-M6 tracker](./post-milestone-ux-workflow-review.md)) | Planned |
@@ -525,6 +525,24 @@ Music is the second candidate; video and comics deferred until matching UX and a
 **Closure:** [m7-phase-7.2b-closure-report.md](./m7-phase-7.2b-closure-report.md)
 
 **Out of scope:** Production UI wiring, automatic matching, covers, credentials, live CI HTTP.
+
+### Phase 7.2 closure disposition
+
+Phase 7.2A provider evaluation and Phase 7.2B provider abstraction and adapter foundation satisfy the formal Phase 7.2 definition of done. Phase 7.2 is **complete**.
+
+Later gates do **not** reopen Phase 7.2:
+
+- **Production activation** remains gated by Phase 7.7 privacy and opt-in work
+- **Windows runtime validation** with fake provider remains scheduled for Phase 7.8
+- **Matching UI** is Phase 7.3
+
+### Phase 7.3 — Matching and Manual Selection (planned)
+
+**Objective:** Deterministic candidate scoring, confidence bands, ambiguity handling, manual link persistence, limited book-detail UI.
+
+**Plan:** [m7-phase-7.3-plan.md](./m7-phase-7.3-plan.md)
+
+**Key policy:** Only explicit ISBN refresh auto-persists; search candidates require user confirmation.
 
 ---
 

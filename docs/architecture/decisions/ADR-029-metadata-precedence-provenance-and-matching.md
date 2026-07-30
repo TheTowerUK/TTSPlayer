@@ -48,19 +48,19 @@ User corrections persist `lockedFields` on the enrichment record. Provider refre
 
 Persist for each enriched item:
 
-| State | Auto-apply when enabled? |
+| State | Auto-apply / persistence (Phase 7.3) |
 |---|---|
-| `linked_by_identifier` (ISBN, embedded provider id) | Yes, if user opted in |
-| `linked_high_confidence` | Yes, if above threshold |
-| `linked_manual` | N/A — user authoritative |
-| `ambiguous` | **Never** auto-apply |
+| `linked_by_identifier` (ISBN, embedded provider id) | Yes — **explicit ISBN refresh only** → `matchMethod.identifier`, confidence `1.0` |
+| `linked_high_confidence` | **Not written in Phase 7.3** — reserved for future approved auto-match workflow; transient evaluation may recommend `highConfidenceCandidate` |
+| `linked_manual` | User authoritative — **all user-confirmed search selections** persist here, including high-band scores |
+| `ambiguous` | **Never** auto-apply provider fields |
 | `unmatched` | Local only |
 | `ignored` | No automatic retry until cleared |
 | `stale` | Prompt re-match after id/path change |
 
 Store `matchMethod`, `confidence` (0.0–1.0), `providerId`, `providerRecordId`.
 
-**Default auto-match threshold:** conservative (exact implementation in Phase 7.3 — target ≥ 0.9 for high-confidence tier).
+**Default auto-match threshold:** conservative — Phase 7.3 plan defines **high confidence ≥ 0.85** as a **transient evaluation band only**; search candidates require explicit user confirmation and persist as `linked_manual`. Only explicit ISBN lookup may persist automatically as `linked_by_identifier`. See [m7-phase-7.3-plan.md](../../roadmap/m7-phase-7.3-plan.md).
 
 ### 4. Provenance
 

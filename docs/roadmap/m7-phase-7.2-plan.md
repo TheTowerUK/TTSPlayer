@@ -1,6 +1,6 @@
 # M7 Phase 7.2 — Books Provider Vertical Slice
 
-**Status:** In Progress — 7.2B Complete (2026-07-30); matching UI deferred to 7.3
+**Status:** Complete — implementation scope closed (2026-07-30); Windows runtime deferred to Phase 7.8
 **Prerequisite:** [Books metadata provider evaluation](../architecture/books-metadata-provider-evaluation.md) (Phase 7.2A complete)
 **Branch:** `m7-development`
 **Provider decision:** **Open Library — Selected**
@@ -19,7 +19,8 @@ Phase 7.2 is split:
 |---|---|---|
 | **7.2A** | Provider evaluation and selection | Complete (2026-07-30) |
 | **7.2B** | Provider abstraction + Open Library adapter + refresh service + fake HTTP tests | Complete (2026-07-30) |
-| **7.2C** | Explicit refresh wiring (merged into 7.2B — service-level only) | Complete |
+
+Explicit refresh wiring (`BookMetadataRefreshService`) was delivered in 7.2B; no separate 7.2C implementation phase.
 
 ---
 
@@ -75,8 +76,8 @@ See [evaluation doc § Phase 7.2 controlled vertical slice](../architecture/book
 - [x] No credentials in repo, prefs, or diagnostics
 - [x] Enrichment records persist via Phase 7.1 repository
 - [x] Ordinary catalogue load triggers zero provider calls
-- [ ] Windows runtime harness with fake provider (Phase 7.8)
-- [ ] ADR-028/029 remain Proposed unless governance accepts at phase closure
+- [ ] Windows runtime harness with fake provider (deferred to Phase 7.8)
+- [ ] ADR-028/029 remain Proposed unless governance accepts at milestone closure
 
 ---
 
