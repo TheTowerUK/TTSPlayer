@@ -140,6 +140,8 @@ Phase 7.3 adds deterministic candidate scoring, confidence bands, ambiguity dete
 
 **Phase 7.3.1 (complete):** provider-neutral normalizer, ISBN equivalence utility, weighted evaluator, stable ranker, and transient explainable evaluation models under `lib/features/metadata_enrichment/matching/`. No persistence, networking, UI, or production wiring.
 
+**Phase 7.3.2 (complete):** `BookMetadataMatchingCoordinator` is the application-facing workflow API. It delegates ISBN lookup to the lower-level `BookMetadataRefreshService` while owning search-and-evaluate, manual selection, relink, unlink, ignore, resume matching, and bounded ambiguous/no-match persistence via `BookMetadataMatchTransition`. Non-empty evaluated search results always return `BookCandidateSearchEvaluationSuccess`; `BookCandidateSearchNoProviderCandidates` is reserved for an empty provider candidate list.
+
 **Conservative auto-apply policy (Phase 7.3):**
 
 - **Explicit ISBN refresh** → auto-persist `linkedByIdentifier`, `matchMethod.identifier`, confidence `1.0` (Phase 7.2)
@@ -148,7 +150,7 @@ Phase 7.3 adds deterministic candidate scoring, confidence bands, ambiguity dete
 - **`linkedHighConfidence`** → reserved for a future approved automatic-match workflow; **not written** by Phase 7.3
 - **Ambiguous sets** → `ambiguous` state; no provider fields applied until manual selection
 
-→ [Phase 7.3 plan](../roadmap/m7-phase-7.3-plan.md) · [Phase 7.3.1 closure](../roadmap/m7-phase-7.3.1-closure-report.md)
+→ [Phase 7.3 plan](../roadmap/m7-phase-7.3-plan.md) · [Phase 7.3.1 closure](../roadmap/m7-phase-7.3.1-closure-report.md) · [Phase 7.3.2 closure](../roadmap/m7-phase-7.3.2-closure-report.md)
 
 ---
 
