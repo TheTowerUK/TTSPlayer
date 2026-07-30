@@ -134,9 +134,11 @@ Production contract (client):
 
 → [Phase 7.2B closure](../roadmap/m7-phase-7.2b-closure-report.md)
 
-## Matching and manual selection (Phase 7.3 — planned)
+## Matching and manual selection (Phase 7.3 — in progress)
 
 Phase 7.3 adds deterministic candidate scoring, confidence bands, ambiguity detection, and manual link persistence.
+
+**Phase 7.3.1 (complete):** provider-neutral normalizer, ISBN equivalence utility, weighted evaluator, stable ranker, and transient explainable evaluation models under `lib/features/metadata_enrichment/matching/`. No persistence, networking, UI, or production wiring.
 
 **Conservative auto-apply policy (Phase 7.3):**
 
@@ -146,7 +148,7 @@ Phase 7.3 adds deterministic candidate scoring, confidence bands, ambiguity dete
 - **`linkedHighConfidence`** → reserved for a future approved automatic-match workflow; **not written** by Phase 7.3
 - **Ambiguous sets** → `ambiguous` state; no provider fields applied until manual selection
 
-→ [Phase 7.3 plan](../roadmap/m7-phase-7.3-plan.md)
+→ [Phase 7.3 plan](../roadmap/m7-phase-7.3-plan.md) · [Phase 7.3.1 closure](../roadmap/m7-phase-7.3.1-closure-report.md)
 
 ---
 
