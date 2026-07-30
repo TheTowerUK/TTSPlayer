@@ -52,7 +52,7 @@ Architecture for [M7 — Metadata Enrichment](../roadmap/m7-plan.md). **Phase 7.
 
 | Document | Phase | Status |
 |---|---|---|
-| [Metadata enrichment](./metadata-enrichment.md) | M7 🟡 | Optional external providers · client-primary boundary · ADR-028/029 **Proposed** · [m7-plan](../roadmap/m7-plan.md) |
+| [Metadata enrichment](./metadata-enrichment.md) | M7 🟡 | Optional external providers · client-primary boundary · **Open Library selected (7.2A)** · ADR-028/029 **Proposed** · [m7-plan](../roadmap/m7-plan.md) |
 
 ## Architecture Decision Records
 

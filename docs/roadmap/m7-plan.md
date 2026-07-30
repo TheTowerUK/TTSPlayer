@@ -457,7 +457,7 @@ Music is the second candidate; video and comics deferred until matching UX and a
 |---|---|---|
 | **7.0** | Planning, provider research criteria, architecture, Proposed ADRs | ✅ Complete |
 | **7.1** | Enrichment models, provenance schema, persistence repository | ✅ Complete |
-| **7.2** | Provider abstraction + **books** vertical slice (one provider after evaluation) | Planned |
+| **7.2** | Provider abstraction + **books** vertical slice (Open Library after evaluation) | 🟡 7.2A Complete — 7.2B Planned |
 | **7.3** | Matching, confidence scoring, manual correction, ignore/stale | Planned |
 | **7.4** | Artwork enrichment, download cache, precedence integration | Planned |
 | **7.5** | Search enrichment terms, filtered browsing, enriched detail surfaces | Planned |
@@ -497,6 +497,20 @@ Music is the second candidate; video and comics deferred until matching UX and a
 **Closure:** [m7-phase-7.1-closure-report.md](./m7-phase-7.1-closure-report.md)
 
 **Out of scope:** Provider HTTP, credentials, matching UI, artwork download, enriched detail screens.
+
+### Phase 7.2A — Books Provider Evaluation ✅
+
+**Objective:** Evaluate current books metadata providers; select controlled vertical-slice provider.
+
+**Delivered:**
+
+- [books-metadata-provider-evaluation.md](../architecture/books-metadata-provider-evaluation.md)
+- [m7-phase-7.2-plan.md](./m7-phase-7.2-plan.md)
+- **Selected provider:** Open Library
+- **Rejected primary:** Google Books (persistence/terms), LoC JSON (coverage), WorldCat (institutional)
+- **Future secondary:** ISBNdb (paid credentials)
+
+**Out of scope:** Adapter implementation, live HTTP, credentials.
 
 ---
 

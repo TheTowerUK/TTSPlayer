@@ -4,7 +4,7 @@
 **Milestone:** M7 — Metadata Enrichment and Library Experience
 **Related ADRs:** [ADR-028](./decisions/ADR-028-external-metadata-enrichment-boundary.md) (Proposed), [ADR-029](./decisions/ADR-029-metadata-precedence-provenance-and-matching.md) (Proposed)
 
-→ [M7 plan](../roadmap/m7-plan.md) · [Phase 7.1 closure](../roadmap/m7-phase-7.1-closure-report.md)
+→ [M7 plan](../roadmap/m7-plan.md) · [Phase 7.1 closure](../roadmap/m7-phase-7.1-closure-report.md) · [Books provider evaluation](./books-metadata-provider-evaluation.md)
 → [Books & comics](./books-comics.md) · [Music](./music.md)
 → [Artwork caching ADR-015](./decisions/ADR-015-artwork-and-image-decode-caching.md)
 → [Diagnostics ADR-017](./decisions/ADR-017-diagnostics-architecture.md)
@@ -120,6 +120,8 @@ Search index extension (Phase 7.5): append provider keywords to `searchBlob` at 
 ---
 
 ## Provider abstraction (Phase 7.2)
+
+**Selected books provider (Phase 7.2A):** [Open Library](https://openlibrary.org/developers/api) — see [books-metadata-provider-evaluation.md](./books-metadata-provider-evaluation.md).
 
 ```dart
 // Illustrative — not implemented
