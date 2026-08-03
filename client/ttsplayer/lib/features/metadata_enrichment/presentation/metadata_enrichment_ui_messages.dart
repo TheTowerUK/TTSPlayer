@@ -79,6 +79,37 @@ class MetadataEnrichmentUiMessages {
   static const candidateReviewDeferredMessage =
       'Candidate selection will be added in a later phase. No metadata was saved.';
 
+  static const selectionSuccessMessage = 'Metadata linked manually.';
+
+  static String selectionResultMessage(BookCandidateSelectionResult result) {
+    return switch (result) {
+      BookCandidateSelectionSuccess() => selectionSuccessMessage,
+      BookCandidateSelectionRepositoryFailure() => repositoryFailureMessage,
+      BookCandidateSelectionInvalidContext() =>
+        'These metadata candidates are no longer valid. Search again.',
+      BookCandidateSelectionConflictConfirmationRequired() =>
+        'Review the warnings before continuing.',
+      BookCandidateSelectionRejected(:final reason) => _selectionRejection(reason),
+    };
+  }
+
+  static String _selectionRejection(String reason) {
+    final lower = reason.toLowerCase();
+    if (lower.contains('ignored')) {
+      return 'Resume matching before selecting metadata.';
+    }
+    if (lower.contains('books only')) {
+      return 'Metadata selection is unavailable for this item.';
+    }
+    if (lower.contains('not reviewable')) {
+      return 'Selected candidate is no longer available.';
+    }
+    if (lower.contains('relink requires')) {
+      return 'Metadata could not be changed from its current state.';
+    }
+    return 'Metadata could not be changed from its current state.';
+  }
+
   static String _boundedRejection(String reason) {
     final lower = reason.toLowerCase();
     if (lower.contains('isbn')) {

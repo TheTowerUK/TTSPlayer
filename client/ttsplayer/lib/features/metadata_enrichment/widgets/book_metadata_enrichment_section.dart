@@ -5,15 +5,16 @@ import '../../../models/media_item.dart';
 import '../../../theme/app_theme.dart';
 import '../config/metadata_enrichment_feature_config.dart';
 import '../models/book_search_request.dart';
-import '../models/enrichment_match_state.dart';
 import '../models/metadata_enrichment_record.dart';
 import '../presentation/metadata_enrichment_ui_messages.dart';
 import '../presentation/metadata_match_state_presentation.dart';
 import '../presentation/metadata_provider_presentation.dart';
+import '../services/book_metadata_match_transition.dart';
 import '../services/book_candidate_selection_context.dart';
 import '../services/book_metadata_matching_coordinator.dart';
 import '../services/book_metadata_matching_result.dart';
 import '../services/metadata_enrichment_repository.dart';
+import 'book_metadata_candidate_dialog.dart';
 
 enum _PendingOperation {
   none,
@@ -59,6 +60,36 @@ class _BookMetadataEnrichmentSectionState
   _PendingOperation _pending = _PendingOperation.none;
   String? _statusMessage;
   _TransientSearchSummary? _searchSummary;
+  int _candidateReviewGeneration = 0;
+  BookMetadataCandidateDialogSession? _activeCandidateReview;
+
+  @override
+  void didUpdateWidget(covariant BookMetadataEnrichmentSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.item.id != widget.item.id) {
+      _dismissActiveCandidateReviewByItemChange();
+      _resetTransientState();
+    }
+  }
+
+  @override
+  void dispose() {
+    _dismissActiveCandidateReviewByItemChange();
+    super.dispose();
+  }
+
+  void _dismissActiveCandidateReviewByItemChange() {
+    _candidateReviewGeneration++;
+    final session = _activeCandidateReview;
+    _activeCandidateReview = null;
+    session?.dismissByItemChange();
+  }
+
+  void _resetTransientState() {
+    _pending = _PendingOperation.none;
+    _statusMessage = null;
+    _searchSummary = null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -302,14 +333,19 @@ class _BookMetadataEnrichmentSectionState
       onPressed: () => _resumeMatching(coordinator),
     );
 
-    if (presentation.permits(MetadataEnrichmentAction.reviewCandidates) ||
-        (_searchSummary?.showReviewPlaceholder ?? false)) {
+    final reviewContext = _searchSummary?.selectionContext;
+    if (reviewContext != null && reviewContext.hasReviewableCandidates) {
       actions.add(
         OutlinedButton(
           key: const Key('book_metadata_enrichment_review_candidates'),
           onPressed: busy
               ? null
-              : () => _showCandidateReviewPlaceholder(context),
+              : () => _openCandidateReview(
+                    context,
+                    coordinator: coordinator,
+                    selectionContext: reviewContext,
+                    record: record,
+                  ),
           child: const Text('Review candidates'),
         ),
       );
@@ -414,9 +450,67 @@ class _BookMetadataEnrichmentSectionState
       _searchSummary = summary;
       if (changeExisting) {
         _statusMessage =
-            'Existing link retained until a candidate is confirmed in a later phase.';
+            'Existing link retained until you confirm a replacement candidate.';
       }
     });
+  }
+
+  Future<void> _openCandidateReview(
+    BuildContext context, {
+    required BookMetadataMatchingCoordinator coordinator,
+    required BookCandidateSelectionContext selectionContext,
+    required MetadataEnrichmentRecord? record,
+  }) async {
+    if (_pending != _PendingOperation.none || !mounted) {
+      return;
+    }
+
+    final isRelink = BookMetadataMatchTransition.isProviderLinked(record);
+    final generation = _candidateReviewGeneration;
+    final itemId = widget.item.id;
+    final session = BookMetadataCandidateDialog.open(
+      context: context,
+      item: widget.item,
+      selectionContext: selectionContext,
+      coordinator: coordinator,
+      isRelink: isRelink,
+      sessionGeneration: generation,
+    );
+    _activeCandidateReview = session;
+
+    final dialogResult = await session.result;
+    _activeCandidateReview = null;
+
+    if (!mounted ||
+        generation != _candidateReviewGeneration ||
+        widget.item.id != itemId) {
+      return;
+    }
+
+    if (dialogResult == null) {
+      return;
+    }
+
+    switch (dialogResult) {
+      case BookMetadataCandidateDialogCancelled():
+      case BookMetadataCandidateDialogDismissedByItemChange():
+        return;
+      case BookMetadataCandidateDialogInvalidContext():
+        setState(() {
+          _searchSummary = null;
+          _statusMessage =
+              'These metadata candidates are no longer valid. Search again.';
+        });
+      case BookMetadataCandidateDialogFailure(:final message):
+        setState(() {
+          _statusMessage = message;
+        });
+      case BookMetadataCandidateDialogSuccess(:final message):
+        setState(() {
+          _searchSummary = null;
+          _statusMessage = message;
+        });
+    }
   }
 
   _TransientSearchSummary _summaryForSearchResult(
@@ -565,27 +659,6 @@ class _BookMetadataEnrichmentSectionState
       _statusMessage = MetadataEnrichmentUiMessages.linkTransitionMessage(result);
       _searchSummary = null;
     });
-  }
-
-  Future<void> _showCandidateReviewPlaceholder(BuildContext context) async {
-    if (!mounted) {
-      return;
-    }
-    await showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Candidate review'),
-        content: const Text(
-          MetadataEnrichmentUiMessages.candidateReviewDeferredMessage,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
   }
 
   Future<String?> _promptIsbn(BuildContext context) {

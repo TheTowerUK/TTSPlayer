@@ -11,6 +11,7 @@ import 'package:ttsplayer/features/metadata_enrichment/providers/book_metadata_p
 import 'package:ttsplayer/features/metadata_enrichment/providers/fake_book_metadata_provider.dart';
 
 import 'book_metadata_matching_coordinator_test.dart' show fakeCandidate;
+import 'package:ttsplayer/features/metadata_enrichment/providers/book_metadata_provider_result.dart';
 import 'support/book_metadata_enrichment_section_test_support.dart';
 import 'support/metadata_enrichment_test_support.dart';
 
@@ -166,7 +167,7 @@ void main() {
       expect(find.text('Automatically linked'), findsOneWidget);
     });
 
-    testWidgets('ambiguous shows review placeholder action', (tester) async {
+    testWidgets('ambiguous shows review required state', (tester) async {
       await pumpWithRecord(
         tester,
         MetadataEnrichmentRecord(
@@ -177,7 +178,7 @@ void main() {
 
       expect(find.text('Metadata review required'), findsOneWidget);
       expect(find.byKey(const Key('book_metadata_enrichment_review_candidates')),
-          findsOneWidget);
+          findsNothing);
     });
 
     testWidgets('ignored hides lookup and search', (tester) async {
@@ -805,34 +806,31 @@ void main() {
     });
   });
 
-  group('BookMetadataEnrichmentSection candidate review placeholder', () {
-    testWidgets('review candidates shows deferred dialog', (tester) async {
+  group('BookMetadataEnrichmentSection candidate review', () {
+    testWidgets('review candidates opens selection dialog', (tester) async {
       final harness = await EnrichmentTestHarness.create();
-      await harness.repository.upsert(
-        MetadataEnrichmentRecord(
-          itemId: 'book-1',
-          matchState: EnrichmentMatchState.ambiguous,
+      harness.provider.searchResult = BookMetadataSearchSuccess([
+        fakeCandidate(
+          recordId: '/books/ACCEPT',
+          title: 'Local Title',
+          authors: const ['Candidate Author'],
         ),
-      );
+      ]);
 
       await tester.pumpWidget(
         enrichmentSectionHarness(
-          item: enrichmentBookItem(),
+          item: enrichmentBookItem(author: 'Candidate Author'),
           repository: harness.repository,
           coordinator: harness.coordinator,
         ),
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(
-        find.byKey(const Key('book_metadata_enrichment_review_candidates')),
-      );
-      await tester.pumpAndSettle();
+      await tapSearchMetadata(tester);
+      await tapReviewCandidates(tester);
 
-      expect(
-        find.textContaining('Candidate selection will be added'),
-        findsOneWidget,
-      );
+      expect(find.byKey(const Key('book_metadata_candidate_dialog')), findsOneWidget);
+      expect(find.text('Review metadata candidates'), findsOneWidget);
     });
   });
 

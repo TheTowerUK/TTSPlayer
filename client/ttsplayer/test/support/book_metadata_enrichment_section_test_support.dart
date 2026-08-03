@@ -226,3 +226,34 @@ Future<void> cancelConfirmDialog(WidgetTester tester) async {
   await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
   await tester.pumpAndSettle();
 }
+
+Future<void> tapSearchMetadata(WidgetTester tester) async {
+  await tester.tap(find.byKey(const Key('book_metadata_enrichment_search')));
+  await tester.pumpAndSettle();
+}
+
+Future<void> tapReviewCandidates(WidgetTester tester) async {
+  await tester.tap(find.byKey(const Key('book_metadata_enrichment_review_candidates')));
+  await tester.pumpAndSettle();
+}
+
+Future<void> tapCandidateCard(WidgetTester tester, String recordId) async {
+  final suffix = recordId.replaceAll('/', '_');
+  await tester.tap(find.byKey(Key('book_metadata_candidate_card_$suffix')));
+  await tester.pumpAndSettle();
+}
+
+Future<void> tapUseSelectedCandidate(WidgetTester tester) async {
+  await tester.tap(find.byKey(const Key('book_metadata_candidate_use')));
+  await tester.pumpAndSettle();
+}
+
+Future<void> confirmCandidateSelection(WidgetTester tester) async {
+  await tester.tap(find.byKey(const Key('book_metadata_candidate_confirm')));
+  await tester.pumpAndSettle();
+}
+
+Future<void> confirmCriticalOverride(WidgetTester tester) async {
+  await tester.tap(find.byKey(const Key('book_metadata_candidate_critical_confirm')));
+  await tester.pumpAndSettle();
+}

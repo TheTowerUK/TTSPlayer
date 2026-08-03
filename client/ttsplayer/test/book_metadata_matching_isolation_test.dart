@@ -99,6 +99,31 @@ void main() {
       expect(contents.contains('Timer('), isFalse);
     });
 
+    test('candidate dialog widget avoids provider implementation imports', () {
+      final widgetFile = File(
+        'lib/features/metadata_enrichment/widgets/book_metadata_candidate_dialog.dart',
+      );
+      final contents = widgetFile.readAsStringSync();
+      final forbidden = [
+        'open_library_book_metadata_provider.dart',
+        'http_metadata_http_transport.dart',
+        'package:http/',
+        '_provider.search',
+        '_provider.lookup',
+        'BookMetadataRefreshService',
+        'MetadataEnrichmentRepository',
+      ];
+      for (final token in forbidden) {
+        expect(
+          contents.contains(token),
+          isFalse,
+          reason: '${widgetFile.path} must not reference $token',
+        );
+      }
+      expect(contents.contains('selectCandidate'), isTrue);
+      expect(contents.contains('relinkCandidate'), isTrue);
+    });
+
     test('feature gate defaults off', () {
       expect(
         MetadataEnrichmentFeatureConfig.defaults
