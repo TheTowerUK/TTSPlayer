@@ -146,6 +146,8 @@ Phase 7.3 adds deterministic candidate scoring, confidence bands, ambiguity dete
 
 **Phase 7.3.4 (complete):** `BookMetadataCandidateDialog` and presentation mappers — reviewable candidates from coordinator-owned `BookCandidateSelectionContext`, provider-neutral cards, ordinary and critical-conflict confirmation, `selectCandidate()` / `relinkCandidate()` persistence to `linkedManual`, invalid-context recovery, and repository-failure handling without additional provider calls.
 
+**Phase 7.3.5 (complete):** Lifecycle polish for unlink, ignore, resume, and rematch — renamed user-facing actions, explicit confirmation copy, bounded transition success messages, unified item-scoped lifecycle generation, transient workflow clearing, and focused lifecycle widget tests. No coordinator or schema changes.
+
 **Conservative auto-apply policy (Phase 7.3):**
 
 - **Explicit ISBN refresh** → auto-persist `linkedByIdentifier`, `matchMethod.identifier`, confidence `1.0` (Phase 7.2)
@@ -154,7 +156,7 @@ Phase 7.3 adds deterministic candidate scoring, confidence bands, ambiguity dete
 - **`linkedHighConfidence`** → reserved for a future approved automatic-match workflow; **not written** by Phase 7.3
 - **Ambiguous sets** → `ambiguous` state; no provider fields applied until manual selection
 
-→ [Phase 7.3 plan](../roadmap/m7-phase-7.3-plan.md) · [Phase 7.3.1 closure](../roadmap/m7-phase-7.3.1-closure-report.md) · [Phase 7.3.2 closure](../roadmap/m7-phase-7.3.2-closure-report.md) · [Phase 7.3.3 closure](../roadmap/m7-phase-7.3.3-closure-report.md) · [Phase 7.3.4 closure](../roadmap/m7-phase-7.3.4-closure-report.md)
+→ [Phase 7.3 plan](../roadmap/m7-phase-7.3-plan.md) · [Phase 7.3.1 closure](../roadmap/m7-phase-7.3.1-closure-report.md) · [Phase 7.3.2 closure](../roadmap/m7-phase-7.3.2-closure-report.md) · [Phase 7.3.3 closure](../roadmap/m7-phase-7.3.3-closure-report.md) · [Phase 7.3.4 closure](../roadmap/m7-phase-7.3.4-closure-report.md) · [Phase 7.3.5 closure](../roadmap/m7-phase-7.3.5-closure-report.md)
 
 ---
 

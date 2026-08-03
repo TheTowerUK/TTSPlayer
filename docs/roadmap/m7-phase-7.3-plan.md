@@ -1,6 +1,6 @@
 # M7 Phase 7.3 — Metadata Matching and Manual Selection
 
-**Status:** In progress — Phase 7.3.4 candidate selection complete (2026-07-30)
+**Status:** In progress — Phase 7.3.5 lifecycle polish complete (2026-08-03)
 **Prerequisite:** [Phase 7.2B closure](./m7-phase-7.2b-closure-report.md) complete
 **Branch:** `m7-development`
 **Related ADRs:** [ADR-028](../architecture/decisions/ADR-028-external-metadata-enrichment-boundary.md) (Proposed), [ADR-029](../architecture/decisions/ADR-029-metadata-precedence-provenance-and-matching.md) (Proposed)
@@ -663,7 +663,7 @@ Mandatory gate for Phase 7.3 closure; live Open Library optional in 7.8.
 | 7.3.2 | Matching coordinator + persistence transitions + tests | Complete (2026-07-30) |
 | 7.3.3 | Book detail metadata section (debug gate) | Complete (2026-07-30) |
 | 7.3.4 | Candidate selection + confirmation dialogs | Complete (2026-07-30) |
-| 7.3.5 | Unlink / ignore / rematch flows | Planned |
+| 7.3.5 | Unlink / ignore / rematch flows | Complete (2026-08-03) |
 | 7.3.6 | Widget tests + Windows runtime harness | Planned |
 | 7.3.7 | Closure documentation | Planned |
 
