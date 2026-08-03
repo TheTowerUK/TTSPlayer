@@ -16,6 +16,9 @@ enum ArtworkSource {
   /// Named artwork file in a parent or containing folder.
   folderArt,
 
+  /// Validated provider artwork file from the app-owned metadata cache (M7.4.4).
+  providerCache,
+
   /// No file found — UI should render [MediaPlaceholder].
   placeholder,
 }

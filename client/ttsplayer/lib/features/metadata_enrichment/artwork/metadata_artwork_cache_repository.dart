@@ -74,23 +74,44 @@ class MetadataArtworkCacheRepository {
   }
 
   Future<MetadataArtworkCacheLookup?> lookup(String cacheKey) async {
+    final peek = await peekLookup(cacheKey);
+    if (peek == null) {
+      return null;
+    }
+    final fs = await filesystem();
+    final touched = peek.entry.copyWith(lastAccessedAt: _clock());
+    _entries[cacheKey] = touched.normalized();
+    await _persistIndex(fs);
+    return MetadataArtworkCacheLookup(
+      entry: touched,
+      absoluteFilePath: peek.absoluteFilePath,
+    );
+  }
+
+  /// Read-only cache lookup for artwork resolution (M7.4.4).
+  ///
+  /// Does not update [lastAccessedAt] or persist the index — use [lookup] when
+  /// an explicit access touch is intended (for example after download).
+  Future<MetadataArtworkCacheLookup?> peekLookup(String cacheKey) async {
     final fs = await filesystem();
     final entry = _entries[cacheKey];
     if (entry == null) {
       return null;
     }
-    final file = fs.fileForRelativePath(entry.relativePath);
-    if (!await file.exists()) {
-      await _removeEntry(fs, cacheKey, deleteFile: false);
+    try {
+      final file = fs.fileForRelativePath(entry.relativePath);
+      if (!await file.exists()) {
+        await _removeEntry(fs, cacheKey, deleteFile: false);
+        await _persistIndex(fs);
+        return null;
+      }
+      return MetadataArtworkCacheLookup(
+        entry: entry,
+        absoluteFilePath: file.path,
+      );
+    } catch (_) {
       return null;
     }
-    final touched = entry.copyWith(lastAccessedAt: _clock());
-    _entries[cacheKey] = touched.normalized();
-    await _persistIndex(fs);
-    return MetadataArtworkCacheLookup(
-      entry: touched,
-      absoluteFilePath: file.path,
-    );
   }
 
   Future<MetadataArtworkCacheEntry> upsertEntry(
