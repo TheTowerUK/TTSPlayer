@@ -166,7 +166,7 @@ flutter test test/phase_736_metadata_matching_windows_runtime_test.dart --tags p
 - **`linkedHighConfidence`** → reserved for a future approved automatic-match workflow; **not written** by Phase 7.3
 - **Ambiguous sets** → `ambiguous` state; no provider fields applied until manual selection
 
-→ [Phase 7.3 plan](../roadmap/m7-phase-7.3-plan.md) · [Phase 7.3.1 closure](../roadmap/m7-phase-7.3.1-closure-report.md) · [Phase 7.3.2 closure](../roadmap/m7-phase-7.3.2-closure-report.md) · [Phase 7.3.3 closure](../roadmap/m7-phase-7.3.3-closure-report.md) · [Phase 7.3.4 closure](../roadmap/m7-phase-7.3.4-closure-report.md) · [Phase 7.3.5 closure](../roadmap/m7-phase-7.3.5-closure-report.md) · [Phase 7.3.6 closure](../roadmap/m7-phase-7.3.6-closure-report.md) · [Phase 7.4 plan](../roadmap/m7-phase-7.4-plan.md) · [Phase 7.4.2 closure](../roadmap/m7-phase-7.4.2-closure-report.md)
+→ [Phase 7.3 plan](../roadmap/m7-phase-7.3-plan.md) · [Phase 7.3.1 closure](../roadmap/m7-phase-7.3.1-closure-report.md) · [Phase 7.3.2 closure](../roadmap/m7-phase-7.3.2-closure-report.md) · [Phase 7.3.3 closure](../roadmap/m7-phase-7.3.3-closure-report.md) · [Phase 7.3.4 closure](../roadmap/m7-phase-7.3.4-closure-report.md) · [Phase 7.3.5 closure](../roadmap/m7-phase-7.3.5-closure-report.md) · [Phase 7.3.6 closure](../roadmap/m7-phase-7.3.6-closure-report.md) · [Phase 7.4 plan](../roadmap/m7-phase-7.4-plan.md) · [Phase 7.4.2 closure](../roadmap/m7-phase-7.4.2-closure-report.md) · [Phase 7.4.3 closure](../roadmap/m7-phase-7.4.3-closure-report.md)
 
 ---
 
@@ -190,7 +190,22 @@ Provider-neutral artwork **identity** is persisted on enrichment records without
 
 → [Phase 7.4.2 closure](../roadmap/m7-phase-7.4.2-closure-report.md)
 
-### Planned artwork presentation (7.4.3+)
+### Phase 7.4.3 — Disk cache and validation (complete)
+
+Explicit retrieval infrastructure without UI:
+
+- `MetadataArtworkFilesystem` — app-support cache root, relative paths, atomic temp→rename
+- `MetadataArtworkCacheRepository` — `cache_index_v1.json`, lookup, LRU eviction (256 MB → 80%), orphan sweep
+- `MetadataArtworkDownloadService` — explicit `download()` / `refresh()` / `lookup()` / `remove()` / `cleanup()`
+- `MetadataArtworkValidator` — HTTPS, 15 s timeout, 8 MB cap, MIME + `dart:ui` decode validation
+- `MetadataArtworkDownloadGenerationGuard` — stale download commit prevention
+- Open Library Covers URL resolver (download time only; not persisted)
+
+**Not in 7.4.3:** resolver, UI, coordinator wiring, automatic downloads, production HTTP in CI.
+
+→ [Phase 7.4.3 closure](../roadmap/m7-phase-7.4.3-closure-report.md)
+
+### Planned artwork presentation (7.4.4+)
 
 Extends [ArtworkService](./decisions/ADR-015-artwork-and-image-decode-caching.md) with an additional candidate source **after** sidecars, **before** placeholder:
 

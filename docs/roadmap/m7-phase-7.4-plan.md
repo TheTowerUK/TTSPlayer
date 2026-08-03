@@ -1,6 +1,6 @@
 # M7 Phase 7.4 — Artwork Enrichment and Cache
 
-**Status:** In progress — 7.4.2 complete (2026-08-03); see [7.4.2 closure](./m7-phase-7.4.2-closure-report.md)
+**Status:** In progress — 7.4.3 complete (2026-08-03); see [7.4.3 closure](./m7-phase-7.4.3-closure-report.md)
 **Prerequisite:** [Phase 7.3.6 closure](./m7-phase-7.3.6-closure-report.md)
 **Branch:** `m7-development`
 **Related ADRs:** [ADR-015](../architecture/decisions/ADR-015-artwork-and-image-decode-caching.md) (Accepted), [ADR-028](../architecture/decisions/ADR-028-external-metadata-enrichment-boundary.md) (Proposed), [ADR-029](../architecture/decisions/ADR-029-metadata-precedence-provenance-and-matching.md) (Proposed)
@@ -69,8 +69,8 @@ Implement the first complete **book** artwork-enrichment path: provider-neutral 
 | Mechanism | Status |
 |---|---|
 | Enrichment JSON | SharedPreferences envelope v1 |
-| Artwork disk cache | **Not implemented** (ADR-015 explicitly deferred disk store) |
-| `path_provider` | Declared in `pubspec.yaml`; **not used in `lib/` yet** — suitable for app-support cache root |
+| Artwork disk cache | **Implemented (7.4.3)** — `{ApplicationSupportDirectory}/metadata_artwork_cache/` |
+| `path_provider` | Used for production cache root (7.4.3); injectable override in tests |
 | Temp/atomic write helpers | No shared utility; follow enrichment repository atomic save pattern |
 | Diagnostics | `ArtworkService` candidate count + Flutter `ImageCache` bytes in runtime snapshot ([ADR-018](../architecture/decisions/ADR-018-runtime-snapshot-model.md)) |
 | Redaction | [ADR-019](../architecture/decisions/ADR-019-diagnostics-export-support-strategy.md) — no paths/URLs in exports |
@@ -292,7 +292,7 @@ Never export: credentials, signed URLs, raw HTTP text, absolute cache paths, ima
 |---|---|---|
 | **7.4.1** | Audit + architecture (this document) | Complete |
 | **7.4.2** | Direct `crypto` dep + cache-key helper; artwork reference model + persistence + repository tests | Complete — [`f65d676`](./m7-phase-7.4.2-closure-report.md) |
-| **7.4.3** | Disk cache, download validation, cleanup + tests | Planned |
+| **7.4.3** | Disk cache, download validation, cleanup + tests | Complete — [closure](./m7-phase-7.4.3-closure-report.md) (uncommitted) |
 | **7.4.4** | Central resolver + precedence + tests | Planned |
 | **7.4.5** | Book metadata workflow integration + lifecycle tests | Planned |
 | **7.4.6** | Detail + cached browse presentation | Planned |
@@ -360,7 +360,7 @@ Production Open Library activation, live HTTP in CI, credentials UI, bulk/backgr
 
 ## Recommended next implementation step
 
-**Phase 7.4.3 — Disk cache and download validation:** `MetadataArtworkCache`, download service with fake HTTP in tests, atomic disk write, quota/eviction, decode validation — **without** enrichment-section download UI (7.4.5) or production HTTP in CI.
+**Phase 7.4.4 — Central resolver and precedence:** `MetadataArtworkResolver` composing `ArtworkService` with enrichment-linked cache eligibility; extend `ArtworkSource` with `providerCache` — **without** download UI or automatic retrieval.
 
 ---
 
