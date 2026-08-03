@@ -166,7 +166,7 @@ flutter test test/phase_736_metadata_matching_windows_runtime_test.dart --tags p
 - **`linkedHighConfidence`** → reserved for a future approved automatic-match workflow; **not written** by Phase 7.3
 - **Ambiguous sets** → `ambiguous` state; no provider fields applied until manual selection
 
-→ [Phase 7.3 plan](../roadmap/m7-phase-7.3-plan.md) · [Phase 7.3.1 closure](../roadmap/m7-phase-7.3.1-closure-report.md) · [Phase 7.3.2 closure](../roadmap/m7-phase-7.3.2-closure-report.md) · [Phase 7.3.3 closure](../roadmap/m7-phase-7.3.3-closure-report.md) · [Phase 7.3.4 closure](../roadmap/m7-phase-7.3.4-closure-report.md) · [Phase 7.3.5 closure](../roadmap/m7-phase-7.3.5-closure-report.md) · [Phase 7.3.6 closure](../roadmap/m7-phase-7.3.6-closure-report.md) · [Phase 7.4 plan](../roadmap/m7-phase-7.4-plan.md) · [Phase 7.4.2 closure](../roadmap/m7-phase-7.4.2-closure-report.md) · [Phase 7.4.3 closure](../roadmap/m7-phase-7.4.3-closure-report.md)
+→ [Phase 7.3 plan](../roadmap/m7-phase-7.3-plan.md) · [Phase 7.3.6 closure](../roadmap/m7-phase-7.3.6-closure-report.md) · [Phase 7.4 plan](../roadmap/m7-phase-7.4-plan.md) · [Phase 7.4.2 closure](../roadmap/m7-phase-7.4.2-closure-report.md) · [Phase 7.4.3 closure](../roadmap/m7-phase-7.4.3-closure-report.md) · [Phase 7.4.4 closure](../roadmap/m7-phase-7.4.4-closure-report.md)
 
 ---
 
@@ -205,7 +205,20 @@ Explicit retrieval infrastructure without UI:
 
 → [Phase 7.4.3 closure](../roadmap/m7-phase-7.4.3-closure-report.md)
 
-### Planned artwork presentation (7.4.4+)
+### Phase 7.4.4 — Central resolver and precedence (complete)
+
+**`MetadataArtworkResolver`** (Option A — composes `ArtworkService`):
+
+- Local precedence unchanged: thumbnail → sidecar → folder → placeholder probe via `ArtworkService`
+- Provider cache inserted before placeholder when linked book + valid cache entry
+- `ArtworkSource.providerCache` for validated cache files
+- `MetadataArtworkCacheRepository.peekLookup()` — no index write on resolution rebuild
+- Stale entries remain displayable with `isStale: true`
+- No HTTP, download, or provider URL construction
+
+→ [Phase 7.4.4 closure](../roadmap/m7-phase-7.4.4-closure-report.md)
+
+### Planned artwork presentation (7.4.5–7.4.6)
 
 Extends [ArtworkService](./decisions/ADR-015-artwork-and-image-decode-caching.md) with an additional candidate source **after** sidecars, **before** placeholder:
 
