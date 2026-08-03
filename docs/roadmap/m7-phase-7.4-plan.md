@@ -1,6 +1,6 @@
 # M7 Phase 7.4 — Artwork Enrichment and Cache
 
-**Status:** In progress — audit complete (2026-08-03); implementation not started
+**Status:** In progress — 7.4.2 complete (2026-08-03); see [7.4.2 closure](./m7-phase-7.4.2-closure-report.md)
 **Prerequisite:** [Phase 7.3.6 closure](./m7-phase-7.3.6-closure-report.md)
 **Branch:** `m7-development`
 **Related ADRs:** [ADR-015](../architecture/decisions/ADR-015-artwork-and-image-decode-caching.md) (Accepted), [ADR-028](../architecture/decisions/ADR-028-external-metadata-enrichment-boundary.md) (Proposed), [ADR-029](../architecture/decisions/ADR-029-metadata-precedence-provenance-and-matching.md) (Proposed)
@@ -22,14 +22,15 @@ Implement the first complete **book** artwork-enrichment path: provider-neutral 
 | Check | Value |
 |---|---|
 | Branch | `m7-development` |
-| HEAD | `2e27f33` |
-| Phase 7.3 runtime | `82aa1ae` |
+| HEAD | `f65d676` |
+| Phase 7.4.2 implementation | `f65d676` |
+| Phase 7.4.1 audit docs | `ee60bfe` |
 | Phase 7.3 closure | `2e27f33` |
 | Working tree | Clean |
 | Divergence vs `origin/m6-development` | `0 19` |
 | Catalogue schema | `catalogue_version` max **4** (`CatalogueInfo.maxSupportedCatalogueVersion`) |
 | Enrichment persistence | `MetadataEnrichmentRepository.currentStateVersion` **1**, key `ttsplayer_metadata_enrichment_v1` |
-| Flutter deps (relevant) | `http`, `path_provider`, `shared_preferences` — no image-specific packages; **`crypto` transitive only** (see [Cache key hashing](#cache-key-hashing-742-prerequisite)) |
+| Flutter deps (relevant) | `http`, `path_provider`, `shared_preferences`, **`crypto: ^3.0.7` (direct, 7.4.2)** — no image-specific packages |
 
 ### Existing artwork stack
 
@@ -54,10 +55,10 @@ Implement the first complete **book** artwork-enrichment path: provider-neutral 
 
 | Component | Artwork-related state today |
 |---|---|
-| **`NormalizedBookMetadata`** | No cover URL, cover ID, or artwork reference fields |
-| **`OpenLibraryResponseParser`** | Does not parse `cover_i`, `covers`, or Covers API identifiers |
-| **`MetadataEnrichmentRecord`** | Text fields only via `EnrichmentBookFieldKeys`; no artwork reference blob |
-| **`BookMetadataMatchTransition`** | Link/relink/unlink text fields; no artwork reference persistence |
+| **`NormalizedBookMetadata`** | **`coverArtworkId`** (7.4.2) — stable ID only; no URL |
+| **`OpenLibraryResponseParser`** | Parses **`cover_i`** (search) and **`covers[0]`** (Books API) → `coverArtworkId` |
+| **`MetadataEnrichmentRecord`** | Optional **`artworkReference`** sub-object (7.4.2); text fields via `EnrichmentBookFieldKeys` |
+| **`BookMetadataMatchTransition`** | Link/relink/unlink/ignore set or clear artwork reference (7.4.2) |
 | **`BookMetadataMatchingCoordinator`** | Search/select/relink/unlink — no artwork download |
 | **`BookMetadataEnrichmentSection`** | Metadata matching UI only — no cover download controls |
 | **Feature gate** | `MetadataEnrichmentFeatureConfig.metadataEnrichmentDevelopmentEnabled` |
@@ -274,27 +275,14 @@ Never export: credentials, signed URLs, raw HTTP text, absolute cache paths, ima
 | Existing project SHA-256 / digest utility | **None** — catalogue item IDs use backend MD5; client has no shared hash helper |
 | `archive` package comment (UnRAR Gate 0) | Documents intent only; no Dart SHA-256 usage in client today |
 
-### Decision (7.4.2)
+### Decision (7.4.2 — implemented)
 
-1. **Add `crypto` as a direct dependency** in `client/ttsplayer/pubspec.yaml` when implementing cache-key derivation — first change in the 7.4.2 slice, before any `package:crypto` import.
-2. **Pin** to the lockfile-resolved line already present transitively: `crypto: ^3.0.7` (or compatible caret within 3.x).
-3. **Implement** a single helper (e.g. `metadata_artwork_cache_key.dart`) that computes:
+1. **Added `crypto` as a direct dependency** in `client/ttsplayer/pubspec.yaml` — first change in the 7.4.2 slice.
+2. **Pinned** to `crypto: ^3.0.7` (lockfile-resolved line previously transitive).
+3. **Implemented** `metadata_artwork_cache_key.dart` with U+001E-separated UTF-8 input and SHA-256 hex output.
+4. **Recorded in** [Phase 7.4.2 closure](./m7-phase-7.4.2-closure-report.md).
 
-   ```dart
-   // Canonical input: UTF-8 bytes of joined components with U+001E separator
-   // (avoids ambiguous concatenation when IDs contain common substrings).
-   sha256.convert(utf8.encode('$providerId\u001e$providerRecordId\u001e$artworkId')).toString()
-   ```
-
-4. **Do not** import `package:crypto` from application code until step 1 is merged — transitive availability is not sufficient for a durable dependency contract.
-
-**Alternatives considered and rejected for 7.4:**
-
-- **Transitive import only** — violates audit requirement; breaks if `pdfrx`/`uuid` stop pulling `crypto`.
-- **String slug / sanitization without hash** — simpler but weaker collision safety and filename-length bounds when provider IDs contain path-like segments.
-- **New non-crypto hash package** — unnecessary; `crypto` is already resolved in the lockfile.
-
-**7.4.2 deliverables tied to this check:** pubspec direct dependency + cache-key unit tests (deterministic hex output, separator stability, empty-component rejection if applicable).
+**7.4.2 deliverables (complete):** direct dependency + cache-key unit tests + `MetadataArtworkReference` persistence.
 
 ---
 
@@ -303,7 +291,7 @@ Never export: credentials, signed URLs, raw HTTP text, absolute cache paths, ima
 | Step | Deliverable | Status |
 |---|---|---|
 | **7.4.1** | Audit + architecture (this document) | Complete |
-| **7.4.2** | Direct `crypto` dep + cache-key helper; artwork reference model + persistence + repository tests | Planned |
+| **7.4.2** | Direct `crypto` dep + cache-key helper; artwork reference model + persistence + repository tests | Complete — [`f65d676`](./m7-phase-7.4.2-closure-report.md) |
 | **7.4.3** | Disk cache, download validation, cleanup + tests | Planned |
 | **7.4.4** | Central resolver + precedence + tests | Planned |
 | **7.4.5** | Book metadata workflow integration + lifecycle tests | Planned |
@@ -370,9 +358,9 @@ Production Open Library activation, live HTTP in CI, credentials UI, bulk/backgr
 
 ---
 
-## Recommended first implementation step
+## Recommended next implementation step
 
-**Phase 7.4.2 — Artwork models and persistence:** add direct `crypto` dependency + `MetadataArtworkCacheKey` helper; define `MetadataArtworkReference`, extend enrichment record JSON (backward compatible), repository round-trip tests, and fake-provider cover ID in test fixtures — **without** download UI or HTTP.
+**Phase 7.4.3 — Disk cache and download validation:** `MetadataArtworkCache`, download service with fake HTTP in tests, atomic disk write, quota/eviction, decode validation — **without** enrichment-section download UI (7.4.5) or production HTTP in CI.
 
 ---
 

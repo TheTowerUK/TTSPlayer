@@ -166,11 +166,31 @@ flutter test test/phase_736_metadata_matching_windows_runtime_test.dart --tags p
 - **`linkedHighConfidence`** → reserved for a future approved automatic-match workflow; **not written** by Phase 7.3
 - **Ambiguous sets** → `ambiguous` state; no provider fields applied until manual selection
 
-→ [Phase 7.3 plan](../roadmap/m7-phase-7.3-plan.md) · [Phase 7.3.1 closure](../roadmap/m7-phase-7.3.1-closure-report.md) · [Phase 7.3.2 closure](../roadmap/m7-phase-7.3.2-closure-report.md) · [Phase 7.3.3 closure](../roadmap/m7-phase-7.3.3-closure-report.md) · [Phase 7.3.4 closure](../roadmap/m7-phase-7.3.4-closure-report.md) · [Phase 7.3.5 closure](../roadmap/m7-phase-7.3.5-closure-report.md) · [Phase 7.3.6 closure](../roadmap/m7-phase-7.3.6-closure-report.md)
+→ [Phase 7.3 plan](../roadmap/m7-phase-7.3-plan.md) · [Phase 7.3.1 closure](../roadmap/m7-phase-7.3.1-closure-report.md) · [Phase 7.3.2 closure](../roadmap/m7-phase-7.3.2-closure-report.md) · [Phase 7.3.3 closure](../roadmap/m7-phase-7.3.3-closure-report.md) · [Phase 7.3.4 closure](../roadmap/m7-phase-7.3.4-closure-report.md) · [Phase 7.3.5 closure](../roadmap/m7-phase-7.3.5-closure-report.md) · [Phase 7.3.6 closure](../roadmap/m7-phase-7.3.6-closure-report.md) · [Phase 7.4 plan](../roadmap/m7-phase-7.4-plan.md) · [Phase 7.4.2 closure](../roadmap/m7-phase-7.4.2-closure-report.md)
 
 ---
 
 ## Artwork integration
+
+### Phase 7.4.2 — Artwork reference persistence (complete)
+
+Provider-neutral artwork **identity** is persisted on enrichment records without downloading images.
+
+**Delivered (`f65d676`):**
+
+- `MetadataArtworkReference` on `MetadataEnrichmentRecord` (optional `artworkReference` in envelope v1)
+- `NormalizedBookMetadata.coverArtworkId` — stable provider cover ID, never a URL
+- `MetadataArtworkCacheKey` — SHA-256 hex via direct `crypto: ^3.0.7` dependency
+- Open Library parser: search `cover_i`, Books API `covers[0]`
+- Link/relink/same-record refresh/unlink/ignore lifecycle via `BookMetadataEnrichmentMapper` and `BookMetadataMatchTransition`
+
+**Initial link state:** `cacheState: available`, `localRelativePath: null` — identity only.
+
+**Not in 7.4.2:** download service, disk cache, resolver, UI, HTTP, production Open Library wiring.
+
+→ [Phase 7.4.2 closure](../roadmap/m7-phase-7.4.2-closure-report.md)
+
+### Planned artwork presentation (7.4.3+)
 
 Extends [ArtworkService](./decisions/ADR-015-artwork-and-image-decode-caching.md) with an additional candidate source **after** sidecars, **before** placeholder:
 

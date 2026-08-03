@@ -459,7 +459,7 @@ Music is the second candidate; video and comics deferred until matching UX and a
 | **7.1** | Enrichment models, provenance schema, persistence repository | ✅ Complete |
 | **7.2** | Provider abstraction + **books** vertical slice (Open Library) | ✅ Complete |
 | **7.3** | Matching, confidence scoring, manual correction, ignore/stale | ✅ Complete — see [m7-phase-7.3-plan.md](./m7-phase-7.3-plan.md) |
-| **7.4** | Artwork enrichment, download cache, precedence integration | 🟡 In progress — see [m7-phase-7.4-plan.md](./m7-phase-7.4-plan.md) |
+| **7.4** | Artwork enrichment, download cache, precedence integration | 🟡 In progress — 7.4.2 complete; see [m7-phase-7.4-plan.md](./m7-phase-7.4-plan.md) · [7.4.2 closure](./m7-phase-7.4.2-closure-report.md) |
 | **7.5** | Search enrichment terms, filtered browsing, enriched detail surfaces | Planned |
 | **7.6** | UX/workflow refinements ([post-M6 tracker](./post-milestone-ux-workflow-review.md)) | Planned |
 | **7.7** | Privacy, diagnostics, performance, resilience, optional backend assist design | Planned |
