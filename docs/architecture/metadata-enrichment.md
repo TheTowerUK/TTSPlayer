@@ -142,9 +142,9 @@ Phase 7.3 adds deterministic candidate scoring, confidence bands, ambiguity dete
 
 **Phase 7.3.2 (complete):** `BookMetadataMatchingCoordinator` is the application-facing workflow API. It delegates ISBN lookup to the lower-level `BookMetadataRefreshService` while owning search-and-evaluate, manual selection, relink, unlink, ignore, resume matching, and bounded ambiguous/no-match persistence via `BookMetadataMatchTransition`. Non-empty evaluated search results always return `BookCandidateSearchEvaluationSuccess`; `BookCandidateSearchNoProviderCandidates` is reserved for an empty provider candidate list.
 
-**Phase 7.3.3 (complete):** `BookMetadataEnrichmentSection` on book `ItemDetailScreen` — development-gated via `MetadataEnrichmentFeatureConfig`, match-state presentation, provider attribution, explicit ISBN/search/coordinator transitions, transient search summary, and placeholder candidate review. No production provider or coordinator wiring in `main.dart`.
+**Phase 7.3.3 (complete):** `BookMetadataEnrichmentSection` on book `ItemDetailScreen` — development-gated via `MetadataEnrichmentFeatureConfig`, match-state presentation, provider attribution, explicit ISBN/search/coordinator transitions, and transient search summary. No production provider or coordinator wiring in `main.dart`.
 
-**Phase 7.3.3 (complete):** `BookMetadataEnrichmentSection` on book `ItemDetailScreen` — development-gated via `MetadataEnrichmentFeatureConfig`, match-state presentation, provider attribution, explicit ISBN/search/coordinator transitions, transient search summary, and placeholder candidate review. No production provider or coordinator wiring in `main.dart`.
+**Phase 7.3.4 (complete):** `BookMetadataCandidateDialog` and presentation mappers — reviewable candidates from coordinator-owned `BookCandidateSelectionContext`, provider-neutral cards, ordinary and critical-conflict confirmation, `selectCandidate()` / `relinkCandidate()` persistence to `linkedManual`, invalid-context recovery, and repository-failure handling without additional provider calls.
 
 **Conservative auto-apply policy (Phase 7.3):**
 
@@ -154,7 +154,7 @@ Phase 7.3 adds deterministic candidate scoring, confidence bands, ambiguity dete
 - **`linkedHighConfidence`** → reserved for a future approved automatic-match workflow; **not written** by Phase 7.3
 - **Ambiguous sets** → `ambiguous` state; no provider fields applied until manual selection
 
-→ [Phase 7.3 plan](../roadmap/m7-phase-7.3-plan.md) · [Phase 7.3.1 closure](../roadmap/m7-phase-7.3.1-closure-report.md) · [Phase 7.3.2 closure](../roadmap/m7-phase-7.3.2-closure-report.md) · [Phase 7.3.3 closure](../roadmap/m7-phase-7.3.3-closure-report.md)
+→ [Phase 7.3 plan](../roadmap/m7-phase-7.3-plan.md) · [Phase 7.3.1 closure](../roadmap/m7-phase-7.3.1-closure-report.md) · [Phase 7.3.2 closure](../roadmap/m7-phase-7.3.2-closure-report.md) · [Phase 7.3.3 closure](../roadmap/m7-phase-7.3.3-closure-report.md) · [Phase 7.3.4 closure](../roadmap/m7-phase-7.3.4-closure-report.md)
 
 ---
 
