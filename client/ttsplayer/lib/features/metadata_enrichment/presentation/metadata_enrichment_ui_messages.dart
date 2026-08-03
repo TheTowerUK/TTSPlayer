@@ -81,6 +81,13 @@ class MetadataEnrichmentUiMessages {
 
   static const selectionSuccessMessage = 'Metadata linked manually.';
 
+  static const unlinkSuccessMessage = 'Metadata link removed.';
+
+  static const ignoreSuccessMessage =
+      'Metadata matching ignored for this book.';
+
+  static const resumeSuccessMessage = 'Metadata matching resumed.';
+
   static String selectionResultMessage(BookCandidateSelectionResult result) {
     return switch (result) {
       BookCandidateSelectionSuccess() => selectionSuccessMessage,

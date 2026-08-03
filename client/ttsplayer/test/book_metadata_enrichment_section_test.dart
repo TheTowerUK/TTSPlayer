@@ -698,7 +698,7 @@ void main() {
 
       await tester.tap(find.byKey(const Key('book_metadata_enrichment_unlink')));
       await tester.pumpAndSettle();
-      await confirmDialog(tester, 'Unlink');
+      await confirmDialog(tester, 'Remove link');
 
       expect(find.text('No metadata match selected'), findsOneWidget);
     });
@@ -723,7 +723,7 @@ void main() {
 
       await tester.tap(find.byKey(const Key('book_metadata_enrichment_ignore')));
       await tester.pumpAndSettle();
-      await confirmDialog(tester, 'Ignore');
+      await confirmDialog(tester, 'Ignore matching');
 
       expect(find.text('Metadata suggestions ignored'), findsOneWidget);
     });
@@ -799,7 +799,7 @@ void main() {
 
       await tester.tap(find.byKey(const Key('book_metadata_enrichment_ignore')));
       await tester.pumpAndSettle();
-      await confirmDialog(tester, 'Ignore');
+      await confirmDialog(tester, 'Ignore matching');
 
       expect(find.text('No metadata match selected'), findsOneWidget);
       expect(find.text('Metadata could not be saved.'), findsOneWidget);

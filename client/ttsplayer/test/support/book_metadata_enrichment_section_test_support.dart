@@ -15,7 +15,9 @@ import 'package:ttsplayer/features/metadata_enrichment/models/book_search_reques
 import 'package:ttsplayer/features/metadata_enrichment/providers/book_metadata_provider.dart';
 import 'package:ttsplayer/features/metadata_enrichment/providers/book_metadata_provider_result.dart';
 import 'package:ttsplayer/features/metadata_enrichment/providers/fake_book_metadata_provider.dart';
+import 'package:ttsplayer/features/metadata_enrichment/services/book_candidate_selection_context.dart';
 import 'package:ttsplayer/features/metadata_enrichment/services/book_metadata_matching_coordinator.dart';
+import 'package:ttsplayer/features/metadata_enrichment/services/book_metadata_matching_result.dart';
 import 'package:ttsplayer/features/metadata_enrichment/services/book_metadata_refresh_service.dart';
 import 'package:ttsplayer/features/metadata_enrichment/services/metadata_enrichment_repository.dart';
 import 'package:ttsplayer/features/metadata_enrichment/widgets/book_metadata_enrichment_section.dart';
@@ -110,6 +112,118 @@ class HangingSearchFakeBookMetadataProvider extends FakeBookMetadataProvider {
 
   void completeSearch(BookMetadataSearchResult result) {
     pendingSearch?.complete(result);
+  }
+}
+
+class CountingTransitionCoordinator extends BookMetadataMatchingCoordinator {
+  CountingTransitionCoordinator({
+    required super.provider,
+    required super.repository,
+    super.refreshService,
+    super.clock,
+  });
+
+  int unlinkInvocationCount = 0;
+  int ignoreInvocationCount = 0;
+  int resumeInvocationCount = 0;
+  int relinkInvocationCount = 0;
+  int selectInvocationCount = 0;
+
+  @override
+  Future<BookLinkTransitionResult> unlink({required MediaItem item}) async {
+    unlinkInvocationCount++;
+    return super.unlink(item: item);
+  }
+
+  @override
+  Future<BookLinkTransitionResult> ignore({required MediaItem item}) async {
+    ignoreInvocationCount++;
+    return super.ignore(item: item);
+  }
+
+  @override
+  Future<BookLinkTransitionResult> resumeMatching({required MediaItem item}) async {
+    resumeInvocationCount++;
+    return super.resumeMatching(item: item);
+  }
+
+  @override
+  Future<BookCandidateSelectionResult> relinkCandidate({
+    required MediaItem item,
+    required BookCandidateSelectionContext context,
+    required String providerRecordId,
+    BookCandidateSelectionConfirmation confirmation =
+        BookCandidateSelectionConfirmation.normal,
+  }) async {
+    relinkInvocationCount++;
+    return super.relinkCandidate(
+      item: item,
+      context: context,
+      providerRecordId: providerRecordId,
+      confirmation: confirmation,
+    );
+  }
+
+  @override
+  Future<BookCandidateSelectionResult> selectCandidate({
+    required MediaItem item,
+    required BookCandidateSelectionContext context,
+    required String providerRecordId,
+    BookCandidateSelectionConfirmation confirmation =
+        BookCandidateSelectionConfirmation.normal,
+  }) async {
+    selectInvocationCount++;
+    return super.selectCandidate(
+      item: item,
+      context: context,
+      providerRecordId: providerRecordId,
+      confirmation: confirmation,
+    );
+  }
+}
+
+class DelayedUnlinkCoordinator extends BookMetadataMatchingCoordinator {
+  DelayedUnlinkCoordinator({
+    required super.provider,
+    required super.repository,
+    super.refreshService,
+    super.clock,
+  });
+
+  @override
+  Future<BookLinkTransitionResult> unlink({required MediaItem item}) async {
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    return super.unlink(item: item);
+  }
+}
+
+class DelayedIgnoreCoordinator extends BookMetadataMatchingCoordinator {
+  DelayedIgnoreCoordinator({
+    required super.provider,
+    required super.repository,
+    super.refreshService,
+    super.clock,
+  });
+
+  @override
+  Future<BookLinkTransitionResult> ignore({required MediaItem item}) async {
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    return super.ignore(item: item);
+  }
+}
+
+class DelayedResumeCoordinator extends BookMetadataMatchingCoordinator {
+  DelayedResumeCoordinator({
+    required super.provider,
+    required super.repository,
+    super.refreshService,
+    super.clock,
+  });
+
+  @override
+  Future<BookLinkTransitionResult> resumeMatching({required MediaItem item}) async {
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    return super.resumeMatching(item: item);
   }
 }
 
@@ -219,6 +333,11 @@ Future<void> cancelIsbnDialog(WidgetTester tester) async {
 
 Future<void> confirmDialog(WidgetTester tester, String confirmLabel) async {
   await tester.tap(find.widgetWithText(FilledButton, confirmLabel));
+  await tester.pumpAndSettle();
+}
+
+Future<void> confirmTransitionByKey(WidgetTester tester, Key confirmKey) async {
+  await tester.tap(find.byKey(confirmKey));
   await tester.pumpAndSettle();
 }
 

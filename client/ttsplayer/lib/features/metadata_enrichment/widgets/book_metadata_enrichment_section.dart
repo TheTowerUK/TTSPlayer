@@ -60,29 +60,64 @@ class _BookMetadataEnrichmentSectionState
   _PendingOperation _pending = _PendingOperation.none;
   String? _statusMessage;
   _TransientSearchSummary? _searchSummary;
-  int _candidateReviewGeneration = 0;
+  int _lifecycleGeneration = 0;
   BookMetadataCandidateDialogSession? _activeCandidateReview;
 
   @override
   void didUpdateWidget(covariant BookMetadataEnrichmentSection oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.item.id != widget.item.id) {
-      _dismissActiveCandidateReviewByItemChange();
-      _resetTransientState();
+      _invalidateLifecycle();
     }
   }
 
   @override
   void dispose() {
-    _dismissActiveCandidateReviewByItemChange();
+    _invalidateLifecycle(dismissCandidateDialog: true);
     super.dispose();
   }
 
-  void _dismissActiveCandidateReviewByItemChange() {
-    _candidateReviewGeneration++;
-    final session = _activeCandidateReview;
-    _activeCandidateReview = null;
-    session?.dismissByItemChange();
+  void _invalidateLifecycle({bool dismissCandidateDialog = true}) {
+    _lifecycleGeneration++;
+    if (dismissCandidateDialog) {
+      final session = _activeCandidateReview;
+      _activeCandidateReview = null;
+      session?.dismissByItemChange();
+    }
+    _resetTransientState();
+  }
+
+  void _clearTransientWorkflow({bool dismissCandidateDialog = false}) {
+    if (dismissCandidateDialog) {
+      final session = _activeCandidateReview;
+      _activeCandidateReview = null;
+      session?.dismissByItemChange();
+    }
+    _searchSummary = null;
+  }
+
+  bool _isLifecycleCurrent(int generation, String itemId) {
+    return mounted &&
+        generation == _lifecycleGeneration &&
+        widget.item.id == itemId;
+  }
+
+  String _transitionSuccessMessage(
+    BookLinkTransitionResult result,
+    _PendingOperation operation,
+  ) {
+    return switch (result) {
+      BookLinkTransitionSuccess() => switch (operation) {
+          _PendingOperation.unlink =>
+            MetadataEnrichmentUiMessages.unlinkSuccessMessage,
+          _PendingOperation.ignore =>
+            MetadataEnrichmentUiMessages.ignoreSuccessMessage,
+          _PendingOperation.resume =>
+            MetadataEnrichmentUiMessages.resumeSuccessMessage,
+          _ => MetadataEnrichmentUiMessages.linkTransitionMessage(result),
+        },
+      _ => MetadataEnrichmentUiMessages.linkTransitionMessage(result),
+    };
   }
 
   void _resetTransientState() {
@@ -311,25 +346,25 @@ class _BookMetadataEnrichmentSectionState
     addAction(
       key: const Key('book_metadata_enrichment_change_metadata'),
       action: MetadataEnrichmentAction.changeMetadata,
-      label: 'Change metadata',
+      label: 'Find different metadata',
       onPressed: () => _searchMetadata(coordinator, changeExisting: true),
     );
     addAction(
       key: const Key('book_metadata_enrichment_unlink'),
       action: MetadataEnrichmentAction.unlink,
-      label: 'Unlink metadata',
+      label: 'Remove metadata link',
       onPressed: () => _unlink(coordinator),
     );
     addAction(
       key: const Key('book_metadata_enrichment_ignore'),
       action: MetadataEnrichmentAction.ignore,
-      label: 'Ignore suggestions',
+      label: 'Ignore metadata matching',
       onPressed: () => _ignore(coordinator),
     );
     addAction(
       key: const Key('book_metadata_enrichment_resume'),
       action: MetadataEnrichmentAction.resumeMatching,
-      label: 'Resume matching',
+      label: 'Resume metadata matching',
       onPressed: () => _resumeMatching(coordinator),
     );
 
@@ -397,17 +432,20 @@ class _BookMetadataEnrichmentSectionState
       return;
     }
 
+    final generation = _lifecycleGeneration;
+    final itemId = widget.item.id;
+
     _pending = _PendingOperation.isbnLookup;
     setState(() {
       _statusMessage = null;
-      _searchSummary = null;
+      _clearTransientWorkflow(dismissCandidateDialog: true);
     });
 
     final result = await coordinator.lookupByIsbn(
       item: widget.item,
       isbnInput: isbn,
     );
-    if (!mounted) {
+    if (!_isLifecycleCurrent(generation, itemId)) {
       return;
     }
 
@@ -425,10 +463,13 @@ class _BookMetadataEnrichmentSectionState
       return;
     }
 
+    final generation = _lifecycleGeneration;
+    final itemId = widget.item.id;
+
     _pending = _PendingOperation.search;
     setState(() {
       _statusMessage = null;
-      _searchSummary = null;
+      _clearTransientWorkflow(dismissCandidateDialog: true);
     });
 
     final request = BookSearchRequest.create(
@@ -440,7 +481,7 @@ class _BookMetadataEnrichmentSectionState
       item: widget.item,
       searchRequest: request,
     );
-    if (!mounted) {
+    if (!_isLifecycleCurrent(generation, itemId)) {
       return;
     }
 
@@ -466,7 +507,7 @@ class _BookMetadataEnrichmentSectionState
     }
 
     final isRelink = BookMetadataMatchTransition.isProviderLinked(record);
-    final generation = _candidateReviewGeneration;
+    final generation = _lifecycleGeneration;
     final itemId = widget.item.id;
     final session = BookMetadataCandidateDialog.open(
       context: context,
@@ -481,9 +522,7 @@ class _BookMetadataEnrichmentSectionState
     final dialogResult = await session.result;
     _activeCandidateReview = null;
 
-    if (!mounted ||
-        generation != _candidateReviewGeneration ||
-        widget.item.id != itemId) {
+    if (!_isLifecycleCurrent(generation, itemId)) {
       return;
     }
 
@@ -497,7 +536,7 @@ class _BookMetadataEnrichmentSectionState
         return;
       case BookMetadataCandidateDialogInvalidContext():
         setState(() {
-          _searchSummary = null;
+          _clearTransientWorkflow();
           _statusMessage =
               'These metadata candidates are no longer valid. Search again.';
         });
@@ -507,7 +546,7 @@ class _BookMetadataEnrichmentSectionState
         });
       case BookMetadataCandidateDialogSuccess(:final message):
         setState(() {
-          _searchSummary = null;
+          _clearTransientWorkflow();
           _statusMessage = message;
         });
     }
@@ -568,25 +607,35 @@ class _BookMetadataEnrichmentSectionState
       context,
       title: 'Remove metadata link?',
       message:
-          'Remove the external metadata link? Your local book and any user-edited metadata will be kept.',
-      confirmLabel: 'Unlink',
+          'Remove the external metadata link? Your local file remains unchanged. '
+          'User overrides and locked values are kept. Provider-linked unlocked '
+          'values may no longer be available after unlinking.',
+      confirmLabel: 'Remove link',
+      confirmKey: const Key('book_metadata_enrichment_unlink_confirm'),
+      cancelKey: const Key('book_metadata_enrichment_unlink_cancel'),
     );
     if (!confirmed || !mounted) {
       return;
     }
+
+    final generation = _lifecycleGeneration;
+    final itemId = widget.item.id;
 
     _pending = _PendingOperation.unlink;
     setState(() {
       _statusMessage = null;
     });
     final result = await coordinator.unlink(item: widget.item);
-    if (!mounted) {
+    if (!_isLifecycleCurrent(generation, itemId)) {
       return;
     }
+    final operation = _pending;
     setState(() {
       _pending = _PendingOperation.none;
-      _statusMessage = MetadataEnrichmentUiMessages.linkTransitionMessage(result);
-      _searchSummary = null;
+      _statusMessage = _transitionSuccessMessage(result, operation);
+      if (result is BookLinkTransitionSuccess) {
+        _clearTransientWorkflow(dismissCandidateDialog: true);
+      }
     });
   }
 
@@ -596,27 +645,38 @@ class _BookMetadataEnrichmentSectionState
     }
     final confirmed = await _confirm(
       context,
-      title: 'Ignore metadata suggestions?',
+      title: 'Ignore metadata matching?',
       message:
-          'Ignore metadata suggestions for this book? You can resume matching later.',
-      confirmLabel: 'Ignore',
+          'Ignore metadata matching for this book? Suggestions stay disabled '
+          'until you resume matching. Your local file and any saved metadata '
+          'remain unchanged.',
+      confirmLabel: 'Ignore matching',
+      confirmKey: const Key('book_metadata_enrichment_ignore_confirm'),
+      cancelKey: const Key('book_metadata_enrichment_ignore_cancel'),
     );
     if (!confirmed || !mounted) {
       return;
     }
 
+    final generation = _lifecycleGeneration;
+    final itemId = widget.item.id;
+
     _pending = _PendingOperation.ignore;
     setState(() {
       _statusMessage = null;
-      _searchSummary = null;
+      _clearTransientWorkflow(dismissCandidateDialog: true);
     });
     final result = await coordinator.ignore(item: widget.item);
-    if (!mounted) {
+    if (!_isLifecycleCurrent(generation, itemId)) {
       return;
     }
+    final operation = _pending;
     setState(() {
       _pending = _PendingOperation.none;
-      _statusMessage = MetadataEnrichmentUiMessages.linkTransitionMessage(result);
+      _statusMessage = _transitionSuccessMessage(result, operation);
+      if (result is BookLinkTransitionSuccess) {
+        _clearTransientWorkflow(dismissCandidateDialog: true);
+      }
     });
   }
 
@@ -626,18 +686,26 @@ class _BookMetadataEnrichmentSectionState
     if (_pending != _PendingOperation.none || !mounted) {
       return;
     }
+
+    final generation = _lifecycleGeneration;
+    final itemId = widget.item.id;
+
     _pending = _PendingOperation.resume;
     setState(() {
       _statusMessage = null;
-      _searchSummary = null;
+      _clearTransientWorkflow(dismissCandidateDialog: true);
     });
     final result = await coordinator.resumeMatching(item: widget.item);
-    if (!mounted) {
+    if (!_isLifecycleCurrent(generation, itemId)) {
       return;
     }
+    final operation = _pending;
     setState(() {
       _pending = _PendingOperation.none;
-      _statusMessage = MetadataEnrichmentUiMessages.linkTransitionMessage(result);
+      _statusMessage = _transitionSuccessMessage(result, operation);
+      if (result is BookLinkTransitionSuccess) {
+        _clearTransientWorkflow(dismissCandidateDialog: true);
+      }
     });
   }
 
@@ -645,19 +713,25 @@ class _BookMetadataEnrichmentSectionState
     if (_pending != _PendingOperation.none || !mounted) {
       return;
     }
+
+    final generation = _lifecycleGeneration;
+    final itemId = widget.item.id;
+
     _pending = _PendingOperation.markNoMatch;
     setState(() {});
     final result = await coordinator.recordNoMatchOutcome(
       item: widget.item,
       reason: BookNoMatchPersistenceReason.noReviewableCandidates,
     );
-    if (!mounted) {
+    if (!_isLifecycleCurrent(generation, itemId)) {
       return;
     }
     setState(() {
       _pending = _PendingOperation.none;
       _statusMessage = MetadataEnrichmentUiMessages.linkTransitionMessage(result);
-      _searchSummary = null;
+      if (result is BookLinkTransitionSuccess) {
+        _clearTransientWorkflow(dismissCandidateDialog: true);
+      }
     });
   }
 
@@ -700,18 +774,25 @@ class _BookMetadataEnrichmentSectionState
     required String title,
     required String message,
     required String confirmLabel,
+    Key? confirmKey,
+    Key? cancelKey,
   }) async {
     final result = await showDialog<bool>(
       context: context,
+      routeSettings: const RouteSettings(
+        name: 'book_metadata_enrichment_transition_confirm',
+      ),
       builder: (dialogContext) => AlertDialog(
         title: Text(title),
-        content: Text(message),
+        content: SingleChildScrollView(child: Text(message)),
         actions: [
           TextButton(
+            key: cancelKey,
             onPressed: () => Navigator.pop(dialogContext, false),
             child: const Text('Cancel'),
           ),
           FilledButton(
+            key: confirmKey,
             onPressed: () => Navigator.pop(dialogContext, true),
             child: Text(confirmLabel),
           ),
