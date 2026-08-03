@@ -63,6 +63,7 @@ class FakeBookMetadataProvider implements BookMetadataProvider {
     String title = 'Sample Book',
     List<String> authors = const ['Sample Author'],
     List<String> isbn13 = const ['9780140449136'],
+    String? coverArtworkId = '8230111',
   }) {
     return NormalizedBookMetadata(
       providerId: 'fake_books',
@@ -72,6 +73,7 @@ class FakeBookMetadataProvider implements BookMetadataProvider {
       canonicalTitle: title,
       authors: authors,
       isbn13Values: isbn13,
+      coverArtworkId: coverArtworkId,
       fetchedAt: DateTime.utc(2026, 7, 30),
     );
   }
@@ -79,6 +81,7 @@ class FakeBookMetadataProvider implements BookMetadataProvider {
   static ProviderBookCandidate sampleCandidate({
     String title = 'Candidate Book',
     String editionId = '/books/OL999M',
+    String? coverArtworkId = '7654321',
   }) {
     return ProviderBookCandidate(
       metadata: NormalizedBookMetadata(
@@ -87,6 +90,7 @@ class FakeBookMetadataProvider implements BookMetadataProvider {
         editionId: editionId,
         canonicalTitle: title,
         authors: const ['Candidate Author'],
+        coverArtworkId: coverArtworkId,
         fetchedAt: DateTime.utc(2026, 7, 30),
       ),
     );

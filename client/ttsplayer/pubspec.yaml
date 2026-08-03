@@ -24,6 +24,9 @@ dependencies:
   # HTTP fetching for remote catalog.json (NAS/Caddy endpoint)
   http: ^1.2.1
 
+  # SHA-256 cache keys for provider artwork disk cache (M7.4.2)
+  crypto: ^3.0.7
+
   # Local file path resolution
   path_provider: ^2.1.3
 

@@ -5,6 +5,10 @@ import 'package:ttsplayer/features/metadata_enrichment/models/enrichment_last_er
 import 'package:ttsplayer/features/metadata_enrichment/models/enrichment_match_method.dart';
 import 'package:ttsplayer/features/metadata_enrichment/models/enrichment_match_state.dart';
 import 'package:ttsplayer/features/metadata_enrichment/models/metadata_enrichment_record.dart';
+import 'package:ttsplayer/features/metadata_enrichment/artwork/metadata_artwork_cache_key.dart';
+import 'package:ttsplayer/features/metadata_enrichment/artwork/metadata_artwork_cache_state.dart';
+import 'package:ttsplayer/features/metadata_enrichment/artwork/metadata_artwork_kind.dart';
+import 'package:ttsplayer/features/metadata_enrichment/artwork/metadata_artwork_reference.dart';
 
 void main() {
   group('EnrichmentFieldValue', () {
@@ -207,6 +211,37 @@ void main() {
         recovered!.lastErrorCategory,
         EnrichmentLastErrorCategory.rateLimited,
       );
+    });
+
+    test('artworkReference round trip', () {
+      final artworkReference = MetadataArtworkReference(
+        providerId: 'open_library',
+        providerRecordId: '/books/OL123M',
+        artworkId: '8230111',
+        kind: MetadataArtworkKind.cover,
+        fetchedAt: fetchedAt,
+        cacheState: MetadataArtworkCacheState.available,
+        cacheKey: MetadataArtworkCacheKey.compute(
+          providerId: 'open_library',
+          providerRecordId: '/books/OL123M',
+          artworkId: '8230111',
+        ),
+      ).normalized();
+      final record = completeRecord().copyWith(
+        artworkReference: artworkReference,
+      );
+      final recovered = MetadataEnrichmentRecord.fromJsonWithRecovery(
+        record.toJson(),
+      );
+      expect(recovered, record);
+    });
+
+    test('missing artworkReference remains backward compatible', () {
+      final recovered = MetadataEnrichmentRecord.fromJsonWithRecovery({
+        'itemId': 'item-legacy',
+        'matchState': 'linked_manual',
+      });
+      expect(recovered!.artworkReference, isNull);
     });
   });
 }

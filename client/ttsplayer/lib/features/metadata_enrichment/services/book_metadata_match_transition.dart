@@ -79,6 +79,10 @@ class BookMetadataMatchTransition {
         confidence: confidence,
         fields: fields,
         fetchedAt: fetchedAt,
+        artworkReference: _mapper.artworkReferenceFromMetadata(
+          metadata,
+          fetchedAt: fetchedAt,
+        ),
       ).normalized();
     }
 
@@ -128,6 +132,12 @@ class BookMetadataMatchTransition {
       confidence: confidence,
       fields: merged,
       fetchedAt: fetchedAt,
+      artworkReference: _mapper.artworkReferenceFromMetadata(
+        metadata,
+        fetchedAt: fetchedAt,
+      ),
+      clearArtworkReference: metadata.coverArtworkId == null ||
+          metadata.coverArtworkId!.trim().isEmpty,
       clearLastErrorCategory: true,
     ).normalized();
   }
@@ -153,6 +163,7 @@ class BookMetadataMatchTransition {
       clearMatchMethod: true,
       confidence: topScore,
       fetchedAt: fetchedAt,
+      clearArtworkReference: true,
       clearLastErrorCategory: true,
     ).normalized();
   }
@@ -239,6 +250,7 @@ class BookMetadataMatchTransition {
       clearProviderMediaType: true,
       clearMatchMethod: true,
       clearConfidence: true,
+      clearArtworkReference: true,
       fields: _retainUserAndLockedFields(existing),
     ).normalized();
   }

@@ -95,6 +95,40 @@ void main() {
       expect(candidates.length, 1);
       expect(candidates.first.relevanceScore, 5.0);
     });
+
+    test('parses search cover_i as coverArtworkId', () {
+      final candidates = parser.parseSearchResponse(
+        {
+          'docs': [
+            {
+              'title': 'Cover Book',
+              'edition_key': ['OL777M'],
+              'cover_i': 8230111,
+            },
+          ],
+        },
+        fetchedAt: fetchedAt,
+      );
+
+      expect(candidates, hasLength(1));
+      expect(candidates.first.metadata.coverArtworkId, '8230111');
+    });
+
+    test('parses Books API covers array as coverArtworkId', () {
+      final metadata = parser.parseBooksApiResponse(
+        {
+          'ISBN:${OpenLibraryTestFixtures.validIsbn13}': {
+            'title': 'Edition Cover',
+            'key': '/books/OL45804M',
+            'covers': [111, 8230111],
+          },
+        },
+        OpenLibraryTestFixtures.validIsbn13,
+        fetchedAt: fetchedAt,
+      );
+
+      expect(metadata?.coverArtworkId, '111');
+    });
   });
 
   group('OpenLibraryBookMetadataProvider', () {

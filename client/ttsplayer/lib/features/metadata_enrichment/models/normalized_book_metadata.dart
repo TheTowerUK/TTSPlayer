@@ -3,6 +3,7 @@ import 'provider_attribution.dart';
 /// Provider-neutral normalized book metadata (M7.2).
 ///
 /// Does not retain raw provider JSON, cover bytes, ratings, or purchase links.
+/// [coverArtworkId] is a stable provider image identifier only — never a URL.
 class NormalizedBookMetadata {
   const NormalizedBookMetadata({
     required this.providerId,
@@ -22,6 +23,7 @@ class NormalizedBookMetadata {
     this.isbn10Values = const [],
     this.isbn13Values = const [],
     this.recordUrl,
+    this.coverArtworkId,
     this.attribution,
   });
 
@@ -41,6 +43,7 @@ class NormalizedBookMetadata {
   final List<String> isbn10Values;
   final List<String> isbn13Values;
   final String? recordUrl;
+  final String? coverArtworkId;
   final DateTime fetchedAt;
   final ProviderAttribution? attribution;
 
@@ -66,6 +69,7 @@ class NormalizedBookMetadata {
         _listEquals(other.isbn10Values, isbn10Values) &&
         _listEquals(other.isbn13Values, isbn13Values) &&
         other.recordUrl == recordUrl &&
+        other.coverArtworkId == coverArtworkId &&
         other.fetchedAt == fetchedAt &&
         other.attribution == attribution;
   }
@@ -88,6 +92,7 @@ class NormalizedBookMetadata {
         Object.hashAll(isbn10Values),
         Object.hashAll(isbn13Values),
         recordUrl,
+        coverArtworkId,
         fetchedAt,
         attribution,
       ]);

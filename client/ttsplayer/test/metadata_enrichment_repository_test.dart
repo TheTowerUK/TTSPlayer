@@ -7,6 +7,10 @@ import 'package:ttsplayer/features/metadata_enrichment/models/enrichment_field_v
 import 'package:ttsplayer/features/metadata_enrichment/models/enrichment_match_method.dart';
 import 'package:ttsplayer/features/metadata_enrichment/models/enrichment_match_state.dart';
 import 'package:ttsplayer/features/metadata_enrichment/models/metadata_enrichment_record.dart';
+import 'package:ttsplayer/features/metadata_enrichment/artwork/metadata_artwork_cache_key.dart';
+import 'package:ttsplayer/features/metadata_enrichment/artwork/metadata_artwork_cache_state.dart';
+import 'package:ttsplayer/features/metadata_enrichment/artwork/metadata_artwork_kind.dart';
+import 'package:ttsplayer/features/metadata_enrichment/artwork/metadata_artwork_reference.dart';
 import 'package:ttsplayer/features/metadata_enrichment/services/metadata_enrichment_repository.dart';
 import 'package:ttsplayer/features/music/services/music_listening_repository.dart';
 import 'package:ttsplayer/features/reading/services/reading_progress_repository.dart';
@@ -452,6 +456,32 @@ void main() {
       expect(prefs.getString(ReadingProgressRepository.storageKey),
           readingBefore);
       expect(prefs.getInt('position_video-1'), videoPositionBefore);
+    });
+
+    test('persists artworkReference through repository round trip', () async {
+      final repository = await initializedMetadataEnrichmentRepository();
+      final artworkReference = MetadataArtworkReference(
+        providerId: 'open_library',
+        providerRecordId: '/books/OL123M',
+        artworkId: '8230111',
+        kind: MetadataArtworkKind.cover,
+        fetchedAt: DateTime.utc(2026, 8, 3, 12),
+        cacheState: MetadataArtworkCacheState.available,
+        cacheKey: MetadataArtworkCacheKey.compute(
+          providerId: 'open_library',
+          providerRecordId: '/books/OL123M',
+          artworkId: '8230111',
+        ),
+      ).normalized();
+      final record = _sampleRecord('book-cover').copyWith(
+        artworkReference: artworkReference,
+      );
+
+      expect((await repository.upsert(record)).success, isTrue);
+      await repository.load();
+
+      expect(repository.getByItemId('book-cover')?.artworkReference,
+          artworkReference);
     });
   });
 }

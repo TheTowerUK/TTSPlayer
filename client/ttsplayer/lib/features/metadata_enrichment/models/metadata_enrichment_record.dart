@@ -2,6 +2,7 @@ import 'enrichment_field_value.dart';
 import 'enrichment_last_error_category.dart';
 import 'enrichment_match_method.dart';
 import 'enrichment_match_state.dart';
+import '../artwork/metadata_artwork_reference.dart';
 
 /// Persisted metadata enrichment overlay for one local catalogue item (M7.1).
 ///
@@ -24,6 +25,7 @@ class MetadataEnrichmentRecord {
     this.expiresAt,
     this.lockedFields = const [],
     this.lastErrorCategory,
+    this.artworkReference,
   });
 
   final String itemId;
@@ -38,6 +40,7 @@ class MetadataEnrichmentRecord {
   final DateTime? expiresAt;
   final List<String> lockedFields;
   final EnrichmentLastErrorCategory? lastErrorCategory;
+  final MetadataArtworkReference? artworkReference;
 
   bool get ignored => matchState == EnrichmentMatchState.ignored;
 
@@ -54,6 +57,7 @@ class MetadataEnrichmentRecord {
     DateTime? expiresAt,
     List<String>? lockedFields,
     EnrichmentLastErrorCategory? lastErrorCategory,
+    MetadataArtworkReference? artworkReference,
     bool clearProviderId = false,
     bool clearProviderRecordId = false,
     bool clearProviderMediaType = false,
@@ -62,6 +66,7 @@ class MetadataEnrichmentRecord {
     bool clearFetchedAt = false,
     bool clearExpiresAt = false,
     bool clearLastErrorCategory = false,
+    bool clearArtworkReference = false,
   }) {
     return MetadataEnrichmentRecord(
       itemId: itemId ?? this.itemId,
@@ -83,6 +88,9 @@ class MetadataEnrichmentRecord {
       lastErrorCategory: clearLastErrorCategory
           ? null
           : (lastErrorCategory ?? this.lastErrorCategory),
+      artworkReference: clearArtworkReference
+          ? null
+          : (artworkReference ?? this.artworkReference),
     );
   }
 
@@ -127,6 +135,7 @@ class MetadataEnrichmentRecord {
       expiresAt: expiresAt?.toUtc(),
       lockedFields: normalizedLocks,
       lastErrorCategory: lastErrorCategory,
+      artworkReference: artworkReference?.normalized(),
     );
   }
 
@@ -172,6 +181,22 @@ class MetadataEnrichmentRecord {
 
     final lockedFields = _parseLockedFields(json['lockedFields'], warnings);
 
+    MetadataArtworkReference? artworkReference;
+    final rawArtworkReference = json['artworkReference'];
+    if (rawArtworkReference != null) {
+      if (rawArtworkReference is Map<String, dynamic>) {
+        artworkReference = MetadataArtworkReference.fromJsonWithRecovery(
+          rawArtworkReference,
+          warnings: warnings,
+          recordItemId: itemId.trim(),
+        );
+      } else {
+        warnings?.add(
+          'Ignored invalid artworkReference on item "${itemId.trim()}".',
+        );
+      }
+    }
+
     return MetadataEnrichmentRecord(
       itemId: itemId.trim(),
       matchState: matchState,
@@ -186,6 +211,7 @@ class MetadataEnrichmentRecord {
       lockedFields: lockedFields,
       lastErrorCategory:
           EnrichmentLastErrorCategory.fromJson(json['lastErrorCategory']),
+      artworkReference: artworkReference,
     ).normalized();
   }
 
@@ -208,6 +234,8 @@ class MetadataEnrichmentRecord {
       if (lockedFields.isNotEmpty) 'lockedFields': lockedFields,
       if (lastErrorCategory != null)
         'lastErrorCategory': lastErrorCategory!.toJson(),
+      if (artworkReference != null)
+        'artworkReference': artworkReference!.toJson(),
     };
   }
 
@@ -288,7 +316,8 @@ class MetadataEnrichmentRecord {
         other.fetchedAt == fetchedAt &&
         other.expiresAt == expiresAt &&
         _listEquals(other.lockedFields, lockedFields) &&
-        other.lastErrorCategory == lastErrorCategory;
+        other.lastErrorCategory == lastErrorCategory &&
+        other.artworkReference == artworkReference;
   }
 
   @override
@@ -305,6 +334,7 @@ class MetadataEnrichmentRecord {
         expiresAt,
         Object.hashAll(lockedFields),
         lastErrorCategory,
+        artworkReference,
       );
 
   static bool _mapEquals(

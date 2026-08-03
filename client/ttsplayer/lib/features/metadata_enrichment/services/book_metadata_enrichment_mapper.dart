@@ -1,5 +1,9 @@
 import 'dart:convert';
 
+import '../artwork/metadata_artwork_cache_key.dart';
+import '../artwork/metadata_artwork_cache_state.dart';
+import '../artwork/metadata_artwork_kind.dart';
+import '../artwork/metadata_artwork_reference.dart';
 import '../models/enrichment_book_field_keys.dart';
 import '../models/enrichment_field_source.dart';
 import '../models/enrichment_field_value.dart';
@@ -65,6 +69,56 @@ class BookMetadataEnrichmentMapper {
     return fields;
   }
 
+  /// Builds a provider artwork reference when [metadata] includes a cover ID.
+  MetadataArtworkReference? artworkReferenceFromMetadata(
+    NormalizedBookMetadata metadata, {
+    required DateTime fetchedAt,
+  }) {
+    final artworkId = metadata.coverArtworkId?.trim();
+    if (artworkId == null || artworkId.isEmpty) {
+      return null;
+    }
+
+    return MetadataArtworkReference(
+      providerId: metadata.providerId,
+      providerRecordId: metadata.providerRecordId,
+      artworkId: artworkId,
+      kind: MetadataArtworkKind.cover,
+      fetchedAt: fetchedAt,
+      cacheState: MetadataArtworkCacheState.available,
+      cacheKey: MetadataArtworkCacheKey.compute(
+        providerId: metadata.providerId,
+        providerRecordId: metadata.providerRecordId,
+        artworkId: artworkId,
+      ),
+    ).normalized();
+  }
+
+  /// Applies artwork reference updates during provider refresh.
+  ///
+  /// Reuses the existing reference when the cache key is unchanged so a future
+  /// downloaded file can remain eligible across same-record refresh.
+  MetadataArtworkReference? mergeArtworkReference({
+    required MetadataArtworkReference? existing,
+    required NormalizedBookMetadata metadata,
+    required DateTime fetchedAt,
+  }) {
+    final incoming = artworkReferenceFromMetadata(
+      metadata,
+      fetchedAt: fetchedAt,
+    );
+    if (incoming == null) {
+      return null;
+    }
+    if (existing != null && existing.cacheKey == incoming.cacheKey) {
+      return existing.copyWith(
+        providerRecordId: incoming.providerRecordId,
+        fetchedAt: fetchedAt,
+      ).normalized();
+    }
+    return incoming;
+  }
+
   /// Merges provider fields into [existing].
   ///
   /// Locked keys are skipped. Unlocked keys present in [metadata] are updated.
@@ -99,6 +153,13 @@ class BookMetadataEnrichmentMapper {
       confidence: confidence,
       fields: mergedFields,
       fetchedAt: fetchedAt,
+      artworkReference: mergeArtworkReference(
+        existing: existing.artworkReference,
+        metadata: metadata,
+        fetchedAt: fetchedAt,
+      ),
+      clearArtworkReference: metadata.coverArtworkId == null ||
+          metadata.coverArtworkId!.trim().isEmpty,
       clearLastErrorCategory: true,
     ).normalized();
   }
@@ -120,6 +181,10 @@ class BookMetadataEnrichmentMapper {
       confidence: confidence,
       fields: fieldsFromMetadata(metadata, updatedAt: fetchedAt),
       fetchedAt: fetchedAt,
+      artworkReference: artworkReferenceFromMetadata(
+        metadata,
+        fetchedAt: fetchedAt,
+      ),
     ).normalized();
   }
 

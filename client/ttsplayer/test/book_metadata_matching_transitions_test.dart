@@ -6,6 +6,7 @@ import 'package:ttsplayer/features/metadata_enrichment/models/enrichment_match_m
 import 'package:ttsplayer/features/metadata_enrichment/models/enrichment_match_state.dart';
 import 'package:ttsplayer/features/metadata_enrichment/models/isbn_lookup_request.dart';
 import 'package:ttsplayer/features/metadata_enrichment/models/metadata_enrichment_record.dart';
+import 'package:ttsplayer/features/metadata_enrichment/artwork/metadata_artwork_cache_state.dart';
 import 'package:ttsplayer/features/metadata_enrichment/providers/fake_book_metadata_provider.dart';
 import 'package:ttsplayer/features/metadata_enrichment/services/book_metadata_enrichment_mapper.dart';
 import 'package:ttsplayer/features/metadata_enrichment/services/book_metadata_match_transition.dart';
@@ -33,6 +34,11 @@ void main() {
       expect(record.matchMethod, EnrichmentMatchMethod.identifier);
       expect(record.confidence, 1.0);
       expect(record.providerRecordId, metadata.providerRecordId);
+      expect(record.artworkReference, isNotNull);
+      expect(record.artworkReference!.artworkId, '8230111');
+      expect(record.artworkReference!.cacheState,
+          MetadataArtworkCacheState.available);
+      expect(record.artworkReference!.localRelativePath, isNull);
     });
 
     test('applyManualLink preserves locked fields', () {
@@ -109,9 +115,44 @@ void main() {
 
       expect(record.providerRecordId, '/books/NEW');
       expect(record.matchState, EnrichmentMatchState.linkedManual);
+      expect(record.artworkReference?.providerRecordId, '/books/NEW');
+      expect(record.artworkReference?.artworkId, '8230111');
       expect(record.fields[EnrichmentBookFieldKeys.title]?.value, 'User Title');
       expect(record.fields[EnrichmentBookFieldKeys.description], isNull);
       expect(record.fields[EnrichmentBookFieldKeys.authors]?.value, isNotNull);
+    });
+
+    test('same-record refresh retains artwork reference when cache key unchanged',
+        () {
+      const coverArtworkId = '8230111';
+      final metadata = FakeBookMetadataProvider.sampleMetadata(
+        coverArtworkId: coverArtworkId,
+      );
+      final linked = mapper.createLinkedRecord(
+        itemId: 'book-1',
+        metadata: metadata,
+        matchMethod: EnrichmentMatchMethod.identifier,
+        confidence: 1.0,
+        fetchedAt: fetchedAt,
+      );
+      final originalReference = linked.artworkReference;
+      expect(originalReference, isNotNull);
+
+      final refreshedMetadata = FakeBookMetadataProvider.sampleMetadata(
+        title: 'Updated Title',
+        coverArtworkId: coverArtworkId,
+      );
+      final record = mapper.mergeProviderFields(
+        existing: linked,
+        metadata: refreshedMetadata,
+        matchState: EnrichmentMatchState.linkedByIdentifier,
+        matchMethod: EnrichmentMatchMethod.identifier,
+        confidence: 1.0,
+        fetchedAt: fetchedAt,
+      );
+
+      expect(record.artworkReference?.cacheKey, originalReference!.cacheKey);
+      expect(record.artworkReference?.artworkId, coverArtworkId);
     });
 
     test('same-record refresh merge retains absent provider fields', () {
@@ -185,6 +226,7 @@ void main() {
       expect(record.matchState, EnrichmentMatchState.unmatched);
       expect(record.providerId, isNull);
       expect(record.providerRecordId, isNull);
+      expect(record.artworkReference, isNull);
       expect(record.fields[EnrichmentBookFieldKeys.title], isNull);
       expect(record.fields[EnrichmentBookFieldKeys.subtitle]?.value, 'User Subtitle');
     });
@@ -208,6 +250,7 @@ void main() {
 
       expect(record.matchState, EnrichmentMatchState.ignored);
       expect(record.providerId, isNull);
+      expect(record.artworkReference, isNull);
       expect(record.fields[EnrichmentBookFieldKeys.title], isNull);
     });
 
@@ -227,6 +270,7 @@ void main() {
 
       expect(record.matchState, EnrichmentMatchState.unmatched);
       expect(record.fields[EnrichmentBookFieldKeys.subtitle]?.value, 'User Subtitle');
+      expect(record.artworkReference, isNull);
     });
 
     test('isbnResponseConfirmed rejects mismatched ISBN metadata', () {

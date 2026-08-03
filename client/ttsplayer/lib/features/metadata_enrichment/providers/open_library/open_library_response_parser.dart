@@ -147,6 +147,7 @@ class OpenLibraryResponseParser {
       recordUrl: editionKey == null
           ? null
           : 'https://openlibrary.org$editionKey',
+      coverArtworkId: _readFirstCoverId(edition['covers']),
       fetchedAt: fetchedAt,
       attribution: attribution,
     );
@@ -197,6 +198,7 @@ class OpenLibraryResponseParser {
           : workKey != null
               ? 'https://openlibrary.org$workKey'
               : null,
+      coverArtworkId: _readArtworkIdFromInt(doc['cover_i']),
       fetchedAt: fetchedAt,
       attribution: attribution,
     );
@@ -302,4 +304,19 @@ class OpenLibraryResponseParser {
 
   bool _hasIsbn(NormalizedBookMetadata metadata) =>
       metadata.isbn10Values.isNotEmpty || metadata.isbn13Values.isNotEmpty;
+
+  String? _readFirstCoverId(dynamic value) {
+    if (value is! List || value.isEmpty) return null;
+    for (final entry in value) {
+      final artworkId = _readArtworkIdFromInt(entry);
+      if (artworkId != null) return artworkId;
+    }
+    return null;
+  }
+
+  String? _readArtworkIdFromInt(dynamic value) {
+    final parsed = _readInt(value);
+    if (parsed == null || parsed <= 0) return null;
+    return parsed.toString();
+  }
 }
