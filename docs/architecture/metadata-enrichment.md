@@ -134,7 +134,7 @@ Production contract (client):
 
 → [Phase 7.2B closure](../roadmap/m7-phase-7.2b-closure-report.md)
 
-## Matching and manual selection (Phase 7.3 — in progress)
+## Matching and manual selection (Phase 7.3 — complete)
 
 Phase 7.3 adds deterministic candidate scoring, confidence bands, ambiguity detection, and manual link persistence.
 
@@ -148,6 +148,16 @@ Phase 7.3 adds deterministic candidate scoring, confidence bands, ambiguity dete
 
 **Phase 7.3.5 (complete):** Lifecycle polish for unlink, ignore, resume, and rematch — renamed user-facing actions, explicit confirmation copy, bounded transition success messages, unified item-scoped lifecycle generation, transient workflow clearing, and focused lifecycle widget tests. No coordinator or schema changes.
 
+**Phase 7.3.6 (complete):** Windows opt-in runtime harness (`PHASE_736_RUNTIME=1`, tag `phase736-runtime`) exercising production enrichment section, coordinator, repository, and candidate dialog with `Phase736ScriptedBookMetadataProvider` (deterministic, no HTTP). Scenarios M1–M30 cover search, selection, conflicts, relink, unlink/ignore/resume, failures, item lifecycle, and persistence reload. Default CI/`flutter test` skips runtime scenarios when the gate is absent.
+
+```powershell
+cd client\ttsplayer
+$env:PHASE_736_RUNTIME='1'
+flutter test test/phase_736_metadata_matching_windows_runtime_test.dart --tags phase736-runtime
+```
+
+→ [Phase 7.3.6 closure](../roadmap/m7-phase-7.3.6-closure-report.md)
+
 **Conservative auto-apply policy (Phase 7.3):**
 
 - **Explicit ISBN refresh** → auto-persist `linkedByIdentifier`, `matchMethod.identifier`, confidence `1.0` (Phase 7.2)
@@ -156,7 +166,7 @@ Phase 7.3 adds deterministic candidate scoring, confidence bands, ambiguity dete
 - **`linkedHighConfidence`** → reserved for a future approved automatic-match workflow; **not written** by Phase 7.3
 - **Ambiguous sets** → `ambiguous` state; no provider fields applied until manual selection
 
-→ [Phase 7.3 plan](../roadmap/m7-phase-7.3-plan.md) · [Phase 7.3.1 closure](../roadmap/m7-phase-7.3.1-closure-report.md) · [Phase 7.3.2 closure](../roadmap/m7-phase-7.3.2-closure-report.md) · [Phase 7.3.3 closure](../roadmap/m7-phase-7.3.3-closure-report.md) · [Phase 7.3.4 closure](../roadmap/m7-phase-7.3.4-closure-report.md) · [Phase 7.3.5 closure](../roadmap/m7-phase-7.3.5-closure-report.md)
+→ [Phase 7.3 plan](../roadmap/m7-phase-7.3-plan.md) · [Phase 7.3.1 closure](../roadmap/m7-phase-7.3.1-closure-report.md) · [Phase 7.3.2 closure](../roadmap/m7-phase-7.3.2-closure-report.md) · [Phase 7.3.3 closure](../roadmap/m7-phase-7.3.3-closure-report.md) · [Phase 7.3.4 closure](../roadmap/m7-phase-7.3.4-closure-report.md) · [Phase 7.3.5 closure](../roadmap/m7-phase-7.3.5-closure-report.md) · [Phase 7.3.6 closure](../roadmap/m7-phase-7.3.6-closure-report.md)
 
 ---
 

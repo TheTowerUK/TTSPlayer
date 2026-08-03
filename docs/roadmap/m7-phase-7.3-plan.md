@@ -1,6 +1,6 @@
 # M7 Phase 7.3 — Metadata Matching and Manual Selection
 
-**Status:** In progress — Phase 7.3.5 lifecycle polish complete (2026-08-03)
+**Status:** Complete — Phase 7.3.6 validation harness complete (2026-08-03)
 **Prerequisite:** [Phase 7.2B closure](./m7-phase-7.2b-closure-report.md) complete
 **Branch:** `m7-development`
 **Related ADRs:** [ADR-028](../architecture/decisions/ADR-028-external-metadata-enrichment-boundary.md) (Proposed), [ADR-029](../architecture/decisions/ADR-029-metadata-precedence-provenance-and-matching.md) (Proposed)
@@ -642,16 +642,16 @@ Mandatory gate for Phase 7.3 closure; live Open Library optional in 7.8.
 
 ## Definition of done
 
-- [ ] `BookMetadataMatchEvaluator` with full unit coverage
-- [ ] `BookMetadataMatchingCoordinator` wired to refresh service + repository
-- [ ] Manual link / unlink / rematch persistence
-- [ ] Book detail enrichment section (behind privacy gate or debug flag)
-- [ ] Candidate selection + confirmation UI
-- [ ] No provider calls except explicit user action
-- [ ] Fake-provider widget/runtime tests pass
-- [ ] Full `flutter test` green
-- [ ] Documentation closure report
-- [ ] ADR-029 remains Proposed until governance review
+- [x] `BookMetadataMatchEvaluator` with full unit coverage
+- [x] `BookMetadataMatchingCoordinator` wired to refresh service + repository
+- [x] Manual link / unlink / rematch persistence
+- [x] Book detail enrichment section (behind privacy gate or debug flag)
+- [x] Candidate selection + confirmation UI
+- [x] No provider calls except explicit user action
+- [x] Fake-provider widget/runtime tests pass
+- [x] Full `flutter test` green
+- [x] Documentation closure report
+- [x] ADR-029 remains Proposed until governance review
 
 ---
 
@@ -664,8 +664,7 @@ Mandatory gate for Phase 7.3 closure; live Open Library optional in 7.8.
 | 7.3.3 | Book detail metadata section (debug gate) | Complete (2026-07-30) |
 | 7.3.4 | Candidate selection + confirmation dialogs | Complete (2026-07-30) |
 | 7.3.5 | Unlink / ignore / rematch flows | Complete (2026-08-03) |
-| 7.3.6 | Widget tests + Windows runtime harness | Planned |
-| 7.3.7 | Closure documentation | Planned |
+| 7.3.6 | Widget tests, Windows runtime harness, and Phase 7.3 closure report | Complete (2026-08-03) |
 
 ---
 
