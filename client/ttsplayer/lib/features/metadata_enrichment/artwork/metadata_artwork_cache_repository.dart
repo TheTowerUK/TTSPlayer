@@ -100,7 +100,9 @@ class MetadataArtworkCacheRepository {
     }
     try {
       final file = fs.fileForRelativePath(entry.relativePath);
-      if (!await file.exists()) {
+      // Sync existence check keeps presentation resolution FakeAsync-safe and
+      // avoids rewriting the index on the hot read path.
+      if (!file.existsSync()) {
         await _removeEntry(fs, cacheKey, deleteFile: false);
         await _persistIndex(fs);
         return null;

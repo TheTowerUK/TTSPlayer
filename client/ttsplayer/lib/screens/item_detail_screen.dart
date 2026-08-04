@@ -8,11 +8,10 @@ import '../features/comics/reader/comic_navigation.dart';
 import '../features/reading/reading_navigation.dart';
 import '../models/media_item.dart';
 import '../services/artwork/artwork_decode_size.dart';
-import '../services/artwork/artwork_service.dart';
 import '../services/playback_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/media_kind_presentation.dart';
-import '../widgets/artwork/artwork_image.dart';
+import '../widgets/artwork/resolved_media_artwork_image.dart';
 import '../widgets/favourite_toggle_button.dart';
 import '../widgets/tts_app_bar.dart';
 import 'player_screen.dart';
@@ -59,15 +58,13 @@ class _PosterArea extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final candidate = context.read<ArtworkService>().forMediaItem(item);
-
     return AspectRatio(
       aspectRatio: 16 / 9,
       child: Stack(
         fit: StackFit.expand,
         children: [
-          ArtworkImage(
-            candidate: candidate,
+          ResolvedMediaArtworkImage(
+            item: item,
             iconSize: 64,
             logicalDecodeSize: ArtworkSurfaceSizes.itemDetailPoster(
               MediaQuery.sizeOf(context).width,

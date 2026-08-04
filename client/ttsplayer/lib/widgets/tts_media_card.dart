@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 import '../models/media_folder.dart';
 import '../models/media_item.dart';
-import '../services/artwork/artwork_service.dart';
 import '../services/artwork/artwork_decode_size.dart';
 import '../theme/app_theme.dart';
 import '../utils/media_kind_presentation.dart';
-import 'artwork/artwork_image.dart';
+import 'artwork/resolved_media_artwork_image.dart';
 
 /// Premium media item card with artwork, desktop hover, and press effects.
 ///
@@ -42,12 +40,6 @@ class _TtsMediaCardState extends State<TtsMediaCard> {
 
   @override
   Widget build(BuildContext context) {
-    final artworkService = context.read<ArtworkService>();
-    final candidate = artworkService.forMediaItem(
-      widget.item,
-      parentFolder: widget.parentFolder,
-    );
-
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       onEnter: (_) => setState(() => _hovered = true),
@@ -84,8 +76,9 @@ class _TtsMediaCardState extends State<TtsMediaCard> {
                       children: [
                         LayoutBuilder(
                           builder: (context, constraints) {
-                            return ArtworkImage(
-                              candidate: candidate,
+                            return ResolvedMediaArtworkImage(
+                              item: widget.item,
+                              parentFolder: widget.parentFolder,
                               fit: BoxFit.cover,
                               logicalDecodeSize: Size(
                                 constraints.maxWidth,

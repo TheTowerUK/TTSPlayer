@@ -14,6 +14,7 @@ import 'features/music/services/music_playback_queue_controller.dart';
 import 'features/music/services/music_playback_session_coordinator.dart';
 import 'features/music/services/music_playback_session_restorer.dart';
 import 'features/music/services/music_playback_session_repository.dart';
+import 'features/metadata_enrichment/artwork/metadata_artwork_cache_repository.dart';
 import 'features/metadata_enrichment/config/metadata_enrichment_feature_config.dart';
 import 'features/metadata_enrichment/services/book_metadata_matching_coordinator.dart';
 import 'features/metadata_enrichment/services/metadata_enrichment_repository.dart';
@@ -21,6 +22,7 @@ import 'features/reading/services/reading_progress_coordinator.dart';
 import 'features/reading/services/reading_progress_repository.dart';
 import 'features/search/search_service.dart';
 import 'navigation/app_navigator.dart';
+import 'services/artwork/artwork_presentation_service.dart';
 import 'services/artwork/artwork_service.dart';
 import 'services/catalog_cache_coordinator.dart';
 import 'services/catalog_service.dart';
@@ -75,6 +77,15 @@ Future<void> main() async {
 
   final metadataEnrichmentRepository = MetadataEnrichmentRepository();
   await metadataEnrichmentRepository.initialize();
+
+  final metadataArtworkCacheRepository = MetadataArtworkCacheRepository();
+  await metadataArtworkCacheRepository.initialize();
+
+  final artworkPresentationService = ArtworkPresentationService(
+    artworkService: artworkService,
+    enrichmentRepository: metadataEnrichmentRepository,
+    cacheRepository: metadataArtworkCacheRepository,
+  );
 
   final readingProgressCoordinator = ReadingProgressCoordinator(
     repository: readingProgressRepository,
@@ -161,6 +172,9 @@ Future<void> main() async {
         ),
         Provider<MediaLocationResolver>.value(value: mediaLocationResolver),
         Provider<ArtworkService>.value(value: artworkService),
+        Provider<ArtworkPresentationService?>.value(
+          value: artworkPresentationService,
+        ),
         Provider<SearchService>.value(value: searchService),
         Provider<MusicLibraryService>.value(value: musicLibraryService),
         ChangeNotifierProvider<CatalogService>.value(

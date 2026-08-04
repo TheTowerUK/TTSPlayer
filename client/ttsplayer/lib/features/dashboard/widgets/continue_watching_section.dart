@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 import '../../../screens/player_screen.dart';
-import '../../../services/artwork/artwork_service.dart';
 import '../../../services/playback_service.dart';
 import '../../../theme/app_theme.dart';
-import '../../../widgets/artwork/artwork_image.dart';
 import '../../../widgets/artwork/card_artwork_band.dart';
+import '../../../widgets/artwork/resolved_media_artwork_image.dart';
 import '../../../widgets/card_layout.dart';
 import '../../../widgets/empty_state.dart';
 import '../../../widgets/section_header.dart';
@@ -98,8 +96,6 @@ class _ContinueWatchingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final artworkService = context.read<ArtworkService>();
-    final candidate = artworkService.forMediaItem(entry.item);
     final progress = entry.progressFraction;
 
     return SizedBox(
@@ -131,8 +127,8 @@ class _ContinueWatchingCard extends StatelessWidget {
                     children: [
                       LayoutBuilder(
                         builder: (context, constraints) {
-                          return ArtworkImage(
-                            candidate: candidate,
+                          return ResolvedMediaArtworkImage(
+                            item: entry.item,
                             logicalDecodeSize: Size(
                               constraints.maxWidth,
                               constraints.maxHeight,

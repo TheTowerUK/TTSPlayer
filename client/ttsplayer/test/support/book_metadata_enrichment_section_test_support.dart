@@ -4,12 +4,16 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:ttsplayer/services/artwork/artwork_presentation_service.dart';
 import 'package:ttsplayer/services/artwork/artwork_service.dart';
 import 'package:ttsplayer/services/library/library_metadata_repository.dart';
 import 'package:ttsplayer/features/reading/services/reading_progress_coordinator.dart';
 import 'package:ttsplayer/features/reading/services/reading_progress_repository.dart';
 import 'package:ttsplayer/services/media_access/media_provider_config_service.dart';
+import 'package:ttsplayer/services/media_access/media_access_config.dart';
+import 'package:ttsplayer/services/media_access/media_access_provider.dart';
 import 'package:ttsplayer/services/media_access/media_location_resolver.dart';
+import 'package:ttsplayer/services/media_access/resolved_media_location.dart';
 import 'package:ttsplayer/services/playback_service.dart';
 import 'package:ttsplayer/features/metadata_enrichment/config/metadata_enrichment_feature_config.dart';
 import 'package:ttsplayer/features/metadata_enrichment/models/book_search_request.dart';
@@ -33,9 +37,28 @@ import 'package:ttsplayer/models/media_item.dart';
 import 'package:ttsplayer/models/media_item.dart' show MediaItemStatus;
 import 'package:ttsplayer/models/media_kind.dart';
 import 'package:ttsplayer/screens/item_detail_screen.dart';
+import 'package:ttsplayer/services/artwork/artwork_presentation_service.dart';
+import 'package:ttsplayer/services/artwork/artwork_service.dart';
 import 'package:ttsplayer/theme/app_theme.dart';
 
 import 'metadata_enrichment_test_support.dart';
+
+/// Resolves every path as unplayable so [ArtworkImage] never opens real files.
+class NonLoadingMediaLocationResolver extends MediaLocationResolver {
+  const NonLoadingMediaLocationResolver()
+      : super(
+          config: const MediaAccessConfig(mediaRoots: <String>[]),
+          isWindowsDesktop: false,
+        );
+
+  @override
+  ResolvedMediaLocation resolve(String filePath) {
+    return const ResolvedMediaLocation.unresolved(
+      providerType: MediaAccessProviderType.localFile,
+      errorReason: 'test harness disables media file loads',
+    );
+  }
+}
 
 MediaItem enrichmentBookItem({
   String id = 'book-1',
@@ -315,12 +338,27 @@ Widget itemDetailEnrichmentHarness({
   required MediaItem item,
   required MetadataEnrichmentRepository repository,
   BookMetadataMatchingCoordinator? coordinator,
+  ArtworkPresentationService? artworkPresentationService,
+  MetadataArtworkCacheRepository? artworkCacheRepository,
+  bool Function(String path)? artworkFileExists,
+  MediaLocationResolver? mediaLocationResolver,
   MetadataEnrichmentFeatureConfig config =
       MetadataEnrichmentFeatureConfig.defaults,
   Size viewport = const Size(1280, 800),
 }) {
   final metadata = LibraryMetadataRepository();
   final readingRepository = ReadingProgressRepository();
+  final artworkService = ArtworkService(
+    fileExists: artworkFileExists ?? (_) => false,
+  );
+  final presentation = artworkPresentationService ??
+      ArtworkPresentationService(
+        artworkService: artworkService,
+        enrichmentRepository: repository,
+        cacheRepository: artworkCacheRepository,
+      );
+  final locationResolver =
+      mediaLocationResolver ?? const NonLoadingMediaLocationResolver();
   return MediaQuery(
     data: MediaQueryData(size: viewport),
     child: MultiProvider(
@@ -329,13 +367,9 @@ Widget itemDetailEnrichmentHarness({
         ChangeNotifierProvider<LibraryMetadataRepository>.value(
           value: metadata,
         ),
-        Provider(
-          create: (context) => MediaLocationResolver(
-            config: context.read<MediaProviderConfigService>().mediaAccess,
-            isWindowsDesktop: false,
-          ),
-        ),
-        Provider(create: (_) => ArtworkService(fileExists: (_) => false)),
+        Provider<MediaLocationResolver>.value(value: locationResolver),
+        Provider<ArtworkService>.value(value: artworkService),
+        Provider<ArtworkPresentationService?>.value(value: presentation),
         ChangeNotifierProvider(
           create: (context) => PlaybackService(
             mediaLocationResolver: context.read<MediaLocationResolver>(),

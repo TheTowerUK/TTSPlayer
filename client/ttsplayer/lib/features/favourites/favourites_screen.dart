@@ -6,10 +6,9 @@ import '../../models/catalog.dart';
 import '../../navigation/folder_navigation.dart';
 import '../../screens/item_detail_screen.dart';
 import '../../services/artwork/artwork_decode_size.dart';
-import '../../services/artwork/artwork_service.dart';
 import '../../services/library/library_metadata_repository.dart';
 import '../../theme/app_theme.dart';
-import '../../widgets/artwork/artwork_image.dart';
+import '../../widgets/artwork/resolved_media_artwork_image.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/favourite_toggle_button.dart';
 import '../../widgets/tts_app_bar.dart';
@@ -95,7 +94,6 @@ class _FavouriteListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final artworkService = context.read<ArtworkService>();
     final title = entry.displayTitle;
 
     return Material(
@@ -120,11 +118,9 @@ class _FavouriteListTile extends StatelessWidget {
                         size: AppIcons.folderLarge,
                         color: AppColors.textLow,
                       )
-                    : ArtworkImage(
-                        candidate: artworkService.forMediaItem(
-                          entry.item!,
-                          parentFolder: entry.parentFolder,
-                        ),
+                    : ResolvedMediaArtworkImage(
+                        item: entry.item!,
+                        parentFolder: entry.parentFolder,
                         fit: BoxFit.cover,
                         logicalDecodeSize:
                             ArtworkSurfaceSizes.favouritesRowThumbnail(),

@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 import '../../../services/artwork/artwork_decode_size.dart';
-import '../../../services/artwork/artwork_service.dart';
 import '../../../models/media_item.dart';
 import '../../../theme/app_theme.dart';
 import '../../../utils/media_kind_presentation.dart';
-import '../../../widgets/artwork/artwork_image.dart';
+import '../../../widgets/artwork/resolved_media_artwork_image.dart';
 import '../models/search_result.dart';
 
 /// One ranked media hit in Global Search (Phase 4.3 presentation).
@@ -29,8 +27,6 @@ class SearchResultRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final item = result.item;
-    final artworkService = context.read<ArtworkService>();
-    final candidate = artworkService.forMediaItem(item);
     final contextLabel =
         displayContext.isNotEmpty ? displayContext : result.folderContext;
     final musicMeta = _musicMetadataLine(item);
@@ -62,8 +58,8 @@ class SearchResultRow extends StatelessWidget {
                     aspectRatio: 2 / 3,
                     child: ClipRRect(
                       borderRadius: AppRadius.chipRadius,
-                      child: ArtworkImage(
-                        candidate: candidate,
+                      child: ResolvedMediaArtworkImage(
+                        item: item,
                         iconSize: AppIcons.md,
                         logicalDecodeSize:
                             ArtworkSurfaceSizes.searchResultThumbnail(),
