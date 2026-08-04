@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -16,6 +17,13 @@ import 'package:ttsplayer/features/metadata_enrichment/providers/book_metadata_p
 import 'package:ttsplayer/features/metadata_enrichment/providers/book_metadata_provider_result.dart';
 import 'package:ttsplayer/features/metadata_enrichment/providers/fake_book_metadata_provider.dart';
 import 'package:ttsplayer/features/metadata_enrichment/services/book_candidate_selection_context.dart';
+import 'package:ttsplayer/features/metadata_enrichment/artwork/fake_metadata_artwork_http_client.dart';
+import 'package:ttsplayer/features/metadata_enrichment/artwork/metadata_artwork_cache_repository.dart';
+import 'package:ttsplayer/features/metadata_enrichment/artwork/metadata_artwork_download_generation_guard.dart';
+import 'package:ttsplayer/features/metadata_enrichment/artwork/metadata_artwork_download_service.dart';
+import 'package:ttsplayer/features/metadata_enrichment/artwork/metadata_artwork_filesystem.dart';
+import 'package:ttsplayer/features/metadata_enrichment/providers/open_library/open_library_artwork_download_url_resolver.dart';
+import 'package:ttsplayer/features/metadata_enrichment/services/book_metadata_artwork_coordinator.dart';
 import 'package:ttsplayer/features/metadata_enrichment/services/book_metadata_matching_coordinator.dart';
 import 'package:ttsplayer/features/metadata_enrichment/services/book_metadata_matching_result.dart';
 import 'package:ttsplayer/features/metadata_enrichment/services/book_metadata_refresh_service.dart';
@@ -61,18 +69,26 @@ class EnrichmentTestHarness {
     required this.repository,
     required this.provider,
     required this.coordinator,
+    this.artworkCoordinator,
+    this.artworkHttpClient,
     this.config = MetadataEnrichmentFeatureConfig.developmentEnabled,
   });
 
   final MetadataEnrichmentRepository repository;
   final FakeBookMetadataProvider provider;
   final BookMetadataMatchingCoordinator coordinator;
+  final BookMetadataArtworkCoordinator? artworkCoordinator;
+  final FakeMetadataArtworkHttpClient? artworkHttpClient;
   final MetadataEnrichmentFeatureConfig config;
 
   static Future<EnrichmentTestHarness> create({
     MetadataEnrichmentFeatureConfig config =
         MetadataEnrichmentFeatureConfig.developmentEnabled,
     FakeBookMetadataProvider? provider,
+    bool withArtworkCoordinator = false,
+    Directory? artworkCacheRoot,
+    Duration? artworkHttpDelay,
+    Object? artworkHttpThrow,
   }) async {
     final repository = await initializedMetadataEnrichmentRepository();
     final resolvedProvider = provider ?? FakeBookMetadataProvider();
@@ -86,10 +102,44 @@ class EnrichmentTestHarness {
       refreshService: refreshService,
       clock: () => DateTime.utc(2026, 7, 30, 12),
     );
+
+    BookMetadataArtworkCoordinator? artworkCoordinator;
+    FakeMetadataArtworkHttpClient? artworkHttpClient;
+    if (withArtworkCoordinator) {
+      final root = artworkCacheRoot ??
+          await Directory.systemTemp
+              .createTemp('ttsplayer_enrichment_artwork_test_');
+      final cacheRepository = MetadataArtworkCacheRepository(
+        filesystem: MetadataArtworkFilesystem(cacheRoot: root),
+        clock: () => DateTime.utc(2026, 8, 3, 12),
+      );
+      await cacheRepository.initialize();
+      artworkHttpClient = FakeMetadataArtworkHttpClient(
+        delay: artworkHttpDelay,
+        throwOnRequest: artworkHttpThrow,
+      );
+      final generationGuard = MetadataArtworkDownloadGenerationGuard();
+      final downloadService = MetadataArtworkDownloadService(
+        cacheRepository: cacheRepository,
+        httpClient: artworkHttpClient,
+        urlResolver: const OpenLibraryArtworkDownloadUrlResolver(),
+        generationGuard: generationGuard,
+        clock: () => DateTime.utc(2026, 8, 3, 12),
+      );
+      artworkCoordinator = BookMetadataArtworkCoordinator(
+        repository: repository,
+        downloadService: downloadService,
+        generationGuard: generationGuard,
+        cacheRepository: cacheRepository,
+      );
+    }
+
     return EnrichmentTestHarness(
       repository: repository,
       provider: resolvedProvider,
       coordinator: coordinator,
+      artworkCoordinator: artworkCoordinator,
+      artworkHttpClient: artworkHttpClient,
       config: config,
     );
   }
@@ -231,6 +281,7 @@ Widget enrichmentSectionHarness({
   required MediaItem item,
   required MetadataEnrichmentRepository repository,
   BookMetadataMatchingCoordinator? coordinator,
+  BookMetadataArtworkCoordinator? artworkCoordinator,
   MetadataEnrichmentFeatureConfig config =
       MetadataEnrichmentFeatureConfig.developmentEnabled,
   Size viewport = const Size(1280, 800),
@@ -244,6 +295,9 @@ Widget enrichmentSectionHarness({
         ),
         Provider<MetadataEnrichmentFeatureConfig>.value(value: config),
         Provider<BookMetadataMatchingCoordinator?>.value(value: coordinator),
+        Provider<BookMetadataArtworkCoordinator?>.value(
+          value: artworkCoordinator,
+        ),
       ],
       child: MaterialApp(
         theme: AppTheme.dark,
@@ -300,6 +354,7 @@ Widget itemDetailEnrichmentHarness({
         ),
         Provider<MetadataEnrichmentFeatureConfig>.value(value: config),
         Provider<BookMetadataMatchingCoordinator?>.value(value: coordinator),
+        Provider<BookMetadataArtworkCoordinator?>.value(value: null),
       ],
       child: MaterialApp(
         theme: AppTheme.dark,

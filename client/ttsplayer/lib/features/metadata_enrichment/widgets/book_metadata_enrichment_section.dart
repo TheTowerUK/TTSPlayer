@@ -6,9 +6,11 @@ import '../../../theme/app_theme.dart';
 import '../config/metadata_enrichment_feature_config.dart';
 import '../models/book_search_request.dart';
 import '../models/metadata_enrichment_record.dart';
+import '../presentation/metadata_artwork_presentation.dart';
 import '../presentation/metadata_enrichment_ui_messages.dart';
 import '../presentation/metadata_match_state_presentation.dart';
 import '../presentation/metadata_provider_presentation.dart';
+import '../services/book_metadata_artwork_coordinator.dart';
 import '../services/book_metadata_match_transition.dart';
 import '../services/book_candidate_selection_context.dart';
 import '../services/book_metadata_matching_coordinator.dart';
@@ -24,6 +26,8 @@ enum _PendingOperation {
   ignore,
   resume,
   markNoMatch,
+  downloadCover,
+  refreshCover,
 }
 
 /// Transient search summary shown after an explicit search action (M7.3.3).
@@ -62,6 +66,13 @@ class _BookMetadataEnrichmentSectionState
   _TransientSearchSummary? _searchSummary;
   int _lifecycleGeneration = 0;
   BookMetadataCandidateDialogSession? _activeCandidateReview;
+  BookMetadataArtworkCoordinator? _artworkCoordinator;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _artworkCoordinator = context.read<BookMetadataArtworkCoordinator?>();
+  }
 
   @override
   void didUpdateWidget(covariant BookMetadataEnrichmentSection oldWidget) {
@@ -79,6 +90,7 @@ class _BookMetadataEnrichmentSectionState
 
   void _invalidateLifecycle({bool dismissCandidateDialog = true}) {
     _lifecycleGeneration++;
+    _artworkCoordinator?.invalidateItemOperations(widget.item.id);
     if (dismissCandidateDialog) {
       final session = _activeCandidateReview;
       _activeCandidateReview = null;
@@ -144,6 +156,8 @@ class _BookMetadataEnrichmentSectionState
     final presentation = record == null
         ? MetadataMatchStatePresentation.forNoRecord()
         : MetadataMatchStatePresentation.forState(record.matchState);
+    final artworkPresentation = MetadataArtworkPresentation.forRecord(record);
+    final artworkCoordinator = _artworkCoordinator;
     final providerLine = _providerAttributionLine(record);
     final fetchedLine = _fetchedLine(record);
     final busy = _pending != _PendingOperation.none;
@@ -225,6 +239,17 @@ class _BookMetadataEnrichmentSectionState
                               style: AppTypography.labelMuted,
                             ),
                           ],
+                          if (artworkCoordinator != null) ...[
+                            const SizedBox(height: AppSpacing.xs),
+                            Text(
+                              artworkPresentation.statusLabel,
+                              key: const Key('book_metadata_enrichment_cover_status'),
+                              style: const TextStyle(
+                                color: AppColors.textHigh,
+                                fontSize: AppTypography.size13,
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -263,6 +288,8 @@ class _BookMetadataEnrichmentSectionState
                   children: _buildActions(
                     context,
                     presentation: presentation,
+                    artworkPresentation: artworkPresentation,
+                    artworkCoordinator: artworkCoordinator,
                     record: record,
                     busy: busy,
                   ),
@@ -278,6 +305,8 @@ class _BookMetadataEnrichmentSectionState
   List<Widget> _buildActions(
     BuildContext context, {
     required MetadataMatchStatePresentation presentation,
+    required MetadataArtworkPresentation artworkPresentation,
+    required BookMetadataArtworkCoordinator? artworkCoordinator,
     required MetadataEnrichmentRecord? record,
     required bool busy,
   }) {
@@ -393,6 +422,50 @@ class _BookMetadataEnrichmentSectionState
           onPressed: busy ? null : () => _markNoMatch(coordinator),
           child: const Text('Mark as no match'),
         ),
+      );
+    }
+
+    if (artworkCoordinator != null) {
+      void addArtworkAction({
+        required Key key,
+        required MetadataArtworkAction action,
+        required String label,
+        required Future<void> Function() onPressed,
+      }) {
+        if (!artworkPresentation.permits(action)) {
+          return;
+        }
+        actions.add(
+          Semantics(
+            button: true,
+            label: label,
+            child: OutlinedButton(
+              key: key,
+              onPressed: busy
+                  ? null
+                  : () {
+                      if (_pending != _PendingOperation.none) {
+                        return;
+                      }
+                      onPressed();
+                    },
+              child: Text(label),
+            ),
+          ),
+        );
+      }
+
+      addArtworkAction(
+        key: const Key('book_metadata_enrichment_download_cover'),
+        action: MetadataArtworkAction.downloadCover,
+        label: 'Download cover',
+        onPressed: () => _downloadCover(artworkCoordinator),
+      );
+      addArtworkAction(
+        key: const Key('book_metadata_enrichment_refresh_cover'),
+        action: MetadataArtworkAction.refreshCover,
+        label: 'Refresh cover',
+        onPressed: () => _refreshCover(artworkCoordinator),
       );
     }
 
@@ -549,6 +622,7 @@ class _BookMetadataEnrichmentSectionState
           _clearTransientWorkflow();
           _statusMessage = message;
         });
+        _artworkCoordinator?.invalidateItemOperations(itemId);
     }
   }
 
@@ -635,6 +709,7 @@ class _BookMetadataEnrichmentSectionState
       _statusMessage = _transitionSuccessMessage(result, operation);
       if (result is BookLinkTransitionSuccess) {
         _clearTransientWorkflow(dismissCandidateDialog: true);
+        _artworkCoordinator?.invalidateItemOperations(itemId);
       }
     });
   }
@@ -676,6 +751,7 @@ class _BookMetadataEnrichmentSectionState
       _statusMessage = _transitionSuccessMessage(result, operation);
       if (result is BookLinkTransitionSuccess) {
         _clearTransientWorkflow(dismissCandidateDialog: true);
+        _artworkCoordinator?.invalidateItemOperations(itemId);
       }
     });
   }
@@ -705,6 +781,7 @@ class _BookMetadataEnrichmentSectionState
       _statusMessage = _transitionSuccessMessage(result, operation);
       if (result is BookLinkTransitionSuccess) {
         _clearTransientWorkflow(dismissCandidateDialog: true);
+        _artworkCoordinator?.invalidateItemOperations(itemId);
       }
     });
   }
@@ -732,6 +809,66 @@ class _BookMetadataEnrichmentSectionState
       if (result is BookLinkTransitionSuccess) {
         _clearTransientWorkflow(dismissCandidateDialog: true);
       }
+    });
+  }
+
+  Future<void> _downloadCover(
+    BookMetadataArtworkCoordinator artworkCoordinator,
+  ) async {
+    if (_pending != _PendingOperation.none || !mounted) {
+      return;
+    }
+
+    final generation = _lifecycleGeneration;
+    final itemId = widget.item.id;
+    final artworkGeneration = artworkCoordinator.generationFor(itemId);
+
+    _pending = _PendingOperation.downloadCover;
+    setState(() {
+      _statusMessage = null;
+    });
+
+    final result = await artworkCoordinator.downloadCover(
+      item: widget.item,
+      expectedGeneration: artworkGeneration,
+    );
+    if (!_isLifecycleCurrent(generation, itemId)) {
+      return;
+    }
+
+    setState(() {
+      _pending = _PendingOperation.none;
+      _statusMessage = MetadataEnrichmentUiMessages.artworkWorkflowMessage(result);
+    });
+  }
+
+  Future<void> _refreshCover(
+    BookMetadataArtworkCoordinator artworkCoordinator,
+  ) async {
+    if (_pending != _PendingOperation.none || !mounted) {
+      return;
+    }
+
+    final generation = _lifecycleGeneration;
+    final itemId = widget.item.id;
+    final artworkGeneration = artworkCoordinator.generationFor(itemId);
+
+    _pending = _PendingOperation.refreshCover;
+    setState(() {
+      _statusMessage = null;
+    });
+
+    final result = await artworkCoordinator.refreshCover(
+      item: widget.item,
+      expectedGeneration: artworkGeneration,
+    );
+    if (!_isLifecycleCurrent(generation, itemId)) {
+      return;
+    }
+
+    setState(() {
+      _pending = _PendingOperation.none;
+      _statusMessage = MetadataEnrichmentUiMessages.artworkWorkflowMessage(result);
     });
   }
 

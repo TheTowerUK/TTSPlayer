@@ -1,4 +1,6 @@
 import '../providers/book_metadata_provider_failure.dart';
+import '../artwork/metadata_artwork_download_result.dart';
+import '../services/book_metadata_artwork_workflow_result.dart';
 import '../services/book_metadata_matching_result.dart';
 
 /// Maps coordinator outcomes to bounded user-facing messages (M7.3.3).
@@ -87,6 +89,62 @@ class MetadataEnrichmentUiMessages {
       'Metadata matching ignored for this book.';
 
   static const resumeSuccessMessage = 'Metadata matching resumed.';
+
+  static String artworkWorkflowMessage(BookMetadataArtworkWorkflowResult result) {
+    return switch (result) {
+      BookMetadataArtworkDownloaded() => coverDownloadedMessage,
+      BookMetadataArtworkRefreshed() => coverRefreshedMessage,
+      BookMetadataArtworkAlreadyCached() => coverAlreadyDownloadedMessage,
+      BookMetadataArtworkNoArtworkAvailable() => coverUnavailableMessage,
+      BookMetadataArtworkNotLinked() => coverUnavailableMessage,
+      BookMetadataArtworkIdentityChanged() => coverLinkChangedMessage,
+      BookMetadataArtworkCancelled() => coverCouldNotDownloadMessage,
+      BookMetadataArtworkValidationFailure() => coverInvalidImageMessage,
+      BookMetadataArtworkDiskFailure() => coverCouldNotDownloadMessage,
+      BookMetadataArtworkPersistenceFailure() =>
+        coverSavedMetadataNotUpdatedMessage,
+      BookMetadataArtworkPriorCacheRetained() => coverExistingRetainedMessage,
+      BookMetadataArtworkItemChanged() => coverLinkChangedMessage,
+      BookMetadataArtworkProviderFailure(:final category) =>
+        _artworkProviderFailure(category),
+    };
+  }
+
+  static String _artworkProviderFailure(
+    MetadataArtworkDownloadFailureCategory category,
+  ) {
+    return switch (category) {
+      MetadataArtworkDownloadFailureCategory.validation =>
+        coverInvalidImageMessage,
+      MetadataArtworkDownloadFailureCategory.filesystem =>
+        coverCouldNotDownloadMessage,
+      MetadataArtworkDownloadFailureCategory.timeout ||
+      MetadataArtworkDownloadFailureCategory.network ||
+      MetadataArtworkDownloadFailureCategory.httpError =>
+        coverCouldNotDownloadMessage,
+      MetadataArtworkDownloadFailureCategory.urlUnavailable =>
+        coverUnavailableMessage,
+      MetadataArtworkDownloadFailureCategory.insecureUri =>
+        coverCouldNotDownloadMessage,
+      MetadataArtworkDownloadFailureCategory.cancelled =>
+        coverCouldNotDownloadMessage,
+      MetadataArtworkDownloadFailureCategory.staleGeneration =>
+        coverLinkChangedMessage,
+    };
+  }
+
+  static const coverDownloadedMessage = 'Cover downloaded.';
+  static const coverRefreshedMessage = 'Cover refreshed.';
+  static const coverAlreadyDownloadedMessage = 'Cover is already downloaded.';
+  static const coverUnavailableMessage = 'Cover is unavailable for this book.';
+  static const coverCouldNotDownloadMessage = 'Cover could not be downloaded.';
+  static const coverInvalidImageMessage = 'Downloaded image was not valid.';
+  static const coverExistingRetainedMessage =
+      'Existing downloaded cover was retained.';
+  static const coverSavedMetadataNotUpdatedMessage =
+      'Cover was saved, but its metadata could not be updated.';
+  static const coverLinkChangedMessage =
+      'The metadata link changed before the cover operation completed.';
 
   static String selectionResultMessage(BookCandidateSelectionResult result) {
     return switch (result) {
