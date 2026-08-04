@@ -1,6 +1,6 @@
 # M7 — Metadata Enrichment and Library Experience
 
-**Status:** 🟡 **Planning** (Phase 7.0 — architecture only; no implementation started)
+**Status:** 🟡 **In progress** — Phase 7.4 complete; Phase 7.5.1 planning
 **Branch:** `m7-development`
 **Development version:** `v0.8.0-dev` (not bumped in pubspec during planning)
 **Baseline:** M6 — tags `v0.7.0` / `m6-complete` (2026-07-29) — commit `356a5e7`
@@ -459,8 +459,8 @@ Music is the second candidate; video and comics deferred until matching UX and a
 | **7.1** | Enrichment models, provenance schema, persistence repository | ✅ Complete |
 | **7.2** | Provider abstraction + **books** vertical slice (Open Library) | ✅ Complete |
 | **7.3** | Matching, confidence scoring, manual correction, ignore/stale | ✅ Complete — see [m7-phase-7.3-plan.md](./m7-phase-7.3-plan.md) |
-| **7.4** | Artwork enrichment, download cache, precedence integration | 🟡 In progress — 7.4.6 complete; see [m7-phase-7.4-plan.md](./m7-phase-7.4-plan.md) · [7.4.6 closure](./m7-phase-7.4.6-closure-report.md) |
-| **7.5** | Search enrichment terms, filtered browsing, enriched detail surfaces | Planned |
+| **7.4** | Artwork enrichment, download cache, precedence integration | ✅ Complete — see [m7-phase-7.4-plan.md](./m7-phase-7.4-plan.md) · [7.4.6 closure](./m7-phase-7.4.6-closure-report.md) |
+| **7.5** | Search enrichment terms, filtered browsing, enriched detail surfaces | 🟡 Plan approved (7.5.1) — see [m7-phase-7.5-search-detail-presentation.md](./m7-phase-7.5-search-detail-presentation.md) |
 | **7.6** | UX/workflow refinements ([post-M6 tracker](./post-milestone-ux-workflow-review.md)) | Planned |
 | **7.7** | Privacy, diagnostics, performance, resilience, optional backend assist design | Planned |
 | **7.8** | Windows runtime validation and milestone closure | Planned |
@@ -536,13 +536,26 @@ Later gates do **not** reopen Phase 7.2:
 - **Windows runtime validation** with fake provider remains scheduled for Phase 7.8
 - **Matching UI** is Phase 7.3
 
-### Phase 7.3 — Matching and Manual Selection (planned)
+### Phase 7.3 — Matching and Manual Selection ✅
 
 **Objective:** Deterministic candidate scoring, confidence bands, ambiguity handling, manual link persistence, limited book-detail UI.
 
-**Plan:** [m7-phase-7.3-plan.md](./m7-phase-7.3-plan.md)
-
 **Key policy:** Only explicit ISBN refresh auto-persists; search candidates require user confirmation.
+
+**Closure:** [m7-phase-7.3-plan.md](./m7-phase-7.3-plan.md) · [7.3.6 closure](./m7-phase-7.3.6-closure-report.md)
+
+### Phase 7.4 — Artwork Enrichment and Cache ✅
+
+**Closure:** [m7-phase-7.4-plan.md](./m7-phase-7.4-plan.md) · [7.4.6 closure](./m7-phase-7.4.6-closure-report.md)
+
+### Phase 7.5 — Metadata-Aware Search and Detail Presentation 🟡
+
+**Status:** Plan approved (Step 7.5.1) — ready for implementation  
+**Plan:** [m7-phase-7.5-search-detail-presentation.md](./m7-phase-7.5-search-detail-presentation.md)
+
+**Objective:** Project persisted enrichment into local search matching and item-detail presentation via a single `MetadataPresentationService`, without provider calls on ordinary read paths.
+
+**Out of scope for 7.5:** production provider wiring, automatic enrichment, catalogue schema changes, description indexing, new browse facets.
 
 ---
 

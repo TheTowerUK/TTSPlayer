@@ -107,15 +107,19 @@ On `CatalogCacheCoordinator` catalogue replace (existing ADR-014 pattern):
 
 ## Presentation merge
 
-At UI boundary, `MetadataPresentationService` (name TBD in 7.1) produces a **view model** merging:
+At UI boundary, `MetadataPresentationService` produces an immutable **`MediaItemPresentation`** view model merging:
 
-1. User overrides (locks)
-2. Sidecar / embedded (when exposed to client)
-3. Catalogue `MediaItem`
-4. Enrichment overlay fields not locked
+1. User overrides (locks / `user_override` fields)
+2. Sidecar / embedded (when exposed to client — reserved)
+3. Catalogue `MediaItem` (includes scan-time embedded metadata)
+4. Enrichment overlay fields when match state is provider-linked
 5. Fallbacks (filename, placeholders)
 
-Search index extension (Phase 7.5): append provider keywords to `searchBlob` at index build time — never replace local terms.
+**Identity fields** (`id`, `file_path`, `media_kind`) never come from enrichment.
+
+**Implementation status:** Proposed through Phase 7.4; **planned for Phase 7.5** — see [m7-phase-7.5-search-detail-presentation.md](../roadmap/m7-phase-7.5-search-detail-presentation.md). Artwork already merges via `ArtworkPresentationService` / `MetadataArtworkResolver` (7.4.6). Text-field merge and search-blob extension are the 7.5 gap.
+
+Search index extension (Phase 7.5): append persisted enrichment keywords to `searchBlob` at index build time — never replace local terms; never call providers during search.
 
 ---
 
@@ -246,6 +250,27 @@ ResolvedMediaArtworkImage → ArtworkImage
 - Provider URLs never reach widgets
 
 → [Phase 7.4.6 closure](../roadmap/m7-phase-7.4.6-closure-report.md)
+
+### Phase 7.5 — Metadata-aware search and detail presentation (planning)
+
+**Objective:** Project persisted enrichment text into local search and item-detail presentation without provider I/O on ordinary read paths.
+
+**Plan:** [m7-phase-7.5-search-detail-presentation.md](../roadmap/m7-phase-7.5-search-detail-presentation.md) (Step 7.5.1 — PLANNING).
+
+Locked planning decisions (review-approved):
+
+- Persisted enrichment fields participate in **local** search matching (no provider calls)
+- Catalogue terms stay independently indexed; enrichment terms **append** via classified field lists for ranking
+- Searchable book fields: title, subtitle, authors, publishers, year, ISBNs, capped subjects — **not** description
+- Deterministic ranking: catalogue title tiers first; enrichment-only matches below; ISBN elevated
+- Provenance/match state on detail/management surfaces; search rows stay uncluttered
+- Description: detail-only, collapsible; no indexing or snippets
+- Single `MetadataPresentationService` owns merge; artwork remains on the 7.4 resolver path
+- **Feature gate:** disabling live provider retrieval stops provider operations but does **not** hide previously accepted metadata or user overrides
+- Enrichment notify marks search index dirty; rebuild stays lazy; active search reruns the query
+- ADR-029 remains Proposed until projection, tests, shared usage, lifecycle, and Windows runtime pass
+
+**Not in 7.5:** production Open Library wiring, automatic enrichment, catalogue schema changes, video/music/comic provider slices.
 
 ---
 
