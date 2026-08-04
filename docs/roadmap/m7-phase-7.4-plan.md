@@ -1,6 +1,6 @@
 # M7 Phase 7.4 — Artwork Enrichment and Cache
 
-**Status:** In progress — 7.4.5 complete (2026-08-03); see [7.4.5 closure](./m7-phase-7.4.5-closure-report.md)
+**Status:** In progress — 7.4.6 complete (2026-08-04); see [7.4.6 closure](./m7-phase-7.4.6-closure-report.md)
 **Prerequisite:** [Phase 7.3.6 closure](./m7-phase-7.3.6-closure-report.md)
 **Branch:** `m7-development`
 **Related ADRs:** [ADR-015](../architecture/decisions/ADR-015-artwork-and-image-decode-caching.md) (Accepted), [ADR-028](../architecture/decisions/ADR-028-external-metadata-enrichment-boundary.md) (Proposed), [ADR-029](../architecture/decisions/ADR-029-metadata-precedence-provenance-and-matching.md) (Proposed)
@@ -39,7 +39,9 @@ Implement the first complete **book** artwork-enrichment path: provider-neutral 
 | **`ArtworkService`** | Synchronous filesystem probes; bounded LRU (**500**) of `ArtworkCandidate` keyed `library:`, `folder:`, `media:{itemId}` | **Extend** with provider-cache source via a separate resolver layer — do not embed HTTP or disk cache inside `ArtworkService` probes |
 | **`ArtworkCandidate`** | `kind`, `source` (`catalogThumbnail`, `sidecar`, `folderArt`, **`providerCache`**, `placeholder`), `filePath`, `visualKind` | **Extended** 7.4.4 — resolver returns `providerCache` with runtime absolute path |
 | **`ArtworkImage`** | Loads via `MediaLocationResolver`; supports `file://` and `http(s)://` with decode hints (ADR-015); `errorBuilder` → placeholder | **Reuse** for cached provider files; **do not** pass live provider URLs from resolver |
-| **`MetadataArtworkResolver`** | Central precedence (7.4.4) — composes `ArtworkService` + cache `peekLookup` | **Implemented**; widgets not wired until 7.4.6 |
+| **`MetadataArtworkResolver`** | Central precedence (7.4.4) — composes `ArtworkService` + cache `peekLookup` | **Implemented**; presentation wired via `ArtworkPresentationService` (7.4.6) |
+| **`ArtworkPresentationService`** | Presentation entry point over resolver | **Implemented** (7.4.6) |
+| **`ResolvedMediaArtworkImage`** | Shared media-item artwork widget | **Implemented** (7.4.6) — item detail, cards, search, CW, favourites |
 | **`LruCache`** | Generic fixed-capacity LRU; used only for path-resolution candidates | **Reuse** pattern; separate disk-cache index |
 | **Flutter `ImageCache`** | 100 MB budget via `configureArtworkFlutterImageCache()` | **Reuse**; document relationship to disk cache; no duplicate bitmap store |
 | **`CatalogCacheCoordinator`** | Clears `ArtworkService` candidate cache on catalogue replace | **Extend** to invalidate provider artwork *eligibility* bindings when enrichment pruned; disk files follow retention policy |
@@ -48,7 +50,7 @@ Implement the first complete **book** artwork-enrichment path: provider-neutral 
 | **Sidecar / folder art** | Stem match + named sidecars (`poster`, `cover`, …) + folder art files | **Preserve** — beats provider cache |
 | **Catalogue thumbnail** | `item.thumbnailPath` when present and readable | **Preserve** — currently checked before sidecars in `ArtworkService` |
 
-**Surfaces using `ArtworkService.forMediaItem` today:** `TtsMediaCard`, `ItemDetailScreen` poster, search rows, Continue Watching, favourites, music thumbnail fallback.
+**Media-item surfaces (7.4.6):** item detail, `TtsMediaCard`, search rows, Continue Watching, favourites → `ResolvedMediaArtworkImage`. **Still local-only via `ArtworkService`:** library/folder cards, music thumbnails.
 
 **Duplication risk:** Adding provider logic inside `ArtworkService._forMediaItem` would mix local probes with enrichment state. **Decision:** introduce a **`MetadataArtworkResolver`** (or equivalent) that composes `ArtworkService` local result with enrichment-linked cache eligibility.
 
@@ -296,7 +298,7 @@ Never export: credentials, signed URLs, raw HTTP text, absolute cache paths, ima
 | **7.4.3** | Disk cache, download validation, cleanup + tests | Complete — [closure](./m7-phase-7.4.3-closure-report.md) (uncommitted) |
 | **7.4.4** | Central resolver + precedence + tests | Complete — [closure](./m7-phase-7.4.4-closure-report.md) (uncommitted) |
 | **7.4.5** | Book metadata workflow integration + lifecycle tests | Complete — [closure](./m7-phase-7.4.5-closure-report.md) (uncommitted) |
-| **7.4.6** | Item detail + browse presentation wiring | Planned |
+| **7.4.6** | Item detail + browse presentation wiring | Complete — [closure](./m7-phase-7.4.6-closure-report.md) (uncommitted) |
 | **7.4.7** | Windows runtime harness (`PHASE_74_RUNTIME=1`, `phase74-runtime`) + closure report | Planned |
 
 ---
@@ -361,7 +363,7 @@ Production Open Library activation, live HTTP in CI, credentials UI, bulk/backgr
 
 ## Recommended next implementation step
 
-**Phase 7.4.6 — Presentation integration:** wire `MetadataArtworkResolver` to item detail and browse cards; opt-in Windows runtime harness remains 7.4.7.
+**Phase 7.4.6 — Presentation integration:** complete — `ArtworkPresentationService` + `ResolvedMediaArtworkImage` on item detail and browse media surfaces; opt-in Windows runtime harness remains 7.4.7.
 
 ---
 

@@ -166,7 +166,7 @@ flutter test test/phase_736_metadata_matching_windows_runtime_test.dart --tags p
 - **`linkedHighConfidence`** → reserved for a future approved automatic-match workflow; **not written** by Phase 7.3
 - **Ambiguous sets** → `ambiguous` state; no provider fields applied until manual selection
 
-→ [Phase 7.3 plan](../roadmap/m7-phase-7.3-plan.md) · [Phase 7.3.6 closure](../roadmap/m7-phase-7.3.6-closure-report.md) · [Phase 7.4 plan](../roadmap/m7-phase-7.4-plan.md) · [Phase 7.4.2 closure](../roadmap/m7-phase-7.4.2-closure-report.md) · [Phase 7.4.3 closure](../roadmap/m7-phase-7.4.3-closure-report.md) · [Phase 7.4.4 closure](../roadmap/m7-phase-7.4.4-closure-report.md) · [Phase 7.4.5 closure](../roadmap/m7-phase-7.4.5-closure-report.md)
+→ [Phase 7.3 plan](../roadmap/m7-phase-7.3-plan.md) · [Phase 7.3.6 closure](../roadmap/m7-phase-7.3.6-closure-report.md) · [Phase 7.4 plan](../roadmap/m7-phase-7.4-plan.md) · [Phase 7.4.2 closure](../roadmap/m7-phase-7.4.2-closure-report.md) · [Phase 7.4.3 closure](../roadmap/m7-phase-7.4.3-closure-report.md) · [Phase 7.4.4 closure](../roadmap/m7-phase-7.4.4-closure-report.md) · [Phase 7.4.5 closure](../roadmap/m7-phase-7.4.5-closure-report.md) · [Phase 7.4.6 closure](../roadmap/m7-phase-7.4.6-closure-report.md)
 
 ---
 
@@ -229,23 +229,23 @@ Explicit retrieval infrastructure without UI:
 - Item-scoped generation invalidation on relink/unlink/item change
 - Duplicate operation coalescing per cache key
 
-**`BookMetadataEnrichmentSection`** exposes Download/Refresh controls and bounded status labels via `MetadataArtworkPresentation`. No item-detail or browse-card wiring (7.4.6).
+**`BookMetadataEnrichmentSection`** exposes Download/Refresh controls and bounded status labels via `MetadataArtworkPresentation`. Presentation surfaces wired in 7.4.6.
 
 → [Phase 7.4.5 closure](../roadmap/m7-phase-7.4.5-closure-report.md)
 
-### Planned artwork presentation (7.4.6)
+### Phase 7.4.6 — Artwork presentation integration (complete)
 
-Extends [ArtworkService](./decisions/ADR-015-artwork-and-image-decode-caching.md) with an additional candidate source **after** sidecars, **before** placeholder:
+```
+ArtworkPresentationService → MetadataArtworkResolver → ArtworkService
+ResolvedMediaArtworkImage → ArtworkImage
+```
 
-| Priority | Source |
-|---|---|
-| 1 | User lock → local file path |
-| 2 | Sidecar (existing) |
-| 3 | Embedded (future) |
-| 4 | Provider cache file on disk |
-| 5 | Placeholder |
+- Item detail, media cards, search rows, Continue Watching, and favourites use one resolve path
+- Local artwork still beats provider cache; books only for provider artwork
+- No auto-download; enrichment section owns Download/Refresh
+- Provider URLs never reach widgets
 
-Provider URLs are never passed directly to widgets — download worker writes to quota-bounded cache first.
+→ [Phase 7.4.6 closure](../roadmap/m7-phase-7.4.6-closure-report.md)
 
 ---
 
