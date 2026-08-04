@@ -1,7 +1,7 @@
 # M7 Phase 7.5 — Metadata-Aware Search and Detail Presentation
 
-**Status:** APPROVED (Step 7.5.1) — ready for implementation  
-**Step:** 7.5.1 — Repository audit and detailed planning (no production code)  
+**Status:** In progress — Step **7.5.2 complete** (projection); search/detail consumers pending  
+**Step complete:** 7.5.2 — Shared metadata presentation projection  
 **Prerequisite:** Phase 7.4 complete — [7.4.6 closure](./m7-phase-7.4.6-closure-report.md) · commits `56789e8`, `1fd4c2c`  
 **Branch:** `m7-development`  
 **Related ADRs:** [ADR-029](../architecture/decisions/ADR-029-metadata-precedence-provenance-and-matching.md) (Proposed — Accept only after 7.5 validation; see §29), [ADR-028](../architecture/decisions/ADR-028-external-metadata-enrichment-boundary.md) (Proposed), [ADR-016](../architecture/decisions/ADR-016-search-index-lifecycle.md) (Accepted), [ADR-025](../architecture/decisions/ADR-025-book-comic-identity-and-metadata-precedence.md) (Accepted)
@@ -10,21 +10,37 @@
 
 ---
 
-## 1. Status: APPROVED (PLANNING complete)
+## 1. Status
 
-Phase 7.5.1 audits repository truth and locks architecture, matching boundaries, presentation precedence, lifecycle, and test strategy. **No production code, dependency, catalogue schema, or provider-wiring changes in this step.**
-
-**Review outcome (2026-08-04):** Architecture approved. Preserved invariants, structured search-field caution, dirty-index lifecycle, and feature-gate readability rule are locked below before production implementation.
-
-| Check | Value (2026-08-04 audit) |
+| Step | Status |
 |---|---|
-| Branch | `m7-development` (tracks `origin/m7-development`) |
-| HEAD | `1fd4c2c` — `docs(m7.4): close artwork presentation integration` |
-| Prior feat | `56789e8` — `feat(m7.4): wire artwork resolver into presentation surfaces` |
-| Working tree | Clean (no uncommitted source/docs at audit start) |
+| **7.5.1** Planning | ✅ Approved / committed `3ddf00a` |
+| **7.5.2** Presentation projection | ✅ Complete (implementation ready for review commit) |
+| **7.5.3–7.5.7** Search / detail / harness / closure | Pending |
+
+**Review outcome (7.5.1, 2026-08-04):** Architecture approved. Preserved invariants, structured search-field caution, dirty-index lifecycle, and feature-gate readability rule are locked below.
+
+| Check | Value (after 7.5.2) |
+|---|---|
+| Branch | `m7-development` (ahead of origin by planning commit until 7.5.2 commits) |
+| Planning HEAD | `3ddf00a` — `docs(m7.5): plan metadata-aware search and detail presentation` |
 | Flutter / Dart | 3.44.8 / 3.12.2 |
-| Full regression | **1762** passed, **20** skipped, **0** failed |
-| Windows release | Succeeded (known non-blocking `media_kit_libs_windows_video` CMP0175 warnings) |
+| Full regression | **1786** passed, **20** skipped, **0** failed (+24 projection tests) |
+| UI / search behaviour | Unchanged in 7.5.2 (projection unwired) |
+| ADR-029 | Remains **Proposed** |
+
+### Step 7.5.2 delivery
+
+| Deliverable | Location |
+|---|---|
+| `MetadataPresentationService` | `lib/features/metadata_enrichment/presentation/metadata_presentation_service.dart` |
+| `MediaItemPresentation` | `…/media_item_presentation.dart` |
+| Typed field provenance | `…/metadata_presentation_field.dart` |
+| Focused tests | `test/metadata_presentation_service_test.dart` (24 tests) |
+
+**API:** `MetadataPresentationService.build({required MediaItem item, MetadataEnrichmentRecord? record})` — callers supply the record; no repository/provider/HTTP/disk I/O; feature gate not consulted.
+
+**Not in 7.5.2:** SearchService integration, SearchScreen/ItemDetailScreen changes, listeners, dirty-index lifecycle, production wiring, ADR-029 Accept.
 
 ---
 
@@ -639,7 +655,7 @@ Phase 7.5 is done when:
 | Step | Focus | Proposed commit style |
 |---|---|---|
 | **7.5.1** | Audit + plan (this document) | `docs(m7.5): plan metadata-aware search and detail presentation` |
-| **7.5.2** | `MetadataPresentationService` + `MediaItemPresentation` + precedence unit tests | `feat(m7.5): add metadata presentation projection` |
+| **7.5.2** ✅ | `MetadataPresentationService` + `MediaItemPresentation` + precedence unit tests | `feat(m7.5): add metadata presentation projection` (+ optional docs commit) |
 | **7.5.3** | Search blob append, ranking tiers, enrichment invalidation, search unit/lifecycle tests | `feat(m7.5): index persisted enrichment terms for local search` |
 | **7.5.4** | Item-detail enriched surfaces + description collapse + presentation tests | `feat(m7.5): render enriched book fields on item detail` |
 | **7.5.5** | Search row projected title/secondary line + refresh-on-enrichment | `feat(m7.5): present enrichment overlays in search results` |

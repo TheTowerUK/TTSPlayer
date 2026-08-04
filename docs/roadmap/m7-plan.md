@@ -460,7 +460,7 @@ Music is the second candidate; video and comics deferred until matching UX and a
 | **7.2** | Provider abstraction + **books** vertical slice (Open Library) | ✅ Complete |
 | **7.3** | Matching, confidence scoring, manual correction, ignore/stale | ✅ Complete — see [m7-phase-7.3-plan.md](./m7-phase-7.3-plan.md) |
 | **7.4** | Artwork enrichment, download cache, precedence integration | ✅ Complete — see [m7-phase-7.4-plan.md](./m7-phase-7.4-plan.md) · [7.4.6 closure](./m7-phase-7.4.6-closure-report.md) |
-| **7.5** | Search enrichment terms, filtered browsing, enriched detail surfaces | 🟡 Plan approved (7.5.1) — see [m7-phase-7.5-search-detail-presentation.md](./m7-phase-7.5-search-detail-presentation.md) |
+| **7.5** | Search enrichment terms, filtered browsing, enriched detail surfaces | 🟡 In progress — 7.5.2 projection complete; see [m7-phase-7.5-search-detail-presentation.md](./m7-phase-7.5-search-detail-presentation.md) |
 | **7.6** | UX/workflow refinements ([post-M6 tracker](./post-milestone-ux-workflow-review.md)) | Planned |
 | **7.7** | Privacy, diagnostics, performance, resilience, optional backend assist design | Planned |
 | **7.8** | Windows runtime validation and milestone closure | Planned |
@@ -550,10 +550,12 @@ Later gates do **not** reopen Phase 7.2:
 
 ### Phase 7.5 — Metadata-Aware Search and Detail Presentation 🟡
 
-**Status:** Plan approved (Step 7.5.1) — ready for implementation  
+**Status:** In progress — Step 7.5.2 (shared projection) complete; consumers pending  
 **Plan:** [m7-phase-7.5-search-detail-presentation.md](./m7-phase-7.5-search-detail-presentation.md)
 
 **Objective:** Project persisted enrichment into local search matching and item-detail presentation via a single `MetadataPresentationService`, without provider calls on ordinary read paths.
+
+**7.5.2 delivered:** `MetadataPresentationService` + immutable `MediaItemPresentation` with precedence, match-state gating, typed provenance, and structured search fields — unwired to UI/search (no behaviour change).
 
 **Out of scope for 7.5:** production provider wiring, automatic enrichment, catalogue schema changes, description indexing, new browse facets.
 

@@ -117,9 +117,22 @@ At UI boundary, `MetadataPresentationService` produces an immutable **`MediaItem
 
 **Identity fields** (`id`, `file_path`, `media_kind`) never come from enrichment.
 
-**Implementation status:** Proposed through Phase 7.4; **planned for Phase 7.5** — see [m7-phase-7.5-search-detail-presentation.md](../roadmap/m7-phase-7.5-search-detail-presentation.md). Artwork already merges via `ArtworkPresentationService` / `MetadataArtworkResolver` (7.4.6). Text-field merge and search-blob extension are the 7.5 gap.
+**Implementation status (Phase 7.5.2 — complete):**
 
-Search index extension (Phase 7.5): append persisted enrichment keywords to `searchBlob` at index build time — never replace local terms; never call providers during search.
+- `MetadataPresentationService.build({required MediaItem item, MetadataEnrichmentRecord? record})` → immutable `MediaItemPresentation`
+- Typed provenance via `MetadataPresentationField` / `MetadataPresentationProvenance` (`userOverride` \| `catalogue` \| `provider` \| `absent`)
+- Precedence: user override → catalogue (embedded already folded in) → linked provider → omit
+- Provider text only for `linkedByIdentifier` / `linkedHighConfidence` / `linkedManual`
+- Structured search lists (`searchTitles`, `searchSubtitles`, `searchAuthors`, …) retain catalogue terms independently of display overrides
+- Subject caps: display **12**, search **8**; description/languages excluded from search
+- Feature gate **not** consulted — persisted presentation remains readable when provider ops are disabled
+- **Unwired** to UI/SearchService in 7.5.2 — no behaviour change yet
+
+Artwork already merges via `ArtworkPresentationService` / `MetadataArtworkResolver` (7.4.6). Search index append + detail/search consumers remain Phase 7.5.3+.
+
+→ [Phase 7.5 plan](../roadmap/m7-phase-7.5-search-detail-presentation.md)
+
+Search index extension (Phase 7.5.3+): append persisted enrichment keywords to `searchBlob` at index build time — never replace local terms; never call providers during search.
 
 ---
 
@@ -251,26 +264,21 @@ ResolvedMediaArtworkImage → ArtworkImage
 
 → [Phase 7.4.6 closure](../roadmap/m7-phase-7.4.6-closure-report.md)
 
-### Phase 7.5 — Metadata-aware search and detail presentation (planning)
+### Phase 7.5 — Metadata-aware search and detail presentation
 
-**Objective:** Project persisted enrichment text into local search and item-detail presentation without provider I/O on ordinary read paths.
+**Plan:** [m7-phase-7.5-search-detail-presentation.md](../roadmap/m7-phase-7.5-search-detail-presentation.md)
 
-**Plan:** [m7-phase-7.5-search-detail-presentation.md](../roadmap/m7-phase-7.5-search-detail-presentation.md) (Step 7.5.1 — PLANNING).
+| Step | Status |
+|---|---|
+| 7.5.1 Planning | ✅ |
+| 7.5.2 Shared presentation projection | ✅ — `MetadataPresentationService` / `MediaItemPresentation` |
+| 7.5.3 Search index + ranking | Pending |
+| 7.5.4 Item-detail surfaces | Pending |
+| 7.5.5 Search result presentation | Pending |
+| 7.5.6 Windows runtime harness | Pending |
+| 7.5.7 Closure | Pending |
 
-Locked planning decisions (review-approved):
-
-- Persisted enrichment fields participate in **local** search matching (no provider calls)
-- Catalogue terms stay independently indexed; enrichment terms **append** via classified field lists for ranking
-- Searchable book fields: title, subtitle, authors, publishers, year, ISBNs, capped subjects — **not** description
-- Deterministic ranking: catalogue title tiers first; enrichment-only matches below; ISBN elevated
-- Provenance/match state on detail/management surfaces; search rows stay uncluttered
-- Description: detail-only, collapsible; no indexing or snippets
-- Single `MetadataPresentationService` owns merge; artwork remains on the 7.4 resolver path
-- **Feature gate:** disabling live provider retrieval stops provider operations but does **not** hide previously accepted metadata or user overrides
-- Enrichment notify marks search index dirty; rebuild stays lazy; active search reruns the query
-- ADR-029 remains Proposed until projection, tests, shared usage, lifecycle, and Windows runtime pass
-
-**Not in 7.5:** production Open Library wiring, automatic enrichment, catalogue schema changes, video/music/comic provider slices.
+ADR-029 remains **Proposed** until search/detail consumers, lifecycle, and Windows runtime pass.
 
 ---
 
