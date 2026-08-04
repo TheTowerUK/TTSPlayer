@@ -166,7 +166,7 @@ flutter test test/phase_736_metadata_matching_windows_runtime_test.dart --tags p
 - **`linkedHighConfidence`** → reserved for a future approved automatic-match workflow; **not written** by Phase 7.3
 - **Ambiguous sets** → `ambiguous` state; no provider fields applied until manual selection
 
-→ [Phase 7.3 plan](../roadmap/m7-phase-7.3-plan.md) · [Phase 7.3.6 closure](../roadmap/m7-phase-7.3.6-closure-report.md) · [Phase 7.4 plan](../roadmap/m7-phase-7.4-plan.md) · [Phase 7.4.2 closure](../roadmap/m7-phase-7.4.2-closure-report.md) · [Phase 7.4.3 closure](../roadmap/m7-phase-7.4.3-closure-report.md) · [Phase 7.4.4 closure](../roadmap/m7-phase-7.4.4-closure-report.md)
+→ [Phase 7.3 plan](../roadmap/m7-phase-7.3-plan.md) · [Phase 7.3.6 closure](../roadmap/m7-phase-7.3.6-closure-report.md) · [Phase 7.4 plan](../roadmap/m7-phase-7.4-plan.md) · [Phase 7.4.2 closure](../roadmap/m7-phase-7.4.2-closure-report.md) · [Phase 7.4.3 closure](../roadmap/m7-phase-7.4.3-closure-report.md) · [Phase 7.4.4 closure](../roadmap/m7-phase-7.4.4-closure-report.md) · [Phase 7.4.5 closure](../roadmap/m7-phase-7.4.5-closure-report.md)
 
 ---
 
@@ -218,7 +218,22 @@ Explicit retrieval infrastructure without UI:
 
 → [Phase 7.4.4 closure](../roadmap/m7-phase-7.4.4-closure-report.md)
 
-### Planned artwork presentation (7.4.5–7.4.6)
+### Phase 7.4.5 — Book metadata artwork workflow (complete)
+
+**`BookMetadataArtworkCoordinator`** orchestrates explicit download/refresh:
+
+- Composes `MetadataArtworkDownloadService`, `MetadataEnrichmentRepository`, generation guard
+- Merges **artwork fields only** after successful cache write
+- Already-cached download: zero HTTP, skip enrichment rewrite when unchanged
+- Refresh failure: prior cache retained (`BookMetadataArtworkPriorCacheRetained`)
+- Item-scoped generation invalidation on relink/unlink/item change
+- Duplicate operation coalescing per cache key
+
+**`BookMetadataEnrichmentSection`** exposes Download/Refresh controls and bounded status labels via `MetadataArtworkPresentation`. No item-detail or browse-card wiring (7.4.6).
+
+→ [Phase 7.4.5 closure](../roadmap/m7-phase-7.4.5-closure-report.md)
+
+### Planned artwork presentation (7.4.6)
 
 Extends [ArtworkService](./decisions/ADR-015-artwork-and-image-decode-caching.md) with an additional candidate source **after** sidecars, **before** placeholder:
 
