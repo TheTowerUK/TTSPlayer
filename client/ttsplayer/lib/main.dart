@@ -16,6 +16,7 @@ import 'features/music/services/music_playback_session_restorer.dart';
 import 'features/music/services/music_playback_session_repository.dart';
 import 'features/metadata_enrichment/artwork/metadata_artwork_cache_repository.dart';
 import 'features/metadata_enrichment/config/metadata_enrichment_feature_config.dart';
+import 'features/metadata_enrichment/presentation/metadata_presentation_service.dart';
 import 'features/metadata_enrichment/services/book_metadata_matching_coordinator.dart';
 import 'features/metadata_enrichment/services/metadata_enrichment_repository.dart';
 import 'features/reading/services/reading_progress_coordinator.dart';
@@ -54,7 +55,6 @@ Future<void> main() async {
   await settingsRepository.initialize();
 
   final artworkService = ArtworkService();
-  final searchService = SearchService();
   final musicLibraryService = MusicLibraryService();
 
   final isWindowsDesktop = !kIsWeb && Platform.isWindows;
@@ -77,6 +77,12 @@ Future<void> main() async {
 
   final metadataEnrichmentRepository = MetadataEnrichmentRepository();
   await metadataEnrichmentRepository.initialize();
+
+  const metadataPresentationService = MetadataPresentationService();
+  final searchService = SearchService(
+    enrichmentRepository: metadataEnrichmentRepository,
+    presentationService: metadataPresentationService,
+  );
 
   final metadataArtworkCacheRepository = MetadataArtworkCacheRepository();
   await metadataArtworkCacheRepository.initialize();

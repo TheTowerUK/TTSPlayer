@@ -4,6 +4,10 @@ import '../../models/catalog.dart';
 import '../../models/media_folder.dart';
 import '../../models/media_item.dart';
 import '../../models/media_kind.dart';
+import '../metadata_enrichment/matching/isbn_equivalence.dart';
+import '../metadata_enrichment/models/metadata_enrichment_record.dart';
+import '../metadata_enrichment/presentation/metadata_presentation_service.dart';
+import '../metadata_enrichment/services/metadata_enrichment_repository.dart';
 import 'models/search_filters.dart';
 import 'models/search_index_entry.dart';
 import 'models/search_result.dart';
@@ -20,7 +24,25 @@ class SearchIndexBuildException implements Exception {
 
 /// In-memory catalogue search — index built lazily per catalogue revision (ADR-016).
 class SearchService {
+  /// [enrichmentRepository] and [presentationService] are optional so the
+  /// zero-dependency constructor remains available for catalogue-only tests
+  /// and consumers (M7.5.3). When [enrichmentRepository] is supplied, this
+  /// service listens for changes and marks the index dirty for lazy rebuild;
+  /// call [dispose] to remove that listener.
+  SearchService({
+    MetadataEnrichmentRepository? enrichmentRepository,
+    MetadataPresentationService? presentationService,
+  })  : _enrichmentRepository = enrichmentRepository,
+        _presentationService =
+            presentationService ?? const MetadataPresentationService() {
+    _enrichmentRepository?.addListener(_onEnrichmentChanged);
+  }
+
   static const maxResults = 100;
+
+  final MetadataEnrichmentRepository? _enrichmentRepository;
+  final MetadataPresentationService _presentationService;
+  bool _disposed = false;
 
   List<SearchIndexEntry> _index = const [];
   String? _catalogueIdentity;
@@ -108,6 +130,22 @@ class SearchService {
     invalidateIndex();
   }
 
+  /// Marks the index dirty on enrichment repository change notifications
+  /// (upsert/remove/prune). Reuses [invalidateIndex]'s generation bump so an
+  /// in-flight build cannot publish stale results and repeated notifications
+  /// coalesce into one later lazy rebuild (M7.5.3).
+  void _onEnrichmentChanged() {
+    invalidateIndex();
+  }
+
+  /// Removes the enrichment-repository listener. Idempotent — safe to call
+  /// more than once and safe to call when no repository was supplied.
+  void dispose() {
+    if (_disposed) return;
+    _disposed = true;
+    _enrichmentRepository?.removeListener(_onEnrichmentChanged);
+  }
+
   /// Ensures an index exists for [catalog]'s [Catalog.catalogueIdentity].
   Future<void> ensureIndex(Catalog catalog) async {
     final identity = catalog.catalogueIdentity;
@@ -175,19 +213,23 @@ class SearchService {
     if (tokens.isEmpty) return const [];
 
     final hits = <SearchResult>[];
+    final normalizedQueryIsbn = IsbnEquivalence.normalizeValid(trimmed);
 
     for (final entry in _index) {
       if (!_passesFilters(entry, filters)) continue;
       if (!_matchesTokens(entry, tokens)) continue;
 
-      final score = _score(entry, trimmed, tokens);
+      final score = _score(entry, trimmed, tokens, normalizedQueryIsbn);
       hits.add(SearchResult.fromEntry(entry, score: score));
     }
 
     hits.sort((a, b) {
       final byScore = b.score.compareTo(a.score);
       if (byScore != 0) return byScore;
-      return a.item.title.toLowerCase().compareTo(b.item.title.toLowerCase());
+      final byTitle =
+          a.item.title.toLowerCase().compareTo(b.item.title.toLowerCase());
+      if (byTitle != 0) return byTitle;
+      return a.item.id.compareTo(b.item.id);
     });
 
     if (hits.length <= maxResults) {
@@ -212,8 +254,9 @@ class SearchService {
     }
 
     final libraries = catalog.libraryFolders;
+    final recordsById = _enrichmentRecordsById();
     final entries = catalog.allItems
-        .map((item) => _entryForItem(item, libraries))
+        .map((item) => _entryForItem(item, libraries, recordsById[item.id]))
         .toList(growable: false);
     final libraryNames = libraries.map((f) => f.name).toList();
     final extensions = _collectExtensions(catalog);
@@ -238,12 +281,28 @@ class SearchService {
     _mediaKinds = _collectMediaKinds(catalog);
 
     final libraries = catalog.libraryFolders;
+    final recordsById = _enrichmentRecordsById();
     _index = catalog.allItems
-        .map((item) => _entryForItem(item, libraries))
+        .map((item) => _entryForItem(item, libraries, recordsById[item.id]))
         .toList(growable: false);
   }
 
-  SearchIndexEntry _entryForItem(MediaItem item, List<MediaFolder> libraries) {
+  /// Builds one immutable itemId → record lookup map per index build instead
+  /// of calling [MetadataEnrichmentRepository.getByItemId] per catalogue item
+  /// (M7.5.3 performance constraint).
+  Map<String, MetadataEnrichmentRecord> _enrichmentRecordsById() {
+    final repository = _enrichmentRepository;
+    if (repository == null) return const {};
+    return {
+      for (final record in repository.allRecords) record.itemId: record,
+    };
+  }
+
+  SearchIndexEntry _entryForItem(
+    MediaItem item,
+    List<MediaFolder> libraries,
+    MetadataEnrichmentRecord? enrichmentRecord,
+  ) {
     final normalizedPath = _normalize(item.filePath);
     final fileName = _fileName(item.filePath);
     final parentFolderName = _parentName(item.filePath);
@@ -264,10 +323,40 @@ class SearchService {
           ].whereType<String>().join(' ')
         : '';
 
+    final presentation = _presentationService.build(
+      item: item,
+      record: enrichmentRecord,
+    );
+
     final blob = _normalize(
       '${item.title} $fileName ${item.filePath} $libraryName '
-      '$parentFolderName ${item.extension} $musicFields $documentFields',
+      '$parentFolderName ${item.extension} $musicFields $documentFields '
+      '${presentation.searchKeywords}',
     );
+
+    final catalogueTitleNormalized = _normalize(item.title);
+    final enrichedTitlesNormalized = <String>{
+      for (final title in presentation.searchTitles) _normalize(title),
+    }.where((title) => title != catalogueTitleNormalized).toList(
+          growable: false,
+        );
+
+    final authorSeriesTermsNormalized = <String>{
+      for (final author in presentation.searchAuthors) _normalize(author),
+      for (final series in presentation.searchSeries) _normalize(series),
+    }.toList(growable: false);
+
+    final publisherSubjectYearTermsNormalized = <String>{
+      for (final publisher in presentation.searchPublishers)
+        _normalize(publisher),
+      for (final subject in presentation.searchSubjects) _normalize(subject),
+      for (final year in presentation.searchPublicationYears) _normalize(year),
+    }.toList(growable: false);
+
+    final normalizedIsbns = presentation.displayIsbns
+        .map(IsbnEquivalence.normalizeValid)
+        .whereType<String>()
+        .toSet();
 
     return SearchIndexEntry(
       item: item,
@@ -275,6 +364,10 @@ class SearchService {
       parentFolderName: parentFolderName,
       fileName: fileName,
       searchBlob: blob,
+      enrichedTitlesNormalized: enrichedTitlesNormalized,
+      authorSeriesTermsNormalized: authorSeriesTermsNormalized,
+      publisherSubjectYearTermsNormalized: publisherSubjectYearTermsNormalized,
+      normalizedIsbns: normalizedIsbns,
     );
   }
 
@@ -296,12 +389,25 @@ class SearchService {
 
   bool _matchesTokens(SearchIndexEntry entry, List<String> tokens) {
     for (final token in tokens) {
-      if (!entry.searchBlob.contains(token)) return false;
+      if (entry.searchBlob.contains(token)) continue;
+      // Formatted/unformatted ISBN equivalence: a token that fails a literal
+      // blob match may still identify the item once normalized.
+      final normalizedToken = IsbnEquivalence.normalizeValid(token);
+      if (normalizedToken != null &&
+          entry.normalizedIsbns.contains(normalizedToken)) {
+        continue;
+      }
+      return false;
     }
     return true;
   }
 
-  int _score(SearchIndexEntry entry, String query, List<String> tokens) {
+  int _score(
+    SearchIndexEntry entry,
+    String query,
+    List<String> tokens,
+    String? normalizedQueryIsbn,
+  ) {
     final q = _normalize(query);
     final title = _normalize(entry.item.title);
     final fileName = _normalize(entry.fileName);
@@ -326,6 +432,43 @@ class SearchService {
 
     for (final token in tokens) {
       if (token == ext) score += 10;
+    }
+
+    // Enrichment tiers (M7.5.3) — additive; each category contributes at
+    // most once. Enriched titles already exclude values equal to the
+    // normalized catalogue title, so this never double-scores tier 1-3.
+    if (normalizedQueryIsbn != null &&
+        entry.normalizedIsbns.contains(normalizedQueryIsbn)) {
+      score += 70;
+    }
+
+    // 1=exact, 2=prefix, 3=contains, 4=sentinel (no match); lower is better.
+    var enrichedTitleTier = 4;
+    for (final enrichedTitle in entry.enrichedTitlesNormalized) {
+      if (enrichedTitle == q) {
+        enrichedTitleTier = 1;
+        break;
+      } else if (enrichedTitle.startsWith(q)) {
+        if (2 < enrichedTitleTier) enrichedTitleTier = 2;
+      } else if (enrichedTitle.contains(q)) {
+        if (3 < enrichedTitleTier) enrichedTitleTier = 3;
+      }
+    }
+    if (enrichedTitleTier == 1) {
+      score += 55;
+    } else if (enrichedTitleTier == 2) {
+      score += 45;
+    } else if (enrichedTitleTier == 3) {
+      score += 35;
+    }
+
+    if (entry.authorSeriesTermsNormalized.any((term) => term.contains(q))) {
+      score += 25;
+    }
+
+    if (entry.publisherSubjectYearTermsNormalized
+        .any((term) => term.contains(q))) {
+      score += 15;
     }
 
     return score;
