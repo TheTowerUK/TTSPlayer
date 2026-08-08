@@ -128,11 +128,11 @@ At UI boundary, `MetadataPresentationService` produces an immutable **`MediaItem
 - Feature gate **not** consulted — persisted presentation remains readable when provider ops are disabled
 - **Unwired** to UI/SearchService in 7.5.2 — no behaviour change yet
 
-Artwork already merges via `ArtworkPresentationService` / `MetadataArtworkResolver` (7.4.6). Search index append + detail/search consumers remain Phase 7.5.3+.
+Artwork already merges via `ArtworkPresentationService` / `MetadataArtworkResolver` (7.4.6). Search index append is implemented (Phase 7.5.3 — see below); item-detail and search-row consumers remain Phase 7.5.4+.
 
 → [Phase 7.5 plan](../roadmap/m7-phase-7.5-search-detail-presentation.md)
 
-Search index extension (Phase 7.5.3+): append persisted enrichment keywords to `searchBlob` at index build time — never replace local terms; never call providers during search.
+**Search index extension (Phase 7.5.3 — complete):** persisted enrichment keywords append to `searchBlob` at index build time — local terms are never replaced; no provider calls occur during search. See the Phase 7.5.3 delivery notes above.
 
 ---
 
@@ -272,11 +272,27 @@ ResolvedMediaArtworkImage → ArtworkImage
 |---|---|
 | 7.5.1 Planning | ✅ |
 | 7.5.2 Shared presentation projection | ✅ — `MetadataPresentationService` / `MediaItemPresentation` |
-| 7.5.3 Search index + ranking | Pending |
+| 7.5.3 Search index + ranking | ✅ — persisted enrichment indexed and ranked in `SearchService`; `SearchScreen` query rerun still deferred |
 | 7.5.4 Item-detail surfaces | Pending |
 | 7.5.5 Search result presentation | Pending |
 | 7.5.6 Windows runtime harness | Pending |
 | 7.5.7 Closure | Pending |
+
+**Phase 7.5.3 delivered:**
+
+- `SearchService` builds one `itemId → MetadataEnrichmentRecord` lookup map per index build (not a per-item repository call) and calls `MetadataPresentationService.build` per catalogue item to obtain classified search terms
+- Enrichment terms **append** to the existing `searchBlob`; local catalogue/filesystem terms are never replaced
+- Eligibility for provider-sourced terms is unchanged from the 7.5.2 projection (linked match states + user overrides); `SearchService` performs no additional gating
+- Deterministic additive ranking tiers on top of unchanged catalogue tiers: ISBN exact 70; enriched title exact/prefix/contains 55/45/35 (best tier only); catalogue-or-enriched author/series 25; eligible publisher/subject/year 15 — each category contributes at most once per result, and values equal to their catalogue counterpart are deduplicated
+- ISBN query eligibility and scoring both normalize via the existing `IsbnEquivalence` utility
+- Result tie-break: catalogue title (case-insensitive), then `MediaItem.id`
+- Enrichment repository notifications mark the index dirty via the existing generation-safe `invalidateIndex`; rebuild stays lazy on the next search
+- `SearchService` gained an idempotent `dispose()` for its optional enrichment-repository listener; the zero-dependency `SearchService()` constructor is unchanged and still fully supported
+- `main.dart` now constructs `MetadataPresentationService` and wires it plus `MetadataEnrichmentRepository` into `SearchService`
+- No provider, network, or persistence writes occur on any search path
+- **Not yet wired:** `SearchScreen` rerunning its active query on enrichment change, item-detail rendering, search-row presentation, subtitle indexing (deferred rather than given an undefined ranking tier)
+
+→ [Phase 7.5 plan §12](../roadmap/m7-phase-7.5-search-detail-presentation.md#12-search-ranking-rules) for the full ranking table.
 
 ADR-029 remains **Proposed** until search/detail consumers, lifecycle, and Windows runtime pass.
 

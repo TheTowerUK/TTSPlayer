@@ -1,10 +1,10 @@
 # M7 Phase 7.5 — Metadata-Aware Search and Detail Presentation
 
-**Status:** In progress — Step **7.5.2 complete** (projection); search/detail consumers pending  
-**Step complete:** 7.5.2 — Shared metadata presentation projection  
+**Status:** In progress — Step **7.5.3 complete** (search index + ranking); detail consumers pending  
+**Step complete:** 7.5.3 — Search index enrichment and ranking (previously: 7.5.2 — shared metadata presentation projection)  
 **Prerequisite:** Phase 7.4 complete — [7.4.6 closure](./m7-phase-7.4.6-closure-report.md) · commits `56789e8`, `1fd4c2c`  
 **Branch:** `m7-development`  
-**Related ADRs:** [ADR-029](../architecture/decisions/ADR-029-metadata-precedence-provenance-and-matching.md) (Proposed — Accept only after 7.5 validation; see §29), [ADR-028](../architecture/decisions/ADR-028-external-metadata-enrichment-boundary.md) (Proposed), [ADR-016](../architecture/decisions/ADR-016-search-index-lifecycle.md) (Accepted), [ADR-025](../architecture/decisions/ADR-025-book-comic-identity-and-metadata-precedence.md) (Accepted)
+**Related ADRs:** [ADR-029](../architecture/decisions/ADR-029-metadata-precedence-provenance-and-matching.md) (Proposed — Accept only after 7.5 validation; see §29), [ADR-028](../architecture/decisions/ADR-028-external-metadata-enrichment-boundary.md) (Proposed), [ADR-016](../architecture/decisions/ADR-016-search-index-and-large-library-browsing.md) (Accepted), [ADR-025](../architecture/decisions/ADR-025-book-comic-identity-and-metadata-precedence.md) (Accepted)
 
 → [M7 plan](./m7-plan.md) · [Metadata enrichment](../architecture/metadata-enrichment.md) · [v0.8.0-dev](../release/v0.8.0-dev.md)
 
@@ -15,18 +15,22 @@
 | Step | Status |
 |---|---|
 | **7.5.1** Planning | ✅ Approved / committed `3ddf00a` |
-| **7.5.2** Presentation projection | ✅ Complete (implementation ready for review commit) |
-| **7.5.3–7.5.7** Search / detail / harness / closure | Pending |
+| **7.5.2** Presentation projection | ✅ Complete — committed (`230c6c5`, `bc32e0c`) |
+| **7.5.3** Search index enrichment and ranking | ✅ Complete — implementation validated (uncommitted pending review) |
+| **7.5.4–7.5.7** Detail / search-row presentation / harness / closure | Pending |
 
 **Review outcome (7.5.1, 2026-08-04):** Architecture approved. Preserved invariants, structured search-field caution, dirty-index lifecycle, and feature-gate readability rule are locked below.
 
-| Check | Value (after 7.5.2) |
+| Check | Value (after 7.5.3) |
 |---|---|
-| Branch | `m7-development` (ahead of origin by planning commit until 7.5.2 commits) |
+| Branch | `m7-development` (ahead of origin; 7.5.2 committed; 7.5.3 pending commit) |
 | Planning HEAD | `3ddf00a` — `docs(m7.5): plan metadata-aware search and detail presentation` |
 | Flutter / Dart | 3.44.8 / 3.12.2 |
-| Full regression | **1786** passed, **20** skipped, **0** failed (+24 projection tests) |
-| UI / search behaviour | Unchanged in 7.5.2 (projection unwired) |
+| Focused validation (7.5.3) | **68** passed, **0** failed |
+| Full regression | **1826** passed, **20** skipped, **0** failed (+40 vs 7.5.2 baseline of 1786/20/0) |
+| `flutter analyze` | 365 repository findings overall; **0 errors**; 0 remaining findings in 7.5.3 changed files after one `prefer_const_constructors` cleanup |
+| `git diff --check` | Clean |
+| UI / search behaviour | `SearchService` ranks/matches enrichment terms; `SearchScreen` does not yet rerun its active query on enrichment change (deferred to next presentation/search-integration step) |
 | ADR-029 | Remains **Proposed** |
 
 ### Step 7.5.2 delivery
@@ -41,6 +45,32 @@
 **API:** `MetadataPresentationService.build({required MediaItem item, MetadataEnrichmentRecord? record})` — callers supply the record; no repository/provider/HTTP/disk I/O; feature gate not consulted.
 
 **Not in 7.5.2:** SearchService integration, SearchScreen/ItemDetailScreen changes, listeners, dirty-index lifecycle, production wiring, ADR-029 Accept.
+
+### Step 7.5.3 delivery
+
+| Deliverable | Location |
+|---|---|
+| Enrichment-aware index build | `lib/features/search/search_service.dart` |
+| Classified index fields | `lib/features/search/models/search_index_entry.dart` (`enrichedTitlesNormalized`, `authorSeriesTermsNormalized`, `publisherSubjectYearTermsNormalized`, `normalizedIsbns`) |
+| Production wiring | `lib/main.dart` — `SearchService` constructed with `MetadataEnrichmentRepository` + `MetadataPresentationService` |
+| Focused tests | `test/search_service_enrichment_lifecycle_test.dart`, `test/search_service_enrichment_ranking_test.dart` |
+
+**Behaviour implemented:**
+
+- `SearchService` gains optional `enrichmentRepository` / `presentationService` constructor parameters; the zero-argument `SearchService()` remains valid and behaves as before (catalogue-only, no enrichment).
+- Index build calls `MetadataPresentationService.build` once per catalogue item via one itemId → `MetadataEnrichmentRecord` lookup map built per index build (`_enrichmentRecordsById`) — not a per-item repository call.
+- `presentation.searchKeywords` is appended to the existing `searchBlob`; local catalogue/filesystem terms are never removed or replaced.
+- Eligibility for provider-sourced enrichment terms is inherited unchanged from `MetadataPresentationService` (linked match states + user overrides) — `SearchService` does not re-implement gating.
+- Classified fields (`enrichedTitlesNormalized`, `authorSeriesTermsNormalized`, `publisherSubjectYearTermsNormalized`, `normalizedIsbns`) carry per-category ranking data; enriched titles equal to the normalized catalogue title are excluded so tiers 1–3 never double-score.
+- Ranking (`_score`) adds enrichment tiers additively on top of the existing catalogue tiers: ISBN exact 70; enriched title exact/prefix/contains 55/45/35 (best tier only, contributes once); author/series (catalogue or eligible enriched, merged) 25 (once); publisher/subject/year (eligible, merged) 15 (once). See §12 for the full table.
+- ISBN matching and scoring both normalize via the existing `IsbnEquivalence` utility, so formatted and unformatted ISBNs match equivalently for both query eligibility (`_matchesTokens`) and score (`_score`).
+- Result ordering tie-break is catalogue title (case-insensitive), then `MediaItem.id`, for full determinism when titles are equal.
+- `SearchService._onEnrichmentChanged` marks the index dirty via the existing `invalidateIndex` generation bump on repository notification; rebuild stays lazy (next `ensureIndex`/search) — no synchronous rebuild per mutation.
+- `SearchService.dispose()` removes the enrichment-repository listener and is idempotent (safe to call when no repository was supplied, and safe to call more than once).
+- `main.dart` now constructs `MetadataPresentationService` and passes it plus `MetadataEnrichmentRepository` into `SearchService`.
+- Non-book items and books without a linked/override-eligible record are unaffected — projection falls back to catalogue-only fields and contributes no enrichment terms.
+
+**Not in 7.5.3:** `SearchScreen` rerunning its active query on enrichment change (still deferred — see §18), item-detail rendering of enriched fields, search-row projected title/secondary line, subtitle indexing (deferred rather than assigned an undefined ranking tier), Windows runtime harness, ADR-029 Accept.
 
 ---
 
@@ -73,6 +103,8 @@ Phase 7.1–7.4 delivered:
 ---
 
 ## 3. Current repository audit
+
+**Note:** This section is the pre-implementation (7.5.1) audit baseline. §12 and the 7.5.3 delivery table in §1 record what actually changed in `SearchService` / `SearchIndexEntry` as of 7.5.3; §3.1 below is left as the original audit for historical reference.
 
 ### 3.1 Search architecture
 
@@ -375,11 +407,13 @@ Keep integer, deterministic scoring. Extend `_score` (or equivalent) with explic
 | 8 | ISBN exact (normalized digits) | **70** |
 | 9 | Publisher / subject / year token | **15** |
 
-**Ordering:** higher score first; tie-break catalogue title A–Z (unchanged).
+**Ordering:** higher score first; tie-break catalogue title A–Z, then `MediaItem.id` (implemented 7.5.3 — the `id` tie-break was added beyond the original plan text to guarantee full determinism when titles are equal).
 
 **Enrichment-only matches** (hit solely via tiers 5–9, no catalogue title/path contribution) therefore rank **below** strong catalogue title matches, and ISBN exact sits between title-contains and filename — intentional for identifier lookup without overtaking exact local titles.
 
 Do **not** introduce TF-IDF, edit-distance, or non-deterministic boosting.
+
+**Implementation status (7.5.3 — complete):** All tiers above are implemented exactly as specified in `SearchService._score`, additively on top of unchanged catalogue tiers. Each enrichment category (enriched title, ISBN, author/series, publisher/subject/year) contributes **at most once** per result, using the best-matching tier within that category. Equivalent catalogue and enrichment values are deduplicated before scoring (e.g. an enriched title identical to the catalogue title is excluded from the enriched-title set).
 
 ---
 
@@ -464,25 +498,25 @@ User-override fields always eligible for search append and display regardless of
 
 ## 18. Repository notification and cache lifecycle
 
-| Event | Required behaviour |
-|---|---|
-| Enrichment `upsert` / `remove` / prune | `notifyListeners` (existing) |
-| Search index | Mark **dirty** on enrichment notification; rebuild remains **lazy** (next `ensureIndex` / search) |
-| Active `SearchScreen` query | Rerun current query after invalidation when mounted |
-| Item detail | `context.watch` repository (section already does); metadata panel rebuilds from projection |
-| Artwork | Unchanged 7.4 path |
-| Feature gate off | Projection + search overlays still read persisted store; provider ops stay gated |
+| Event | Required behaviour | Status |
+|---|---|---|
+| Enrichment `upsert` / `remove` / prune | `notifyListeners` (existing) | Unchanged |
+| Search index | Mark **dirty** on enrichment notification; rebuild remains **lazy** (next `ensureIndex` / search) | ✅ Implemented 7.5.3 |
+| Active `SearchScreen` query | Rerun current query after invalidation when mounted | **Deferred** — intentionally not wired in 7.5.3; targeted for the next presentation/search-integration step (7.5.5, §28) |
+| Item detail | `context.watch` repository (section already does); metadata panel rebuilds from projection | Pending (7.5.4) |
+| Artwork | Unchanged 7.4 path | Unchanged |
+| Feature gate off | Projection + search overlays still read persisted store; provider ops stay gated | ✅ Implemented 7.5.3 (`MetadataPresentationService` does not consult the gate) |
 
 **Locked search refresh strategy:**
 
-1. `SearchService` listens to `MetadataEnrichmentRepository` (composition-root wiring).
-2. An enrichment notification **marks the index dirty** (coalesce multiple notifications during one operation where practical — e.g. single dirty flag / generation bump, not N immediate rebuilds).
-3. Index rebuild remains **lazy** — do not rebuild the entire index synchronously on every field mutation.
-4. Active `SearchScreen` reruns the current query after invalidation (generation-safe, same as catalogue search ownership).
-5. Index build reads enrichment via existing repository contract (local, in-memory after load; no provider I/O).
-6. Catalogue fields stay independently indexed; enrichment classified terms append on rebuild.
+1. `SearchService` listens to `MetadataEnrichmentRepository` (composition-root wiring). ✅ Implemented 7.5.3 — `main.dart` passes `metadataEnrichmentRepository` into `SearchService`.
+2. An enrichment notification **marks the index dirty** (coalesce multiple notifications during one operation where practical — e.g. single dirty flag / generation bump, not N immediate rebuilds). ✅ Implemented 7.5.3 — `_onEnrichmentChanged` reuses `invalidateIndex`'s generation bump.
+3. Index rebuild remains **lazy** — do not rebuild the entire index synchronously on every field mutation. ✅ Implemented 7.5.3.
+4. Active `SearchScreen` reruns the current query after invalidation (generation-safe, same as catalogue search ownership). **Not yet implemented** — `SearchScreen` itself is unchanged in 7.5.3; this remains intentionally deferred to the next Phase 7.5 presentation/search-integration step.
+5. Index build reads enrichment via existing repository contract (local, in-memory after load; no provider I/O). ✅ Implemented 7.5.3 — one `itemId → record` lookup map built per index build, not a per-item repository call.
+6. Catalogue fields stay independently indexed; enrichment classified terms append on rebuild. ✅ Implemented 7.5.3.
 
-Avoid provider/network in all of the above.
+Avoid provider/network in all of the above — confirmed: no provider, network, or persistence writes occur during search (build, matching, or scoring).
 
 ---
 
@@ -554,13 +588,13 @@ Offline with linked records: enriched search + detail presentation continue from
 
 ### Unit
 
-- Precedence matrix cases (override > catalogue > provider > fallback)
-- Match-state gating for provider fields
-- Search keyword append (local retained; enrichment appended)
-- Ranking tiers (exact catalogue > enrichment-only author/ISBN)
-- ISBN normalization match
-- Non-book passthrough
-- Corrupt/empty field skip
+- Precedence matrix cases (override > catalogue > provider > fallback) — ✅ 7.5.2 (`metadata_presentation_service_test.dart`)
+- Match-state gating for provider fields — ✅ 7.5.2 (presentation), reused unchanged by 7.5.3 search
+- Search keyword append (local retained; enrichment appended) — ✅ 7.5.3 (`search_service_enrichment_ranking_test.dart`, `search_service_enrichment_lifecycle_test.dart`)
+- Ranking tiers (exact catalogue > enrichment-only author/ISBN) — ✅ 7.5.3
+- ISBN normalization match — ✅ 7.5.3 (query eligibility and scoring both via `IsbnEquivalence`)
+- Non-book passthrough — ✅ 7.5.3 (search index unaffected for non-books)
+- Corrupt/empty field skip — ✅ inherited from 7.5.2 projection; no additional search-layer handling needed
 
 ### Widget / presentation
 
@@ -573,9 +607,10 @@ Offline with linked records: enriched search + detail presentation continue from
 
 ### Lifecycle
 
-- Catalogue replace clears enrichment keywords for pruned ids
-- Restart: load repository → search finds ISBN from persisted record without provider
-- Cross-item isolation (enrich A ≠ affect B)
+- Catalogue replace clears enrichment keywords for pruned ids — ✅ 7.5.3 (existing `validateAgainstCatalog` prune path; index rebuild on next search reflects survivors only)
+- Restart: load repository → search finds ISBN from persisted record without provider — ✅ 7.5.3
+- Cross-item isolation (enrich A ≠ affect B) — ✅ 7.5.3
+- Enrichment notification marks index dirty; lazy rebuild on next search; `SearchService.dispose()` removes the listener idempotently — ✅ 7.5.3 (`search_service_enrichment_lifecycle_test.dart`)
 
 ### Isolation
 
@@ -656,7 +691,7 @@ Phase 7.5 is done when:
 |---|---|---|
 | **7.5.1** | Audit + plan (this document) | `docs(m7.5): plan metadata-aware search and detail presentation` |
 | **7.5.2** ✅ | `MetadataPresentationService` + `MediaItemPresentation` + precedence unit tests | `feat(m7.5): add metadata presentation projection` (+ optional docs commit) |
-| **7.5.3** | Search blob append, ranking tiers, enrichment invalidation, search unit/lifecycle tests | `feat(m7.5): index persisted enrichment terms for local search` |
+| **7.5.3** ✅ | Search blob append, ranking tiers, enrichment invalidation, search unit/lifecycle tests | `feat(m7.5): index persisted enrichment terms for local search` (+ docs commit) |
 | **7.5.4** | Item-detail enriched surfaces + description collapse + presentation tests | `feat(m7.5): render enriched book fields on item detail` |
 | **7.5.5** | Search row projected title/secondary line + refresh-on-enrichment | `feat(m7.5): present enrichment overlays in search results` |
 | **7.5.6** | Windows runtime harness R1–R12 | `test(m7.5): add Windows search/detail enrichment runtime harness` |
@@ -680,16 +715,16 @@ Optional stretch (same phase only if ahead of schedule): browse card title overl
 | F | Deterministic tiered ranking via **structured** enrichment field lists; catalogue title first; ISBN elevated |
 | G | Description detail-only, collapsible; no snippets/indexing |
 | H | Feature gate stops **provider operations** only; persisted presentation + overrides remain readable |
-| I | Enrichment notify → mark search index dirty → lazy rebuild; coalesce bursts; active search reruns query |
+| I | Enrichment notify → mark search index dirty → lazy rebuild; coalesce bursts; active search reruns query — **dirty-mark/lazy-rebuild half implemented in 7.5.3; active-search-reruns-query half intentionally deferred to the next presentation/search-integration step** |
 
 ### Invariants to preserve exactly through implementation
 
-1. Catalogue fields remain independently indexed.
-2. Enrichment terms append to the search document — never replace catalogue terms.
-3. Overrides remain visible even when provider data is excluded.
-4. Provider text is limited to accepted linked states.
-5. Search results remain uncluttered (no provenance/match-state controls on rows).
-6. Description remains detail-only (not indexed).
+1. Catalogue fields remain independently indexed. — ✅ held in 7.5.3
+2. Enrichment terms append to the search document — never replace catalogue terms. — ✅ held in 7.5.3
+3. Overrides remain visible even when provider data is excluded. — ✅ held (inherited from 7.5.2 projection eligibility rules, consumed unchanged by 7.5.3 search)
+4. Provider text is limited to accepted linked states. — ✅ held (same inheritance)
+5. Search results remain uncluttered (no provenance/match-state controls on rows). — ✅ held; no search-row UI changed in 7.5.3
+6. Description remains detail-only (not indexed). — ✅ held; subtitle is likewise not indexed in 7.5.3 (see Deferred)
 
 ### ADR-029 Accept gate
 
@@ -715,6 +750,8 @@ Keep ADR-029 **Proposed** through 7.5.1. Move to **Accepted** only after all of:
 
 ### Deferred
 
+- Active `SearchScreen` query rerun on enrichment notification (index invalidation is implemented; rerunning the live query is targeted for the next Phase 7.5 presentation/search-integration step, tracked against 7.5.5 in §28)
+- Subtitle indexing — intentionally not added in 7.5.3 rather than assigning it an undefined ranking tier; revisit alongside item-detail subtitle rendering (7.5.4) or search-row presentation (7.5.5)
 - Card grid title overlays (stretch)
 - Enrichment `series` field key + Open Library series mapping
 - Production provider/coordinator wiring in `main.dart`
