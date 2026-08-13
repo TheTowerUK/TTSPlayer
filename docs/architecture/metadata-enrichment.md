@@ -128,7 +128,7 @@ At UI boundary, `MetadataPresentationService` produces an immutable **`MediaItem
 - Feature gate **not** consulted — persisted presentation remains readable when provider ops are disabled
 - **Unwired** to UI/SearchService in 7.5.2 — no behaviour change yet
 
-Artwork already merges via `ArtworkPresentationService` / `MetadataArtworkResolver` (7.4.6). Search index append is implemented (Phase 7.5.3 — see below); item-detail and search-row consumers remain Phase 7.5.4+.
+Artwork already merges via `ArtworkPresentationService` / `MetadataArtworkResolver` (7.4.6). Search indexing, item detail, and search-row presentation are implemented through Phase 7.5.5.
 
 → [Phase 7.5 plan](../roadmap/m7-phase-7.5-search-detail-presentation.md)
 
@@ -274,7 +274,7 @@ ResolvedMediaArtworkImage → ArtworkImage
 | 7.5.2 Shared presentation projection | ✅ — `MetadataPresentationService` / `MediaItemPresentation` |
 | 7.5.3 Search index + ranking | ✅ — persisted enrichment indexed and ranked in `SearchService`; `SearchScreen` query rerun still deferred |
 | 7.5.4 Item-detail surfaces | ✅ — live `MediaItemPresentation` consumption, enriched book-details block, collapsible description |
-| 7.5.5 Search result presentation | Pending |
+| 7.5.5 Search result presentation | ✅ — resolved book row title/secondary metadata + active-query refresh |
 | 7.5.6 Windows runtime harness | Pending |
 | 7.5.7 Closure | Pending |
 
@@ -290,7 +290,7 @@ ResolvedMediaArtworkImage → ArtworkImage
 - `SearchService` gained an idempotent `dispose()` for its optional enrichment-repository listener; the zero-dependency `SearchService()` constructor is unchanged and still fully supported
 - `main.dart` now constructs `MetadataPresentationService` and wires it plus `MetadataEnrichmentRepository` into `SearchService`
 - No provider, network, or persistence writes occur on any search path
-- **Not yet wired:** `SearchScreen` rerunning its active query on enrichment change, item-detail rendering, search-row presentation, subtitle indexing (deferred rather than given an undefined ranking tier)
+- **Still deferred:** subtitle indexing/ranking (no undefined tier added), Windows runtime harness, and ADR acceptance
 
 → [Phase 7.5 plan §12](../roadmap/m7-phase-7.5-search-detail-presentation.md#12-search-ranking-rules) for the full ranking table.
 
@@ -304,6 +304,13 @@ ADR-029 remains **Proposed** until search/detail consumers, lifecycle, and Windo
 - Feature-gate state does not hide persisted presentation. Accepted-match gating and override precedence remain owned exclusively by `MetadataPresentationService`.
 - Repository notifications refresh mounted detail presentation. Catalogue-only consumers without enrichment providers retain safe fallback behavior.
 - Artwork, catalogue identity, navigation, playback/read routing, and provider contracts are unchanged.
+
+**Phase 7.5.5 delivered:**
+
+- Search result rows resolve the same `MediaItemPresentation` used by indexing and detail, showing book title plus author/series/year without provenance controls.
+- `SearchScreen` listens to the optional enrichment repository and coalesces notifications into a rerun only when a non-empty query is mounted.
+- The existing `SearchService` listener invalidates the index first; the screen rerun then performs the normal lazy generation-safe rebuild. Provider-only result membership therefore updates without changing ranking rules.
+- Empty-query laziness, disposal safety, catalogue-only fallback, live catalogue navigation identity, artwork resolution, filters, grouping, and non-book presentation are preserved.
 
 ---
 

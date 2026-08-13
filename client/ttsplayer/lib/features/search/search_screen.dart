@@ -9,6 +9,7 @@ import '../../models/catalog.dart';
 import '../../screens/item_detail_screen.dart';
 import '../music/music_navigation.dart';
 import '../music/screens/music_track_detail_screen.dart';
+import '../metadata_enrichment/services/metadata_enrichment_repository.dart';
 import '../../services/catalog_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/loading_card.dart';
@@ -41,6 +42,8 @@ class _SearchScreenState extends State<SearchScreen> {
   List<SearchResult> _results = const [];
   List<String> _recentQueries = [];
   Timer? _debounce;
+  Timer? _enrichmentRefresh;
+  MetadataEnrichmentRepository? _enrichmentRepository;
   int _searchGeneration = 0;
 
   static const _debounceDuration = Duration(milliseconds: 150);
@@ -58,15 +61,38 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final repository = context.read<MetadataEnrichmentRepository?>();
+    if (identical(repository, _enrichmentRepository)) return;
+    _enrichmentRepository?.removeListener(_onEnrichmentChanged);
+    _enrichmentRepository = repository;
+    _enrichmentRepository?.addListener(_onEnrichmentChanged);
+  }
+
+  @override
   void dispose() {
     _debounce?.cancel();
     _debounce = null;
+    _enrichmentRefresh?.cancel();
+    _enrichmentRefresh = null;
+    _enrichmentRepository?.removeListener(_onEnrichmentChanged);
+    _enrichmentRepository = null;
     // Invalidate in-flight searches so they cannot publish after dispose.
     _searchGeneration++;
     _controller.removeListener(_onQueryChanged);
     _controller.dispose();
     _focusNode.dispose();
     super.dispose();
+  }
+
+  void _onEnrichmentChanged() {
+    if (_controller.text.trim().isEmpty) return;
+    _enrichmentRefresh?.cancel();
+    _enrichmentRefresh = Timer(Duration.zero, () {
+      if (!mounted || _controller.text.trim().isEmpty) return;
+      _runSearchNow();
+    });
   }
 
   void _onQueryChanged() {

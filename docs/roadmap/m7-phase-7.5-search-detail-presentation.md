@@ -1,7 +1,7 @@
 # M7 Phase 7.5 — Metadata-Aware Search and Detail Presentation
 
-**Status:** In progress — Step **7.5.4 complete** (item-detail presentation); search-row presentation pending
-**Step complete:** 7.5.4 — Item-detail enriched metadata surfaces (previously: 7.5.3 — search index enrichment and ranking)
+**Status:** In progress — Step **7.5.5 complete** (search-row presentation and live query refresh); Windows harness pending
+**Step complete:** 7.5.5 — Search result presentation and refresh lifecycle (previously: 7.5.4 — item-detail enriched metadata surfaces)
 **Prerequisite:** Phase 7.4 complete — [7.4.6 closure](./m7-phase-7.4.6-closure-report.md) · commits `56789e8`, `1fd4c2c`  
 **Branch:** `m7-development`  
 **Related ADRs:** [ADR-029](../architecture/decisions/ADR-029-metadata-precedence-provenance-and-matching.md) (Proposed — Accept only after 7.5 validation; see §29), [ADR-028](../architecture/decisions/ADR-028-external-metadata-enrichment-boundary.md) (Proposed), [ADR-016](../architecture/decisions/ADR-016-search-index-and-large-library-browsing.md) (Accepted), [ADR-025](../architecture/decisions/ADR-025-book-comic-identity-and-metadata-precedence.md) (Accepted)
@@ -17,21 +17,22 @@
 | **7.5.1** Planning | ✅ Approved / committed `3ddf00a` |
 | **7.5.2** Presentation projection | ✅ Complete — committed (`230c6c5`, `bc32e0c`) |
 | **7.5.3** Search index enrichment and ranking | ✅ Complete — committed (`8601e9b`, `a99643e`) |
-| **7.5.4** Item-detail enriched presentation | ✅ Complete — implementation validated |
-| **7.5.5–7.5.7** Search-row presentation / harness / closure | Pending |
+| **7.5.4** Item-detail enriched presentation | ✅ Complete — committed (`74defde`) |
+| **7.5.5** Search-row presentation and active-query refresh | ✅ Complete — implementation validated |
+| **7.5.6–7.5.7** Windows harness / closure | Pending |
 
 **Review outcome (7.5.1, 2026-08-04):** Architecture approved. Preserved invariants, structured search-field caution, dirty-index lifecycle, and feature-gate readability rule are locked below.
 
 | Check | Value (after 7.5.3) |
 |---|---|
-| Branch | `m7-development` (7.5.3 committed; 7.5.4 working tree pending review) |
+| Branch | `m7-development` (7.5.4 committed; 7.5.5 working tree pending review) |
 | Planning HEAD | `3ddf00a` — `docs(m7.5): plan metadata-aware search and detail presentation` |
 | Flutter / Dart | 3.44.8 / 3.12.2 |
 | Focused validation (7.5.3) | **68** passed, **0** failed |
-| Full regression | **1830** passed, **20** skipped, **0** failed (+4 vs 7.5.3 baseline of 1826/20/0) |
-| Focused `flutter analyze` | Phase 7.5.4 changed Dart files: **no issues found** |
+| Full regression | **1836** passed, **20** skipped, **0** failed (+6 vs 7.5.4 baseline of 1830/20/0) |
+| Focused `flutter analyze` | Phase 7.5.5 changed Dart files: **no issues found** |
 | `git diff --check` | Clean |
-| UI / search behaviour | Item detail renders live resolved metadata; search-row projection and active-query rerun remain deferred to 7.5.5 |
+| UI / search behaviour | Item detail and search rows render resolved metadata; mounted active queries rerun after enrichment changes |
 | ADR-029 | Remains **Proposed** |
 
 ### Step 7.5.2 delivery
@@ -84,6 +85,17 @@
 - Artwork remains entirely on the existing `ResolvedMediaArtworkImage` / `ArtworkPresentationService` path.
 
 **Not in 7.5.4:** search-row projected presentation, active-query rerun, subtitle ranking/index changes, schema/provider contract changes, ranking-weight changes, Windows runtime harness, ADR-029 Accept.
+
+### Step 7.5.5 delivery
+
+- Search rows consume `MediaItemPresentation` from the current persisted enrichment record. Books show resolved title plus author · series · year, while audio/comic/non-book behavior remains unchanged.
+- Search rows expose no provenance or match-state clutter; semantics and open/play tooltips use the resolved display title.
+- `SearchScreen` subscribes to the optional enrichment repository, coalesces notifications, and reruns only a non-empty mounted query. Existing generation ownership prevents stale async results from publishing.
+- Provider-only active queries gain and lose results after accepted record upsert/remove without user retyping. Empty queries do not build the index, and disposal removes the listener safely.
+- Row/service fallbacks retain catalogue-only compatibility when enrichment dependencies are absent.
+- Search result identity, live catalogue re-resolution, deterministic ranking weights, zero-dependency `SearchService()`, filters, grouping, navigation, and artwork behavior remain unchanged.
+
+**Not in 7.5.5:** subtitle indexing/ranking, schema/provider contract changes, ranking-weight changes, Windows runtime harness, production provider activation, ADR-029 Accept.
 
 ---
 
@@ -515,7 +527,7 @@ User-override fields always eligible for search append and display regardless of
 |---|---|---|
 | Enrichment `upsert` / `remove` / prune | `notifyListeners` (existing) | Unchanged |
 | Search index | Mark **dirty** on enrichment notification; rebuild remains **lazy** (next `ensureIndex` / search) | ✅ Implemented 7.5.3 |
-| Active `SearchScreen` query | Rerun current query after invalidation when mounted | **Deferred** — intentionally not wired in 7.5.3; targeted for the next presentation/search-integration step (7.5.5, §28) |
+| Active `SearchScreen` query | Rerun current query after invalidation when mounted | ✅ Implemented 7.5.5 — notifications coalesced; empty/disposed screens do not search |
 | Item detail | `context.watch` repository; metadata panel rebuilds from projection | ✅ Implemented 7.5.4 |
 | Artwork | Unchanged 7.4 path | Unchanged |
 | Feature gate off | Projection + search overlays still read persisted store; provider ops stay gated | ✅ Implemented 7.5.3 (`MetadataPresentationService` does not consult the gate) |
@@ -706,7 +718,7 @@ Phase 7.5 is done when:
 | **7.5.2** ✅ | `MetadataPresentationService` + `MediaItemPresentation` + precedence unit tests | `feat(m7.5): add metadata presentation projection` (+ optional docs commit) |
 | **7.5.3** ✅ | Search blob append, ranking tiers, enrichment invalidation, search unit/lifecycle tests | `feat(m7.5): index persisted enrichment terms for local search` (+ docs commit) |
 | **7.5.4** ✅ | Item-detail enriched surfaces + description collapse + presentation tests | `feat(m7.5): render enriched book fields on item detail` |
-| **7.5.5** | Search row projected title/secondary line + refresh-on-enrichment | `feat(m7.5): present enrichment overlays in search results` |
+| **7.5.5** ✅ | Search row projected title/secondary line + refresh-on-enrichment | `feat(m7.5): present enrichment overlays in search results` |
 | **7.5.6** | Windows runtime harness R1–R12 | `test(m7.5): add Windows search/detail enrichment runtime harness` |
 | **7.5.7** | Closure report + tracker/architecture status updates | `docs(m7.5): close metadata-aware search and detail presentation` |
 
@@ -763,7 +775,6 @@ Keep ADR-029 **Proposed** through 7.5.1. Move to **Accepted** only after all of:
 
 ### Deferred
 
-- Active `SearchScreen` query rerun on enrichment notification (index invalidation is implemented; rerunning the live query is targeted for the next Phase 7.5 presentation/search-integration step, tracked against 7.5.5 in §28)
 - Subtitle indexing — intentionally not added in 7.5.3 rather than assigning it an undefined ranking tier; revisit alongside item-detail subtitle rendering (7.5.4) or search-row presentation (7.5.5)
 - Card grid title overlays (stretch)
 - Enrichment `series` field key + Open Library series mapping

@@ -6,6 +6,13 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ttsplayer/features/music/music_library_service.dart';
 import 'package:ttsplayer/features/music/screens/music_track_detail_screen.dart';
+import 'package:ttsplayer/features/metadata_enrichment/models/enrichment_book_field_keys.dart';
+import 'package:ttsplayer/features/metadata_enrichment/models/enrichment_field_source.dart';
+import 'package:ttsplayer/features/metadata_enrichment/models/enrichment_field_value.dart';
+import 'package:ttsplayer/features/metadata_enrichment/models/enrichment_match_state.dart';
+import 'package:ttsplayer/features/metadata_enrichment/models/metadata_enrichment_record.dart';
+import 'package:ttsplayer/features/metadata_enrichment/presentation/metadata_presentation_service.dart';
+import 'package:ttsplayer/features/metadata_enrichment/services/metadata_enrichment_repository.dart';
 import 'package:ttsplayer/features/search/models/search_filters.dart';
 import 'package:ttsplayer/features/search/search_result_grouper.dart';
 import 'package:ttsplayer/features/search/search_screen.dart';
@@ -58,7 +65,7 @@ MediaItem _item({
   return MediaItem(
     id: id,
     title: title,
-    filePath: filePath ?? r'Y:\Media\' + title + '.mp4',
+    filePath: filePath ?? 'Y:\\Media\\$title.mp4',
   );
 }
 
@@ -167,6 +174,7 @@ Widget _searchHarness({
   CatalogService? catalogService,
   SettingsRepository? settingsRepository,
   SearchService? searchService,
+  MetadataEnrichmentRepository? enrichmentRepository,
   Size viewport = const Size(1100, 800),
   Key? screenKey,
 }) {
@@ -176,7 +184,8 @@ Widget _searchHarness({
     providers: [
       ChangeNotifierProvider(create: (_) => MediaProviderConfigService()),
       ChangeNotifierProvider<SettingsRepository>(
-        create: (_) => settingsRepository ?? (SettingsRepository()..initialize()),
+        create: (_) =>
+            settingsRepository ?? (SettingsRepository()..initialize()),
       ),
       ChangeNotifierProvider(
         create: (_) => LibraryMetadataRepository()..initialize(),
@@ -189,6 +198,13 @@ Widget _searchHarness({
       ),
       Provider(create: (_) => ArtworkService(fileExists: (_) => false)),
       Provider<SearchService>.value(value: search),
+      if (enrichmentRepository != null)
+        ChangeNotifierProvider<MetadataEnrichmentRepository>.value(
+          value: enrichmentRepository,
+        ),
+      Provider<MetadataPresentationService>.value(
+        value: const MetadataPresentationService(),
+      ),
       Provider(create: (_) => MusicLibraryService()),
       ChangeNotifierProvider<CatalogService>.value(value: service),
       ChangeNotifierProvider(
@@ -247,7 +263,8 @@ void main() {
         catalogueFolderContext(catalog, 'item-remote'),
         'Remote Films',
       );
-      expect(catalogueFolderContext(catalog, 'item-adventure'), isNot(contains('Y:')));
+      expect(catalogueFolderContext(catalog, 'item-adventure'),
+          isNot(contains('Y:')));
       expect(
         catalogueFolderContext(catalog, 'item-remote'),
         isNot(contains('https://')),
@@ -265,24 +282,28 @@ void main() {
       expect(find.byType(SearchEmptyState), findsOneWidget);
     });
 
-    testWidgets('2 query with no matches shows no-results state', (tester) async {
+    testWidgets('2 query with no matches shows no-results state',
+        (tester) async {
       final catalog = _searchCatalog();
       await tester.pumpWidget(_searchHarness(catalog: catalog));
       await tester.pumpAndSettle();
 
-      await tester.enterText(find.byKey(const Key('search_query_field')), 'zzzzmissing');
+      await tester.enterText(
+          find.byKey(const Key('search_query_field')), 'zzzzmissing');
       await tester.pumpAndSettle(const Duration(milliseconds: 200));
 
       expect(find.text('No results found'), findsOneWidget);
       expect(find.textContaining('adjust the filters'), findsOneWidget);
     });
 
-    testWidgets('3 clear-query action returns to empty-query state', (tester) async {
+    testWidgets('3 clear-query action returns to empty-query state',
+        (tester) async {
       final catalog = _searchCatalog();
       await tester.pumpWidget(_searchHarness(catalog: catalog));
       await tester.pumpAndSettle();
 
-      await tester.enterText(find.byKey(const Key('search_query_field')), 'adventure');
+      await tester.enterText(
+          find.byKey(const Key('search_query_field')), 'adventure');
       await tester.pumpAndSettle(const Duration(milliseconds: 200));
       expect(find.text('Grand Adventure'), findsOneWidget);
 
@@ -298,7 +319,8 @@ void main() {
       await tester.pumpWidget(_searchHarness(catalog: catalog));
       await tester.pumpAndSettle();
 
-      await tester.enterText(find.byKey(const Key('search_query_field')), 'action');
+      await tester.enterText(
+          find.byKey(const Key('search_query_field')), 'action');
       await tester.pumpAndSettle(const Duration(milliseconds: 200));
 
       expect(find.textContaining('result'), findsOneWidget);
@@ -310,11 +332,13 @@ void main() {
       await tester.pumpWidget(_searchHarness(catalog: catalog));
       await tester.pumpAndSettle();
 
-      await tester.enterText(find.byKey(const Key('search_query_field')), 'adventure');
+      await tester.enterText(
+          find.byKey(const Key('search_query_field')), 'adventure');
       await tester.pumpAndSettle(const Duration(milliseconds: 200));
 
       expect(find.text('Video'), findsWidgets);
-      expect(find.byKey(const Key('search_result_item-adventure')), findsOneWidget);
+      expect(find.byKey(const Key('search_result_item-adventure')),
+          findsOneWidget);
     });
 
     testWidgets('5b audio results show Audio label and artist metadata',
@@ -410,7 +434,8 @@ void main() {
 
       expect(find.byType(MusicTrackDetailScreen), findsOneWidget);
       expect(find.byType(ItemDetailScreen), findsNothing);
-      expect(find.byKey(const Key('music_track_play_audio-nav')), findsOneWidget);
+      expect(
+          find.byKey(const Key('music_track_play_audio-nav')), findsOneWidget);
     });
 
     testWidgets('7 result shows library or containing-folder context',
@@ -419,7 +444,8 @@ void main() {
       await tester.pumpWidget(_searchHarness(catalog: catalog));
       await tester.pumpAndSettle();
 
-      await tester.enterText(find.byKey(const Key('search_query_field')), 'backup');
+      await tester.enterText(
+          find.byKey(const Key('search_query_field')), 'backup');
       await tester.pumpAndSettle(const Duration(milliseconds: 200));
 
       expect(find.text('Archive · Action'), findsOneWidget);
@@ -431,10 +457,12 @@ void main() {
       await tester.pumpWidget(_searchHarness(catalog: catalog));
       await tester.pumpAndSettle();
 
-      await tester.enterText(find.byKey(const Key('search_query_field')), 'adventure');
+      await tester.enterText(
+          find.byKey(const Key('search_query_field')), 'adventure');
       await tester.pumpAndSettle(const Duration(milliseconds: 200));
 
-      await tester.tap(find.byKey(const Key('search_browse_folder_item-adventure')));
+      await tester
+          .tap(find.byKey(const Key('search_browse_folder_item-adventure')));
       await tester.pumpAndSettle();
 
       expect(find.byType(FolderScreen), findsOneWidget);
@@ -445,10 +473,12 @@ void main() {
       await tester.pumpWidget(_searchHarness(catalog: catalog));
       await tester.pumpAndSettle();
 
-      await tester.enterText(find.byKey(const Key('search_query_field')), 'adventure');
+      await tester.enterText(
+          find.byKey(const Key('search_query_field')), 'adventure');
       await tester.pumpAndSettle(const Duration(milliseconds: 200));
 
-      await tester.tap(find.byKey(const Key('search_browse_folder_item-adventure')));
+      await tester
+          .tap(find.byKey(const Key('search_browse_folder_item-adventure')));
       await tester.pumpAndSettle();
 
       expect(find.byType(FolderBreadcrumb), findsOneWidget);
@@ -461,7 +491,8 @@ void main() {
       await tester.pumpWidget(_searchHarness(catalog: catalog));
       await tester.pumpAndSettle();
 
-      await tester.enterText(find.byKey(const Key('search_query_field')), 'adventure');
+      await tester.enterText(
+          find.byKey(const Key('search_query_field')), 'adventure');
       await tester.pumpAndSettle(const Duration(milliseconds: 200));
 
       await tester.tap(find.byKey(const Key('search_open_item-adventure')));
@@ -492,7 +523,8 @@ void main() {
       await tester.pumpWidget(_searchHarness(catalog: catalog));
       await tester.pumpAndSettle();
 
-      await tester.enterText(find.byKey(const Key('search_query_field')), 'AAAA');
+      await tester.enterText(
+          find.byKey(const Key('search_query_field')), 'AAAA');
       await tester.pumpAndSettle(const Duration(milliseconds: 200));
 
       expect(tester.takeException(), isNull);
@@ -505,7 +537,8 @@ void main() {
       await tester.pumpWidget(_searchHarness(catalog: catalog));
       await tester.pumpAndSettle();
 
-      await tester.enterText(find.byKey(const Key('search_query_field')), 'https');
+      await tester.enterText(
+          find.byKey(const Key('search_query_field')), 'https');
       await tester.pumpAndSettle(const Duration(milliseconds: 200));
 
       expect(find.textContaining('https://'), findsNothing);
@@ -519,11 +552,13 @@ void main() {
       await tester.pumpWidget(_searchHarness(catalog: catalog));
       await tester.pumpAndSettle();
 
-      await tester.enterText(find.byKey(const Key('search_query_field')), 'backup');
+      await tester.enterText(
+          find.byKey(const Key('search_query_field')), 'backup');
       await tester.pumpAndSettle(const Duration(milliseconds: 200));
       expect(find.text('Archive · Action'), findsOneWidget);
 
-      await tester.enterText(find.byKey(const Key('search_query_field')), 'adventure');
+      await tester.enterText(
+          find.byKey(const Key('search_query_field')), 'adventure');
       await tester.pumpAndSettle(const Duration(milliseconds: 200));
       expect(find.text('Videos · Action'), findsOneWidget);
     });
@@ -533,7 +568,8 @@ void main() {
       await tester.pumpWidget(_searchHarness(catalog: catalog));
       await tester.pumpAndSettle();
 
-      await tester.enterText(find.byKey(const Key('search_query_field')), 'sample');
+      await tester.enterText(
+          find.byKey(const Key('search_query_field')), 'sample');
       await tester.pumpAndSettle(const Duration(milliseconds: 200));
       expect(find.text('HTTPS Sample'), findsOneWidget);
 
@@ -556,13 +592,16 @@ void main() {
     testWidgets('16 search does not persist temporary state across reopen',
         (tester) async {
       final catalog = _searchCatalog();
-      await tester.pumpWidget(_searchHarness(catalog: catalog, screenKey: const ValueKey('a')));
+      await tester.pumpWidget(
+          _searchHarness(catalog: catalog, screenKey: const ValueKey('a')));
       await tester.pumpAndSettle();
 
-      await tester.enterText(find.byKey(const Key('search_query_field')), 'adventure');
+      await tester.enterText(
+          find.byKey(const Key('search_query_field')), 'adventure');
       await tester.pumpAndSettle(const Duration(milliseconds: 200));
 
-      await tester.pumpWidget(_searchHarness(catalog: catalog, screenKey: const ValueKey('b')));
+      await tester.pumpWidget(
+          _searchHarness(catalog: catalog, screenKey: const ValueKey('b')));
       await tester.pumpAndSettle();
 
       expect(find.text('Search your library'), findsOneWidget);
@@ -577,7 +616,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.enterText(find.byKey(const Key('search_query_field')), 'adventure');
+      await tester.enterText(
+          find.byKey(const Key('search_query_field')), 'adventure');
       await tester.pumpAndSettle(const Duration(milliseconds: 200));
       expect(find.text('Grand Adventure'), findsOneWidget);
 
@@ -616,7 +656,8 @@ void main() {
       await tester.pumpWidget(_searchHarness(catalog: catalog));
       await tester.pumpAndSettle();
 
-      await tester.enterText(find.byKey(const Key('search_query_field')), 'adventure');
+      await tester.enterText(
+          find.byKey(const Key('search_query_field')), 'adventure');
       await tester.testTextInput.receiveAction(TextInputAction.search);
       await tester.pumpAndSettle(const Duration(milliseconds: 200));
 
@@ -628,7 +669,8 @@ void main() {
       await tester.pumpWidget(_searchHarness(catalog: catalog));
       await tester.pumpAndSettle();
 
-      await tester.enterText(find.byKey(const Key('search_query_field')), 'adventure');
+      await tester.enterText(
+          find.byKey(const Key('search_query_field')), 'adventure');
       await tester.pumpAndSettle(const Duration(milliseconds: 200));
 
       await tester.tap(find.byKey(const Key('search_open_item-adventure')));
@@ -644,17 +686,20 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.enterText(find.byKey(const Key('search_query_field')), 'mp4');
+      await tester.enterText(
+          find.byKey(const Key('search_query_field')), 'mp4');
       await tester.pumpAndSettle(const Duration(milliseconds: 200));
 
       expect(tester.takeException(), isNull);
       expect(find.byType(ListView), findsWidgets);
     });
 
-    testWidgets('25 opening search without query does not build index', (tester) async {
+    testWidgets('25 opening search without query does not build index',
+        (tester) async {
       final catalog = _searchCatalog();
       final search = SearchService();
-      await tester.pumpWidget(_searchHarness(catalog: catalog, searchService: search));
+      await tester
+          .pumpWidget(_searchHarness(catalog: catalog, searchService: search));
       await tester.pumpAndSettle();
 
       expect(search.indexBuildCount, 0);
@@ -665,41 +710,50 @@ void main() {
     testWidgets('26 first valid search builds index once', (tester) async {
       final catalog = _searchCatalog();
       final search = SearchService();
-      await tester.pumpWidget(_searchHarness(catalog: catalog, searchService: search));
+      await tester
+          .pumpWidget(_searchHarness(catalog: catalog, searchService: search));
       await tester.pumpAndSettle();
 
-      await tester.enterText(find.byKey(const Key('search_query_field')), 'adventure');
+      await tester.enterText(
+          find.byKey(const Key('search_query_field')), 'adventure');
       await tester.pumpAndSettle(const Duration(milliseconds: 200));
 
       expect(search.indexBuildCount, 1);
       expect(find.text('Grand Adventure'), findsOneWidget);
     });
 
-    testWidgets('27 stale async results are not shown for newer query', (tester) async {
+    testWidgets('27 stale async results are not shown for newer query',
+        (tester) async {
       final catalog = _searchCatalog();
       final search = SearchService();
-      await tester.pumpWidget(_searchHarness(catalog: catalog, searchService: search));
+      await tester
+          .pumpWidget(_searchHarness(catalog: catalog, searchService: search));
       await tester.pumpAndSettle();
 
-      await tester.enterText(find.byKey(const Key('search_query_field')), 'adventure');
+      await tester.enterText(
+          find.byKey(const Key('search_query_field')), 'adventure');
       await tester.pump(const Duration(milliseconds: 50));
-      await tester.enterText(find.byKey(const Key('search_query_field')), 'zzzzmissing');
+      await tester.enterText(
+          find.byKey(const Key('search_query_field')), 'zzzzmissing');
       await tester.pumpAndSettle(const Duration(milliseconds: 200));
 
       expect(find.text('Grand Adventure'), findsNothing);
       expect(find.text('No results found'), findsOneWidget);
     });
 
-    testWidgets('28 disposing screen during search does not throw', (tester) async {
+    testWidgets('28 disposing screen during search does not throw',
+        (tester) async {
       final catalog = _searchCatalog();
       final search = SearchService();
       final screenKey = GlobalKey();
       await tester.pumpWidget(
-        _searchHarness(catalog: catalog, searchService: search, screenKey: screenKey),
+        _searchHarness(
+            catalog: catalog, searchService: search, screenKey: screenKey),
       );
       await tester.pumpAndSettle();
 
-      await tester.enterText(find.byKey(const Key('search_query_field')), 'adventure');
+      await tester.enterText(
+          find.byKey(const Key('search_query_field')), 'adventure');
       await tester.pump(const Duration(milliseconds: 50));
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pumpAndSettle(const Duration(milliseconds: 200));
@@ -726,14 +780,228 @@ void main() {
     test('27 catalogue remains immutable after search presentation helpers',
         () {
       final catalog = _searchCatalog();
-      final before = jsonEncode(catalog.folders.map((f) => f.toJson()).toList());
+      final before =
+          jsonEncode(catalog.folders.map((f) => f.toJson()).toList());
 
       catalogueFolderContext(catalog, 'item-adventure');
       final service = SearchService();
       service.buildIndex(catalog);
-      groupSearchResultsByLibrary(service.search('action', const SearchFilters.empty()));
+      groupSearchResultsByLibrary(
+          service.search('action', const SearchFilters.empty()));
 
-      expect(jsonEncode(catalog.folders.map((f) => f.toJson()).toList()), before);
+      expect(
+          jsonEncode(catalog.folders.map((f) => f.toJson()).toList()), before);
+    });
+  });
+
+  group('SearchScreen enriched presentation and refresh', () {
+    testWidgets('projected book title and secondary metadata stay uncluttered',
+        (tester) async {
+      final catalog = _bookSearchCatalog();
+      final repository = await _enrichmentRepository();
+      await repository.upsert(_bookRecord(fields: {
+        EnrichmentBookFieldKeys.title: _overrideField('Display Override'),
+        EnrichmentBookFieldKeys.authors:
+            _providerField(jsonEncode(['Provider Author'])),
+        EnrichmentBookFieldKeys.publicationYear: _providerField('2025'),
+      }));
+      final search = SearchService(enrichmentRepository: repository);
+
+      await tester.pumpWidget(_searchHarness(
+        catalog: catalog,
+        searchService: search,
+        enrichmentRepository: repository,
+      ));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('search_query_field')),
+        'Local Book',
+      );
+      await tester.pumpAndSettle(const Duration(milliseconds: 200));
+
+      expect(
+        tester
+            .widget<Text>(
+              find.byKey(const Key('search_result_title_book-search')),
+            )
+            .data,
+        'Display Override',
+      );
+      expect(find.text('Provider Author · 2025'), findsOneWidget);
+      expect(find.text('Your override'), findsNothing);
+      expect(find.text('Metadata from Open Library'), findsNothing);
+    });
+
+    testWidgets('excluded provider state retains catalogue row presentation',
+        (tester) async {
+      final catalog = _bookSearchCatalog(author: 'Local Author', year: 1999);
+      final repository = await _enrichmentRepository();
+      await repository.upsert(_bookRecord(
+        matchState: EnrichmentMatchState.ambiguous,
+        fields: {
+          EnrichmentBookFieldKeys.title: _providerField('Hidden Title'),
+          EnrichmentBookFieldKeys.authors:
+              _providerField(jsonEncode(['Hidden Author'])),
+          EnrichmentBookFieldKeys.publicationYear: _providerField('2025'),
+        },
+      ));
+      final search = SearchService(enrichmentRepository: repository);
+
+      await tester.pumpWidget(_searchHarness(
+        catalog: catalog,
+        searchService: search,
+        enrichmentRepository: repository,
+      ));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('search_query_field')),
+        'Local Book',
+      );
+      await tester.pumpAndSettle(const Duration(milliseconds: 200));
+
+      expect(
+        tester
+            .widget<Text>(
+              find.byKey(const Key('search_result_title_book-search')),
+            )
+            .data,
+        'Local Book',
+      );
+      expect(find.text('Local Author · 1999'), findsOneWidget);
+      expect(find.text('Hidden Title'), findsNothing);
+      expect(find.text('Hidden Author'), findsNothing);
+    });
+
+    testWidgets('active query reruns after enrichment upsert and remove',
+        (tester) async {
+      final catalog = _bookSearchCatalog();
+      final repository = await _enrichmentRepository();
+      final search = SearchService(enrichmentRepository: repository);
+
+      await tester.pumpWidget(_searchHarness(
+        catalog: catalog,
+        searchService: search,
+        enrichmentRepository: repository,
+      ));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('search_query_field')),
+        'Local Book',
+      );
+      await tester.pumpAndSettle(const Duration(milliseconds: 200));
+      expect(
+        tester
+            .widget<Text>(
+              find.byKey(const Key('search_result_title_book-search')),
+            )
+            .data,
+        'Local Book',
+      );
+      expect(search.indexBuildCount, 1);
+
+      await repository.upsert(_bookRecord(fields: {
+        EnrichmentBookFieldKeys.title: _overrideField('Live Override'),
+      }));
+      await tester.pumpAndSettle();
+      expect(find.text('Live Override'), findsOneWidget);
+      expect(search.indexBuildCount, 2);
+
+      await repository.remove('book-search');
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<Text>(
+              find.byKey(const Key('search_result_title_book-search')),
+            )
+            .data,
+        'Local Book',
+      );
+      expect(find.text('Live Override'), findsNothing);
+      expect(search.indexBuildCount, 3);
+    });
+
+    testWidgets('active provider-only query gains and loses its result live',
+        (tester) async {
+      final catalog = _bookSearchCatalog();
+      final repository = await _enrichmentRepository();
+      final search = SearchService(enrichmentRepository: repository);
+
+      await tester.pumpWidget(_searchHarness(
+        catalog: catalog,
+        searchService: search,
+        enrichmentRepository: repository,
+      ));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('search_query_field')),
+        'Provider Discovery',
+      );
+      await tester.pumpAndSettle(const Duration(milliseconds: 200));
+      expect(find.text('No results found'), findsOneWidget);
+
+      await repository.upsert(_bookRecord(fields: {
+        EnrichmentBookFieldKeys.title: _providerField('Provider Discovery'),
+      }));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const Key('search_result_title_book-search')),
+        findsOneWidget,
+      );
+
+      await repository.remove('book-search');
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const Key('search_result_title_book-search')),
+        findsNothing,
+      );
+      expect(find.text('No results found'), findsOneWidget);
+    });
+
+    testWidgets('empty query does not rebuild after enrichment notification',
+        (tester) async {
+      final catalog = _bookSearchCatalog();
+      final repository = await _enrichmentRepository();
+      final search = SearchService(enrichmentRepository: repository);
+
+      await tester.pumpWidget(_searchHarness(
+        catalog: catalog,
+        searchService: search,
+        enrichmentRepository: repository,
+      ));
+      await tester.pumpAndSettle();
+      await repository.upsert(_bookRecord(fields: {
+        EnrichmentBookFieldKeys.title: _overrideField('Unused Override'),
+      }));
+      await tester.pumpAndSettle();
+
+      expect(search.indexBuildCount, 0);
+      expect(find.text('Search your library'), findsOneWidget);
+    });
+
+    testWidgets('repository notification after screen disposal is safe',
+        (tester) async {
+      final catalog = _bookSearchCatalog();
+      final repository = await _enrichmentRepository();
+      final search = SearchService(enrichmentRepository: repository);
+
+      await tester.pumpWidget(_searchHarness(
+        catalog: catalog,
+        searchService: search,
+        enrichmentRepository: repository,
+      ));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('search_query_field')),
+        'Local Book',
+      );
+      await tester.pumpAndSettle(const Duration(milliseconds: 200));
+      await tester.pumpWidget(const SizedBox.shrink());
+      await repository.upsert(_bookRecord(fields: {
+        EnrichmentBookFieldKeys.title: _overrideField('Disposed Override'),
+      }));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
     });
   });
 
@@ -751,8 +1019,10 @@ void main() {
       await tester.pumpWidget(
         MultiProvider(
           providers: [
-            ChangeNotifierProvider(create: (_) => SettingsRepository()..initialize()),
-            ChangeNotifierProvider(create: (_) => LibraryMetadataRepository()..initialize()),
+            ChangeNotifierProvider(
+                create: (_) => SettingsRepository()..initialize()),
+            ChangeNotifierProvider(
+                create: (_) => LibraryMetadataRepository()..initialize()),
             ChangeNotifierProvider(create: (_) => ScannerService()),
             ChangeNotifierProvider<CatalogService>.value(
               value: _FakeCatalogService(emptyCatalog),
@@ -793,8 +1063,10 @@ void main() {
       await tester.pumpWidget(
         MultiProvider(
           providers: [
-            ChangeNotifierProvider(create: (_) => SettingsRepository()..initialize()),
-            ChangeNotifierProvider(create: (_) => LibraryMetadataRepository()..initialize()),
+            ChangeNotifierProvider(
+                create: (_) => SettingsRepository()..initialize()),
+            ChangeNotifierProvider(
+                create: (_) => LibraryMetadataRepository()..initialize()),
             ChangeNotifierProvider(create: (_) => ScannerService()),
             ChangeNotifierProvider<CatalogService>.value(
               value: _FakeCatalogService(catalog),
@@ -816,3 +1088,61 @@ void main() {
     });
   });
 }
+
+Catalog _bookSearchCatalog({String? author, int? year}) {
+  return Catalog.fromJson({
+    'generated_at': '2026-08-13T10:00:00+00:00',
+    'total_items': 1,
+    'catalogue': {'id': 'SEARCH-BOOK', 'catalogue_version': 3},
+    'folders': [
+      {
+        'id': 'books',
+        'name': 'Books',
+        'path': r'Y:\Media\Books',
+        'item_count': 1,
+        'items': [
+          {
+            'id': 'book-search',
+            'title': 'Local Book',
+            'file_path': r'Y:\Media\Books\local.epub',
+            'media_kind': 'book',
+            if (author != null) 'author': author,
+            if (year != null) 'year': year,
+          },
+        ],
+        'subfolders': [],
+      },
+    ],
+  });
+}
+
+Future<MetadataEnrichmentRepository> _enrichmentRepository() async {
+  SharedPreferences.setMockInitialValues({});
+  final repository = MetadataEnrichmentRepository();
+  await repository.initialize();
+  return repository;
+}
+
+MetadataEnrichmentRecord _bookRecord({
+  EnrichmentMatchState matchState = EnrichmentMatchState.linkedManual,
+  Map<String, EnrichmentFieldValue> fields = const {},
+}) {
+  return MetadataEnrichmentRecord(
+    itemId: 'book-search',
+    matchState: matchState,
+    providerId: 'open_library',
+    providerRecordId: '/works/OL-SEARCH',
+    fields: fields,
+  );
+}
+
+EnrichmentFieldValue _providerField(String value) => EnrichmentFieldValue(
+      value: value,
+      source: EnrichmentFieldSource.provider,
+      providerId: 'open_library',
+    );
+
+EnrichmentFieldValue _overrideField(String value) => EnrichmentFieldValue(
+      value: value,
+      source: EnrichmentFieldSource.userOverride,
+    );

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../../../features/metadata_enrichment/presentation/metadata_presentation_service.dart';
+import '../../../features/metadata_enrichment/services/metadata_enrichment_repository.dart';
 import '../../../library/folder_display_context.dart';
 import '../../../models/catalog.dart';
 import '../../../theme/app_theme.dart';
@@ -122,12 +125,19 @@ final class _SearchListResult extends _SearchListRow {
     void Function(SearchResult result)? onPlayResult,
   }) {
     final contextLabel = catalogueFolderContext(catalog, result.item.id);
+    final repository = context.watch<MetadataEnrichmentRepository?>();
+    final presentationService = context.read<MetadataPresentationService?>() ??
+        const MetadataPresentationService();
+    final presentation = presentationService.build(
+      item: result.item,
+      record: repository?.getByItemId(result.item.id),
+    );
     final browseFolder = onBrowseFolder;
-    final canBrowse =
-        browseFolder != null && _canBrowseFolder(catalog, result);
+    final canBrowse = browseFolder != null && _canBrowseFolder(catalog, result);
 
     return SearchResultRow(
       result: result,
+      presentation: presentation,
       displayContext: contextLabel,
       onOpen: () => onOpenResult(result),
       onBrowseFolder: canBrowse ? () => browseFolder(result) : null,
