@@ -19,6 +19,7 @@ import 'package:ttsplayer/features/metadata_enrichment/config/metadata_enrichmen
 import 'package:ttsplayer/features/metadata_enrichment/models/book_search_request.dart';
 import 'package:ttsplayer/features/metadata_enrichment/providers/book_metadata_provider.dart';
 import 'package:ttsplayer/features/metadata_enrichment/providers/book_metadata_provider_result.dart';
+import 'package:ttsplayer/features/metadata_enrichment/presentation/metadata_presentation_service.dart';
 import 'package:ttsplayer/features/metadata_enrichment/providers/fake_book_metadata_provider.dart';
 import 'package:ttsplayer/features/metadata_enrichment/services/book_candidate_selection_context.dart';
 import 'package:ttsplayer/features/metadata_enrichment/artwork/fake_metadata_artwork_http_client.dart';
@@ -34,11 +35,8 @@ import 'package:ttsplayer/features/metadata_enrichment/services/book_metadata_re
 import 'package:ttsplayer/features/metadata_enrichment/services/metadata_enrichment_repository.dart';
 import 'package:ttsplayer/features/metadata_enrichment/widgets/book_metadata_enrichment_section.dart';
 import 'package:ttsplayer/models/media_item.dart';
-import 'package:ttsplayer/models/media_item.dart' show MediaItemStatus;
 import 'package:ttsplayer/models/media_kind.dart';
 import 'package:ttsplayer/screens/item_detail_screen.dart';
-import 'package:ttsplayer/services/artwork/artwork_presentation_service.dart';
-import 'package:ttsplayer/services/artwork/artwork_service.dart';
 import 'package:ttsplayer/theme/app_theme.dart';
 
 import 'metadata_enrichment_test_support.dart';
@@ -215,7 +213,8 @@ class CountingTransitionCoordinator extends BookMetadataMatchingCoordinator {
   }
 
   @override
-  Future<BookLinkTransitionResult> resumeMatching({required MediaItem item}) async {
+  Future<BookLinkTransitionResult> resumeMatching(
+      {required MediaItem item}) async {
     resumeInvocationCount++;
     return super.resumeMatching(item: item);
   }
@@ -294,7 +293,8 @@ class DelayedResumeCoordinator extends BookMetadataMatchingCoordinator {
   });
 
   @override
-  Future<BookLinkTransitionResult> resumeMatching({required MediaItem item}) async {
+  Future<BookLinkTransitionResult> resumeMatching(
+      {required MediaItem item}) async {
     await Future<void>.delayed(const Duration(milliseconds: 100));
     return super.resumeMatching(item: item);
   }
@@ -386,6 +386,9 @@ Widget itemDetailEnrichmentHarness({
         ChangeNotifierProvider<MetadataEnrichmentRepository>.value(
           value: repository,
         ),
+        Provider<MetadataPresentationService>.value(
+          value: const MetadataPresentationService(),
+        ),
         Provider<MetadataEnrichmentFeatureConfig>.value(value: config),
         Provider<BookMetadataMatchingCoordinator?>.value(value: coordinator),
         Provider<BookMetadataArtworkCoordinator?>.value(value: null),
@@ -399,7 +402,8 @@ Widget itemDetailEnrichmentHarness({
 }
 
 Future<void> openIsbnDialog(WidgetTester tester) async {
-  await tester.tap(find.byKey(const Key('book_metadata_enrichment_lookup_isbn')));
+  await tester
+      .tap(find.byKey(const Key('book_metadata_enrichment_lookup_isbn')));
   await tester.pumpAndSettle();
 }
 
@@ -411,12 +415,14 @@ Future<void> submitIsbnDialog(
     find.byKey(const Key('book_metadata_enrichment_isbn_field')),
     isbn,
   );
-  await tester.tap(find.byKey(const Key('book_metadata_enrichment_isbn_submit')));
+  await tester
+      .tap(find.byKey(const Key('book_metadata_enrichment_isbn_submit')));
   await tester.pumpAndSettle();
 }
 
 Future<void> cancelIsbnDialog(WidgetTester tester) async {
-  await tester.tap(find.byKey(const Key('book_metadata_enrichment_isbn_cancel')));
+  await tester
+      .tap(find.byKey(const Key('book_metadata_enrichment_isbn_cancel')));
   await tester.pumpAndSettle();
 }
 
@@ -441,7 +447,8 @@ Future<void> tapSearchMetadata(WidgetTester tester) async {
 }
 
 Future<void> tapReviewCandidates(WidgetTester tester) async {
-  await tester.tap(find.byKey(const Key('book_metadata_enrichment_review_candidates')));
+  await tester
+      .tap(find.byKey(const Key('book_metadata_enrichment_review_candidates')));
   await tester.pumpAndSettle();
 }
 
@@ -462,6 +469,7 @@ Future<void> confirmCandidateSelection(WidgetTester tester) async {
 }
 
 Future<void> confirmCriticalOverride(WidgetTester tester) async {
-  await tester.tap(find.byKey(const Key('book_metadata_candidate_critical_confirm')));
+  await tester
+      .tap(find.byKey(const Key('book_metadata_candidate_critical_confirm')));
   await tester.pumpAndSettle();
 }

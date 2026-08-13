@@ -273,7 +273,7 @@ ResolvedMediaArtworkImage → ArtworkImage
 | 7.5.1 Planning | ✅ |
 | 7.5.2 Shared presentation projection | ✅ — `MetadataPresentationService` / `MediaItemPresentation` |
 | 7.5.3 Search index + ranking | ✅ — persisted enrichment indexed and ranked in `SearchService`; `SearchScreen` query rerun still deferred |
-| 7.5.4 Item-detail surfaces | Pending |
+| 7.5.4 Item-detail surfaces | ✅ — live `MediaItemPresentation` consumption, enriched book-details block, collapsible description |
 | 7.5.5 Search result presentation | Pending |
 | 7.5.6 Windows runtime harness | Pending |
 | 7.5.7 Closure | Pending |
@@ -295,6 +295,15 @@ ResolvedMediaArtworkImage → ArtworkImage
 → [Phase 7.5 plan §12](../roadmap/m7-phase-7.5-search-detail-presentation.md#12-search-ranking-rules) for the full ranking table.
 
 ADR-029 remains **Proposed** until search/detail consumers, lifecycle, and Windows runtime pass.
+
+**Phase 7.5.4 delivered:**
+
+- `ItemDetailScreen` watches `MetadataEnrichmentRepository`, resolves by authoritative catalogue item ID, and builds the shared immutable presentation projection.
+- Resolved title/authors/series/year feed the existing hero metadata; subtitle, publishers, ISBNs, capped subjects, and description render in a bounded book-details block with light typed-provenance attribution.
+- Description is detail-only and locally collapsible; missing values omit their rows.
+- Feature-gate state does not hide persisted presentation. Accepted-match gating and override precedence remain owned exclusively by `MetadataPresentationService`.
+- Repository notifications refresh mounted detail presentation. Catalogue-only consumers without enrichment providers retain safe fallback behavior.
+- Artwork, catalogue identity, navigation, playback/read routing, and provider contracts are unchanged.
 
 ---
 

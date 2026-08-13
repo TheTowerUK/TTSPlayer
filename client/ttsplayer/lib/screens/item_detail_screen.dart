@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../features/metadata_enrichment/widgets/book_metadata_enrichment_section.dart';
+import '../features/metadata_enrichment/presentation/media_item_presentation.dart';
+import '../features/metadata_enrichment/presentation/metadata_presentation_field.dart';
+import '../features/metadata_enrichment/presentation/metadata_presentation_service.dart';
+import '../features/metadata_enrichment/presentation/metadata_provider_presentation.dart';
+import '../features/metadata_enrichment/services/metadata_enrichment_repository.dart';
 import '../features/books/reader/book_navigation.dart';
 import '../features/comics/archive/comic_archive_opener.dart';
 import '../features/comics/reader/comic_navigation.dart';
@@ -23,10 +28,18 @@ class ItemDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final repository = context.watch<MetadataEnrichmentRepository?>();
+    final presentationService = context.read<MetadataPresentationService?>() ??
+        const MetadataPresentationService();
+    final presentation = presentationService.build(
+      item: item,
+      record: repository?.getByItemId(item.id),
+    );
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: TtsAppBar(
-        title: item.title,
+        title: presentation.displayTitle,
         extraActions: [
           FavouriteItemToggle(itemId: item.id),
         ],
@@ -36,7 +49,8 @@ class ItemDetailScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _PosterArea(item: item),
-            _MetadataPanel(item: item),
+            _MetadataPanel(item: item, presentation: presentation),
+            _EnrichedBookMetadata(presentation: presentation),
             BookMetadataEnrichmentSection(item: item),
             _PlaySection(item: item),
             _FileInfo(item: item),
@@ -121,12 +135,15 @@ class _StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (label, color) = switch (status) {
-      MediaItemStatus.missing     => ('Missing',     AppColors.statusMissing),
-      MediaItemStatus.unavailable => ('Unavailable', AppColors.statusUnavailable),
-      MediaItemStatus.restricted  => ('Restricted',  AppColors.statusRestricted),
+      MediaItemStatus.missing => ('Missing', AppColors.statusMissing),
+      MediaItemStatus.unavailable => (
+          'Unavailable',
+          AppColors.statusUnavailable
+        ),
+      MediaItemStatus.restricted => ('Restricted', AppColors.statusRestricted),
       MediaItemStatus.unsupported => ('Unsupported', AppColors.statusDefault),
-      MediaItemStatus.skipped     => ('Skipped',     AppColors.statusDefault),
-      _                           => ('Unknown',     AppColors.statusDefault),
+      MediaItemStatus.skipped => ('Skipped', AppColors.statusDefault),
+      _ => ('Unknown', AppColors.statusDefault),
     };
 
     return Container(
@@ -154,22 +171,24 @@ class _StatusBadge extends StatelessWidget {
 
 class _MetadataPanel extends StatelessWidget {
   final MediaItem item;
+  final MediaItemPresentation presentation;
 
-  const _MetadataPanel({required this.item});
+  const _MetadataPanel({required this.item, required this.presentation});
 
   @override
   Widget build(BuildContext context) {
     final chips = <String>[
       MediaKindPresentation.labelFor(item),
       if (item.isBook || item.isComic) ...[
-        if (item.author != null && item.author!.trim().isNotEmpty)
-          item.author!.trim(),
-        if (item.series != null && item.series!.trim().isNotEmpty)
-          item.series!.trim(),
+        ...presentation.displayAuthors,
+        if (presentation.displaySeries != null) presentation.displaySeries!,
         if (item.pageCount != null) '${item.pageCount} pages',
         if (item.isComic) _comicArchiveType(item.extension),
       ],
-      if (item.year != null) '${item.year}',
+      if (item.isBook && presentation.displayPublicationYear != null)
+        presentation.displayPublicationYear!
+      else if (item.year != null)
+        '${item.year}',
       if (item.formattedDuration != null) item.formattedDuration!,
       if (item.isAudio) ...[
         if (item.artist != null && item.artist!.isNotEmpty) item.artist!,
@@ -184,7 +203,8 @@ class _MetadataPanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            item.title,
+            presentation.displayTitle,
+            key: const Key('item_detail_display_title'),
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   color: AppColors.textPrimary,
                   fontWeight: FontWeight.w700,
@@ -212,6 +232,190 @@ class _MetadataPanel extends StatelessWidget {
       'cbr' => 'CBR (unsupported)',
       _ => 'Comic archive',
     };
+  }
+}
+
+class _EnrichedBookMetadata extends StatelessWidget {
+  const _EnrichedBookMetadata({required this.presentation});
+
+  final MediaItemPresentation presentation;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!presentation.item.isBook) return const SizedBox.shrink();
+
+    final subjectsSource = _sourceLabel(
+      presentation.subjectsField.provenance,
+      presentation.subjectsField.providerId,
+    );
+    final hasContent = presentation.subtitleField.hasValue ||
+        presentation.publisherField.hasValue ||
+        presentation.isbnsField.hasValue ||
+        presentation.subjectsField.hasValue ||
+        presentation.descriptionField.hasValue;
+    if (!hasContent) return const SizedBox.shrink();
+
+    return Padding(
+      key: const Key('item_detail_enriched_metadata'),
+      padding: AppSpacing.metadataSection,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Book details', style: AppTypography.sectionLabel),
+          if (presentation.subtitleField.hasValue) ...[
+            const SizedBox(height: AppSpacing.sm),
+            _MetadataValue(
+              valueKey: const Key('item_detail_metadata_subtitle'),
+              label: 'Subtitle',
+              value: presentation.displaySubtitle!,
+              source: _sourceLabel(
+                presentation.subtitleField.provenance,
+                presentation.subtitleField.providerId,
+              ),
+            ),
+          ],
+          if (presentation.publisherField.hasValue) ...[
+            const SizedBox(height: AppSpacing.sm),
+            _MetadataValue(
+              valueKey: const Key('item_detail_metadata_publishers'),
+              label: 'Publisher',
+              value: presentation.displayPublishers.join(', '),
+              source: _sourceLabel(
+                presentation.publisherField.provenance,
+                presentation.publisherField.providerId,
+              ),
+            ),
+          ],
+          if (presentation.isbnsField.hasValue) ...[
+            const SizedBox(height: AppSpacing.sm),
+            _MetadataValue(
+              valueKey: const Key('item_detail_metadata_isbns'),
+              label: 'ISBN',
+              value: presentation.displayIsbns.join(', '),
+              source: _sourceLabel(
+                presentation.isbnsField.provenance,
+                presentation.isbnsField.providerId,
+              ),
+            ),
+          ],
+          if (presentation.subjectsField.hasValue) ...[
+            const SizedBox(height: AppSpacing.sm),
+            const Text('Subjects', style: AppTypography.labelMuted),
+            const SizedBox(height: AppSpacing.xs),
+            Wrap(
+              key: const Key('item_detail_metadata_subjects'),
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.labelGap,
+              children: [
+                for (final subject in presentation.displaySubjects)
+                  _Chip(label: subject),
+              ],
+            ),
+            if (subjectsSource != null) ...[
+              const SizedBox(height: AppSpacing.xs),
+              Text(subjectsSource, style: AppTypography.labelMuted),
+            ],
+          ],
+          if (presentation.descriptionField.hasValue) ...[
+            const SizedBox(height: AppSpacing.sm),
+            _Description(
+              description: presentation.displayDescription!,
+              source: _sourceLabel(
+                presentation.descriptionField.provenance,
+                presentation.descriptionField.providerId,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  static String? _sourceLabel(
+    MetadataPresentationProvenance provenance,
+    String? providerId,
+  ) {
+    return switch (provenance) {
+      MetadataPresentationProvenance.userOverride => 'Your override',
+      MetadataPresentationProvenance.provider =>
+        MetadataProviderPresentation.forProviderId(providerId)
+                .attributionLine ??
+            MetadataProviderPresentation.forProviderId(providerId).displayName,
+      MetadataPresentationProvenance.catalogue ||
+      MetadataPresentationProvenance.absent =>
+        null,
+    };
+  }
+}
+
+class _MetadataValue extends StatelessWidget {
+  const _MetadataValue({
+    required this.valueKey,
+    required this.label,
+    required this.value,
+    this.source,
+  });
+
+  final Key valueKey;
+  final String label;
+  final String value;
+  final String? source;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: AppTypography.labelMuted),
+        const SizedBox(height: AppSpacing.xs),
+        Text(value, key: valueKey, style: AppTypography.cardSubtitle),
+        if (source != null) ...[
+          const SizedBox(height: AppSpacing.xs),
+          Text(source!, style: AppTypography.labelMuted),
+        ],
+      ],
+    );
+  }
+}
+
+class _Description extends StatefulWidget {
+  const _Description({required this.description, this.source});
+
+  final String description;
+  final String? source;
+
+  @override
+  State<_Description> createState() => _DescriptionState();
+}
+
+class _DescriptionState extends State<_Description> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Description', style: AppTypography.labelMuted),
+        const SizedBox(height: AppSpacing.xs),
+        Text(
+          widget.description,
+          key: const Key('item_detail_metadata_description'),
+          style: AppTypography.cardSubtitle,
+          maxLines: _expanded ? null : 4,
+          overflow: _expanded ? TextOverflow.visible : TextOverflow.ellipsis,
+        ),
+        if (widget.source != null) ...[
+          const SizedBox(height: AppSpacing.xs),
+          Text(widget.source!, style: AppTypography.labelMuted),
+        ],
+        TextButton(
+          key: const Key('item_detail_metadata_description_toggle'),
+          onPressed: () => setState(() => _expanded = !_expanded),
+          child: Text(_expanded ? 'Show less' : 'Show more'),
+        ),
+      ],
+    );
   }
 }
 
@@ -304,12 +508,12 @@ class _PlaySection extends StatelessWidget {
               onPressed: () => _openPlayer(context, startPosition: null),
             ),
           ),
-
           if (resume != null) ...[
             const SizedBox(height: AppSpacing.sm),
             Center(
               child: TextButton(
-                onPressed: () => _openPlayer(context, startPosition: Duration.zero),
+                onPressed: () =>
+                    _openPlayer(context, startPosition: Duration.zero),
                 style: TextButton.styleFrom(
                   foregroundColor: AppColors.textLow,
                   padding: AppSpacing.buttonAction,
@@ -546,7 +750,8 @@ class _PlaySection extends StatelessWidget {
               label: Text(
                 'Open $kindLabel',
                 style: const TextStyle(
-                    fontSize: AppTypography.size16, fontWeight: FontWeight.w700),
+                    fontSize: AppTypography.size16,
+                    fontWeight: FontWeight.w700),
               ),
               onPressed: null,
             ),
@@ -581,7 +786,8 @@ class _PlaySection extends StatelessWidget {
               label: Text(
                 _buttonLabel(item.status),
                 style: const TextStyle(
-                    fontSize: AppTypography.size16, fontWeight: FontWeight.w700),
+                    fontSize: AppTypography.size16,
+                    fontWeight: FontWeight.w700),
               ),
               onPressed: null,
             ),
@@ -598,12 +804,12 @@ class _PlaySection extends StatelessWidget {
   }
 
   String _buttonLabel(MediaItemStatus status) => switch (status) {
-        MediaItemStatus.missing     => 'File Missing',
+        MediaItemStatus.missing => 'File Missing',
         MediaItemStatus.unavailable => 'Unavailable',
-        MediaItemStatus.restricted  => 'Restricted',
+        MediaItemStatus.restricted => 'Restricted',
         MediaItemStatus.unsupported => 'Unsupported',
-        MediaItemStatus.skipped     => 'Skipped',
-        _                           => 'Not Available',
+        MediaItemStatus.skipped => 'Skipped',
+        _ => 'Not Available',
       };
 
   String _reasonMessage(MediaItemStatus status) => switch (status) {
@@ -611,10 +817,11 @@ class _PlaySection extends StatelessWidget {
           'This file was not found during the last scan. Rescan to update the catalogue.',
         MediaItemStatus.unavailable =>
           'This file could not be read. Check NAS access and permissions.',
-        MediaItemStatus.restricted  => 'Access to this file is restricted.',
-        MediaItemStatus.unsupported => 'This file type is not supported by the player.',
-        MediaItemStatus.skipped     => 'This file was excluded from the last scan.',
-        _                           => 'This item cannot be played.',
+        MediaItemStatus.restricted => 'Access to this file is restricted.',
+        MediaItemStatus.unsupported =>
+          'This file type is not supported by the player.',
+        MediaItemStatus.skipped => 'This file was excluded from the last scan.',
+        _ => 'This item cannot be played.',
       };
 }
 

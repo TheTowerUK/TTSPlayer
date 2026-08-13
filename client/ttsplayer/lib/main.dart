@@ -181,6 +181,9 @@ Future<void> main() async {
         Provider<ArtworkPresentationService?>.value(
           value: artworkPresentationService,
         ),
+        Provider<MetadataPresentationService>.value(
+          value: metadataPresentationService,
+        ),
         Provider<SearchService>.value(value: searchService),
         Provider<MusicLibraryService>.value(value: musicLibraryService),
         ChangeNotifierProvider<CatalogService>.value(
