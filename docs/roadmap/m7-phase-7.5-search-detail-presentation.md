@@ -1,10 +1,10 @@
 # M7 Phase 7.5 — Metadata-Aware Search and Detail Presentation
 
-**Status:** In progress — Step **7.5.6 complete** (Windows runtime validation); closure pending
-**Step complete:** 7.5.6 — Opt-in Windows search/detail runtime harness (previously: 7.5.5 — search result presentation and refresh lifecycle)
+**Status:** ✅ Complete — Step **7.5.7 closed** (2026-08-14)
+**Step complete:** 7.5.7 — Final closure, documentation reconciliation, and milestone readiness review
 **Prerequisite:** Phase 7.4 complete — [7.4.6 closure](./m7-phase-7.4.6-closure-report.md) · commits `56789e8`, `1fd4c2c`  
 **Branch:** `m7-development`  
-**Related ADRs:** [ADR-029](../architecture/decisions/ADR-029-metadata-precedence-provenance-and-matching.md) (Proposed — Accept only after 7.5 validation; see §29), [ADR-028](../architecture/decisions/ADR-028-external-metadata-enrichment-boundary.md) (Proposed), [ADR-016](../architecture/decisions/ADR-016-search-index-and-large-library-browsing.md) (Accepted), [ADR-025](../architecture/decisions/ADR-025-book-comic-identity-and-metadata-precedence.md) (Accepted)
+**Related ADRs:** [ADR-029](../architecture/decisions/ADR-029-metadata-precedence-provenance-and-matching.md) (Accepted at 7.5 closure; see §29), [ADR-028](../architecture/decisions/ADR-028-external-metadata-enrichment-boundary.md) (Proposed), [ADR-016](../architecture/decisions/ADR-016-search-index-and-large-library-browsing.md) (Accepted), [ADR-025](../architecture/decisions/ADR-025-book-comic-identity-and-metadata-precedence.md) (Accepted)
 
 → [M7 plan](./m7-plan.md) · [Metadata enrichment](../architecture/metadata-enrichment.md) · [v0.8.0-dev](../release/v0.8.0-dev.md)
 
@@ -19,14 +19,14 @@
 | **7.5.3** Search index enrichment and ranking | ✅ Complete — committed (`8601e9b`, `a99643e`) |
 | **7.5.4** Item-detail enriched presentation | ✅ Complete — committed (`74defde`) |
 | **7.5.5** Search-row presentation and active-query refresh | ✅ Complete — committed (`7c1f27e`) |
-| **7.5.6** Windows runtime harness | ✅ Complete — R1–R12 passed |
-| **7.5.7** Closure | Pending |
+| **7.5.6** Windows runtime harness | ✅ Complete — committed (`fcb3a4b`); R1–R12 passed |
+| **7.5.7** Closure | ✅ Complete — [closure report](./m7-phase-7.5-closure-report.md) |
 
 **Review outcome (7.5.1, 2026-08-04):** Architecture approved. Preserved invariants, structured search-field caution, dirty-index lifecycle, and feature-gate readability rule are locked below.
 
-| Check | Value (after 7.5.3) |
+| Check | Closure value |
 |---|---|
-| Branch | `m7-development` (7.5.5 committed; 7.5.6 working tree pending review) |
+| Branch | `m7-development` (7.5.2–7.5.6 committed; closure documentation pending commit) |
 | Planning HEAD | `3ddf00a` — `docs(m7.5): plan metadata-aware search and detail presentation` |
 | Flutter / Dart | 3.44.8 / 3.12.2 |
 | Focused validation (7.5.3) | **68** passed, **0** failed |
@@ -548,7 +548,7 @@ User-override fields always eligible for search append and display regardless of
 1. `SearchService` listens to `MetadataEnrichmentRepository` (composition-root wiring). ✅ Implemented 7.5.3 — `main.dart` passes `metadataEnrichmentRepository` into `SearchService`.
 2. An enrichment notification **marks the index dirty** (coalesce multiple notifications during one operation where practical — e.g. single dirty flag / generation bump, not N immediate rebuilds). ✅ Implemented 7.5.3 — `_onEnrichmentChanged` reuses `invalidateIndex`'s generation bump.
 3. Index rebuild remains **lazy** — do not rebuild the entire index synchronously on every field mutation. ✅ Implemented 7.5.3.
-4. Active `SearchScreen` reruns the current query after invalidation (generation-safe, same as catalogue search ownership). **Not yet implemented** — `SearchScreen` itself is unchanged in 7.5.3; this remains intentionally deferred to the next Phase 7.5 presentation/search-integration step.
+4. Active `SearchScreen` reruns the current query after invalidation (generation-safe, same as catalogue search ownership). ✅ Implemented in 7.5.5 with notification coalescing and mounted/non-empty query guards.
 5. Index build reads enrichment via existing repository contract (local, in-memory after load; no provider I/O). ✅ Implemented 7.5.3 — one `itemId → record` lookup map built per index build, not a per-item repository call.
 6. Catalogue fields stay independently indexed; enrichment classified terms append on rebuild. ✅ Implemented 7.5.3.
 
@@ -698,7 +698,7 @@ Default CI remains skip-when-unset.
 - [ ] Search rows uncluttered (no provenance badges)
 - [ ] Management section still supports ISBN/search/relink/unlink/ignore/resume when gate on + coordinator provided in test harness
 - [ ] Video/music/comic smoke: browse, search, play/open unchanged
-- [ ] Windows release build still succeeds
+- [x] Windows release build succeeds (validated 2026-08-14)
 
 ---
 
@@ -731,7 +731,7 @@ Phase 7.5 is done when:
 | **7.5.4** ✅ | Item-detail enriched surfaces + description collapse + presentation tests | `feat(m7.5): render enriched book fields on item detail` |
 | **7.5.5** ✅ | Search row projected title/secondary line + refresh-on-enrichment | `feat(m7.5): present enrichment overlays in search results` |
 | **7.5.6** ✅ | Windows runtime harness R1–R12 | `test(m7.5): add Windows search/detail enrichment runtime harness` |
-| **7.5.7** | Closure report + tracker/architecture status updates | `docs(m7.5): close metadata-aware search and detail presentation` |
+| **7.5.7** ✅ | Closure report + tracker/architecture status updates | `docs(m7.5): close metadata-aware search and detail presentation` |
 
 Optional stretch (same phase only if ahead of schedule): browse card title overlay via shared projection — separate tiny commit, not required for DoD.
 
@@ -751,7 +751,7 @@ Optional stretch (same phase only if ahead of schedule): browse card title overl
 | F | Deterministic tiered ranking via **structured** enrichment field lists; catalogue title first; ISBN elevated |
 | G | Description detail-only, collapsible; no snippets/indexing |
 | H | Feature gate stops **provider operations** only; persisted presentation + overrides remain readable |
-| I | Enrichment notify → mark search index dirty → lazy rebuild; coalesce bursts; active search reruns query — **dirty-mark/lazy-rebuild half implemented in 7.5.3; active-search-reruns-query half intentionally deferred to the next presentation/search-integration step** |
+| I | Enrichment notify → mark search index dirty → lazy rebuild; coalesce bursts; active search reruns query — ✅ completed across 7.5.3 and 7.5.5 |
 
 ### Invariants to preserve exactly through implementation
 
@@ -759,7 +759,7 @@ Optional stretch (same phase only if ahead of schedule): browse card title overl
 2. Enrichment terms append to the search document — never replace catalogue terms. — ✅ held in 7.5.3
 3. Overrides remain visible even when provider data is excluded. — ✅ held (inherited from 7.5.2 projection eligibility rules, consumed unchanged by 7.5.3 search)
 4. Provider text is limited to accepted linked states. — ✅ held (same inheritance)
-5. Search results remain uncluttered (no provenance/match-state controls on rows). — ✅ held; no search-row UI changed in 7.5.3
+5. Search results remain uncluttered (no provenance/match-state controls on rows). — ✅ held through the 7.5.5 projected search-row presentation
 6. Description remains detail-only (not indexed). — ✅ held; subtitle is likewise not indexed in 7.5.3 (see Deferred)
 
 ### ADR-029 Accept gate
@@ -786,7 +786,7 @@ Keep ADR-029 **Proposed** through 7.5.1. Move to **Accepted** only after all of:
 
 ### Deferred
 
-- Subtitle indexing — intentionally not added in 7.5.3 rather than assigning it an undefined ranking tier; revisit alongside item-detail subtitle rendering (7.5.4) or search-row presentation (7.5.5)
+- Subtitle indexing — intentionally not added; define an explicit ranking tier before any future implementation
 - Card grid title overlays (stretch)
 - Enrichment `series` field key + Open Library series mapping
 - Production provider/coordinator wiring in `main.dart`
@@ -795,7 +795,6 @@ Keep ADR-029 **Proposed** through 7.5.1. Move to **Accepted** only after all of:
 - Video/music/comic enrichment presentation
 - User lock editor UX
 - Sidecar/embedded text layers beyond catalogue
-- ADR-029 Accept (after §29 Accept gate)
 
 ### Known limitations
 

@@ -1,6 +1,6 @@
 # M7 — Metadata Enrichment and Library Experience
 
-**Status:** 🟡 **In progress** — Phase 7.4 complete; Phase 7.5.6 Windows runtime validation complete
+**Status:** 🟡 **In progress** — Phases 7.4 and 7.5 complete
 **Branch:** `m7-development`
 **Development version:** `v0.8.0-dev` (not bumped in pubspec during planning)
 **Baseline:** M6 — tags `v0.7.0` / `m6-complete` (2026-07-29) — commit `356a5e7`
@@ -460,7 +460,7 @@ Music is the second candidate; video and comics deferred until matching UX and a
 | **7.2** | Provider abstraction + **books** vertical slice (Open Library) | ✅ Complete |
 | **7.3** | Matching, confidence scoring, manual correction, ignore/stale | ✅ Complete — see [m7-phase-7.3-plan.md](./m7-phase-7.3-plan.md) |
 | **7.4** | Artwork enrichment, download cache, precedence integration | ✅ Complete — see [m7-phase-7.4-plan.md](./m7-phase-7.4-plan.md) · [7.4.6 closure](./m7-phase-7.4.6-closure-report.md) |
-| **7.5** | Search enrichment terms, filtered browsing, enriched detail surfaces | 🟡 In progress — 7.5.2–7.5.6 implementation/runtime ✅; closure pending; see [m7-phase-7.5-search-detail-presentation.md](./m7-phase-7.5-search-detail-presentation.md) |
+| **7.5** | Search enrichment terms, filtered browsing, enriched detail surfaces | ✅ Complete — [plan](./m7-phase-7.5-search-detail-presentation.md) · [closure](./m7-phase-7.5-closure-report.md) |
 | **7.6** | UX/workflow refinements ([post-M6 tracker](./post-milestone-ux-workflow-review.md)) | Planned |
 | **7.7** | Privacy, diagnostics, performance, resilience, optional backend assist design | Planned |
 | **7.8** | Windows runtime validation and milestone closure | Planned |
@@ -548,9 +548,9 @@ Later gates do **not** reopen Phase 7.2:
 
 **Closure:** [m7-phase-7.4-plan.md](./m7-phase-7.4-plan.md) · [7.4.6 closure](./m7-phase-7.4.6-closure-report.md)
 
-### Phase 7.5 — Metadata-Aware Search and Detail Presentation 🟡
+### Phase 7.5 — Metadata-Aware Search and Detail Presentation ✅
 
-**Status:** In progress — Steps 7.5.2–7.5.6 complete; closure pending
+**Status:** Complete (2026-08-14) — [closure report](./m7-phase-7.5-closure-report.md)
 **Plan:** [m7-phase-7.5-search-detail-presentation.md](./m7-phase-7.5-search-detail-presentation.md)
 
 **Objective:** Project persisted enrichment into local search matching and item-detail presentation via a single `MetadataPresentationService`, without provider calls on ordinary read paths.

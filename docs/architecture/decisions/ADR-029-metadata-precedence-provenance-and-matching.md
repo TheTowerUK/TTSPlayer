@@ -1,7 +1,8 @@
 # ADR-029: Metadata Precedence, Provenance, and Matching
 
-**Status:** Proposed  
+**Status:** Accepted
 **Date:** 2026-07-29  
+**Accepted:** 2026-08-14 (M7 Phase 7.5 closure)
 **Milestone:** M7 Phase 7.0  
 **Authors:** M7 planning
 

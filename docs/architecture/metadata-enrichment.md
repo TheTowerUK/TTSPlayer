@@ -1,8 +1,8 @@
 # Metadata Enrichment Architecture
 
-**Status:** Planning (M7 Phase 7.0)
+**Status:** Implemented through M7 Phase 7.5
 **Milestone:** M7 — Metadata Enrichment and Library Experience
-**Related ADRs:** [ADR-028](./decisions/ADR-028-external-metadata-enrichment-boundary.md) (Proposed), [ADR-029](./decisions/ADR-029-metadata-precedence-provenance-and-matching.md) (Proposed)
+**Related ADRs:** [ADR-028](./decisions/ADR-028-external-metadata-enrichment-boundary.md) (Proposed), [ADR-029](./decisions/ADR-029-metadata-precedence-provenance-and-matching.md) (Accepted)
 
 → [M7 plan](../roadmap/m7-plan.md) · [Phase 7.1 closure](../roadmap/m7-phase-7.1-closure-report.md) · [Books provider evaluation](./books-metadata-provider-evaluation.md)
 → [Books & comics](./books-comics.md) · [Music](./music.md)
@@ -276,7 +276,7 @@ ResolvedMediaArtworkImage → ArtworkImage
 | 7.5.4 Item-detail surfaces | ✅ — live `MediaItemPresentation` consumption, enriched book-details block, collapsible description |
 | 7.5.5 Search result presentation | ✅ — resolved book row title/secondary metadata + active-query refresh |
 | 7.5.6 Windows runtime harness | ✅ — opt-in R1–R12 matrix passed on Windows |
-| 7.5.7 Closure | Pending |
+| 7.5.7 Closure | ✅ — [closure report](../roadmap/m7-phase-7.5-closure-report.md) |
 
 **Phase 7.5.3 delivered:**
 
