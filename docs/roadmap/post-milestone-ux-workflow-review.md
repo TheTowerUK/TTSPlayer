@@ -1,6 +1,6 @@
 # Post-Milestone UX and Workflow Review
 
-**Status:** Tracked — not blocking M6 release or core milestone closure  
+**Status:** In implementation — M7 Phase 7.6
 **Recorded:** 2026-07-29  
 **Review timing:** After core milestone phases are complete; before or during post-release polish  
 **Classification:** UX and workflow refinements — **not** implementation blockers
@@ -19,9 +19,9 @@ Capture cross-cutting UX and workflow observations identified during M6 developm
 
 | # | Area | Status | Priority |
 |---|---|---|---|
-| 1 | [Continue Watching image presentation](#1-continue-watching-image-presentation) | Open | Post-release |
-| 2 | [Literature folder rescan option](#2-literature-folder-rescan-option) | Open | Post-release |
-| 3 | [Item opening and playback workflow](#3-item-opening-and-playback-workflow) | Open | Post-release |
+| 1 | [Continue Watching image presentation](#1-continue-watching-image-presentation) | Planned — M7.6.2 | M7.6 |
+| 2 | [Literature folder rescan option](#2-literature-folder-rescan-option) | Partial; hardening planned — M7.6.3 | M7.6 |
+| 3 | [Item opening and playback workflow](#3-item-opening-and-playback-workflow) | Planned — M7.6.4 | M7.6 |
 
 ---
 
@@ -124,3 +124,5 @@ Single-action items open or play directly when selected, reducing unnecessary na
 | Direct open/play vs detail screen | **M7.6** | Navigation policy; orthogonal to metadata enrichment |
 
 See [m7-plan.md § Post-M6 UX tracker disposition](./m7-plan.md#post-m6-ux-tracker-disposition).
+
+The approved implementation sequence and locked interaction policy are recorded in the [Phase 7.6 plan](./m7-phase-7.6-ux-workflow-plan.md).
