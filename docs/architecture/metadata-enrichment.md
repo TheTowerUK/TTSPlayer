@@ -275,7 +275,7 @@ ResolvedMediaArtworkImage → ArtworkImage
 | 7.5.3 Search index + ranking | ✅ — persisted enrichment indexed and ranked in `SearchService`; `SearchScreen` query rerun still deferred |
 | 7.5.4 Item-detail surfaces | ✅ — live `MediaItemPresentation` consumption, enriched book-details block, collapsible description |
 | 7.5.5 Search result presentation | ✅ — resolved book row title/secondary metadata + active-query refresh |
-| 7.5.6 Windows runtime harness | Pending |
+| 7.5.6 Windows runtime harness | ✅ — opt-in R1–R12 matrix passed on Windows |
 | 7.5.7 Closure | Pending |
 
 **Phase 7.5.3 delivered:**
@@ -311,6 +311,13 @@ ADR-029 remains **Proposed** until search/detail consumers, lifecycle, and Windo
 - `SearchScreen` listens to the optional enrichment repository and coalesces notifications into a rerun only when a non-empty query is mounted.
 - The existing `SearchService` listener invalidates the index first; the screen rerun then performs the normal lazy generation-safe rebuild. Provider-only result membership therefore updates without changing ranking rules.
 - Empty-query laziness, disposal safety, catalogue-only fallback, live catalogue navigation identity, artwork resolution, filters, grouping, and non-book presentation are preserved.
+
+**Phase 7.5.6 validated:**
+
+- The opt-in `phase75-runtime` Windows harness covers the complete R1–R12 search/detail matrix using synthetic fixtures and persisted local state.
+- Runtime validation confirms ranking, transition-driven keyword replacement/removal, catalogue pruning, restart persistence, feature-gate-independent presentation, non-book isolation, and the unchanged artwork resolver widget path.
+- Scripted provider counters remain zero on ordinary search/detail paths; the harness performs no external HTTP calls.
+- Default CI remains skip-when-unset.
 
 ---
 

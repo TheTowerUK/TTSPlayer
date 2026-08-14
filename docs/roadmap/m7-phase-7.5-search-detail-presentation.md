@@ -1,7 +1,7 @@
 # M7 Phase 7.5 — Metadata-Aware Search and Detail Presentation
 
-**Status:** In progress — Step **7.5.5 complete** (search-row presentation and live query refresh); Windows harness pending
-**Step complete:** 7.5.5 — Search result presentation and refresh lifecycle (previously: 7.5.4 — item-detail enriched metadata surfaces)
+**Status:** In progress — Step **7.5.6 complete** (Windows runtime validation); closure pending
+**Step complete:** 7.5.6 — Opt-in Windows search/detail runtime harness (previously: 7.5.5 — search result presentation and refresh lifecycle)
 **Prerequisite:** Phase 7.4 complete — [7.4.6 closure](./m7-phase-7.4.6-closure-report.md) · commits `56789e8`, `1fd4c2c`  
 **Branch:** `m7-development`  
 **Related ADRs:** [ADR-029](../architecture/decisions/ADR-029-metadata-precedence-provenance-and-matching.md) (Proposed — Accept only after 7.5 validation; see §29), [ADR-028](../architecture/decisions/ADR-028-external-metadata-enrichment-boundary.md) (Proposed), [ADR-016](../architecture/decisions/ADR-016-search-index-and-large-library-browsing.md) (Accepted), [ADR-025](../architecture/decisions/ADR-025-book-comic-identity-and-metadata-precedence.md) (Accepted)
@@ -18,19 +18,21 @@
 | **7.5.2** Presentation projection | ✅ Complete — committed (`230c6c5`, `bc32e0c`) |
 | **7.5.3** Search index enrichment and ranking | ✅ Complete — committed (`8601e9b`, `a99643e`) |
 | **7.5.4** Item-detail enriched presentation | ✅ Complete — committed (`74defde`) |
-| **7.5.5** Search-row presentation and active-query refresh | ✅ Complete — implementation validated |
-| **7.5.6–7.5.7** Windows harness / closure | Pending |
+| **7.5.5** Search-row presentation and active-query refresh | ✅ Complete — committed (`7c1f27e`) |
+| **7.5.6** Windows runtime harness | ✅ Complete — R1–R12 passed |
+| **7.5.7** Closure | Pending |
 
 **Review outcome (7.5.1, 2026-08-04):** Architecture approved. Preserved invariants, structured search-field caution, dirty-index lifecycle, and feature-gate readability rule are locked below.
 
 | Check | Value (after 7.5.3) |
 |---|---|
-| Branch | `m7-development` (7.5.4 committed; 7.5.5 working tree pending review) |
+| Branch | `m7-development` (7.5.5 committed; 7.5.6 working tree pending review) |
 | Planning HEAD | `3ddf00a` — `docs(m7.5): plan metadata-aware search and detail presentation` |
 | Flutter / Dart | 3.44.8 / 3.12.2 |
 | Focused validation (7.5.3) | **68** passed, **0** failed |
-| Full regression | **1836** passed, **20** skipped, **0** failed (+6 vs 7.5.4 baseline of 1830/20/0) |
-| Focused `flutter analyze` | Phase 7.5.5 changed Dart files: **no issues found** |
+| Full regression | **1836** passed, **21** skipped, **0** failed (new runtime harness skips by default) |
+| Phase 7.5.6 gated Windows runtime | **12** passed, **0** failed — R1–R12 |
+| Focused `flutter analyze` | Phase 7.5.6 runtime file: **no issues found** |
 | `git diff --check` | Clean |
 | UI / search behaviour | Item detail and search rows render resolved metadata; mounted active queries rerun after enrichment changes |
 | ADR-029 | Remains **Proposed** |
@@ -96,6 +98,15 @@
 - Search result identity, live catalogue re-resolution, deterministic ranking weights, zero-dependency `SearchService()`, filters, grouping, navigation, and artwork behavior remain unchanged.
 
 **Not in 7.5.5:** subtitle indexing/ranking, schema/provider contract changes, ranking-weight changes, Windows runtime harness, production provider activation, ADR-029 Accept.
+
+### Step 7.5.6 delivery
+
+- Added `test/phase_75_search_detail_windows_runtime_test.dart`, tagged `phase75-runtime` and gated by `PHASE_75_RUNTIME=1` on Windows.
+- Automated the locked R1–R12 matrix: catalogue fallback, ISBN search, ranking order, enriched detail/description, unlink/ignore/resume/relink lifecycle, catalogue pruning, zero provider calls, artwork path preservation, non-book isolation, and restart persistence.
+- The harness reuses synthetic Phase 7.3.6 fixtures and the real repository, transition, projection, search, row, detail, and artwork presentation paths. It performs no external HTTP calls and does not activate production providers.
+- Default CI executes one skipped sentinel when the gate is unset; the normal suite remains green.
+
+**Not in 7.5.6:** production provider activation, schema/provider/ranking changes, manual external-network testing, ADR-029 acceptance, and Phase 7.5 closure documentation.
 
 ---
 
@@ -719,7 +730,7 @@ Phase 7.5 is done when:
 | **7.5.3** ✅ | Search blob append, ranking tiers, enrichment invalidation, search unit/lifecycle tests | `feat(m7.5): index persisted enrichment terms for local search` (+ docs commit) |
 | **7.5.4** ✅ | Item-detail enriched surfaces + description collapse + presentation tests | `feat(m7.5): render enriched book fields on item detail` |
 | **7.5.5** ✅ | Search row projected title/secondary line + refresh-on-enrichment | `feat(m7.5): present enrichment overlays in search results` |
-| **7.5.6** | Windows runtime harness R1–R12 | `test(m7.5): add Windows search/detail enrichment runtime harness` |
+| **7.5.6** ✅ | Windows runtime harness R1–R12 | `test(m7.5): add Windows search/detail enrichment runtime harness` |
 | **7.5.7** | Closure report + tracker/architecture status updates | `docs(m7.5): close metadata-aware search and detail presentation` |
 
 Optional stretch (same phase only if ahead of schedule): browse card title overlay via shared projection — separate tiny commit, not required for DoD.

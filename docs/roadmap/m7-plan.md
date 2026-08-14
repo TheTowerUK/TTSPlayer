@@ -1,6 +1,6 @@
 # M7 — Metadata Enrichment and Library Experience
 
-**Status:** 🟡 **In progress** — Phase 7.4 complete; Phase 7.5.5 search presentation and refresh complete
+**Status:** 🟡 **In progress** — Phase 7.4 complete; Phase 7.5.6 Windows runtime validation complete
 **Branch:** `m7-development`
 **Development version:** `v0.8.0-dev` (not bumped in pubspec during planning)
 **Baseline:** M6 — tags `v0.7.0` / `m6-complete` (2026-07-29) — commit `356a5e7`
@@ -460,7 +460,7 @@ Music is the second candidate; video and comics deferred until matching UX and a
 | **7.2** | Provider abstraction + **books** vertical slice (Open Library) | ✅ Complete |
 | **7.3** | Matching, confidence scoring, manual correction, ignore/stale | ✅ Complete — see [m7-phase-7.3-plan.md](./m7-phase-7.3-plan.md) |
 | **7.4** | Artwork enrichment, download cache, precedence integration | ✅ Complete — see [m7-phase-7.4-plan.md](./m7-phase-7.4-plan.md) · [7.4.6 closure](./m7-phase-7.4.6-closure-report.md) |
-| **7.5** | Search enrichment terms, filtered browsing, enriched detail surfaces | 🟡 In progress — 7.5.2–7.5.5 implementation ✅; Windows harness and closure pending; see [m7-phase-7.5-search-detail-presentation.md](./m7-phase-7.5-search-detail-presentation.md) |
+| **7.5** | Search enrichment terms, filtered browsing, enriched detail surfaces | 🟡 In progress — 7.5.2–7.5.6 implementation/runtime ✅; closure pending; see [m7-phase-7.5-search-detail-presentation.md](./m7-phase-7.5-search-detail-presentation.md) |
 | **7.6** | UX/workflow refinements ([post-M6 tracker](./post-milestone-ux-workflow-review.md)) | Planned |
 | **7.7** | Privacy, diagnostics, performance, resilience, optional backend assist design | Planned |
 | **7.8** | Windows runtime validation and milestone closure | Planned |
@@ -550,7 +550,7 @@ Later gates do **not** reopen Phase 7.2:
 
 ### Phase 7.5 — Metadata-Aware Search and Detail Presentation 🟡
 
-**Status:** In progress — Steps 7.5.2–7.5.5 complete; Windows harness and closure pending
+**Status:** In progress — Steps 7.5.2–7.5.6 complete; closure pending
 **Plan:** [m7-phase-7.5-search-detail-presentation.md](./m7-phase-7.5-search-detail-presentation.md)
 
 **Objective:** Project persisted enrichment into local search matching and item-detail presentation via a single `MetadataPresentationService`, without provider calls on ordinary read paths.
@@ -562,6 +562,8 @@ Later gates do **not** reopen Phase 7.2:
 **7.5.4 delivered:** `ItemDetailScreen` consumes the shared projection from a live enrichment-repository watch. Books show resolved title/authors/series/year plus a bounded subtitle/publisher/ISBN/subjects/description block with light attribution and collapsible description; empty fields are omitted. Persisted accepted metadata remains visible with the feature gate off, excluded match states hide provider text, overrides remain visible, and repository mutations refresh the mounted detail. Catalogue identity, routing, play/read behavior, artwork resolution, page count, extension, status, and file information remain unchanged.
 
 **7.5.5 delivered:** Search rows consume the shared projection for resolved book title and author/series/year without provenance clutter. `SearchScreen` listens to persisted enrichment changes, coalesces notifications, and reruns only a mounted non-empty active query through the existing generation-safe search path. Provider-only queries gain/lose results live after upsert/remove; empty queries remain lazy and disposal removes listeners. Search identity, ranking weights, filters, navigation, artwork, and zero-dependency compatibility remain unchanged.
+
+**7.5.6 delivered:** A separate opt-in Windows harness (`PHASE_75_RUNTIME=1`, tag `phase75-runtime`) automates R1–R12 across catalogue fallback, persisted ISBN search, ranking, enriched detail, transition lifecycle, pruning, zero-provider-call rendering, artwork path preservation, non-book isolation, and restart persistence. All 12 gated scenarios pass; default CI skips the harness when unset.
 
 **Out of scope for 7.5:** production provider wiring, automatic enrichment, catalogue schema changes, description indexing, new browse facets.
 
