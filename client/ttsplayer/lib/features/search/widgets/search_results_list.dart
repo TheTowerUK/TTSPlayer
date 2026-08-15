@@ -18,6 +18,7 @@ class SearchResultsList extends StatelessWidget {
     required this.catalog,
     required this.results,
     required this.onOpenResult,
+    this.onDetailsResult,
     required this.onBrowseFolder,
     this.onPlayResult,
   });
@@ -25,6 +26,7 @@ class SearchResultsList extends StatelessWidget {
   final Catalog catalog;
   final List<SearchResult> results;
   final void Function(SearchResult result) onOpenResult;
+  final void Function(SearchResult result)? onDetailsResult;
   final void Function(SearchResult result)? onBrowseFolder;
   final void Function(SearchResult result)? onPlayResult;
 
@@ -49,6 +51,7 @@ class SearchResultsList extends StatelessWidget {
         context,
         catalog: catalog,
         onOpenResult: onOpenResult,
+        onDetailsResult: onDetailsResult,
         onBrowseFolder: onBrowseFolder,
         onPlayResult: onPlayResult,
       ),
@@ -79,6 +82,7 @@ sealed class _SearchListRow {
     BuildContext context, {
     required Catalog catalog,
     required void Function(SearchResult result) onOpenResult,
+    void Function(SearchResult result)? onDetailsResult,
     required void Function(SearchResult result)? onBrowseFolder,
     void Function(SearchResult result)? onPlayResult,
   });
@@ -94,6 +98,7 @@ final class _SearchListHeader extends _SearchListRow {
     BuildContext context, {
     required Catalog catalog,
     required void Function(SearchResult result) onOpenResult,
+    void Function(SearchResult result)? onDetailsResult,
     required void Function(SearchResult result)? onBrowseFolder,
     void Function(SearchResult result)? onPlayResult,
   }) {
@@ -121,6 +126,7 @@ final class _SearchListResult extends _SearchListRow {
     BuildContext context, {
     required Catalog catalog,
     required void Function(SearchResult result) onOpenResult,
+    void Function(SearchResult result)? onDetailsResult,
     required void Function(SearchResult result)? onBrowseFolder,
     void Function(SearchResult result)? onPlayResult,
   }) {
@@ -140,6 +146,7 @@ final class _SearchListResult extends _SearchListRow {
       presentation: presentation,
       displayContext: contextLabel,
       onOpen: () => onOpenResult(result),
+      onDetails: onDetailsResult == null ? null : () => onDetailsResult(result),
       onBrowseFolder: canBrowse ? () => browseFolder(result) : null,
       onPlay: _playCallback(onPlayResult),
     );

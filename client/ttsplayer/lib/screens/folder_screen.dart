@@ -10,6 +10,7 @@ import '../models/library_sort_mode.dart';
 import '../models/media_folder.dart';
 import '../models/media_item.dart';
 import '../navigation/folder_navigation.dart';
+import '../navigation/media_item_navigation.dart';
 import '../services/catalog_service.dart';
 import '../services/library/library_metadata_repository.dart';
 import '../services/scanner_service.dart';
@@ -24,7 +25,6 @@ import '../widgets/scan_progress_dialog.dart';
 import '../widgets/tts_app_bar.dart';
 import '../widgets/tts_folder_card.dart';
 import '../widgets/tts_media_card.dart';
-import 'item_detail_screen.dart';
 
 /// Browses a folder by catalogue identity — resolved from live [CatalogService].
 class FolderScreen extends StatelessWidget {
@@ -441,8 +441,7 @@ class _FolderContent extends StatelessWidget {
                     FolderPresentationConfig.addAutomaticKeepAlives,
                 addRepaintBoundaries:
                     FolderPresentationConfig.addRepaintBoundaries,
-                addSemanticIndexes:
-                    FolderPresentationConfig.addSemanticIndexes,
+                addSemanticIndexes: FolderPresentationConfig.addSemanticIndexes,
               ),
               gridDelegate: FolderPresentationConfig.subfolderGridDelegate,
             ),
@@ -451,8 +450,8 @@ class _FolderContent extends StatelessWidget {
         ],
         if (view.items.isNotEmpty) ...[
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.section),
+            padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md,
+                AppSpacing.lg, AppSpacing.section),
             sliver: SliverGrid(
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
@@ -467,7 +466,8 @@ class _FolderContent extends StatelessWidget {
                         itemId: item.id,
                         compact: true,
                       ),
-                      onTap: () => _openDetail(context, item),
+                      onTap: () => _activateItem(context, item),
+                      onDetails: () => openMediaItemDetails(context, item),
                     ),
                   );
                 },
@@ -476,8 +476,7 @@ class _FolderContent extends StatelessWidget {
                     FolderPresentationConfig.addAutomaticKeepAlives,
                 addRepaintBoundaries:
                     FolderPresentationConfig.addRepaintBoundaries,
-                addSemanticIndexes:
-                    FolderPresentationConfig.addSemanticIndexes,
+                addSemanticIndexes: FolderPresentationConfig.addSemanticIndexes,
               ),
               gridDelegate: FolderPresentationConfig.mediaGridDelegate,
             ),
@@ -487,11 +486,8 @@ class _FolderContent extends StatelessWidget {
     );
   }
 
-  void _openDetail(BuildContext context, MediaItem item) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => ItemDetailScreen(item: item)),
-    );
+  void _activateItem(BuildContext context, MediaItem item) {
+    activateMediaItem(context, item);
   }
 }
 

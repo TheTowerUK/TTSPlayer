@@ -25,7 +25,8 @@ void main() {
         width: width,
         maxHeight: height,
       );
-      expect(artH, lessThanOrEqualTo(height * CardLayout.artworkMaxHeightFraction));
+      expect(artH,
+          lessThanOrEqualTo(height * CardLayout.artworkMaxHeightFraction));
       expect(artH + 96, lessThanOrEqualTo(height));
     });
 
@@ -122,6 +123,35 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('media Details action does not trigger primary activation',
+        (tester) async {
+      var primaryCount = 0;
+      var detailsCount = 0;
+      final item = _item('Action Isolation');
+
+      await tester.pumpWidget(
+        _wrap(
+          artworkService,
+          SizedBox(
+            width: 280,
+            height: 389,
+            child: TtsMediaCard(
+              item: item,
+              onTap: () => primaryCount++,
+              onDetails: () => detailsCount++,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(Key('media_details_${item.id}')));
+      await tester.pump();
+
+      expect(detailsCount, 1);
+      expect(primaryCount, 0);
     });
   });
 }

@@ -6,9 +6,8 @@ import 'package:provider/provider.dart';
 
 import '../../navigation/folder_navigation.dart';
 import '../../models/catalog.dart';
-import '../../screens/item_detail_screen.dart';
+import '../../navigation/media_item_navigation.dart';
 import '../music/music_navigation.dart';
-import '../music/screens/music_track_detail_screen.dart';
 import '../metadata_enrichment/services/metadata_enrichment_repository.dart';
 import '../../services/catalog_service.dart';
 import '../../theme/app_theme.dart';
@@ -214,17 +213,28 @@ class _SearchScreenState extends State<SearchScreen> {
       return;
     }
 
-    Navigator.push<void>(
-      context,
-      MaterialPageRoute<void>(
-        builder: (_) {
-          if (item.isAudio) {
-            return MusicTrackDetailScreen(trackId: item.id);
-          }
-          return ItemDetailScreen(item: item);
-        },
-      ),
-    );
+    activateMediaItem(context, item);
+  }
+
+  void _openResultDetails(SearchResult result) {
+    final catalog = context.read<CatalogService>().catalog;
+    if (catalog == null) return;
+    final item = catalog.findItemById(result.item.id);
+    if (item == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('This item is no longer in the catalogue.'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+      _runSearchNow();
+      return;
+    }
+    if (item.isAudio) {
+      openMusicTrackDetailScreen(context, trackId: item.id);
+      return;
+    }
+    openMediaItemDetails(context, item);
   }
 
   void _browseFolder(SearchResult result) {
@@ -437,6 +447,7 @@ class _SearchScreenState extends State<SearchScreen> {
       catalog: catalog,
       results: _results,
       onOpenResult: _openResult,
+      onDetailsResult: _openResultDetails,
       onBrowseFolder: _browseFolder,
       onPlayResult: _playAudioResult,
     );

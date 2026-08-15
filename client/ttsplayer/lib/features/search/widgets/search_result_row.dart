@@ -15,6 +15,7 @@ class SearchResultRow extends StatelessWidget {
   final MediaItemPresentation? presentation;
   final String displayContext;
   final VoidCallback onOpen;
+  final VoidCallback? onDetails;
   final VoidCallback? onBrowseFolder;
   final VoidCallback? onPlay;
 
@@ -24,6 +25,7 @@ class SearchResultRow extends StatelessWidget {
     this.presentation,
     required this.displayContext,
     required this.onOpen,
+    this.onDetails,
     this.onBrowseFolder,
     this.onPlay,
   });
@@ -143,7 +145,7 @@ class SearchResultRow extends StatelessWidget {
                       tooltip: 'Open details for $displayTitle',
                       icon: const Icon(Icons.open_in_new_outlined),
                       color: AppColors.primary,
-                      onPressed: onOpen,
+                      onPressed: onDetails ?? onOpen,
                     ),
                     if (onBrowseFolder != null)
                       IconButton(

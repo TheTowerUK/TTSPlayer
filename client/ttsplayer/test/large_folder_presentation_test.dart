@@ -260,7 +260,7 @@ void main() {
       final offsetBefore = _scrollOffset(tester);
       expect(offsetBefore, greaterThan(100));
 
-      await tester.tap(find.byKey(const ValueKey('media-card-item-15')));
+      await tester.tap(find.byKey(const Key('media_details_item-15')));
       await tester.pumpAndSettle();
       expect(find.byType(ItemDetailScreen), findsOneWidget);
 

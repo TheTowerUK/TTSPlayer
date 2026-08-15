@@ -14,6 +14,7 @@ import 'artwork/resolved_media_artwork_image.dart';
 class TtsMediaCard extends StatefulWidget {
   final MediaItem item;
   final VoidCallback onTap;
+  final VoidCallback? onDetails;
   final MediaFolder? parentFolder;
 
   /// Optional overlay placed top-left on artwork (e.g. favourite toggle).
@@ -23,6 +24,7 @@ class TtsMediaCard extends StatefulWidget {
     super.key,
     required this.item,
     required this.onTap,
+    this.onDetails,
     this.parentFolder,
     this.topLeftOverlay,
   });
@@ -105,6 +107,21 @@ class _TtsMediaCardState extends State<TtsMediaCard> {
                             top: AppSpacing.xs,
                             left: AppSpacing.xs,
                             child: widget.topLeftOverlay!,
+                          ),
+                        if (widget.onDetails != null)
+                          Positioned(
+                            right: AppSpacing.xs,
+                            bottom: AppSpacing.xs,
+                            child: IconButton.filledTonal(
+                              key: Key('media_details_${widget.item.id}'),
+                              tooltip: 'View details for ${widget.item.title}',
+                              icon: const Icon(
+                                Icons.info_outline,
+                                size: AppIcons.md,
+                              ),
+                              onPressed: widget.onDetails,
+                              visualDensity: VisualDensity.compact,
+                            ),
                           ),
                       ],
                     ),
@@ -213,7 +230,10 @@ class _StatusBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final (label, color) = switch (status) {
       MediaItemStatus.missing => ('Missing', AppColors.statusMissing),
-      MediaItemStatus.unavailable => ('Unavailable', AppColors.statusUnavailable),
+      MediaItemStatus.unavailable => (
+          'Unavailable',
+          AppColors.statusUnavailable
+        ),
       MediaItemStatus.restricted => ('Restricted', AppColors.statusRestricted),
       MediaItemStatus.unsupported => ('Unsupported', AppColors.statusDefault),
       MediaItemStatus.skipped => ('Skipped', AppColors.statusDefault),

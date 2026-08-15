@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../../library/favourites_resolver.dart';
 import '../../models/catalog.dart';
 import '../../navigation/folder_navigation.dart';
-import '../../screens/item_detail_screen.dart';
+import '../../navigation/media_item_navigation.dart';
 import '../../services/artwork/artwork_decode_size.dart';
 import '../../services/library/library_metadata_repository.dart';
 import '../../theme/app_theme.dart';
@@ -60,6 +60,9 @@ class FavouritesScreen extends StatelessWidget {
               return _FavouriteListTile(
                 entry: entry,
                 onOpen: () => _openEntry(context, entry),
+                onDetails: entry.kind == FavouriteEntryKind.item
+                    ? () => openMediaItemDetails(context, entry.item!)
+                    : null,
               );
             },
           );
@@ -73,12 +76,7 @@ class FavouritesScreen extends StatelessWidget {
       case FavouriteEntryKind.folder:
         openFolderScreen(context, entry.folder!);
       case FavouriteEntryKind.item:
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ItemDetailScreen(item: entry.item!),
-          ),
-        );
+        activateMediaItem(context, entry.item!);
     }
   }
 }
@@ -87,10 +85,12 @@ class _FavouriteListTile extends StatelessWidget {
   const _FavouriteListTile({
     required this.entry,
     required this.onOpen,
+    this.onDetails,
   });
 
   final ResolvedFavouriteEntry entry;
   final VoidCallback onOpen;
+  final VoidCallback? onDetails;
 
   @override
   Widget build(BuildContext context) {
@@ -147,8 +147,15 @@ class _FavouriteListTile extends StatelessWidget {
               ),
               if (entry.kind == FavouriteEntryKind.folder)
                 FavouriteFolderToggle(folderId: entry.id)
-              else
+              else ...[
+                IconButton(
+                  key: Key('favourite_details_${entry.id}'),
+                  tooltip: 'View details for $title',
+                  icon: const Icon(Icons.info_outline),
+                  onPressed: onDetails,
+                ),
                 FavouriteItemToggle(itemId: entry.id),
+              ],
             ],
           ),
         ),

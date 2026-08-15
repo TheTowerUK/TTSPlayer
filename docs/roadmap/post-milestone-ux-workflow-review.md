@@ -21,7 +21,7 @@ Capture cross-cutting UX and workflow observations identified during M6 developm
 |---|---|---|---|
 | 1 | [Continue Watching image presentation](#1-continue-watching-image-presentation) | ✅ Complete — M7.6.2 | M7.6 |
 | 2 | [Literature folder rescan option](#2-literature-folder-rescan-option) | ✅ Complete — M7.6.3 | M7.6 |
-| 3 | [Item opening and playback workflow](#3-item-opening-and-playback-workflow) | Planned — M7.6.4 | M7.6 |
+| 3 | [Item opening and playback workflow](#3-item-opening-and-playback-workflow) | ✅ Complete — M7.6.4 | M7.6 |
 
 ---
 
@@ -98,6 +98,10 @@ The intermediate detail screen should **only remain** where it provides meaningf
 ### Expected outcome
 
 Single-action items open or play directly when selected, reducing unnecessary navigation. Detail screens remain only where they provide additional user value.
+
+### M7.6.4 outcome
+
+A shared activation policy now routes playable video to the video player, audio to the existing single-track music queue, and supported books/comics to their readers. Unavailable, unsupported, and non-single-action items fall back to details. Folder, search, Recently Added, and Favourites use the same policy, with explicit Details actions retained for metadata and management access.
 
 ### Likely touchpoints
 

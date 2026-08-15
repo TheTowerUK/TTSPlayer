@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../library/favourites_resolver.dart';
 import '../../../models/catalog.dart';
 import '../../../navigation/folder_navigation.dart';
-import '../../../screens/item_detail_screen.dart';
+import '../../../navigation/media_item_navigation.dart';
 import '../../../services/library/library_metadata_repository.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/card_layout.dart';
@@ -44,7 +44,8 @@ class FavouritesSection extends StatelessWidget {
             SectionHeader(
               title: 'Favourites',
               trailing: TextButton(
-                onPressed: () => openFavouritesScreen(context, catalog: catalog),
+                onPressed: () =>
+                    openFavouritesScreen(context, catalog: catalog),
                 child: const Text('View all'),
               ),
             ),
@@ -148,12 +149,8 @@ class _DashboardFavouriteCard extends StatelessWidget {
                 itemId: entry.id,
                 compact: true,
               ),
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => ItemDetailScreen(item: entry.item!),
-                ),
-              ),
+              onTap: () => activateMediaItem(context, entry.item!),
+              onDetails: () => openMediaItemDetails(context, entry.item!),
             ),
           ),
         ),

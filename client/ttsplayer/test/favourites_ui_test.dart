@@ -132,7 +132,8 @@ Widget _sectionHarness({
         ),
       ),
       Provider(create: (_) => ArtworkService(fileExists: (_) => false)),
-      ChangeNotifierProvider<LibraryMetadataRepository>.value(value: repository),
+      ChangeNotifierProvider<LibraryMetadataRepository>.value(
+          value: repository),
     ],
     child: MaterialApp(
       navigatorKey: rootNavigatorKey,
@@ -383,8 +384,7 @@ void main() {
             ChangeNotifierProvider(create: (_) => MediaProviderConfigService()),
             Provider(
               create: (context) => MediaLocationResolver(
-                config:
-                    context.read<MediaProviderConfigService>().mediaAccess,
+                config: context.read<MediaProviderConfigService>().mediaAccess,
                 isWindowsDesktop: false,
               ),
             ),
@@ -432,8 +432,7 @@ void main() {
             ChangeNotifierProvider(create: (_) => MediaProviderConfigService()),
             Provider(
               create: (context) => MediaLocationResolver(
-                config:
-                    context.read<MediaProviderConfigService>().mediaAccess,
+                config: context.read<MediaProviderConfigService>().mediaAccess,
                 isWindowsDesktop: false,
               ),
             ),
@@ -687,7 +686,8 @@ void main() {
       expect(find.byType(FolderScreen), findsOneWidget);
     });
 
-    testWidgets('16 favourited media opens item detail', (tester) async {
+    testWidgets('16 favourited media retains explicit item details action',
+        (tester) async {
       final catalog = _testCatalog();
       final repository = await _seededRepository(
         items: [
@@ -707,7 +707,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Alpha'));
+      await tester.tap(find.byKey(const Key('favourite_details_item-alpha')));
       await tester.pumpAndSettle();
 
       expect(find.byType(ItemDetailScreen), findsOneWidget);
@@ -794,7 +794,8 @@ void main() {
       expect(find.text('Alpha'), findsOneWidget);
     });
 
-    test('21 successful catalogue replacement prunes stale favourites', () async {
+    test('21 successful catalogue replacement prunes stale favourites',
+        () async {
       SharedPreferences.setMockInitialValues({});
       final repository = LibraryMetadataRepository();
       await repository.initialize();
@@ -856,7 +857,8 @@ void main() {
 
     test('26 catalogue unchanged by favourite actions', () async {
       final catalog = _testCatalog();
-      final before = jsonEncode(catalog.folders.map((f) => f.toJson()).toList());
+      final before =
+          jsonEncode(catalog.folders.map((f) => f.toJson()).toList());
 
       SharedPreferences.setMockInitialValues({});
       final repository = LibraryMetadataRepository();

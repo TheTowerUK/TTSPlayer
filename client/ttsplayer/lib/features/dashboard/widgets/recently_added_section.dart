@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../screens/item_detail_screen.dart';
+import '../../../navigation/media_item_navigation.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/card_layout.dart';
 import '../../../widgets/empty_state.dart';
@@ -85,12 +85,8 @@ class _RecentlyAddedCarouselState extends State<_RecentlyAddedCarousel> {
                 child: TtsMediaCard(
                   item: entry.item,
                   parentFolder: entry.parentFolder,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => ItemDetailScreen(item: entry.item),
-                    ),
-                  ),
+                  onTap: () => activateMediaItem(context, entry.item),
+                  onDetails: () => openMediaItemDetails(context, entry.item),
                 ),
               ),
             );
