@@ -19,7 +19,7 @@ Capture cross-cutting UX and workflow observations identified during M6 developm
 
 | # | Area | Status | Priority |
 |---|---|---|---|
-| 1 | [Continue Watching image presentation](#1-continue-watching-image-presentation) | Planned — M7.6.2 | M7.6 |
+| 1 | [Continue Watching image presentation](#1-continue-watching-image-presentation) | ✅ Complete — M7.6.2 | M7.6 |
 | 2 | [Literature folder rescan option](#2-literature-folder-rescan-option) | Partial; hardening planned — M7.6.3 | M7.6 |
 | 3 | [Item opening and playback workflow](#3-item-opening-and-playback-workflow) | Planned — M7.6.4 | M7.6 |
 
@@ -38,6 +38,10 @@ Update the image presentation so that artwork is displayed consistently without 
 ### Expected outcome
 
 Continue Watching artwork maintains the correct aspect ratio and follows the same presentation rules as equivalent artwork elsewhere in the application.
+
+### M7.6.2 outcome
+
+The shared `ResolvedMediaArtworkImage` / `ArtworkImage` path already uses proportional `BoxFit.cover`. Focused regression coverage now locks provider-path rendering, bounded decode/layout dimensions, portrait-source proportional scaling, and no-overflow behaviour. No production widget change was required.
 
 ### Likely touchpoints
 

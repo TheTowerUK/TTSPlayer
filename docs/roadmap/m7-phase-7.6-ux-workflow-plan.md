@@ -1,6 +1,6 @@
 # M7 Phase 7.6 — UX and Workflow Refinements
 
-**Status:** In progress — 7.6.1 repository audit and implementation plan complete
+**Status:** In progress — 7.6.2 Continue Watching artwork contract complete
 **Branch:** `m7-development`
 **Prerequisite:** [Phase 7.5 closure](./m7-phase-7.5-closure-report.md)
 **Source tracker:** [Post-Milestone UX and Workflow Review](./post-milestone-ux-workflow-review.md)
@@ -73,7 +73,7 @@ Direct player/reader helpers already exist, but there is no shared policy for ch
 | Step | Scope | Expected change |
 |---|---|---|
 | **7.6.1** | Audit and plan | This document; tracker/release status only |
-| **7.6.2** | Continue Watching artwork contract | Add focused widget coverage for `BoxFit.cover`, bounded decode/layout size, local/provider artwork path compatibility, and no overflow; change production layout only if the test exposes a defect |
+| **7.6.2** ✅ | Continue Watching artwork contract | Confirmed existing `ResolvedMediaArtworkImage` path uses proportional `BoxFit.cover`; added provider-path, bounded decode/layout, portrait-source fit, and overflow regression coverage — **33 focused tests passed**; no production change required |
 | **7.6.3** | Literature folder-rescan parity | Align top-level/nested terminology; test exact book/comic folder path forwarding, nested replacement, ancestor counts, navigation retention, failure retention, and scan-dialog lifecycle |
 | **7.6.4** | Shared direct-activation routing | Add one media-item activation helper/policy; wire folder, search, Recently Added, and Favourites primary actions; preserve explicit Details access and current music queue/reading restore behaviour |
 | **7.6.5** | Windows runtime and regression | Exercise video/audio/book/comic direct activation, Details fallback, Continue Watching aspect ratio, and scoped literature rescan with synthetic fixtures |

@@ -30,6 +30,7 @@ import 'package:ttsplayer/services/playback_service.dart';
 import 'package:ttsplayer/theme/app_theme.dart';
 import 'package:ttsplayer/widgets/artwork/artwork_image.dart';
 import 'package:ttsplayer/widgets/artwork/resolved_media_artwork_image.dart';
+import 'package:ttsplayer/widgets/card_layout.dart';
 import 'package:ttsplayer/widgets/tts_media_card.dart';
 
 import 'support/book_metadata_enrichment_section_test_support.dart';
@@ -544,6 +545,17 @@ void main() {
       await pumpResolvedFrames(tester);
 
       expect(displayedSource(tester), ArtworkSource.providerCache);
+      final artwork = tester.widget<ArtworkImage>(find.byType(ArtworkImage));
+      expect(artwork.fit, BoxFit.cover);
+      expect(artwork.logicalDecodeSize, isNotNull);
+      expect(
+        artwork.logicalDecodeSize!.width,
+        AppSpacing.continueWatchingCardWidth - 2,
+      );
+      expect(
+        artwork.logicalDecodeSize!.height,
+        lessThan(CardLayout.continueWatchingCardHeight),
+      );
     });
 
     testWidgets('11 favourites shows provider artwork', (tester) async {

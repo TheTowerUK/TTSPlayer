@@ -29,6 +29,26 @@ void main() {
       expect(artH + 96, lessThanOrEqualTo(height));
     });
 
+    test('Continue Watching cover fit preserves portrait source ratio', () {
+      const source = Size(600, 900);
+      const destination = Size(
+        AppSpacing.continueWatchingCardWidth,
+        190,
+      );
+
+      final fitted = applyBoxFit(BoxFit.cover, source, destination);
+
+      expect(fitted.destination, destination);
+      expect(
+        fitted.destination.width / fitted.source.width,
+        closeTo(
+          fitted.destination.height / fitted.source.height,
+          0.000001,
+        ),
+      );
+      expect(fitted.source.height, lessThan(source.height));
+    });
+
     testWidgets('LibraryCard fits 318x246 grid cell', (tester) async {
       await tester.pumpWidget(
         _wrap(
