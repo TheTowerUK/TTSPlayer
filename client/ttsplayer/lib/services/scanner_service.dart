@@ -60,7 +60,7 @@ class ScanProgress {
 /// Supports two modes:
 ///
 /// [runScan]         — full rescan of all media roots in ttsplayer.config.json.
-/// [runLibraryScan]  — rescan a single top-level library folder and merge the
+/// [runLibraryScan]  — rescan one catalogue folder/subtree and merge the
 ///                     result into the existing catalog.json.
 ///
 /// Stdout is consumed line-by-line.  Lines beginning with "PROGRESS: " carry
@@ -115,10 +115,16 @@ class ScannerService extends ChangeNotifier {
     CatalogService catalogService,
   ) =>
       _run(
-        ['--library-path', libraryPath],
+        libraryScanArguments(libraryPath),
         catalogService,
         navigateHomeOnSuccess: false,
       );
+
+  /// Canonical scoped-scan arguments. The catalogue path is forwarded exactly;
+  /// labels and media kind are never used to reconstruct a filesystem path.
+  @visibleForTesting
+  static List<String> libraryScanArguments(String libraryPath) =>
+      ['--library-path', libraryPath];
 
   /// Whether a successful scan should reset navigation to the dashboard.
   @visibleForTesting

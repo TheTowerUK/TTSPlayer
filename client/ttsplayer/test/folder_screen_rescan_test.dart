@@ -22,6 +22,18 @@ class _FakeCatalogService extends CatalogService {
   Catalog? get catalog => _catalog;
 }
 
+class _RecordingScannerService extends ScannerService {
+  final List<String> requestedPaths = [];
+
+  @override
+  Future<void> runLibraryScan(
+    String libraryPath,
+    CatalogService catalogService,
+  ) async {
+    requestedPaths.add(libraryPath);
+  }
+}
+
 void main() {
   testWidgets('FolderScreen shows dashboard action when folder is missing',
       (tester) async {
@@ -105,4 +117,67 @@ void main() {
     expect(find.text('Videos'), findsWidgets);
     expect(find.text('Back to Dashboard'), findsNothing);
   });
+
+  for (final fixture in <({String kind, String extension, String path})>[
+    (
+      kind: 'book',
+      extension: 'pdf',
+      path: r'Y:\Literature\Books\Series A',
+    ),
+    (
+      kind: 'comic',
+      extension: 'cbz',
+      path: r'Y:\Literature\Comics\Publisher',
+    ),
+  ]) {
+    testWidgets(
+      'FolderScreen forwards exact ${fixture.kind} folder path for rescan',
+      (tester) async {
+        final scanner = _RecordingScannerService();
+        final folder = MediaFolder(
+          id: '${fixture.kind}-folder',
+          name: fixture.kind == 'book' ? 'Series A' : 'Publisher',
+          path: fixture.path,
+          itemCount: 1,
+          items: const [],
+          subfolders: const [],
+        );
+        final catalog = Catalog.fromJson({
+          'generated_at': '2026-08-15T00:00:00+00:00',
+          'total_items': 1,
+          'folders': [folder.toJson()],
+        });
+
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AppTheme.dark,
+            home: MultiProvider(
+              providers: [
+                ChangeNotifierProvider(
+                  create: (_) => SettingsRepository()..initialize(),
+                ),
+                ChangeNotifierProvider(
+                  create: (_) => LibraryMetadataRepository()..initialize(),
+                ),
+                ChangeNotifierProvider<ScannerService>.value(value: scanner),
+                ChangeNotifierProvider<CatalogService>.value(
+                  value: _FakeCatalogService(catalog),
+                ),
+              ],
+              child: FolderScreen.fromFolder(folder),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byTooltip('Folder actions'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Rescan this folder'));
+        await tester.pump();
+
+        expect(scanner.requestedPaths, [fixture.path]);
+        expect(find.text('Scanning…'), findsOneWidget);
+      },
+    );
+  }
 }

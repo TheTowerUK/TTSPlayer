@@ -821,7 +821,7 @@ def _library_rescan(
     config: dict | None = None,
 ) -> None:
     """
-    Rescan a single top-level library folder and merge the result into the
+    Rescan a single catalogue folder/subtree and merge the result into the
     existing catalog.json.  The rest of the catalogue is untouched.
 
     Steps

@@ -624,7 +624,7 @@ These are **not** Phase 7.0–7.2 blockers. Phase 7.6 is the dedicated UX/workfl
 
 ### Phase 7.6 — UX and Workflow Refinements 🟡
 
-**Status:** In progress — 7.6.1 audit and implementation plan complete
+**Status:** In progress — 7.6.3 literature folder-rescan hardening complete
 **Plan:** [m7-phase-7.6-ux-workflow-plan.md](./m7-phase-7.6-ux-workflow-plan.md)
 
 **Objective:** Lock distortion-free Continue Watching artwork, harden the existing literature folder-rescan path, and centralize direct single-item activation while retaining explicit access to item details.

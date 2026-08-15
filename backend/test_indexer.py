@@ -267,6 +267,104 @@ class LibraryMergeTests(unittest.TestCase):
             video_exts = {Path(i["file_path"]).suffix.lower() for i in videos_node_after["items"]}
             self.assertIn(".mp4", video_exts)
 
+    def test_nested_literature_rescan_replaces_branch_and_recalculates_totals(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            literature = root / "Literature"
+            books = literature / "Books"
+            series = books / "Series A"
+            comics = literature / "Comics"
+            series.mkdir(parents=True)
+            comics.mkdir(parents=True)
+            (series / "volume-1.pdf").write_bytes(b"pdf")
+            (comics / "issue-1.cbz").write_bytes(b"cbz")
+
+            warnings: list[dict] = []
+            counters = {"folders": 0, "items": 0}
+            literature_node = indexer.scan_folder(
+                literature,
+                warnings,
+                counters,
+                library_name="Literature",
+            )
+            self.assertIsNotNone(literature_node)
+            indexer._apply_added_at_to_folders(
+                [literature_node],
+                {},
+                "2026-08-15T08:00:00+00:00",
+            )
+
+            catalog_path = root / "catalog.json"
+            history_path = root / "scan.history.json"
+            catalog = {
+                "catalogue": indexer.make_catalogue_block("before-rescan"),
+                "folders": [literature_node],
+                "total_items": literature_node["item_count"],
+            }
+            catalog_path.write_text(json.dumps(catalog), encoding="utf-8")
+
+            comic_before = next(
+                folder
+                for folder in literature_node["subfolders"]
+                if folder["name"] == "Comics"
+            )
+            comic_item_id = comic_before["items"][0]["id"]
+            comic_added_at = comic_before["items"][0]["added_at"]
+            series_before = next(
+                folder
+                for folder in next(
+                    folder
+                    for folder in literature_node["subfolders"]
+                    if folder["name"] == "Books"
+                )["subfolders"]
+                if folder["name"] == "Series A"
+            )
+            volume_one_added_at = series_before["items"][0]["added_at"]
+            (series / "volume-2.epub").write_bytes(b"epub")
+
+            indexer._library_rescan(
+                str(series),
+                datetime.now(timezone.utc),
+                catalog_path,
+                history_path,
+                max_entries=10,
+            )
+
+            merged = json.loads(catalog_path.read_text(encoding="utf-8"))
+            self.assertEqual(len(merged["folders"]), 1)
+            self.assertEqual(merged["folders"][0]["name"], "Literature")
+            self.assertEqual(merged["total_items"], 3)
+            self.assertEqual(merged["folders"][0]["item_count"], 3)
+
+            books_after = next(
+                folder
+                for folder in merged["folders"][0]["subfolders"]
+                if folder["name"] == "Books"
+            )
+            series_after = next(
+                folder
+                for folder in books_after["subfolders"]
+                if folder["name"] == "Series A"
+            )
+            self.assertEqual(
+                {Path(item["file_path"]).suffix.lower() for item in series_after["items"]},
+                {".pdf", ".epub"},
+            )
+            volume_one_after = next(
+                item
+                for item in series_after["items"]
+                if Path(item["file_path"]).name == "volume-1.pdf"
+            )
+            self.assertEqual(volume_one_after["added_at"], volume_one_added_at)
+
+            comics_after = next(
+                folder
+                for folder in merged["folders"][0]["subfolders"]
+                if folder["name"] == "Comics"
+            )
+            self.assertEqual(comics_after["items"][0]["id"], comic_item_id)
+            self.assertEqual(comics_after["items"][0]["added_at"], comic_added_at)
+
 
 class MusicIndexingTests(unittest.TestCase):
     def test_audio_extensions_in_supported_set(self):

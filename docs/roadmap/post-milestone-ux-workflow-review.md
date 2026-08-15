@@ -20,7 +20,7 @@ Capture cross-cutting UX and workflow observations identified during M6 developm
 | # | Area | Status | Priority |
 |---|---|---|---|
 | 1 | [Continue Watching image presentation](#1-continue-watching-image-presentation) | ✅ Complete — M7.6.2 | M7.6 |
-| 2 | [Literature folder rescan option](#2-literature-folder-rescan-option) | Partial; hardening planned — M7.6.3 | M7.6 |
+| 2 | [Literature folder rescan option](#2-literature-folder-rescan-option) | ✅ Complete — M7.6.3 | M7.6 |
 | 3 | [Item opening and playback workflow](#3-item-opening-and-playback-workflow) | Planned — M7.6.4 | M7.6 |
 
 ---
@@ -63,6 +63,10 @@ Provide an equivalent rescan action for literature folders, consistent with the 
 ### Expected outcome
 
 Users can initiate a rescan directly against an individual book or comic folder without requiring a full catalogue or library rescan.
+
+### M7.6.3 outcome
+
+The existing scoped scanner now has a canonical exact-path argument contract and consistent folder/subtree terminology. Book and comic folder actions are covered through the scan dialog, while backend tests prove nested replacement, total recalculation, unrelated-sibling stability, and `added_at` preservation. Successful scoped scans retain navigation; existing last-good catalogue behaviour remains the failure boundary.
 
 ### Likely touchpoints
 

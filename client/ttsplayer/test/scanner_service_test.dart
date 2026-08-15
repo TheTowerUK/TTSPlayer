@@ -16,4 +16,18 @@ void main() {
       );
     });
   });
+
+  group('ScannerService scoped scan arguments', () {
+    for (final fixture in <({String kind, String path})>[
+      (kind: 'book', path: r'Y:\Literature\Books\Series A'),
+      (kind: 'comic', path: r'\\nas\library\Comics\Publisher'),
+    ]) {
+      test('${fixture.kind} path is forwarded exactly', () {
+        expect(
+          ScannerService.libraryScanArguments(fixture.path),
+          ['--library-path', fixture.path],
+        );
+      });
+    }
+  });
 }
