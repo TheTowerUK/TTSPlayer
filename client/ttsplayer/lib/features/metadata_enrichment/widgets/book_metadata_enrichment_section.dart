@@ -16,6 +16,7 @@ import '../services/book_candidate_selection_context.dart';
 import '../services/book_metadata_matching_coordinator.dart';
 import '../services/book_metadata_matching_result.dart';
 import '../services/metadata_enrichment_repository.dart';
+import '../services/metadata_provider_lifecycle.dart';
 import 'book_metadata_candidate_dialog.dart';
 
 enum _PendingOperation {
@@ -144,9 +145,14 @@ class _BookMetadataEnrichmentSectionState
       return const SizedBox.shrink();
     }
 
+    final lifecycle = context.watch<MetadataProviderLifecycle?>();
     final config = context.read<MetadataEnrichmentFeatureConfig?>() ??
         MetadataEnrichmentFeatureConfig.defaults;
-    if (!config.metadataEnrichmentDevelopmentEnabled) {
+    final operational = lifecycle?.isProviderOperational(
+          MetadataProviderLifecycle.openLibraryProviderId,
+        ) ??
+        config.metadataEnrichmentDevelopmentEnabled;
+    if (!operational) {
       return const SizedBox.shrink();
     }
 
@@ -187,7 +193,7 @@ class _BookMetadataEnrichmentSectionState
                       ),
                 ),
                 const SizedBox(height: AppSpacing.xs),
-                Text(
+                const Text(
                   'Local catalogue metadata remains authoritative. External metadata is optional enrichment.',
                   style: AppTypography.labelMuted,
                 ),
@@ -224,7 +230,8 @@ class _BookMetadataEnrichmentSectionState
                             const SizedBox(height: AppSpacing.xs),
                             Text(
                               providerLine,
-                              key: const Key('book_metadata_enrichment_provider'),
+                              key: const Key(
+                                  'book_metadata_enrichment_provider'),
                               style: const TextStyle(
                                 color: AppColors.textHigh,
                                 fontSize: AppTypography.size13,
@@ -235,7 +242,8 @@ class _BookMetadataEnrichmentSectionState
                             const SizedBox(height: AppSpacing.xs),
                             Text(
                               fetchedLine,
-                              key: const Key('book_metadata_enrichment_fetched'),
+                              key:
+                                  const Key('book_metadata_enrichment_fetched'),
                               style: AppTypography.labelMuted,
                             ),
                           ],
@@ -243,7 +251,8 @@ class _BookMetadataEnrichmentSectionState
                             const SizedBox(height: AppSpacing.xs),
                             Text(
                               artworkPresentation.statusLabel,
-                              key: const Key('book_metadata_enrichment_cover_status'),
+                              key: const Key(
+                                  'book_metadata_enrichment_cover_status'),
                               style: const TextStyle(
                                 color: AppColors.textHigh,
                                 fontSize: AppTypography.size13,
@@ -490,7 +499,8 @@ class _BookMetadataEnrichmentSectionState
     return 'Metadata fetched $date';
   }
 
-  Future<void> _lookupByIsbn(BookMetadataMatchingCoordinator coordinator) async {
+  Future<void> _lookupByIsbn(
+      BookMetadataMatchingCoordinator coordinator) async {
     if (_pending != _PendingOperation.none || !mounted) {
       return;
     }
@@ -805,7 +815,8 @@ class _BookMetadataEnrichmentSectionState
     }
     setState(() {
       _pending = _PendingOperation.none;
-      _statusMessage = MetadataEnrichmentUiMessages.linkTransitionMessage(result);
+      _statusMessage =
+          MetadataEnrichmentUiMessages.linkTransitionMessage(result);
       if (result is BookLinkTransitionSuccess) {
         _clearTransientWorkflow(dismissCandidateDialog: true);
       }
@@ -838,7 +849,8 @@ class _BookMetadataEnrichmentSectionState
 
     setState(() {
       _pending = _PendingOperation.none;
-      _statusMessage = MetadataEnrichmentUiMessages.artworkWorkflowMessage(result);
+      _statusMessage =
+          MetadataEnrichmentUiMessages.artworkWorkflowMessage(result);
     });
   }
 
@@ -868,7 +880,8 @@ class _BookMetadataEnrichmentSectionState
 
     setState(() {
       _pending = _PendingOperation.none;
-      _statusMessage = MetadataEnrichmentUiMessages.artworkWorkflowMessage(result);
+      _statusMessage =
+          MetadataEnrichmentUiMessages.artworkWorkflowMessage(result);
     });
   }
 

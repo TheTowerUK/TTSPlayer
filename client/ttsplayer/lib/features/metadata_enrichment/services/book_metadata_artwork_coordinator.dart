@@ -11,6 +11,7 @@ import '../models/metadata_enrichment_record.dart';
 import 'book_metadata_artwork_workflow_result.dart';
 import 'book_metadata_match_transition.dart';
 import 'metadata_enrichment_repository.dart';
+import 'metadata_provider_lifecycle.dart';
 
 /// Item-scoped artwork identity captured at workflow start (M7.4.5).
 class BookMetadataArtworkOperationIdentity {
@@ -42,19 +43,22 @@ class BookMetadataArtworkCoordinator {
     required MetadataArtworkDownloadService downloadService,
     MetadataArtworkDownloadGenerationGuard? generationGuard,
     MetadataArtworkCacheRepository? cacheRepository,
+    MetadataProviderLifecycle? providerLifecycle,
   })  : _repository = repository,
         _downloadService = downloadService,
         _generationGuard =
             generationGuard ?? MetadataArtworkDownloadGenerationGuard(),
-        _cacheRepository = cacheRepository;
+        _cacheRepository = cacheRepository,
+        _providerLifecycle = providerLifecycle;
 
   final MetadataEnrichmentRepository _repository;
   final MetadataArtworkDownloadService _downloadService;
   final MetadataArtworkDownloadGenerationGuard _generationGuard;
   final MetadataArtworkCacheRepository? _cacheRepository;
+  final MetadataProviderLifecycle? _providerLifecycle;
 
-  final Map<String, Future<BookMetadataArtworkWorkflowResult>> _pendingByCacheKey =
-      {};
+  final Map<String, Future<BookMetadataArtworkWorkflowResult>>
+      _pendingByCacheKey = {};
 
   /// Bumps the item-scoped artwork generation (call on relink/unlink/item change).
   int invalidateItemOperations(String itemId) => _generationGuard.bump(itemId);
@@ -94,6 +98,11 @@ class BookMetadataArtworkCoordinator {
     }
     final record = eligibility.record!;
     final reference = eligibility.reference!;
+    final providerOperation =
+        _providerLifecycle?.beginOperation(reference.providerId);
+    if (_providerLifecycle != null && providerOperation == null) {
+      return const BookMetadataArtworkProviderUnavailable();
+    }
 
     final generation =
         expectedGeneration ?? _generationGuard.generationFor(item.id);
@@ -106,12 +115,14 @@ class BookMetadataArtworkCoordinator {
       generation: generation,
     );
 
-    if (!refresh && await _hasValidMatchingCache(reference) &&
+    if (!refresh &&
+        await _hasValidMatchingCache(reference) &&
         _referenceMatchesCacheMetadata(record, reference)) {
       return const BookMetadataArtworkAlreadyCached();
     }
 
-    final pendingKey = '${identity.cacheKey}:${refresh ? 'refresh' : 'download'}';
+    final pendingKey =
+        '${identity.cacheKey}:${refresh ? 'refresh' : 'download'}';
     final existingPending = _pendingByCacheKey[pendingKey];
     if (existingPending != null) {
       return existingPending;
@@ -121,6 +132,7 @@ class BookMetadataArtworkCoordinator {
       identity: identity,
       reference: reference,
       refresh: refresh,
+      providerOperation: providerOperation,
     );
     _pendingByCacheKey[pendingKey] = operation;
     try {
@@ -134,7 +146,11 @@ class BookMetadataArtworkCoordinator {
     required BookMetadataArtworkOperationIdentity identity,
     required MetadataArtworkReference reference,
     required bool refresh,
+    MetadataProviderOperationToken? providerOperation,
   }) async {
+    if (!_providerOperationIsCurrent(providerOperation)) {
+      return const BookMetadataArtworkProviderUnavailable();
+    }
     if (!_generationGuard.isCurrent(identity.itemId, identity.generation)) {
       return const BookMetadataArtworkIdentityChanged();
     }
@@ -153,6 +169,9 @@ class BookMetadataArtworkCoordinator {
 
     if (!_identityStillCurrent(identity)) {
       return const BookMetadataArtworkIdentityChanged();
+    }
+    if (!_providerOperationIsCurrent(providerOperation)) {
+      return const BookMetadataArtworkProviderUnavailable();
     }
 
     return switch (downloadResult) {
@@ -180,6 +199,12 @@ class BookMetadataArtworkCoordinator {
     };
   }
 
+  bool _providerOperationIsCurrent(
+    MetadataProviderOperationToken? operation,
+  ) =>
+      _providerLifecycle == null ||
+      (operation != null && _providerLifecycle.isCurrent(operation));
+
   Future<BookMetadataArtworkWorkflowResult> _handleDownloadSuccess({
     required BookMetadataArtworkOperationIdentity identity,
     required MetadataArtworkReference reference,
@@ -191,7 +216,8 @@ class BookMetadataArtworkCoordinator {
     final unchangedBeforePersist = recordBefore != null &&
         _recordsEqualArtwork(
           recordBefore,
-          recordBefore.copyWith(artworkReference: updatedReference.normalized()),
+          recordBefore.copyWith(
+              artworkReference: updatedReference.normalized()),
         );
 
     final persistResult = await _persistArtworkReference(
@@ -262,9 +288,11 @@ class BookMetadataArtworkCoordinator {
       return const BookMetadataArtworkNotLinked();
     }
 
-    final merged = current.copyWith(
-      artworkReference: updatedReference.normalized(),
-    ).normalized();
+    final merged = current
+        .copyWith(
+          artworkReference: updatedReference.normalized(),
+        )
+        .normalized();
 
     if (_recordsEqualArtwork(current, merged)) {
       return null;
@@ -290,7 +318,8 @@ class BookMetadataArtworkCoordinator {
     }
 
     final record = _repository.getByItemId(item.id);
-    if (record == null || !BookMetadataMatchTransition.isProviderLinked(record)) {
+    if (record == null ||
+        !BookMetadataMatchTransition.isProviderLinked(record)) {
       return const _ArtworkEligibility.ineligible(
         BookMetadataArtworkNotLinked(),
       );
@@ -348,7 +377,8 @@ class BookMetadataArtworkCoordinator {
         record.providerRecordId == reference.providerRecordId;
   }
 
-  Future<bool> _hasValidMatchingCache(MetadataArtworkReference reference) async {
+  Future<bool> _hasValidMatchingCache(
+      MetadataArtworkReference reference) async {
     final repository = _cacheRepository;
     if (repository == null) {
       return reference.cacheState == MetadataArtworkCacheState.downloaded ||
@@ -391,7 +421,8 @@ class BookMetadataArtworkCoordinator {
 }
 
 class _ArtworkEligibility {
-  const _ArtworkEligibility.eligible(this.record, this.reference) : error = null;
+  const _ArtworkEligibility.eligible(this.record, this.reference)
+      : error = null;
 
   const _ArtworkEligibility.ineligible(this.error)
       : record = null,

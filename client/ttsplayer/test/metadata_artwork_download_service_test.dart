@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ttsplayer/features/metadata_enrichment/artwork/fake_metadata_artwork_http_client.dart';
 import 'package:ttsplayer/features/metadata_enrichment/artwork/metadata_artwork_cache_repository.dart';
 import 'package:ttsplayer/features/metadata_enrichment/artwork/metadata_artwork_cache_state.dart';
@@ -9,6 +10,9 @@ import 'package:ttsplayer/features/metadata_enrichment/artwork/metadata_artwork_
 import 'package:ttsplayer/features/metadata_enrichment/artwork/metadata_artwork_download_service.dart';
 import 'package:ttsplayer/features/metadata_enrichment/artwork/metadata_artwork_filesystem.dart';
 import 'package:ttsplayer/features/metadata_enrichment/providers/open_library/open_library_artwork_download_url_resolver.dart';
+import 'package:ttsplayer/features/metadata_enrichment/services/metadata_provider_lifecycle.dart';
+import 'package:ttsplayer/models/application_settings.dart';
+import 'package:ttsplayer/services/settings/settings_repository.dart';
 
 import 'support/metadata_artwork_test_fixtures.dart';
 
@@ -60,7 +64,8 @@ void main() {
 
       expect(result, isA<MetadataArtworkDownloadSuccess>());
       final success = result as MetadataArtworkDownloadSuccess;
-      expect(success.cacheEntry.cacheState, MetadataArtworkCacheState.downloaded);
+      expect(
+          success.cacheEntry.cacheState, MetadataArtworkCacheState.downloaded);
       expect(success.updatedReference.localRelativePath, isNotNull);
       expect(success.updatedReference.cacheState,
           MetadataArtworkCacheState.downloaded);
@@ -82,6 +87,66 @@ void main() {
 
       expect(httpClient.requestCount, beforeCount);
       expect(result, isA<MetadataArtworkDownloadSuccess>());
+    });
+
+    test('disabled provider retains readable cached artwork', () async {
+      final reference = MetadataArtworkTestFixtures.sampleReference();
+      httpClient.registerResponse(
+        'https://covers.openlibrary.org/b/id/8230111-L.jpg',
+        MetadataArtworkTestFixtures.pngResponse(
+          MetadataArtworkTestFixtures.onePixelPng,
+        ),
+      );
+      await service.download(reference: reference);
+
+      SharedPreferences.setMockInitialValues({});
+      final settings = SettingsRepository();
+      await settings.initialize();
+      final lifecycle = MetadataProviderLifecycle(settingsRepository: settings);
+      addTearDown(lifecycle.dispose);
+      final gatedService = MetadataArtworkDownloadService(
+        cacheRepository: repository,
+        httpClient: httpClient,
+        providerLifecycle: lifecycle,
+      );
+
+      expect(await gatedService.lookup(reference), isNotNull);
+      expect(repository.entryCount, 1);
+    });
+
+    test('disable during artwork request prevents cache persistence', () async {
+      SharedPreferences.setMockInitialValues({});
+      final settings = SettingsRepository();
+      await settings.initialize();
+      await settings.saveMetadataProviders(
+        const MetadataProvidersSettings(
+          externalMetadataEnabled: true,
+          enabledProviderIds: {'open_library'},
+        ),
+      );
+      final lifecycle = MetadataProviderLifecycle(settingsRepository: settings);
+      addTearDown(lifecycle.dispose);
+      final delayedClient = FakeMetadataArtworkHttpClient(
+        delay: const Duration(milliseconds: 30),
+        defaultResponse: MetadataArtworkTestFixtures.pngResponse(
+          MetadataArtworkTestFixtures.onePixelPng,
+        ),
+      );
+      final gatedService = MetadataArtworkDownloadService(
+        cacheRepository: repository,
+        httpClient: delayedClient,
+        urlResolver: const OpenLibraryArtworkDownloadUrlResolver(),
+        providerLifecycle: lifecycle,
+      );
+      final reference = MetadataArtworkTestFixtures.sampleReference();
+
+      final operation = gatedService.download(reference: reference);
+      await Future<void>.delayed(Duration.zero);
+      await settings.saveMetadataProviders(const MetadataProvidersSettings());
+      final result = await operation;
+
+      expect(result, isA<MetadataArtworkDownloadFailure>());
+      expect(await gatedService.lookup(reference), isNull);
     });
 
     test('refresh failure preserves previous valid cache', () async {
@@ -109,7 +174,8 @@ void main() {
       expect(await service.lookup(reference), isNotNull);
     });
 
-    test('validation failure deletes temp file and leaves cache empty', () async {
+    test('validation failure deletes temp file and leaves cache empty',
+        () async {
       final reference = MetadataArtworkTestFixtures.sampleReference();
       httpClient.registerResponse(
         'https://covers.openlibrary.org/b/id/8230111-L.jpg',
@@ -153,7 +219,8 @@ void main() {
       expect(await service.lookup(reference), isNull);
     });
 
-    test('relink uses different cache key for different provider record', () async {
+    test('relink uses different cache key for different provider record',
+        () async {
       final first = MetadataArtworkTestFixtures.sampleReference(
         providerRecordId: '/books/OLD',
         artworkId: '111',
@@ -184,7 +251,8 @@ void main() {
       expect(await service.lookup(second), isNotNull);
     });
 
-    test('unlink simulation retains cache file until explicit remove', () async {
+    test('unlink simulation retains cache file until explicit remove',
+        () async {
       final reference = MetadataArtworkTestFixtures.sampleReference();
       httpClient.registerResponse(
         'https://covers.openlibrary.org/b/id/8230111-L.jpg',

@@ -7,7 +7,6 @@ import '../models/enrichment_match_state.dart';
 import '../models/isbn_lookup_request.dart';
 import '../models/metadata_enrichment_record.dart';
 import '../providers/book_metadata_provider.dart';
-import '../providers/book_metadata_provider_failure.dart';
 import '../providers/book_metadata_provider_result.dart';
 import 'book_candidate_review_policy.dart';
 import 'book_candidate_selection_context.dart';
@@ -15,6 +14,7 @@ import 'book_metadata_match_transition.dart';
 import 'book_metadata_matching_result.dart';
 import 'book_metadata_refresh_service.dart';
 import 'metadata_enrichment_repository.dart';
+import 'metadata_provider_lifecycle.dart';
 
 typedef BookMetadataClock = DateTime Function();
 
@@ -32,14 +32,17 @@ class BookMetadataMatchingCoordinator {
     BookMetadataMatchTransition? transition,
     BookMetadataRefreshService? refreshService,
     BookMetadataClock? clock,
+    MetadataProviderLifecycle? providerLifecycle,
   })  : _provider = provider,
         _repository = repository,
         _evaluator = evaluator ?? const BookCandidateEvaluator(),
         _transition = transition ?? const BookMetadataMatchTransition(),
+        _providerLifecycle = providerLifecycle,
         _refreshService = refreshService ??
             BookMetadataRefreshService(
               provider: provider,
               repository: repository,
+              providerLifecycle: providerLifecycle,
               transition: transition ?? const BookMetadataMatchTransition(),
             ),
         _clock = clock ?? _defaultClock;
@@ -50,6 +53,7 @@ class BookMetadataMatchingCoordinator {
   final BookMetadataMatchTransition _transition;
   final BookMetadataRefreshService _refreshService;
   final BookMetadataClock _clock;
+  final MetadataProviderLifecycle? _providerLifecycle;
 
   static DateTime _defaultClock() => DateTime.now().toUtc();
 
@@ -96,7 +100,20 @@ class BookMetadataMatchingCoordinator {
       );
     }
 
-    final searchResult = await _provider.search(searchRequest, options: options);
+    final operation = _providerLifecycle?.beginOperation(_provider.providerId);
+    if (_providerLifecycle != null && operation == null) {
+      return const BookCandidateSearchEvaluationRejected(
+        'External metadata provider is disabled.',
+      );
+    }
+    final searchResult =
+        await _provider.search(searchRequest, options: options);
+    if (_providerLifecycle != null &&
+        (operation == null || !_providerLifecycle.isCurrent(operation))) {
+      return const BookCandidateSearchEvaluationRejected(
+        'External metadata provider was disabled.',
+      );
+    }
     switch (searchResult) {
       case BookMetadataSearchSuccess(:final candidates):
         if (candidates.isEmpty) {
@@ -187,7 +204,8 @@ class BookMetadataMatchingCoordinator {
     if (contextRejection != null) {
       return BookLinkTransitionInvalidState(contextRejection);
     }
-    if (!BookCandidateReviewPolicy.canRecordAmbiguousOutcome(context.matchSet)) {
+    if (!BookCandidateReviewPolicy.canRecordAmbiguousOutcome(
+        context.matchSet)) {
       return const BookLinkTransitionRejected(
         'Ambiguous outcome requires an ambiguous or conflict-review evaluation set.',
       );
@@ -232,7 +250,8 @@ class BookMetadataMatchingCoordinator {
     if (BookMetadataMatchTransition.isProviderLinked(existing)) {
       return BookLinkTransitionPreserved(
         record: existing!,
-        reason: 'Linked records require explicit unlink before recording unmatched.',
+        reason:
+            'Linked records require explicit unlink before recording unmatched.',
       );
     }
 
@@ -258,7 +277,8 @@ class BookMetadataMatchingCoordinator {
 
     final existing = _repository.getByItemId(item.id);
     if (existing == null) {
-      return const BookLinkTransitionInvalidState('No enrichment record to unlink.');
+      return const BookLinkTransitionInvalidState(
+          'No enrichment record to unlink.');
     }
 
     final next = _transition.applyUnlink(existing);
@@ -279,7 +299,8 @@ class BookMetadataMatchingCoordinator {
     return _persistTransition(next);
   }
 
-  Future<BookLinkTransitionResult> resumeMatching({required MediaItem item}) async {
+  Future<BookLinkTransitionResult> resumeMatching(
+      {required MediaItem item}) async {
     final rejection = _validateBookItem(item);
     if (rejection != null) {
       return BookLinkTransitionRejected(rejection);
@@ -287,10 +308,11 @@ class BookMetadataMatchingCoordinator {
 
     final existing = _repository.getByItemId(item.id);
     if (existing == null) {
-      return const BookLinkTransitionInvalidState('No enrichment record to resume.');
+      return const BookLinkTransitionInvalidState(
+          'No enrichment record to resume.');
     }
     if (existing.matchState != EnrichmentMatchState.ignored) {
-      return BookLinkTransitionInvalidState(
+      return const BookLinkTransitionInvalidState(
         'Resume matching is only valid from ignored state.',
       );
     }
@@ -327,8 +349,10 @@ class BookMetadataMatchingCoordinator {
       );
     }
 
-    if (BookCandidateReviewPolicy.requiresCriticalConflictOverride(evaluation) &&
-        confirmation != BookCandidateSelectionConfirmation.overrideCriticalConflicts) {
+    if (BookCandidateReviewPolicy.requiresCriticalConflictOverride(
+            evaluation) &&
+        confirmation !=
+            BookCandidateSelectionConfirmation.overrideCriticalConflicts) {
       return const BookCandidateSelectionConflictConfirmationRequired();
     }
 
@@ -415,6 +439,10 @@ class BookMetadataMatchingCoordinator {
     if (bookRejection != null) {
       return bookRejection;
     }
+    if (_providerLifecycle != null &&
+        !_providerLifecycle.isProviderOperational(_provider.providerId)) {
+      return 'External metadata provider is disabled.';
+    }
     return _rejectIfIgnored(item);
   }
 
@@ -453,8 +481,14 @@ class BookMetadataMatchingCoordinator {
           ? const []
           : [item.author!.trim()],
       publicationYear: item.year,
-      isbn10Values: trustedIsbn10.map((v) => v.trim()).where((v) => v.isNotEmpty).toList(),
-      isbn13Values: trustedIsbn13.map((v) => v.trim()).where((v) => v.isNotEmpty).toList(),
+      isbn10Values: trustedIsbn10
+          .map((v) => v.trim())
+          .where((v) => v.isNotEmpty)
+          .toList(),
+      isbn13Values: trustedIsbn13
+          .map((v) => v.trim())
+          .where((v) => v.isNotEmpty)
+          .toList(),
       filenameStem: stem,
     );
   }

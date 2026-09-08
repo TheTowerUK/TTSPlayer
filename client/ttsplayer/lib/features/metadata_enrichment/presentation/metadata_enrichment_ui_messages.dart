@@ -90,13 +90,16 @@ class MetadataEnrichmentUiMessages {
 
   static const resumeSuccessMessage = 'Metadata matching resumed.';
 
-  static String artworkWorkflowMessage(BookMetadataArtworkWorkflowResult result) {
+  static String artworkWorkflowMessage(
+      BookMetadataArtworkWorkflowResult result) {
     return switch (result) {
       BookMetadataArtworkDownloaded() => coverDownloadedMessage,
       BookMetadataArtworkRefreshed() => coverRefreshedMessage,
       BookMetadataArtworkAlreadyCached() => coverAlreadyDownloadedMessage,
       BookMetadataArtworkNoArtworkAvailable() => coverUnavailableMessage,
       BookMetadataArtworkNotLinked() => coverUnavailableMessage,
+      BookMetadataArtworkProviderUnavailable() =>
+        'Enable Open Library in Settings to download provider artwork.',
       BookMetadataArtworkIdentityChanged() => coverLinkChangedMessage,
       BookMetadataArtworkCancelled() => coverCouldNotDownloadMessage,
       BookMetadataArtworkValidationFailure() => coverInvalidImageMessage,
@@ -154,7 +157,8 @@ class MetadataEnrichmentUiMessages {
         'These metadata candidates are no longer valid. Search again.',
       BookCandidateSelectionConflictConfirmationRequired() =>
         'Review the warnings before continuing.',
-      BookCandidateSelectionRejected(:final reason) => _selectionRejection(reason),
+      BookCandidateSelectionRejected(:final reason) =>
+        _selectionRejection(reason),
     };
   }
 

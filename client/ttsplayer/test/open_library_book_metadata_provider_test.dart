@@ -143,7 +143,8 @@ void main() {
       );
     });
 
-    test('constructs Books API request with encoded ISBN and User-Agent', () async {
+    test('constructs Books API request with encoded ISBN and User-Agent',
+        () async {
       transport.registerResponse(
         'https://openlibrary.org/api/books',
         MetadataHttpResponse(
@@ -153,13 +154,15 @@ void main() {
         ),
       );
 
-      final request = IsbnLookupRequest.parse(OpenLibraryTestFixtures.validIsbn13);
+      final request =
+          IsbnLookupRequest.parse(OpenLibraryTestFixtures.validIsbn13);
       await provider.lookupByIsbn(request);
 
       expect(transport.requestCount, 1);
       final uri = transport.requestedUris.single;
       expect(uri.path, '/api/books');
-      expect(uri.queryParameters['bibkeys'], 'ISBN:${OpenLibraryTestFixtures.validIsbn13}');
+      expect(uri.queryParameters['bibkeys'],
+          'ISBN:${OpenLibraryTestFixtures.validIsbn13}');
       expect(
         transport.requestedHeaders.single['User-Agent'],
         'TTSPlayer-Test/1.0',
@@ -174,7 +177,8 @@ void main() {
       expect(transport.requestCount, 0);
       expect(result, isA<BookMetadataLookupFailure>());
       final failure = (result as BookMetadataLookupFailure).failure;
-      expect(failure.category, BookMetadataProviderFailureCategory.invalidRequest);
+      expect(
+          failure.category, BookMetadataProviderFailureCategory.invalidRequest);
     });
 
     test('empty Books API response is success with null metadata', () async {
@@ -217,6 +221,18 @@ void main() {
       expect(uri.queryParameters['author'], 'Author One');
       expect(uri.queryParameters['first_publish_year'], '2001');
       expect(uri.queryParameters['limit'], '5');
+      expect(
+        uri.queryParameters.keys,
+        unorderedEquals([
+          'title',
+          'author',
+          'first_publish_year',
+          'limit',
+          'fields',
+        ]),
+      );
+      expect(uri.toString(), isNot(contains(r'C:\Media')));
+      expect(uri.toString(), isNot(contains('/media/Books')));
     });
 
     test('maps HTTP 429 to rateLimited with retry-after', () async {

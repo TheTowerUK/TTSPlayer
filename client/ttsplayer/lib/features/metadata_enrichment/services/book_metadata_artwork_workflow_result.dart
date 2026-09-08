@@ -13,7 +13,8 @@ class BookMetadataArtworkRefreshed extends BookMetadataArtworkWorkflowResult {
   const BookMetadataArtworkRefreshed();
 }
 
-class BookMetadataArtworkAlreadyCached extends BookMetadataArtworkWorkflowResult {
+class BookMetadataArtworkAlreadyCached
+    extends BookMetadataArtworkWorkflowResult {
   const BookMetadataArtworkAlreadyCached();
 }
 
@@ -24,6 +25,11 @@ class BookMetadataArtworkNoArtworkAvailable
 
 class BookMetadataArtworkNotLinked extends BookMetadataArtworkWorkflowResult {
   const BookMetadataArtworkNotLinked();
+}
+
+class BookMetadataArtworkProviderUnavailable
+    extends BookMetadataArtworkWorkflowResult {
+  const BookMetadataArtworkProviderUnavailable();
 }
 
 class BookMetadataArtworkIdentityChanged

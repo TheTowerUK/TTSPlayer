@@ -10,6 +10,7 @@ import '../providers/book_metadata_provider_failure.dart';
 import '../providers/book_metadata_provider_result.dart';
 import 'book_metadata_match_transition.dart';
 import 'metadata_enrichment_repository.dart';
+import 'metadata_provider_lifecycle.dart';
 
 /// Result of an explicit ISBN refresh request (M7.2).
 sealed class BookMetadataRefreshResult {
@@ -77,7 +78,8 @@ class BookMetadataSearchRefreshFailure extends BookMetadataSearchRefreshResult {
   final Duration? retryAfter;
 }
 
-class BookMetadataSearchRefreshRejected extends BookMetadataSearchRefreshResult {
+class BookMetadataSearchRefreshRejected
+    extends BookMetadataSearchRefreshResult {
   const BookMetadataSearchRefreshRejected(this.reason);
 
   final String reason;
@@ -93,19 +95,28 @@ class BookMetadataRefreshService {
     required BookMetadataProvider provider,
     required MetadataEnrichmentRepository repository,
     BookMetadataMatchTransition? transition,
+    MetadataProviderLifecycle? providerLifecycle,
   })  : _provider = provider,
         _repository = repository,
+        _providerLifecycle = providerLifecycle,
         _transition = transition ?? const BookMetadataMatchTransition();
 
   final BookMetadataProvider _provider;
   final MetadataEnrichmentRepository _repository;
   final BookMetadataMatchTransition _transition;
+  final MetadataProviderLifecycle? _providerLifecycle;
 
   Future<BookMetadataRefreshResult> refreshByIsbn({
     required MediaItem item,
     required String isbnInput,
     BookMetadataRequestOptions options = const BookMetadataRequestOptions(),
   }) async {
+    final operation = _beginOperation();
+    if (_providerLifecycle != null && operation == null) {
+      return const BookMetadataRefreshRejected(
+        'External metadata provider is disabled.',
+      );
+    }
     final rejection = _validateBookItem(item);
     if (rejection != null) {
       return BookMetadataRefreshRejected(rejection);
@@ -119,6 +130,11 @@ class BookMetadataRefreshService {
     }
 
     final result = await _provider.lookupByIsbn(request, options: options);
+    if (!_operationIsCurrent(operation)) {
+      return const BookMetadataRefreshRejected(
+        'External metadata provider was disabled.',
+      );
+    }
     switch (result) {
       case BookMetadataLookupSuccess(:final metadata):
         if (metadata == null) {
@@ -144,6 +160,12 @@ class BookMetadataRefreshService {
     required BookSearchRequest searchRequest,
     BookMetadataRequestOptions options = const BookMetadataRequestOptions(),
   }) async {
+    final operation = _beginOperation();
+    if (_providerLifecycle != null && operation == null) {
+      return const BookMetadataSearchRefreshRejected(
+        'External metadata provider is disabled.',
+      );
+    }
     final rejection = _validateBookItem(item);
     if (rejection != null) {
       return BookMetadataSearchRefreshRejected(rejection);
@@ -156,6 +178,11 @@ class BookMetadataRefreshService {
     }
 
     final result = await _provider.search(searchRequest, options: options);
+    if (!_operationIsCurrent(operation)) {
+      return const BookMetadataSearchRefreshRejected(
+        'External metadata provider was disabled.',
+      );
+    }
     switch (result) {
       case BookMetadataSearchSuccess(:final candidates):
         return BookMetadataSearchRefreshSuccess(candidates);
@@ -193,7 +220,8 @@ class BookMetadataRefreshService {
     return BookMetadataRefreshSuccess(record);
   }
 
-  Future<BookMetadataRefreshResult> _handleEmptyIsbnLookup(MediaItem item) async {
+  Future<BookMetadataRefreshResult> _handleEmptyIsbnLookup(
+      MediaItem item) async {
     final existing = _repository.getByItemId(item.id);
     if (BookMetadataMatchTransition.isProviderLinked(existing)) {
       return BookMetadataRefreshEmpty(record: existing);
@@ -227,9 +255,11 @@ class BookMetadataRefreshService {
       );
     }
 
-    final updated = existing.copyWith(
-      lastErrorCategory: failure.toEnrichmentErrorCategory(),
-    ).normalized();
+    final updated = existing
+        .copyWith(
+          lastErrorCategory: failure.toEnrichmentErrorCategory(),
+        )
+        .normalized();
 
     await _repository.upsert(updated);
     return BookMetadataRefreshFailure(
@@ -244,4 +274,11 @@ class BookMetadataRefreshService {
     }
     return null;
   }
+
+  MetadataProviderOperationToken? _beginOperation() =>
+      _providerLifecycle?.beginOperation(_provider.providerId);
+
+  bool _operationIsCurrent(MetadataProviderOperationToken? operation) =>
+      _providerLifecycle == null ||
+      (operation != null && _providerLifecycle.isCurrent(operation));
 }

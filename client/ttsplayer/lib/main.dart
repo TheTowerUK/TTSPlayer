@@ -15,10 +15,17 @@ import 'features/music/services/music_playback_session_coordinator.dart';
 import 'features/music/services/music_playback_session_restorer.dart';
 import 'features/music/services/music_playback_session_repository.dart';
 import 'features/metadata_enrichment/artwork/metadata_artwork_cache_repository.dart';
-import 'features/metadata_enrichment/config/metadata_enrichment_feature_config.dart';
+import 'features/metadata_enrichment/artwork/metadata_artwork_download_generation_guard.dart';
+import 'features/metadata_enrichment/artwork/metadata_artwork_download_service.dart';
+import 'features/metadata_enrichment/artwork/metadata_artwork_http_client.dart';
 import 'features/metadata_enrichment/presentation/metadata_presentation_service.dart';
+import 'features/metadata_enrichment/providers/open_library/open_library_artwork_download_url_resolver.dart';
+import 'features/metadata_enrichment/providers/open_library/open_library_book_metadata_provider.dart';
+import 'features/metadata_enrichment/services/book_metadata_artwork_coordinator.dart';
 import 'features/metadata_enrichment/services/book_metadata_matching_coordinator.dart';
 import 'features/metadata_enrichment/services/metadata_enrichment_repository.dart';
+import 'features/metadata_enrichment/services/metadata_provider_lifecycle.dart';
+import 'features/metadata_enrichment/transport/http_metadata_http_transport.dart';
 import 'features/reading/services/reading_progress_coordinator.dart';
 import 'features/reading/services/reading_progress_repository.dart';
 import 'features/search/search_service.dart';
@@ -53,6 +60,9 @@ Future<void> main() async {
 
   final settingsRepository = SettingsRepository();
   await settingsRepository.initialize();
+  final metadataProviderLifecycle = MetadataProviderLifecycle(
+    settingsRepository: settingsRepository,
+  );
 
   final artworkService = ArtworkService();
   final musicLibraryService = MusicLibraryService();
@@ -86,6 +96,31 @@ Future<void> main() async {
 
   final metadataArtworkCacheRepository = MetadataArtworkCacheRepository();
   await metadataArtworkCacheRepository.initialize();
+
+  final metadataTransport = HttpMetadataHttpTransport();
+  final openLibraryProvider = OpenLibraryBookMetadataProvider(
+    transport: metadataTransport,
+  );
+  final bookMetadataMatchingCoordinator = BookMetadataMatchingCoordinator(
+    provider: openLibraryProvider,
+    repository: metadataEnrichmentRepository,
+    providerLifecycle: metadataProviderLifecycle,
+  );
+  final artworkGenerationGuard = MetadataArtworkDownloadGenerationGuard();
+  final metadataArtworkDownloadService = MetadataArtworkDownloadService(
+    cacheRepository: metadataArtworkCacheRepository,
+    httpClient: HttpMetadataArtworkHttpClient(),
+    urlResolver: const OpenLibraryArtworkDownloadUrlResolver(),
+    generationGuard: artworkGenerationGuard,
+    providerLifecycle: metadataProviderLifecycle,
+  );
+  final bookMetadataArtworkCoordinator = BookMetadataArtworkCoordinator(
+    repository: metadataEnrichmentRepository,
+    downloadService: metadataArtworkDownloadService,
+    generationGuard: artworkGenerationGuard,
+    cacheRepository: metadataArtworkCacheRepository,
+    providerLifecycle: metadataProviderLifecycle,
+  );
 
   final artworkPresentationService = ArtworkPresentationService(
     artworkService: artworkService,
@@ -173,6 +208,9 @@ Future<void> main() async {
         ChangeNotifierProvider<SettingsRepository>.value(
           value: settingsRepository,
         ),
+        ChangeNotifierProvider<MetadataProviderLifecycle>.value(
+          value: metadataProviderLifecycle,
+        ),
         ChangeNotifierProvider<LibraryMetadataRepository>.value(
           value: libraryMetadataRepository,
         ),
@@ -216,10 +254,12 @@ Future<void> main() async {
         ChangeNotifierProvider<MetadataEnrichmentRepository>.value(
           value: metadataEnrichmentRepository,
         ),
-        Provider<MetadataEnrichmentFeatureConfig>.value(
-          value: MetadataEnrichmentFeatureConfig.defaults,
+        Provider<BookMetadataMatchingCoordinator?>.value(
+          value: bookMetadataMatchingCoordinator,
         ),
-        Provider<BookMetadataMatchingCoordinator?>.value(value: null),
+        Provider<BookMetadataArtworkCoordinator?>.value(
+          value: bookMetadataArtworkCoordinator,
+        ),
         ChangeNotifierProvider<ReadingProgressCoordinator>.value(
           value: readingProgressCoordinator,
         ),

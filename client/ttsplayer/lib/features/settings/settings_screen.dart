@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -13,6 +12,7 @@ import '../../theme/app_theme.dart';
 import '../../widgets/tts_app_bar.dart';
 import 'diagnostics_screen.dart';
 import 'widgets/media_provider_settings_form.dart';
+import 'widgets/metadata_provider_settings.dart';
 import 'widgets/settings_section.dart';
 
 /// Grouped settings shell (M4 Phase 4.2).
@@ -31,7 +31,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _savingNetwork = false;
   bool _savingPlayback = false;
   bool _providerDirty = false;
-  int _savedTimeoutSeconds = NetworkSettings.defaultCatalogueFetchTimeoutSeconds;
+  int _savedTimeoutSeconds =
+      NetworkSettings.defaultCatalogueFetchTimeoutSeconds;
   double _savedPlaybackRate = PlaybackRatePresets.defaultRate;
   double _draftPlaybackRate = PlaybackRatePresets.defaultRate;
   List<String> _networkValidationErrors = [];
@@ -231,7 +232,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (confirmed != true || !mounted) return;
 
     final repository = context.read<SettingsRepository>();
-    final result = await repository.saveNetworkSettings(NetworkSettings.defaults());
+    final result =
+        await repository.saveNetworkSettings(NetworkSettings.defaults());
     if (!mounted) return;
 
     if (!result.success) {
@@ -413,6 +415,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                           ),
                           const SizedBox(height: AppSpacing.section),
+                          const SettingsSection(
+                            title: 'External Metadata',
+                            description:
+                                'Private, explicit access to optional metadata providers.',
+                            child: MetadataProviderSettings(),
+                          ),
+                          const SizedBox(height: AppSpacing.section),
                           SettingsSection(
                             title: 'Playback',
                             description:
@@ -466,7 +475,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                           ),
                                         ),
                                     ],
-                                    onChanged: (_savingNetwork || _savingPlayback)
+                                    onChanged: (_savingNetwork ||
+                                            _savingPlayback)
                                         ? null
                                         : (value) {
                                             if (value == null) return;
@@ -492,12 +502,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               inputFormatters: [
                                 FilteringTextInputFormatter.digitsOnly,
                               ],
-                              decoration: InputDecoration(
+                              decoration: const InputDecoration(
                                 labelText: 'Catalogue fetch timeout (seconds)',
                                 helperText:
                                     'Between ${NetworkSettings.minCatalogueFetchTimeoutSeconds} '
                                     'and ${NetworkSettings.maxCatalogueFetchTimeoutSeconds} seconds.',
-                                border: const OutlineInputBorder(),
+                                border: OutlineInputBorder(),
                               ),
                               onChanged: (_) {
                                 if (_networkValidationErrors.isNotEmpty) {
@@ -603,8 +613,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               const SizedBox(width: AppSpacing.sm),
                               OutlinedButton.icon(
                                 key: const Key('reset_network_settings'),
-                                onPressed:
-                                    _savingNetwork ? null : _confirmResetNetwork,
+                                onPressed: _savingNetwork
+                                    ? null
+                                    : _confirmResetNetwork,
                                 icon: const Icon(Icons.restore_outlined),
                                 label: const Text('Reset network defaults'),
                               ),

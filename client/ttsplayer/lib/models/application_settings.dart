@@ -14,6 +14,7 @@ class ApplicationSettings {
     required this.network,
     required this.playback,
     required this.diagnostics,
+    this.metadataProviders = const MetadataProvidersSettings(),
   });
 
   static const currentSettingsVersion = 1;
@@ -24,6 +25,7 @@ class ApplicationSettings {
   final NetworkSettings network;
   final PlaybackSettings playback;
   final DiagnosticsSettings diagnostics;
+  final MetadataProvidersSettings metadataProviders;
 
   factory ApplicationSettings.defaults() {
     return ApplicationSettings(
@@ -33,6 +35,7 @@ class ApplicationSettings {
       network: NetworkSettings.defaults(),
       playback: PlaybackSettings.defaults(),
       diagnostics: DiagnosticsSettings.defaults(),
+      metadataProviders: MetadataProvidersSettings.defaults(),
     );
   }
 
@@ -44,6 +47,7 @@ class ApplicationSettings {
       network: NetworkSettings.defaults(),
       playback: PlaybackSettings.defaults(),
       diagnostics: DiagnosticsSettings.defaults(),
+      metadataProviders: MetadataProvidersSettings.defaults(),
     );
   }
 
@@ -58,7 +62,8 @@ class ApplicationSettings {
   }) {
     final version = json['settingsVersion'];
     if (version is! int) {
-      warnings?.add('Missing settingsVersion; using defaults for unknown groups.');
+      warnings
+          ?.add('Missing settingsVersion; using defaults for unknown groups.');
     } else if (version != currentSettingsVersion) {
       warnings?.add(
         'Unsupported settingsVersion $version; using known fields only.',
@@ -75,6 +80,10 @@ class ApplicationSettings {
       network: _parseNetwork(json['network'], warnings),
       playback: _parsePlayback(json['playback'], warnings),
       diagnostics: _parseDiagnostics(json['diagnostics'], warnings),
+      metadataProviders: _parseMetadataProviders(
+        json['metadataProviders'],
+        warnings,
+      ),
     );
   }
 
@@ -85,6 +94,7 @@ class ApplicationSettings {
         'network': network.toJson(),
         'playback': playback.toJson(),
         'diagnostics': diagnostics.toJson(),
+        'metadataProviders': metadataProviders.toJson(),
       };
 
   /// Blocking validation errors for the full envelope.
@@ -95,6 +105,7 @@ class ApplicationSettings {
     errors.addAll(network.validate());
     errors.addAll(playback.validate());
     errors.addAll(diagnostics.validate());
+    errors.addAll(metadataProviders.validate());
     return errors;
   }
 
@@ -105,6 +116,7 @@ class ApplicationSettings {
     NetworkSettings? network,
     PlaybackSettings? playback,
     DiagnosticsSettings? diagnostics,
+    MetadataProvidersSettings? metadataProviders,
   }) {
     return ApplicationSettings(
       settingsVersion: settingsVersion ?? this.settingsVersion,
@@ -113,6 +125,7 @@ class ApplicationSettings {
       network: network ?? this.network,
       playback: playback ?? this.playback,
       diagnostics: diagnostics ?? this.diagnostics,
+      metadataProviders: metadataProviders ?? this.metadataProviders,
     );
   }
 
@@ -125,7 +138,8 @@ class ApplicationSettings {
       return GeneralSettings.defaults();
     }
     try {
-      final parsed = GeneralSettings.fromJsonWithRecovery(raw, warnings: warnings);
+      final parsed =
+          GeneralSettings.fromJsonWithRecovery(raw, warnings: warnings);
       final errors = parsed.validate();
       if (errors.isNotEmpty) {
         warnings?.add('Invalid general settings; using defaults.');
@@ -189,7 +203,8 @@ class ApplicationSettings {
       return PlaybackSettings.defaults();
     }
     try {
-      final parsed = PlaybackSettings.fromJsonWithRecovery(raw, warnings: warnings);
+      final parsed =
+          PlaybackSettings.fromJsonWithRecovery(raw, warnings: warnings);
       final errors = parsed.validate();
       if (errors.isNotEmpty) {
         warnings?.add('Invalid playback settings; using defaults.');
@@ -221,6 +236,112 @@ class ApplicationSettings {
       warnings?.add('Invalid diagnostics settings; using defaults.');
       return DiagnosticsSettings.defaults();
     }
+  }
+
+  static MetadataProvidersSettings _parseMetadataProviders(
+    Object? raw,
+    List<String>? warnings,
+  ) {
+    if (raw == null) return MetadataProvidersSettings.defaults();
+    if (raw is! Map<String, dynamic>) {
+      warnings?.add('Invalid metadataProviders settings; using defaults.');
+      return MetadataProvidersSettings.defaults();
+    }
+    try {
+      final parsed = MetadataProvidersSettings.fromJson(raw);
+      if (parsed.validate().isNotEmpty) {
+        warnings?.add('Invalid metadataProviders settings; using defaults.');
+        return MetadataProvidersSettings.defaults();
+      }
+      return parsed;
+    } catch (_) {
+      warnings?.add('Invalid metadataProviders settings; using defaults.');
+      return MetadataProvidersSettings.defaults();
+    }
+  }
+}
+
+enum ProviderDataRetentionPolicy {
+  retain,
+  deleteOnExplicitRequest;
+
+  static ProviderDataRetentionPolicy fromStorage(Object? raw) {
+    for (final value in values) {
+      if (value.name == raw) return value;
+    }
+    return retain;
+  }
+}
+
+/// Production provider opt-in and retained-data policy (M7.7.2).
+///
+/// This group never stores credentials. Delete policies describe an explicit
+/// user action; changing provider availability does not delete retained data.
+class MetadataProvidersSettings {
+  const MetadataProvidersSettings({
+    this.externalMetadataEnabled = false,
+    this.enabledProviderIds = const <String>{},
+    this.metadataRetentionOnDisable = ProviderDataRetentionPolicy.retain,
+    this.artworkRetentionOnDisable = ProviderDataRetentionPolicy.retain,
+  });
+
+  final bool externalMetadataEnabled;
+  final Set<String> enabledProviderIds;
+  final ProviderDataRetentionPolicy metadataRetentionOnDisable;
+  final ProviderDataRetentionPolicy artworkRetentionOnDisable;
+
+  factory MetadataProvidersSettings.defaults() =>
+      const MetadataProvidersSettings();
+
+  factory MetadataProvidersSettings.fromJson(Map<String, dynamic> json) {
+    final rawIds = json['enabledProviderIds'];
+    final ids = rawIds is List
+        ? rawIds
+            .whereType<String>()
+            .map((id) => id.trim())
+            .where((id) => id.isNotEmpty)
+            .toSet()
+        : <String>{};
+    return MetadataProvidersSettings(
+      externalMetadataEnabled: json['externalMetadataEnabled'] == true,
+      enabledProviderIds: Set.unmodifiable(ids),
+      metadataRetentionOnDisable: ProviderDataRetentionPolicy.fromStorage(
+        json['metadataRetentionOnDisable'],
+      ),
+      artworkRetentionOnDisable: ProviderDataRetentionPolicy.fromStorage(
+        json['artworkRetentionOnDisable'],
+      ),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'externalMetadataEnabled': externalMetadataEnabled,
+        'enabledProviderIds': enabledProviderIds.toList()..sort(),
+        'metadataRetentionOnDisable': metadataRetentionOnDisable.name,
+        'artworkRetentionOnDisable': artworkRetentionOnDisable.name,
+      };
+
+  List<String> validate() => const [];
+
+  bool isProviderOperational(String providerId) =>
+      externalMetadataEnabled && enabledProviderIds.contains(providerId);
+
+  MetadataProvidersSettings copyWith({
+    bool? externalMetadataEnabled,
+    Set<String>? enabledProviderIds,
+    ProviderDataRetentionPolicy? metadataRetentionOnDisable,
+    ProviderDataRetentionPolicy? artworkRetentionOnDisable,
+  }) {
+    return MetadataProvidersSettings(
+      externalMetadataEnabled:
+          externalMetadataEnabled ?? this.externalMetadataEnabled,
+      enabledProviderIds:
+          Set.unmodifiable(enabledProviderIds ?? this.enabledProviderIds),
+      metadataRetentionOnDisable:
+          metadataRetentionOnDisable ?? this.metadataRetentionOnDisable,
+      artworkRetentionOnDisable:
+          artworkRetentionOnDisable ?? this.artworkRetentionOnDisable,
+    );
   }
 }
 
@@ -360,9 +481,8 @@ class NetworkSettings {
   factory NetworkSettings.fromJson(Map<String, dynamic> json) {
     final raw = json['catalogueFetchTimeoutSeconds'];
     return NetworkSettings(
-      catalogueFetchTimeoutSeconds: raw is int
-          ? raw
-          : defaultCatalogueFetchTimeoutSeconds,
+      catalogueFetchTimeoutSeconds:
+          raw is int ? raw : defaultCatalogueFetchTimeoutSeconds,
     );
   }
 

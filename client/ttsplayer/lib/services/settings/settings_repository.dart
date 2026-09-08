@@ -78,6 +78,9 @@ class SettingsRepository extends ChangeNotifier {
 
   PlaybackSettings get playbackSettings => _settings.playback;
 
+  MetadataProvidersSettings get metadataProviders =>
+      _settings.metadataProviders;
+
   /// Persisted default playback rate (ADR-011).
   double get defaultPlaybackRate => playbackSettings.defaultPlaybackSpeed;
 
@@ -173,8 +176,15 @@ class SettingsRepository extends ChangeNotifier {
   }
 
   /// Updates only the network slice and saves the full envelope.
-  Future<SettingsSaveResult> saveNetworkSettings(NetworkSettings network) async {
+  Future<SettingsSaveResult> saveNetworkSettings(
+      NetworkSettings network) async {
     return save(_settings.copyWith(network: network));
+  }
+
+  Future<SettingsSaveResult> saveMetadataProviders(
+    MetadataProvidersSettings metadataProviders,
+  ) async {
+    return save(_settings.copyWith(metadataProviders: metadataProviders));
   }
 
   /// Updates library browse preferences (global default sort only).
@@ -291,7 +301,8 @@ class SettingsRepository extends ChangeNotifier {
       }
       return parsed;
     } catch (e) {
-      debugPrint('[SettingsRepository] could not load legacy provider config: $e');
+      debugPrint(
+          '[SettingsRepository] could not load legacy provider config: $e');
       warnings.add('Legacy provider configuration could not be read.');
       return null;
     }

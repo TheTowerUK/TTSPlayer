@@ -1,7 +1,6 @@
 import 'dart:typed_data';
 
 import '../transport/http_metadata_http_transport.dart';
-import '../transport/metadata_http_transport.dart';
 import 'metadata_artwork_cache_entry.dart';
 import 'metadata_artwork_cache_repository.dart';
 import 'metadata_artwork_cache_state.dart';
@@ -12,6 +11,7 @@ import 'metadata_artwork_filesystem.dart';
 import 'metadata_artwork_http_client.dart';
 import 'metadata_artwork_reference.dart';
 import 'metadata_artwork_validator.dart';
+import '../services/metadata_provider_lifecycle.dart';
 
 /// Explicit provider artwork retrieval, validation, and atomic cache writes (M7.4.3).
 ///
@@ -24,11 +24,13 @@ class MetadataArtworkDownloadService {
     MetadataArtworkValidator? validator,
     MetadataArtworkDownloadGenerationGuard? generationGuard,
     DateTime Function()? clock,
+    MetadataProviderLifecycle? providerLifecycle,
   })  : _cacheRepository = cacheRepository,
         _httpClient = httpClient,
         _urlResolver = urlResolver,
         _validator = validator ?? const MetadataArtworkValidator(),
         _generationGuard = generationGuard,
+        _providerLifecycle = providerLifecycle,
         _clock = clock ?? DateTime.now;
 
   final MetadataArtworkCacheRepository _cacheRepository;
@@ -37,6 +39,7 @@ class MetadataArtworkDownloadService {
   final MetadataArtworkValidator _validator;
   final MetadataArtworkDownloadGenerationGuard? _generationGuard;
   final DateTime Function() _clock;
+  final MetadataProviderLifecycle? _providerLifecycle;
 
   Future<MetadataArtworkCacheLookup?> lookup(
     MetadataArtworkReference reference,
@@ -89,10 +92,24 @@ class MetadataArtworkDownloadService {
     int? expectedGeneration,
     Uri? overrideDownloadUrl,
   }) async {
+    final providerOperation =
+        _providerLifecycle?.beginOperation(reference.providerId);
+    if (_providerLifecycle != null && providerOperation == null) {
+      return const MetadataArtworkDownloadFailure(
+        category: MetadataArtworkDownloadFailureCategory.cancelled,
+        message: 'External metadata provider is disabled.',
+      );
+    }
     if (!_generationIsCurrent(itemId, expectedGeneration)) {
-      return MetadataArtworkDownloadFailure(
+      return const MetadataArtworkDownloadFailure(
         category: MetadataArtworkDownloadFailureCategory.staleGeneration,
         message: 'Artwork download superseded by a newer item lifecycle.',
+      );
+    }
+    if (!_providerOperationIsCurrent(providerOperation)) {
+      return const MetadataArtworkDownloadFailure(
+        category: MetadataArtworkDownloadFailureCategory.cancelled,
+        message: 'External metadata provider was disabled.',
       );
     }
 
@@ -135,7 +152,7 @@ class MetadataArtworkDownloadService {
         refresh: refresh,
       );
     } on MetadataTransportCancelledException {
-      return MetadataArtworkDownloadFailure(
+      return const MetadataArtworkDownloadFailure(
         category: MetadataArtworkDownloadFailureCategory.cancelled,
       );
     } on MetadataTransportNetworkException {
@@ -153,9 +170,15 @@ class MetadataArtworkDownloadService {
     }
 
     if (!_generationIsCurrent(itemId, expectedGeneration)) {
-      return MetadataArtworkDownloadFailure(
+      return const MetadataArtworkDownloadFailure(
         category: MetadataArtworkDownloadFailureCategory.staleGeneration,
         message: 'Artwork download superseded before validation.',
+      );
+    }
+    if (!_providerOperationIsCurrent(providerOperation)) {
+      return const MetadataArtworkDownloadFailure(
+        category: MetadataArtworkDownloadFailureCategory.cancelled,
+        message: 'External metadata provider was disabled.',
       );
     }
 
@@ -191,9 +214,15 @@ class MetadataArtworkDownloadService {
     }
 
     if (!_generationIsCurrent(itemId, expectedGeneration)) {
-      return MetadataArtworkDownloadFailure(
+      return const MetadataArtworkDownloadFailure(
         category: MetadataArtworkDownloadFailureCategory.staleGeneration,
         message: 'Artwork download superseded before cache write.',
+      );
+    }
+    if (!_providerOperationIsCurrent(providerOperation)) {
+      return const MetadataArtworkDownloadFailure(
+        category: MetadataArtworkDownloadFailureCategory.cancelled,
+        message: 'External metadata provider was disabled before cache write.',
       );
     }
 
@@ -225,6 +254,12 @@ class MetadataArtworkDownloadService {
     }
   }
 
+  bool _providerOperationIsCurrent(
+    MetadataProviderOperationToken? operation,
+  ) =>
+      _providerLifecycle == null ||
+      (operation != null && _providerLifecycle.isCurrent(operation));
+
   Future<MetadataArtworkCacheEntry> _writeValidatedEntry({
     required MetadataArtworkReference reference,
     required Uint8List bytes,
@@ -239,9 +274,7 @@ class MetadataArtworkDownloadService {
     final tempFile = fs.tempFileForRelativePath(relativePath);
 
     final existing = _cacheRepository.entryForKey(reference.cacheKey);
-    if (existing != null &&
-        existing.relativePath != relativePath &&
-        refresh) {
+    if (existing != null && existing.relativePath != relativePath && refresh) {
       await fs.deleteRelativeFile(existing.relativePath);
     }
 
@@ -278,15 +311,17 @@ class MetadataArtworkDownloadService {
     MetadataArtworkReference reference,
     MetadataArtworkCacheEntry entry,
   ) {
-    return reference.copyWith(
-      contentType: entry.contentType,
-      width: entry.width,
-      height: entry.height,
-      validatedAt: entry.lastValidatedAt,
-      cacheState: MetadataArtworkCacheState.downloaded,
-      localRelativePath: entry.relativePath,
-      validator: entry.validator,
-    ).normalized();
+    return reference
+        .copyWith(
+          contentType: entry.contentType,
+          width: entry.width,
+          height: entry.height,
+          validatedAt: entry.lastValidatedAt,
+          cacheState: MetadataArtworkCacheState.downloaded,
+          localRelativePath: entry.relativePath,
+          validator: entry.validator,
+        )
+        .normalized();
   }
 
   Future<MetadataArtworkDownloadFailure> _failurePreservingCache(
