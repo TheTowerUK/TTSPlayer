@@ -1,10 +1,11 @@
 # Metadata Enrichment Architecture
 
-**Status:** Implemented through M7 Phase 7.5
+**Status:** Implemented through M7 Phase 7.6; Phase 7.7 production-hardening planning complete
 **Milestone:** M7 — Metadata Enrichment and Library Experience
 **Related ADRs:** [ADR-028](./decisions/ADR-028-external-metadata-enrichment-boundary.md) (Proposed), [ADR-029](./decisions/ADR-029-metadata-precedence-provenance-and-matching.md) (Accepted)
 
 → [M7 plan](../roadmap/m7-plan.md) · [Phase 7.1 closure](../roadmap/m7-phase-7.1-closure-report.md) · [Books provider evaluation](./books-metadata-provider-evaluation.md)
+→ [Phase 7.7 production-hardening plan](../roadmap/m7-phase-7.7-production-hardening-plan.md)
 → [Books & comics](./books-comics.md) · [Music](./music.md)
 → [Artwork caching ADR-015](./decisions/ADR-015-artwork-and-image-decode-caching.md)
 → [Diagnostics ADR-017](./decisions/ADR-017-diagnostics-architecture.md)
@@ -290,11 +291,11 @@ ResolvedMediaArtworkImage → ArtworkImage
 - `SearchService` gained an idempotent `dispose()` for its optional enrichment-repository listener; the zero-dependency `SearchService()` constructor is unchanged and still fully supported
 - `main.dart` now constructs `MetadataPresentationService` and wires it plus `MetadataEnrichmentRepository` into `SearchService`
 - No provider, network, or persistence writes occur on any search path
-- **Still deferred:** subtitle indexing/ranking (no undefined tier added), Windows runtime harness, and ADR acceptance
+- **At 7.5.3:** subtitle indexing/ranking, the Windows runtime harness, and ADR acceptance remained deferred; runtime validation and ADR acceptance completed at Phase 7.5 closure
 
 → [Phase 7.5 plan §12](../roadmap/m7-phase-7.5-search-detail-presentation.md#12-search-ranking-rules) for the full ranking table.
 
-ADR-029 remains **Proposed** until search/detail consumers, lifecycle, and Windows runtime pass.
+ADR-029 is **Accepted**: search/detail consumers, lifecycle, and the Phase 7.5 Windows runtime gate passed at Phase 7.5 closure.
 
 **Phase 7.5.4 delivered:**
 
