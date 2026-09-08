@@ -292,7 +292,12 @@ void main() {
       matching: find.byType(TtsMediaCard),
     );
     await tester.ensureVisible(card);
-    await tester.tap(card);
+    await tester.tap(
+      find.descendant(
+        of: card,
+        matching: find.byKey(const Key('media_details_mixed-book')),
+      ),
+    );
     await tester.pumpAndSettle();
     expect(find.byType(ItemDetailScreen), findsOneWidget);
 
