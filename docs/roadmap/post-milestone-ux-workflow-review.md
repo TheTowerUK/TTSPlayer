@@ -1,6 +1,6 @@
 # Post-Milestone UX and Workflow Review
 
-**Status:** In implementation — M7 Phase 7.6
+**Status:** Complete — delivered by M7 Phase 7.6 (2026-09-07)
 **Recorded:** 2026-07-29  
 **Review timing:** After core milestone phases are complete; before or during post-release polish  
 **Classification:** UX and workflow refinements — **not** implementation blockers

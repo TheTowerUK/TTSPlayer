@@ -1,6 +1,6 @@
 # M7 Phase 7.6 — UX and Workflow Refinements
 
-**Status:** In progress — 7.6.4 shared direct-activation routing complete
+**Status:** Complete (2026-09-07) — [closure report](./m7-phase-7.6-closure-report.md)
 **Branch:** `m7-development`
 **Prerequisite:** [Phase 7.5 closure](./m7-phase-7.5-closure-report.md)
 **Source tracker:** [Post-Milestone UX and Workflow Review](./post-milestone-ux-workflow-review.md)
@@ -76,8 +76,8 @@ Direct player/reader helpers already exist, but there is no shared policy for ch
 | **7.6.2** ✅ | Continue Watching artwork contract | Confirmed existing `ResolvedMediaArtworkImage` path uses proportional `BoxFit.cover`; added provider-path, bounded decode/layout, portrait-source fit, and overflow regression coverage — **33 focused tests passed**; no production change required |
 | **7.6.3** ✅ | Literature folder-rescan parity | Canonical exact-path arguments; aligned subtree terminology; book/comic UI forwarding; nested replacement, ancestor/total recalculation, sibling and `added_at` preservation; navigation/last-good catalogue regression coverage |
 | **7.6.4** ✅ | Shared direct-activation routing | Central policy/helper wired to folder, search, Recently Added, dashboard Favourites, and full Favourites; playable video/audio/supported books/comics activate directly; unavailable/unsupported/image items fall back to details; explicit Details actions retained — **139 affected tests passed; full suite 1853 passed, 21 skipped, 0 failed** |
-| **7.6.5** | Windows runtime and regression | Exercise video/audio/book/comic direct activation, Details fallback, Continue Watching aspect ratio, and scoped literature rescan with synthetic fixtures |
-| **7.6.6** | Closure | Reconcile tracker, M7 plan, release notes, architecture implications, and deferred items |
+| **7.6.5** ✅ | Windows runtime and regression | Windows reader/search/browse harnesses and focused workflow regression green; one stale Phase 6.2 Details expectation corrected; **1,853 passed, 21 skipped, 0 failed** full suite — [validation](./m7-phase-7.6.5-runtime-validation.md) |
+| **7.6.6** ✅ | Closure | Reconciled tracker, M7 plan, release notes, architecture invariants, DoD, release-QA items, and next activity — [closure report](./m7-phase-7.6-closure-report.md) |
 
 Each implementation step remains independently reviewable and commit-sized.
 

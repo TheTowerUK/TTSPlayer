@@ -461,7 +461,7 @@ Music is the second candidate; video and comics deferred until matching UX and a
 | **7.3** | Matching, confidence scoring, manual correction, ignore/stale | ✅ Complete — see [m7-phase-7.3-plan.md](./m7-phase-7.3-plan.md) |
 | **7.4** | Artwork enrichment, download cache, precedence integration | ✅ Complete — see [m7-phase-7.4-plan.md](./m7-phase-7.4-plan.md) · [7.4.6 closure](./m7-phase-7.4.6-closure-report.md) |
 | **7.5** | Search enrichment terms, filtered browsing, enriched detail surfaces | ✅ Complete — [plan](./m7-phase-7.5-search-detail-presentation.md) · [closure](./m7-phase-7.5-closure-report.md) |
-| **7.6** | UX/workflow refinements ([post-M6 tracker](./post-milestone-ux-workflow-review.md)) | 🟡 In progress — [plan](./m7-phase-7.6-ux-workflow-plan.md) |
+| **7.6** | UX/workflow refinements ([post-M6 tracker](./post-milestone-ux-workflow-review.md)) | ✅ Complete (2026-09-07) — [plan](./m7-phase-7.6-ux-workflow-plan.md) · [closure](./m7-phase-7.6-closure-report.md) |
 | **7.7** | Privacy, diagnostics, performance, resilience, optional backend assist design | Planned |
 | **7.8** | Windows runtime validation and milestone closure | Planned |
 
@@ -624,7 +624,7 @@ These are **not** Phase 7.0–7.2 blockers. Phase 7.6 is the dedicated UX/workfl
 
 ### Phase 7.6 — UX and Workflow Refinements 🟡
 
-**Status:** In progress — 7.6.4 shared direct-activation routing complete
+**Status:** Complete (2026-09-07) — [closure report](./m7-phase-7.6-closure-report.md)
 **Plan:** [m7-phase-7.6-ux-workflow-plan.md](./m7-phase-7.6-ux-workflow-plan.md)
 
 **Objective:** Lock distortion-free Continue Watching artwork, harden the existing literature folder-rescan path, and centralize direct single-item activation while retaining explicit access to item details.
