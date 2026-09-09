@@ -263,6 +263,8 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
                 const SizedBox(height: AppSpacing.section),
                 _buildCatalogueSection(snapshot),
                 const SizedBox(height: AppSpacing.section),
+                _buildMetadataEnrichmentSection(snapshot),
+                const SizedBox(height: AppSpacing.section),
                 _buildCacheSection(snapshot),
                 const SizedBox(height: AppSpacing.section),
                 _buildSearchSection(snapshot),
@@ -546,6 +548,87 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
         DiagnosticsValueRow(
           label: 'Live images',
           value: DiagnosticsFormatters.intValue(cache.imageCacheLiveImageCount),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMetadataEnrichmentSection(
+    RuntimeDiagnosticsSnapshot snapshot,
+  ) {
+    final enrichment = snapshot.metadataEnrichment;
+    if (enrichment == null) {
+      return const DiagnosticsSection(
+        sectionKey: Key('diagnostics_section_metadata_enrichment'),
+        title: 'Metadata Enrichment',
+        status: DiagnosticSectionStatus.unavailable,
+        children: [
+          DiagnosticsValueRow(label: 'Availability', value: 'Unavailable'),
+        ],
+      );
+    }
+    return DiagnosticsSection(
+      sectionKey: const Key('diagnostics_section_metadata_enrichment'),
+      title: 'Metadata Enrichment',
+      status: DiagnosticSectionStatus.complete,
+      children: [
+        DiagnosticsValueRow(
+          label: 'External metadata',
+          value: DiagnosticsFormatters.boolValue(
+            enrichment.externalMetadataEnabled,
+          ),
+        ),
+        DiagnosticsValueRow(
+          label: 'Enabled providers',
+          value: enrichment.enabledProviderIds.isEmpty
+              ? 'None'
+              : enrichment.enabledProviderIds.join(', '),
+        ),
+        for (final entry in enrichment.credentialConfiguredByProvider.entries)
+          DiagnosticsValueRow(
+            label: 'Credential configured (${entry.key})',
+            value: DiagnosticsFormatters.boolValue(entry.value),
+          ),
+        for (final entry in enrichment.recordCountsByState.entries)
+          DiagnosticsValueRow(
+            label: 'Records (${entry.key})',
+            value: DiagnosticsFormatters.intValue(entry.value),
+          ),
+        DiagnosticsValueRow(
+          label: 'Pending operations',
+          value: DiagnosticsFormatters.intValue(
+            enrichment.pendingOperationCount,
+          ),
+        ),
+        DiagnosticsValueRow(
+          label: 'In-flight operations',
+          value: DiagnosticsFormatters.intValue(
+            enrichment.inFlightOperationCount,
+          ),
+        ),
+        DiagnosticsValueRow(
+          label: 'Last successful refresh',
+          value: DiagnosticsFormatters.dateTimeUtc(
+            enrichment.lastSuccessfulRefreshAt,
+          ),
+        ),
+        DiagnosticsValueRow(
+          label: 'Last safe error',
+          value: DiagnosticsFormatters.textValue(
+            enrichment.lastSafeErrorCategory,
+          ),
+        ),
+        DiagnosticsValueRow(
+          label: 'Artwork cache entries',
+          value: DiagnosticsFormatters.intValue(
+            enrichment.artworkCacheEntryCount,
+          ),
+        ),
+        DiagnosticsValueRow(
+          label: 'Artwork cache size',
+          value: DiagnosticsFormatters.bytesValue(
+            enrichment.artworkCacheIndexedBytes,
+          ),
         ),
       ],
     );

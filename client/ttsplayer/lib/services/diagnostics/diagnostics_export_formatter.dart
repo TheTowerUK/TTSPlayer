@@ -98,7 +98,8 @@ String formatDiagnosticsExport(RuntimeDiagnosticsSnapshot snapshot) {
     _writeLine(buffer, 'Identity', catalogue.catalogueIdentity);
     _writeLine(buffer, 'Source', catalogue.sourceKindLabel);
     _writeLine(buffer, 'Generated at', catalogue.generatedAt);
-    _writeLine(buffer, 'Catalogue version', _formatInt(catalogue.catalogueVersion));
+    _writeLine(
+        buffer, 'Catalogue version', _formatInt(catalogue.catalogueVersion));
     _writeLine(buffer, 'Scanner version', catalogue.scannerVersion);
     _writeLine(buffer, 'Libraries', _formatInt(catalogue.libraryCount));
     _writeLine(buffer, 'Folders', _formatInt(catalogue.folderCount));
@@ -126,6 +127,42 @@ String formatDiagnosticsExport(RuntimeDiagnosticsSnapshot snapshot) {
   });
 
   final cache = snapshot.cache;
+  final enrichment = snapshot.metadataEnrichment;
+  if (enrichment != null) {
+    _writeSection(buffer, 'Metadata Enrichment', () {
+      _writeLine(buffer, 'External metadata',
+          _formatBool(enrichment.externalMetadataEnabled));
+      _writeLine(
+        buffer,
+        'Enabled providers',
+        enrichment.enabledProviderIds.isEmpty
+            ? 'None'
+            : enrichment.enabledProviderIds.join(', '),
+      );
+      for (final entry in enrichment.credentialConfiguredByProvider.entries) {
+        _writeLine(
+          buffer,
+          'Credential configured (${entry.key})',
+          _formatBool(entry.value),
+        );
+      }
+      for (final entry in enrichment.recordCountsByState.entries) {
+        _writeLine(buffer, 'Records (${entry.key})', _formatInt(entry.value));
+      }
+      _writeLine(buffer, 'Pending operations',
+          _formatInt(enrichment.pendingOperationCount));
+      _writeLine(buffer, 'In-flight operations',
+          _formatInt(enrichment.inFlightOperationCount));
+      _writeLine(buffer, 'Last successful refresh',
+          _formatDateTime(enrichment.lastSuccessfulRefreshAt));
+      _writeLine(buffer, 'Last safe error', enrichment.lastSafeErrorCategory);
+      _writeLine(buffer, 'Artwork cache entries',
+          _formatInt(enrichment.artworkCacheEntryCount));
+      _writeLine(buffer, 'Artwork cache indexed bytes',
+          _formatInt(enrichment.artworkCacheIndexedBytes));
+    });
+  }
+
   _writeSection(buffer, 'Cache', () {
     _writeLine(buffer, 'Status', _sectionStatusLabel(cache.status));
     _writeLine(
@@ -612,7 +649,8 @@ String formatDiagnosticsExport(RuntimeDiagnosticsSnapshot snapshot) {
     _writeLine(
       buffer,
       'Reconciliation unsupported comic format retained count',
-      _formatInt(readingProgress.reconciliationUnsupportedComicFormatRetainedCount),
+      _formatInt(
+          readingProgress.reconciliationUnsupportedComicFormatRetainedCount),
     );
     _writeLine(
       buffer,

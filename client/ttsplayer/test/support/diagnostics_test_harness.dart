@@ -15,6 +15,8 @@ import 'package:ttsplayer/features/music/services/music_playback_session_restore
 import 'package:ttsplayer/features/reading/services/reading_progress_coordinator.dart';
 import 'package:ttsplayer/features/reading/services/reading_progress_repository.dart';
 import 'package:ttsplayer/features/search/search_service.dart';
+import 'package:ttsplayer/features/metadata_enrichment/artwork/metadata_artwork_cache_repository.dart';
+import 'package:ttsplayer/features/metadata_enrichment/services/metadata_enrichment_repository.dart';
 import 'package:ttsplayer/models/catalog.dart';
 import 'package:ttsplayer/models/catalogue_provider_snapshot.dart';
 import 'package:ttsplayer/models/media_folder.dart';
@@ -28,6 +30,7 @@ import 'package:ttsplayer/services/media_access/media_access_config.dart';
 import 'package:ttsplayer/services/media_access/media_catalogue_provider.dart';
 import 'package:ttsplayer/services/media_access/media_provider_config_service.dart';
 import 'package:ttsplayer/services/playback_service.dart';
+import 'package:ttsplayer/services/settings/settings_repository.dart';
 import 'package:ttsplayer/services/diagnostics/runtime_diagnostics_models.dart';
 
 Catalog diagnosticsCatalog({
@@ -237,6 +240,9 @@ MusicListeningCoordinator musicListeningCoordinatorHarness({
 Future<MusicPlaybackSessionRepository>
     initializedMusicPlaybackSessionRepository({
   Map<String, Object>? initialPrefs,
+  SettingsRepository? settingsRepository,
+  MetadataEnrichmentRepository? metadataEnrichmentRepository,
+  MetadataArtworkCacheRepository? metadataArtworkCacheRepository,
 }) async {
   SharedPreferences.setMockInitialValues(initialPrefs ?? {});
   final repository = MusicPlaybackSessionRepository();
@@ -291,6 +297,9 @@ Future<DiagnosticsService> buildDiagnosticsHarness({
   bool Function()? imageCacheAvailableProvider,
   bool withInitializedLibrary = true,
   Map<String, Object>? initialPrefs,
+  SettingsRepository? settingsRepository,
+  MetadataEnrichmentRepository? metadataEnrichmentRepository,
+  MetadataArtworkCacheRepository? metadataArtworkCacheRepository,
 }) async {
   SharedPreferences.setMockInitialValues(initialPrefs ?? {});
   PackageInfo.setMockInitialValues(
@@ -352,6 +361,9 @@ Future<DiagnosticsService> buildDiagnosticsHarness({
     packageInfoLoader: packageInfoLoader,
     platformNameProvider: () => 'windows',
     imageCacheAvailableProvider: imageCacheAvailableProvider ?? (() => false),
+    settingsRepository: settingsRepository,
+    metadataEnrichmentRepository: metadataEnrichmentRepository,
+    metadataArtworkCacheRepository: metadataArtworkCacheRepository,
   );
 }
 

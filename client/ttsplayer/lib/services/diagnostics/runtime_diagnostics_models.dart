@@ -482,6 +482,7 @@ class RuntimeDiagnosticsSnapshot {
     this.readerSession,
     this.comicReader,
     this.library,
+    this.metadataEnrichment,
   });
 
   final DateTime capturedAt;
@@ -497,4 +498,35 @@ class RuntimeDiagnosticsSnapshot {
   final ReaderSessionDiagnostics? readerSession;
   final ComicReaderDiagnostics? comicReader;
   final LibraryDiagnostics? library;
+  final MetadataEnrichmentDiagnostics? metadataEnrichment;
+}
+
+/// Safe aggregate-only diagnostics for optional external metadata.
+class MetadataEnrichmentDiagnostics {
+  MetadataEnrichmentDiagnostics({
+    required this.externalMetadataEnabled,
+    required Iterable<String> enabledProviderIds,
+    required Map<String, bool> credentialConfiguredByProvider,
+    required Map<String, int> recordCountsByState,
+    this.pendingOperationCount,
+    this.inFlightOperationCount,
+    this.lastSuccessfulRefreshAt,
+    this.lastSafeErrorCategory,
+    required this.artworkCacheEntryCount,
+    required this.artworkCacheIndexedBytes,
+  })  : enabledProviderIds = List.unmodifiable(enabledProviderIds),
+        credentialConfiguredByProvider =
+            Map.unmodifiable(credentialConfiguredByProvider),
+        recordCountsByState = Map.unmodifiable(recordCountsByState);
+
+  final bool externalMetadataEnabled;
+  final List<String> enabledProviderIds;
+  final Map<String, bool> credentialConfiguredByProvider;
+  final Map<String, int> recordCountsByState;
+  final int? pendingOperationCount;
+  final int? inFlightOperationCount;
+  final DateTime? lastSuccessfulRefreshAt;
+  final String? lastSafeErrorCategory;
+  final int artworkCacheEntryCount;
+  final int artworkCacheIndexedBytes;
 }

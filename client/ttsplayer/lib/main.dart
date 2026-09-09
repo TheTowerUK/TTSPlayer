@@ -196,6 +196,9 @@ Future<void> main() async {
     musicPlaybackSessionRestorer: musicPlaybackSessionRestorer,
     readingProgressRepository: readingProgressRepository,
     readingProgressCoordinator: readingProgressCoordinator,
+    settingsRepository: settingsRepository,
+    metadataEnrichmentRepository: metadataEnrichmentRepository,
+    metadataArtworkCacheRepository: metadataArtworkCacheRepository,
     applicationStartedAt: applicationStartedAt,
   );
 

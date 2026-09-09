@@ -16,6 +16,10 @@ import '../../features/reading/services/reading_progress_repository.dart';
 import '../../features/reading/services/reader_session_telemetry.dart';
 import '../../features/books/reader/book_pdf_viewer_params.dart';
 import '../../features/search/search_service.dart';
+import '../../features/metadata_enrichment/artwork/metadata_artwork_cache_repository.dart';
+import '../../features/metadata_enrichment/models/enrichment_match_state.dart';
+import '../../features/metadata_enrichment/services/metadata_enrichment_repository.dart';
+import '../settings/settings_repository.dart';
 import '../../models/catalogue_provider_snapshot.dart';
 import '../../models/media_folder.dart';
 import '../../models/media_kind.dart';
@@ -56,6 +60,9 @@ class DiagnosticsService {
     Future<PackageInfo> Function()? packageInfoLoader,
     String Function()? platformNameProvider,
     bool Function()? imageCacheAvailableProvider,
+    SettingsRepository? settingsRepository,
+    MetadataEnrichmentRepository? metadataEnrichmentRepository,
+    MetadataArtworkCacheRepository? metadataArtworkCacheRepository,
   })  : _catalogService = catalogService,
         _artworkService = artworkService,
         _searchService = searchService,
@@ -74,7 +81,10 @@ class DiagnosticsService {
         _packageInfoLoader = packageInfoLoader ?? PackageInfo.fromPlatform,
         _platformNameProvider = platformNameProvider ?? _defaultPlatformName,
         _imageCacheAvailableProvider =
-            imageCacheAvailableProvider ?? _defaultImageCacheAvailable;
+            imageCacheAvailableProvider ?? _defaultImageCacheAvailable,
+        _settingsRepository = settingsRepository,
+        _metadataEnrichmentRepository = metadataEnrichmentRepository,
+        _metadataArtworkCacheRepository = metadataArtworkCacheRepository;
 
   final CatalogService _catalogService;
   final ArtworkService _artworkService;
@@ -94,6 +104,9 @@ class DiagnosticsService {
   final Future<PackageInfo> Function() _packageInfoLoader;
   final String Function() _platformNameProvider;
   final bool Function() _imageCacheAvailableProvider;
+  final SettingsRepository? _settingsRepository;
+  final MetadataEnrichmentRepository? _metadataEnrichmentRepository;
+  final MetadataArtworkCacheRepository? _metadataArtworkCacheRepository;
 
   PackageInfo? _cachedPackageInfo;
 
@@ -115,6 +128,7 @@ class DiagnosticsService {
     final readerSession = _captureReaderSession();
     final comicReader = _captureComicReader();
     final library = _captureLibrary(catalogue);
+    final metadataEnrichment = _captureMetadataEnrichment();
 
     return RuntimeDiagnosticsSnapshot(
       capturedAt: capturedAt,
@@ -130,6 +144,39 @@ class DiagnosticsService {
       readerSession: readerSession,
       comicReader: comicReader,
       library: library,
+      metadataEnrichment: metadataEnrichment,
+    );
+  }
+
+  MetadataEnrichmentDiagnostics? _captureMetadataEnrichment() {
+    final settings = _settingsRepository;
+    final repository = _metadataEnrichmentRepository;
+    final artwork = _metadataArtworkCacheRepository;
+    if (settings == null || repository == null || artwork == null) return null;
+
+    final counts = <String, int>{
+      for (final state in EnrichmentMatchState.values) state.serializedValue: 0,
+    };
+    String? safeErrorCategory;
+    for (final record in repository.allRecords) {
+      final key = record.matchState.serializedValue;
+      counts[key] = (counts[key] ?? 0) + 1;
+      safeErrorCategory =
+          record.lastErrorCategory?.serializedValue ?? safeErrorCategory;
+    }
+    final enabledIds = settings.metadataProviders.enabledProviderIds.toList()
+      ..sort();
+
+    return MetadataEnrichmentDiagnostics(
+      externalMetadataEnabled:
+          settings.metadataProviders.externalMetadataEnabled,
+      enabledProviderIds: enabledIds,
+      credentialConfiguredByProvider: const {'open_library': false},
+      recordCountsByState: counts,
+      lastSuccessfulRefreshAt: null,
+      lastSafeErrorCategory: safeErrorCategory,
+      artworkCacheEntryCount: artwork.entryCount,
+      artworkCacheIndexedBytes: artwork.totalBytes,
     );
   }
 
@@ -622,8 +669,7 @@ class DiagnosticsService {
         active: true,
         archiveType: snap.archiveType,
         itemIdentity: redactIdentity(snap.itemIdentity),
-        pageNumber:
-            snap.pageIndex == null ? null : snap.pageIndex! + 1,
+        pageNumber: snap.pageIndex == null ? null : snap.pageIndex! + 1,
         pageCount: snap.pageCount,
         fitMode: snap.fitMode,
         chromeVisible: snap.chromeVisible,
