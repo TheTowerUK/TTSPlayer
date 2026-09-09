@@ -1,3 +1,5 @@
+import 'dart:async';
+
 /// HTTP response wrapper for metadata providers (M7.2).
 class MetadataHttpResponse {
   const MetadataHttpResponse({
@@ -18,10 +20,16 @@ class MetadataCancellationToken {
   MetadataCancellationToken();
 
   bool _cancelled = false;
+  final Completer<void> _cancelledSignal = Completer<void>();
 
   bool get isCancelled => _cancelled;
+  Future<void> get whenCancelled => _cancelledSignal.future;
 
-  void cancel() => _cancelled = true;
+  void cancel() {
+    if (_cancelled) return;
+    _cancelled = true;
+    _cancelledSignal.complete();
+  }
 }
 
 /// Injectable HTTP transport for metadata providers (M7.2).

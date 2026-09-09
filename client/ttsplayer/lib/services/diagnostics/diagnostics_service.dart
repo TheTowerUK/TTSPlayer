@@ -18,7 +18,9 @@ import '../../features/books/reader/book_pdf_viewer_params.dart';
 import '../../features/search/search_service.dart';
 import '../../features/metadata_enrichment/artwork/metadata_artwork_cache_repository.dart';
 import '../../features/metadata_enrichment/models/enrichment_match_state.dart';
+import '../../features/metadata_enrichment/providers/book_metadata_provider_failure.dart';
 import '../../features/metadata_enrichment/services/metadata_enrichment_repository.dart';
+import '../../features/metadata_enrichment/services/metadata_provider_operation_coordinator.dart';
 import '../settings/settings_repository.dart';
 import '../../models/catalogue_provider_snapshot.dart';
 import '../../models/media_folder.dart';
@@ -63,6 +65,7 @@ class DiagnosticsService {
     SettingsRepository? settingsRepository,
     MetadataEnrichmentRepository? metadataEnrichmentRepository,
     MetadataArtworkCacheRepository? metadataArtworkCacheRepository,
+    MetadataProviderOperationCoordinator? metadataProviderOperationCoordinator,
   })  : _catalogService = catalogService,
         _artworkService = artworkService,
         _searchService = searchService,
@@ -84,7 +87,9 @@ class DiagnosticsService {
             imageCacheAvailableProvider ?? _defaultImageCacheAvailable,
         _settingsRepository = settingsRepository,
         _metadataEnrichmentRepository = metadataEnrichmentRepository,
-        _metadataArtworkCacheRepository = metadataArtworkCacheRepository;
+        _metadataArtworkCacheRepository = metadataArtworkCacheRepository,
+        _metadataProviderOperationCoordinator =
+            metadataProviderOperationCoordinator;
 
   final CatalogService _catalogService;
   final ArtworkService _artworkService;
@@ -107,6 +112,8 @@ class DiagnosticsService {
   final SettingsRepository? _settingsRepository;
   final MetadataEnrichmentRepository? _metadataEnrichmentRepository;
   final MetadataArtworkCacheRepository? _metadataArtworkCacheRepository;
+  final MetadataProviderOperationCoordinator?
+      _metadataProviderOperationCoordinator;
 
   PackageInfo? _cachedPackageInfo;
 
@@ -173,11 +180,52 @@ class DiagnosticsService {
       enabledProviderIds: enabledIds,
       credentialConfiguredByProvider: const {'open_library': false},
       recordCountsByState: counts,
-      lastSuccessfulRefreshAt: null,
-      lastSafeErrorCategory: safeErrorCategory,
+      pendingOperationCount:
+          _metadataProviderOperationCoordinator?.pendingOperationCount,
+      inFlightOperationCount:
+          _metadataProviderOperationCoordinator?.inFlightOperationCount,
+      lastSuccessfulRefreshAt:
+          _metadataProviderOperationCoordinator?.lastSuccessfulRefreshAt,
+      lastSafeErrorCategory: _safeProviderErrorCategory(
+            _metadataProviderOperationCoordinator?.lastSafeErrorCategory,
+          ) ??
+          safeErrorCategory,
       artworkCacheEntryCount: artwork.entryCount,
       artworkCacheIndexedBytes: artwork.totalBytes,
     );
+  }
+
+  static String? _safeProviderErrorCategory(
+    BookMetadataProviderFailureCategory? category,
+  ) {
+    switch (category) {
+      case BookMetadataProviderFailureCategory.invalidRequest:
+        return 'invalid_request';
+      case BookMetadataProviderFailureCategory.authentication:
+        return 'authentication';
+      case BookMetadataProviderFailureCategory.authorization:
+        return 'authorization';
+      case BookMetadataProviderFailureCategory.rateLimited:
+        return 'rate_limited';
+      case BookMetadataProviderFailureCategory.quotaExhausted:
+        return 'quota_exhausted';
+      case BookMetadataProviderFailureCategory.timeout:
+        return 'timeout';
+      case BookMetadataProviderFailureCategory.networkUnavailable:
+        return 'network_unavailable';
+      case BookMetadataProviderFailureCategory.cancelled:
+        return 'cancelled';
+      case BookMetadataProviderFailureCategory.providerUnavailable:
+        return 'provider_unavailable';
+      case BookMetadataProviderFailureCategory.malformedResponse:
+        return 'malformed_response';
+      case BookMetadataProviderFailureCategory.unsupportedResponse:
+        return 'unsupported_response';
+      case BookMetadataProviderFailureCategory.unknown:
+        return 'unknown';
+      case null:
+        return null;
+    }
   }
 
   /// Stable plain-text export for support bundles (formatter only — no I/O).

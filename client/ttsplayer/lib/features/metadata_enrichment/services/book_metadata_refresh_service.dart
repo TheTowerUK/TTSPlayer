@@ -11,6 +11,7 @@ import '../providers/book_metadata_provider_result.dart';
 import 'book_metadata_match_transition.dart';
 import 'metadata_enrichment_repository.dart';
 import 'metadata_provider_lifecycle.dart';
+import 'metadata_provider_operation_coordinator.dart';
 
 /// Result of an explicit ISBN refresh request (M7.2).
 sealed class BookMetadataRefreshResult {
@@ -96,15 +97,18 @@ class BookMetadataRefreshService {
     required MetadataEnrichmentRepository repository,
     BookMetadataMatchTransition? transition,
     MetadataProviderLifecycle? providerLifecycle,
+    MetadataProviderOperationCoordinator? operationCoordinator,
   })  : _provider = provider,
         _repository = repository,
         _providerLifecycle = providerLifecycle,
+        _operationCoordinator = operationCoordinator,
         _transition = transition ?? const BookMetadataMatchTransition();
 
   final BookMetadataProvider _provider;
   final MetadataEnrichmentRepository _repository;
   final BookMetadataMatchTransition _transition;
   final MetadataProviderLifecycle? _providerLifecycle;
+  final MetadataProviderOperationCoordinator? _operationCoordinator;
 
   Future<BookMetadataRefreshResult> refreshByIsbn({
     required MediaItem item,
@@ -217,6 +221,7 @@ class BookMetadataRefreshService {
     if (!saveResult.success) {
       return BookMetadataRefreshRepositoryFailure(saveResult.errorMessage);
     }
+    _operationCoordinator?.recordSuccessfulRefresh();
     return BookMetadataRefreshSuccess(record);
   }
 

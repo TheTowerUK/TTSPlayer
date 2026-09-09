@@ -15,6 +15,7 @@ import 'book_metadata_matching_result.dart';
 import 'book_metadata_refresh_service.dart';
 import 'metadata_enrichment_repository.dart';
 import 'metadata_provider_lifecycle.dart';
+import 'metadata_provider_operation_coordinator.dart';
 
 typedef BookMetadataClock = DateTime Function();
 
@@ -33,16 +34,19 @@ class BookMetadataMatchingCoordinator {
     BookMetadataRefreshService? refreshService,
     BookMetadataClock? clock,
     MetadataProviderLifecycle? providerLifecycle,
+    MetadataProviderOperationCoordinator? operationCoordinator,
   })  : _provider = provider,
         _repository = repository,
         _evaluator = evaluator ?? const BookCandidateEvaluator(),
         _transition = transition ?? const BookMetadataMatchTransition(),
         _providerLifecycle = providerLifecycle,
+        _operationCoordinator = operationCoordinator,
         _refreshService = refreshService ??
             BookMetadataRefreshService(
               provider: provider,
               repository: repository,
               providerLifecycle: providerLifecycle,
+              operationCoordinator: operationCoordinator,
               transition: transition ?? const BookMetadataMatchTransition(),
             ),
         _clock = clock ?? _defaultClock;
@@ -54,6 +58,7 @@ class BookMetadataMatchingCoordinator {
   final BookMetadataRefreshService _refreshService;
   final BookMetadataClock _clock;
   final MetadataProviderLifecycle? _providerLifecycle;
+  final MetadataProviderOperationCoordinator? _operationCoordinator;
 
   static DateTime _defaultClock() => DateTime.now().toUtc();
 
@@ -382,6 +387,7 @@ class BookMetadataMatchingCoordinator {
         save.errorMessage ?? 'Could not save metadata enrichment.',
       );
     }
+    _operationCoordinator?.recordSuccessfulRefresh();
     return BookCandidateSelectionSuccess(next);
   }
 

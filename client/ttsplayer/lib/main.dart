@@ -21,10 +21,12 @@ import 'features/metadata_enrichment/artwork/metadata_artwork_http_client.dart';
 import 'features/metadata_enrichment/presentation/metadata_presentation_service.dart';
 import 'features/metadata_enrichment/providers/open_library/open_library_artwork_download_url_resolver.dart';
 import 'features/metadata_enrichment/providers/open_library/open_library_book_metadata_provider.dart';
+import 'features/metadata_enrichment/providers/coordinated_book_metadata_provider.dart';
 import 'features/metadata_enrichment/services/book_metadata_artwork_coordinator.dart';
 import 'features/metadata_enrichment/services/book_metadata_matching_coordinator.dart';
 import 'features/metadata_enrichment/services/metadata_enrichment_repository.dart';
 import 'features/metadata_enrichment/services/metadata_provider_lifecycle.dart';
+import 'features/metadata_enrichment/services/metadata_provider_operation_coordinator.dart';
 import 'features/metadata_enrichment/transport/http_metadata_http_transport.dart';
 import 'features/reading/services/reading_progress_coordinator.dart';
 import 'features/reading/services/reading_progress_repository.dart';
@@ -63,6 +65,10 @@ Future<void> main() async {
   final metadataProviderLifecycle = MetadataProviderLifecycle(
     settingsRepository: settingsRepository,
   );
+  final metadataProviderOperationCoordinator =
+      MetadataProviderOperationCoordinator(
+    lifecycle: metadataProviderLifecycle,
+  );
 
   final artworkService = ArtworkService();
   final musicLibraryService = MusicLibraryService();
@@ -98,13 +104,15 @@ Future<void> main() async {
   await metadataArtworkCacheRepository.initialize();
 
   final metadataTransport = HttpMetadataHttpTransport();
-  final openLibraryProvider = OpenLibraryBookMetadataProvider(
-    transport: metadataTransport,
+  final openLibraryProvider = CoordinatedBookMetadataProvider(
+    delegate: OpenLibraryBookMetadataProvider(transport: metadataTransport),
+    coordinator: metadataProviderOperationCoordinator,
   );
   final bookMetadataMatchingCoordinator = BookMetadataMatchingCoordinator(
     provider: openLibraryProvider,
     repository: metadataEnrichmentRepository,
     providerLifecycle: metadataProviderLifecycle,
+    operationCoordinator: metadataProviderOperationCoordinator,
   );
   final artworkGenerationGuard = MetadataArtworkDownloadGenerationGuard();
   final metadataArtworkDownloadService = MetadataArtworkDownloadService(
@@ -199,6 +207,7 @@ Future<void> main() async {
     settingsRepository: settingsRepository,
     metadataEnrichmentRepository: metadataEnrichmentRepository,
     metadataArtworkCacheRepository: metadataArtworkCacheRepository,
+    metadataProviderOperationCoordinator: metadataProviderOperationCoordinator,
     applicationStartedAt: applicationStartedAt,
   );
 
@@ -213,6 +222,9 @@ Future<void> main() async {
         ),
         ChangeNotifierProvider<MetadataProviderLifecycle>.value(
           value: metadataProviderLifecycle,
+        ),
+        ChangeNotifierProvider<MetadataProviderOperationCoordinator>.value(
+          value: metadataProviderOperationCoordinator,
         ),
         ChangeNotifierProvider<LibraryMetadataRepository>.value(
           value: libraryMetadataRepository,

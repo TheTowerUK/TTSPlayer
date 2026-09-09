@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -14,6 +15,8 @@ import 'package:ttsplayer/features/metadata_enrichment/models/enrichment_last_er
 import 'package:ttsplayer/features/metadata_enrichment/models/enrichment_match_state.dart';
 import 'package:ttsplayer/features/metadata_enrichment/models/metadata_enrichment_record.dart';
 import 'package:ttsplayer/features/metadata_enrichment/services/metadata_enrichment_repository.dart';
+import 'package:ttsplayer/features/metadata_enrichment/services/metadata_provider_lifecycle.dart';
+import 'package:ttsplayer/features/metadata_enrichment/services/metadata_provider_operation_coordinator.dart';
 import 'package:ttsplayer/features/settings/diagnostics_screen.dart';
 import 'package:ttsplayer/models/application_settings.dart';
 import 'package:ttsplayer/services/diagnostics/diagnostics_service.dart';
@@ -142,5 +145,48 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Metadata Enrichment'), findsOneWidget);
+  });
+
+  test('reports live queue telemetry and accepted-refresh timestamp', () async {
+    await settings.saveMetadataProviders(
+      const MetadataProvidersSettings(
+        externalMetadataEnabled: true,
+        enabledProviderIds: {'open_library'},
+      ),
+    );
+    final lifecycle = MetadataProviderLifecycle(settingsRepository: settings);
+    final completedAt = DateTime.utc(2026, 9, 9, 12);
+    final operations = MetadataProviderOperationCoordinator(
+      lifecycle: lifecycle,
+      clock: () => completedAt,
+      minimumProviderSpacing: Duration.zero,
+    );
+    addTearDown(operations.dispose);
+    addTearDown(lifecycle.dispose);
+    final gate = Completer<int>();
+    final active = operations.execute<int>(
+      providerId: 'open_library',
+      operation: () => gate.future,
+      failureOf: (_) => null,
+    );
+    final queued = operations.execute<int>(
+      providerId: 'open_library',
+      operation: () async => 2,
+      failureOf: (_) => null,
+    );
+    operations.recordSuccessfulRefresh();
+    diagnostics = await buildDiagnosticsHarness(
+      settingsRepository: settings,
+      metadataEnrichmentRepository: enrichment,
+      metadataArtworkCacheRepository: artwork,
+      metadataProviderOperationCoordinator: operations,
+    );
+
+    final value = (await diagnostics.captureSnapshot()).metadataEnrichment!;
+    expect(value.pendingOperationCount, 1);
+    expect(value.inFlightOperationCount, 1);
+    expect(value.lastSuccessfulRefreshAt, completedAt);
+    gate.complete(1);
+    await Future.wait([active, queued]);
   });
 }

@@ -17,6 +17,7 @@ import 'package:ttsplayer/features/reading/services/reading_progress_repository.
 import 'package:ttsplayer/features/search/search_service.dart';
 import 'package:ttsplayer/features/metadata_enrichment/artwork/metadata_artwork_cache_repository.dart';
 import 'package:ttsplayer/features/metadata_enrichment/services/metadata_enrichment_repository.dart';
+import 'package:ttsplayer/features/metadata_enrichment/services/metadata_provider_operation_coordinator.dart';
 import 'package:ttsplayer/models/catalog.dart';
 import 'package:ttsplayer/models/catalogue_provider_snapshot.dart';
 import 'package:ttsplayer/models/media_folder.dart';
@@ -300,6 +301,7 @@ Future<DiagnosticsService> buildDiagnosticsHarness({
   SettingsRepository? settingsRepository,
   MetadataEnrichmentRepository? metadataEnrichmentRepository,
   MetadataArtworkCacheRepository? metadataArtworkCacheRepository,
+  MetadataProviderOperationCoordinator? metadataProviderOperationCoordinator,
 }) async {
   SharedPreferences.setMockInitialValues(initialPrefs ?? {});
   PackageInfo.setMockInitialValues(
@@ -364,6 +366,7 @@ Future<DiagnosticsService> buildDiagnosticsHarness({
     settingsRepository: settingsRepository,
     metadataEnrichmentRepository: metadataEnrichmentRepository,
     metadataArtworkCacheRepository: metadataArtworkCacheRepository,
+    metadataProviderOperationCoordinator: metadataProviderOperationCoordinator,
   );
 }
 
