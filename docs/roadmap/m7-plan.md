@@ -1,6 +1,6 @@
 # M7 — Metadata Enrichment and Library Experience
 
-**Status:** 🟡 **In progress** — Phases 7.4 and 7.5 complete
+**Status:** 🟡 **In progress** — Phases 7.4–7.7 complete; Phase 7.8 remains
 **Branch:** `m7-development`
 **Development version:** `v0.8.0-dev` (not bumped in pubspec during planning)
 **Baseline:** M6 — tags `v0.7.0` / `m6-complete` (2026-07-29) — commit `356a5e7`
@@ -340,7 +340,7 @@ Keyed by catalogue item `id` (md5 of path at match time):
 ### Credentials
 
 - Credentials require an **OS-backed secure-storage mechanism**; they must not be stored in `catalog.json`, logs, diagnostics exports, SharedPreferences/plain settings JSON, or the repository.
-- **Windows storage must be evaluated during Phase 7.7 implementation.** Likely candidates include **Windows Credential Manager** or **DPAPI-backed secure storage**.
+- **Phase 7.7 decision:** [ADR-030](../architecture/decisions/ADR-030-windows-provider-credential-storage.md) proposes **Windows Credential Manager** behind a provider-neutral abstraction as the future target. Raw application-managed DPAPI storage is not the fallback without a separate design review.
 - **Application-managed reversible encryption is not an acceptable fallback** without a separately approved key-protection design.
 - **Until secure storage is available, provider credentials must not be persisted** — session-only entry or re-prompt on each use until a durable mechanism is implemented and reviewed.
 - Diagnostics: `credentialConfigured: true/false` only (never the secret itself).
@@ -462,7 +462,7 @@ Music is the second candidate; video and comics deferred until matching UX and a
 | **7.4** | Artwork enrichment, download cache, precedence integration | ✅ Complete — see [m7-phase-7.4-plan.md](./m7-phase-7.4-plan.md) · [7.4.6 closure](./m7-phase-7.4.6-closure-report.md) |
 | **7.5** | Search enrichment terms, filtered browsing, enriched detail surfaces | ✅ Complete — [plan](./m7-phase-7.5-search-detail-presentation.md) · [closure](./m7-phase-7.5-closure-report.md) |
 | **7.6** | UX/workflow refinements ([post-M6 tracker](./post-milestone-ux-workflow-review.md)) | ✅ Complete (2026-09-07) — [plan](./m7-phase-7.6-ux-workflow-plan.md) · [closure](./m7-phase-7.6-closure-report.md) |
-| **7.7** | Privacy, diagnostics, performance, and resilience | Planning complete — [detailed plan](./m7-phase-7.7-production-hardening-plan.md); implementation awaits approval |
+| **7.7** | Privacy, diagnostics, performance, and resilience | Complete (2026-09-09) — [plan](./m7-phase-7.7-production-hardening-plan.md) · [closure](./m7-phase-7.7-closure-report.md) |
 | **7.8** | Windows runtime validation and milestone closure | Planned |
 
 ### Phase 7.0 — Planning and Architecture
@@ -578,7 +578,7 @@ Later gates do **not** reopen Phase 7.2:
 - One books provider vertical slice (after evaluation)
 - Matching states, confidence, manual correction
 - Artwork download cache with precedence
-- Settings opt-in; OS-backed credential secure storage (evaluated in Phase 7.7 — no persistence until approved mechanism exists)
+- Settings opt-in and credential-security architecture decision; no credential persistence until an approved OS-backed implementation exists
 - Diagnostics enrichment section
 - Precedence-aware detail presentation for enriched kinds
 - Test fakes for provider HTTP
@@ -631,7 +631,7 @@ These are **not** Phase 7.0–7.2 blockers. Phase 7.6 is the dedicated UX/workfl
 
 ### Phase 7.7 — Metadata Enrichment Production Hardening
 
-**Status:** Planning complete — implementation awaits approval
+**Status:** Complete (2026-09-09) — [closure report](./m7-phase-7.7-closure-report.md)
 
 **Plan:** [m7-phase-7.7-production-hardening-plan.md](./m7-phase-7.7-production-hardening-plan.md)
 
@@ -645,8 +645,9 @@ These are **not** Phase 7.0–7.2 blockers. Phase 7.6 is the dedicated UX/workfl
 |---|---|---|
 | [ADR-028](../architecture/decisions/ADR-028-external-metadata-enrichment-boundary.md) | External Metadata Enrichment Boundary | **Proposed** |
 | [ADR-029](../architecture/decisions/ADR-029-metadata-precedence-provenance-and-matching.md) | Metadata Precedence, Provenance, and Matching | **Accepted** (Phase 7.5 closure) |
+| [ADR-030](../architecture/decisions/ADR-030-windows-provider-credential-storage.md) | Windows Provider Credential Storage | **Proposed** — Credential Manager is the future target; implementation evidence is deferred |
 
-Consolidated into two ADRs to avoid overlap: boundary/storage in 028; precedence/matching/artwork in 029. The M7.0 proposal state remains historical; ADR-029 was accepted after its Phase 7.5 evidence gate passed.
+ADR-028 owns the client-side enrichment boundary, ADR-029 owns precedence/matching/artwork, and ADR-030 isolates the future credential-storage choice. ADR-029 was accepted after its Phase 7.5 evidence gate passed; ADR-030 remains Proposed until native integration, packaging, rotation/deletion and leak-audit evidence exists.
 
 ---
 

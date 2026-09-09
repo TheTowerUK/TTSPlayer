@@ -1,10 +1,11 @@
 # M7 Phase 7.7 — Metadata Enrichment Production Hardening
 
-**Status:** Planning complete — 7.7.2–7.7.5 await approval
+**Status:** Complete (2026-09-09) — [closure report](./m7-phase-7.7-closure-report.md)
 
 **Branch:** `m7-development`
 
 **Baseline:** `22a43dd docs(m7.6): close UX and workflow refinements`
+**Implementation:** `739748a`, `e250f24`, `1fc1d97`
 
 → [M7 plan](./m7-plan.md) · [Metadata enrichment architecture](../architecture/metadata-enrichment.md) · [ADR-028](../architecture/decisions/ADR-028-external-metadata-enrichment-boundary.md) · [v0.8.0-dev](../release/v0.8.0-dev.md)
 
@@ -117,7 +118,7 @@ Protect future provider API secrets at rest from casual filesystem inspection, c
 
 ### Recommendation
 
-Create a Proposed credential-storage ADR in 7.7.5 and prefer an OS credential-vault abstraction, with Windows Credential Manager as the leading implementation target. Evaluate the maintained Flutter secure-storage package and its Windows packaging requirements before selecting it. Do not hand-roll raw DPAPI storage unless plugin review fails and a separate native design is approved.
+Phase 7.7.5 created [ADR-030](../architecture/decisions/ADR-030-windows-provider-credential-storage.md), which remains Proposed and prefers an OS credential-vault abstraction with Windows Credential Manager as the leading implementation target. A future implementation must evaluate its native/package boundary and Windows packaging requirements before the ADR can be accepted. Do not hand-roll raw DPAPI storage unless integration review fails and a separate native design is approved.
 
 Implementation is deferred because the only approved production provider, Open Library, has no credential. Credentialed providers remain unsupported for persistent configuration. This decision does not block Open Library opt-in. The ADR must remain Proposed until an implementation, packaging test, delete/rotation behaviour, and diagnostics-leak audit exist.
 
@@ -282,6 +283,8 @@ No persistent distributed-job system, background scheduler, or automatic bulk re
 **Exclusions:** ISBNdb, another provider, NAS secrets, backend enrichment, M7 release/version closure.
 
 **Dependencies:** 7.7.2–7.7.4 complete.
+
+**Completion:** Credential Manager selected as the Proposed future target; credential implementation remains deferred, Open Library remains credential-free, and the requirement-by-requirement result is recorded in the [Phase 7.7 closure report](./m7-phase-7.7-closure-report.md).
 
 ## 9. Cross-phase Definition of Done
 

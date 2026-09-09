@@ -1,11 +1,12 @@
 # Metadata Enrichment Architecture
 
-**Status:** Implemented through M7 Phase 7.6; Phase 7.7 production-hardening planning complete
+**Status:** Implemented through M7 Phase 7.7; final Windows/release validation remains in Phase 7.8
 **Milestone:** M7 — Metadata Enrichment and Library Experience
-**Related ADRs:** [ADR-028](./decisions/ADR-028-external-metadata-enrichment-boundary.md) (Proposed), [ADR-029](./decisions/ADR-029-metadata-precedence-provenance-and-matching.md) (Accepted)
+**Related ADRs:** [ADR-028](./decisions/ADR-028-external-metadata-enrichment-boundary.md) (Proposed), [ADR-029](./decisions/ADR-029-metadata-precedence-provenance-and-matching.md) (Accepted), [ADR-030](./decisions/ADR-030-windows-provider-credential-storage.md) (Proposed)
 
 → [M7 plan](../roadmap/m7-plan.md) · [Phase 7.1 closure](../roadmap/m7-phase-7.1-closure-report.md) · [Books provider evaluation](./books-metadata-provider-evaluation.md)
 → [Phase 7.7 production-hardening plan](../roadmap/m7-phase-7.7-production-hardening-plan.md)
+→ [Phase 7.7 closure](../roadmap/m7-phase-7.7-closure-report.md) · [Credential storage ADR-030](./decisions/ADR-030-windows-provider-credential-storage.md)
 → [Books & comics](./books-comics.md) · [Music](./music.md)
 → [Artwork caching ADR-015](./decisions/ADR-015-artwork-and-image-decode-caching.md)
 → [Diagnostics ADR-017](./decisions/ADR-017-diagnostics-architecture.md)
@@ -325,11 +326,21 @@ ADR-029 is **Accepted**: search/detail consumers, lifecycle, and the Phase 7.5 W
 ## Security and privacy
 
 - Master opt-in default **off**
-- **Credential storage:** requires an OS-backed secure-storage mechanism. Windows options (Credential Manager, DPAPI-backed storage) must be evaluated during implementation — not decided in Phase 7.0. Application-managed reversible encryption is not an acceptable fallback without a separately approved key-protection design. **Until secure storage is available, provider credentials must not be persisted.** Credentials are redacted in diagnostics ([ADR-017](./decisions/ADR-017-diagnostics-architecture.md), [ADR-019](./decisions/ADR-019-diagnostics-export-support-strategy.md))
+- **Credential storage:** [ADR-030](./decisions/ADR-030-windows-provider-credential-storage.md) proposes Windows Credential Manager behind a provider-neutral vault abstraction. It remains Proposed pending implementation, packaging, rotation/deletion and leak-audit evidence. **Until accepted secure storage exists, credentialed providers are unsupported for persistent configuration.** Open Library requires no credential. Application-managed reversible encryption, plaintext/settings persistence and automatic desktop-to-NAS secret transfer are prohibited.
 - **Provider query inputs (Open Library):** explicit ISBN, normalized title, author, and optional year only — never full paths, filenames, or file stems
 - **Local-only comparison:** filename stem may be used locally as a weak title fallback signal during candidate evaluation; derived text is never transmitted to the provider
 - Matching queries use normalized titles and basenames — not full paths
 - Export bundle includes enrichment **counts and states** only
+
+## Phase 7.7 production operation boundary
+
+- External metadata and each provider are default-off and require explicit enablement; changing settings initiates no provider request.
+- Production Open Library metadata API calls use one process-local bounded coordinator: maximum 32 pending, one active/provider, two globally, and at least one second between starts for the same provider.
+- Only timeout, network-unavailable, provider-unavailable/5xx and rate-limit outcomes from an explicit operation retry. The maximum is the initial attempt plus two retries with 2s/4s ordinary backoff. Positive `Retry-After` values through five minutes are honoured; larger values require a later explicit retry.
+- The existing 15-second request timeout remains. Queue and operational telemetry are never persisted or restored.
+- Lifecycle/caller cancellation removes queued work, wakes throttle/backoff waits and prevents stale results from reaching accepted persistence.
+- Diagnostics read live pending/in-flight counts, a bounded error category and the last accepted enrichment persistence timestamp. Capture performs no provider request, write, cache-content read or filesystem walk.
+- Artwork retains its independently guarded, cache-preserving single-attempt workflow. Automatic artwork retry is deferred; local artwork and placeholder precedence remain unchanged.
 
 ---
 
