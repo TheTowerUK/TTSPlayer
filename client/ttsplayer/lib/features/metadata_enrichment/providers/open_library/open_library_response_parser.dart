@@ -147,7 +147,8 @@ class OpenLibraryResponseParser {
       recordUrl: editionKey == null
           ? null
           : 'https://openlibrary.org$editionKey',
-      coverArtworkId: _readFirstCoverId(edition['covers']),
+      coverArtworkId: _readBooksApiCoverId(edition['cover']) ??
+          _readFirstCoverId(edition['covers']),
       fetchedAt: fetchedAt,
       attribution: attribution,
     );
@@ -304,6 +305,24 @@ class OpenLibraryResponseParser {
 
   bool _hasIsbn(NormalizedBookMetadata metadata) =>
       metadata.isbn10Values.isNotEmpty || metadata.isbn13Values.isNotEmpty;
+
+  String? _readBooksApiCoverId(dynamic value) {
+    if (value is! Map) return null;
+    for (final size in ['large', 'medium', 'small']) {
+      final url = value[size];
+      if (url is! String) continue;
+      final uri = Uri.tryParse(url);
+      if (uri == null ||
+          (uri.scheme != 'https' && uri.scheme != 'http') ||
+          uri.host != 'covers.openlibrary.org') {
+        continue;
+      }
+      final match = RegExp(r'^/b/id/([1-9][0-9]*)-[SML]\.jpg$')
+          .firstMatch(uri.path);
+      if (match != null) return match.group(1);
+    }
+    return null;
+  }
 
   String? _readFirstCoverId(dynamic value) {
     if (value is! List || value.isEmpty) return null;

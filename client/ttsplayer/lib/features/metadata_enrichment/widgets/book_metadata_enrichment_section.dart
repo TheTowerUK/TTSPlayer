@@ -527,6 +527,35 @@ class _BookMetadataEnrichmentSectionState
     final result = await coordinator.lookupByIsbn(
       item: widget.item,
       isbnInput: isbn,
+      confirmMatch: (metadata) async {
+        if (!_isLifecycleCurrent(generation, itemId)) return false;
+        final authors = metadata.authors.isEmpty
+            ? 'Author unavailable'
+            : metadata.authors.join(', ');
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Confirm ISBN match'),
+            content: Text(
+              'Your book: ${widget.item.title}\n\n'
+              'Open Library: ${metadata.canonicalTitle}\n'
+              '$authors\nISBN: ${isbn.trim()}',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                key: const Key('book_metadata_confirm_isbn'),
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: const Text('Link metadata'),
+              ),
+            ],
+          ),
+        );
+        return confirmed == true && _isLifecycleCurrent(generation, itemId);
+      },
     );
     if (!_isLifecycleCurrent(generation, itemId)) {
       return;

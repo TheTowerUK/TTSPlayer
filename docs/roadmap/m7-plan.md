@@ -1,7 +1,12 @@
 # M7 — Metadata Enrichment and Library Experience
 
-**Status:** 🟡 **In progress** — Phases 7.4–7.7 complete; Phase 7.8 remains
+**Status:** 🟡 **In progress** — Phases 7.4–7.7 complete; Phase 7.8 validation/release gates pending
 **Branch:** `m7-development`
+
+Phase 7.8 evidence and remaining gates: [m7-phase-7.8-validation.md](./m7-phase-7.8-validation.md).
+
+The implemented Phase 7.7 operation/privacy contract governs earlier planning proposals: explicit requests only, no filename transmission, no automatic refresh/download and retain-on-disable.
+
 **Development version:** `v0.8.0-dev` (not bumped in pubspec during planning)
 **Baseline:** M6 — tags `v0.7.0` / `m6-complete` (2026-07-29) — commit `356a5e7`
 **Predecessor release:** [m6-complete.md](../release/m6-complete.md)
@@ -276,7 +281,7 @@ Keyed by catalogue item `id` (md5 of path at match time):
 ### Invalidation
 
 - Catalogue replace: prune enrichment for absent ids; mark orphans; never block catalogue load.
-- Provider disabled: retain cache (default) or delete per user setting.
+- Provider disabled: retain accepted metadata and validated artwork. Disablement never deletes; an explicit provider-data deletion UI is deferred.
 - Credential removal: stop refresh; retain cached enrichment unless user clears.
 - Schema migration: versioned envelope with corrupt-state recovery (empty safe default).
 
@@ -297,7 +302,7 @@ Keyed by catalogue item `id` (md5 of path at match time):
 ### Policies
 
 - External artwork **never** prevents item display — placeholder on any failure.
-- Download on explicit policy: auto-download setting OR on-demand when detail/card visible.
+- Current M7: explicit Download/Refresh cover actions only. Opening a detail/card or enabling a provider does not start a download.
 - LRU + disk quota for provider cache (separate from decode LRU 500).
 - Stale replacement only when user refreshes or lock not set.
 - Attribution per provider ToS — surface in settings/about when required.
@@ -311,8 +316,8 @@ Keyed by catalogue item `id` (md5 of path at match time):
 |---|---|---|
 | App launch / catalogue load | **No** | Load local catalogue + enrichment store only |
 | Full rescan | **No** (M7 default) | Reconcile enrichment ids; prune orphans |
-| Manual metadata refresh | **Yes** | Bounded batch queue; progress + cancel |
-| Detail screen open | **Optional** | Stale-while-revalidate if enabled and online |
+| Explicit metadata search/lookup/refresh | **Yes** | Process-local bounded coordinator; cancellation and aggregate diagnostics |
+| Detail screen open | **No** | Display retained metadata/artwork; no automatic provider work |
 | Provider/credential change | **On next explicit refresh** | No automatic bulk |
 | Clear enrichment | **No** | Local delete only |
 | Clear artwork cache | **No** | Local delete only |
@@ -322,6 +327,9 @@ Keyed by catalogue item `id` (md5 of path at match time):
 ---
 
 ## Settings and privacy
+
+The settings table below records design ideas. Only the master/provider enablement and retain-default lifecycle implemented through Phase 7.7 are release commitments; unimplemented settings are not new Phase 7.8 scope.
+
 
 ### New settings group (proposed): `metadataProviders`
 
@@ -335,7 +343,7 @@ Keyed by catalogue item `id` (md5 of path at match time):
 | `preferredLanguage` / `preferredRegion` | Provider query localization |
 | `adultContentFilter` | Where provider supports it |
 | `meteredNetworkPolicy` | Block/auto on metered connections |
-| `onDisable` | Retain vs delete cached enrichment/artwork |
+| Retention on disable | Retain metadata/artwork; explicit provider-data deletion UI deferred |
 
 ### Credentials
 
@@ -347,7 +355,7 @@ Keyed by catalogue item `id` (md5 of path at match time):
 
 ### Data transmission disclosure (opt-in screen)
 
-When matching, the app may send to configured providers: normalized title, year, author/artist, series/issue, ISBN if locally known, and file **basename** (not full path). Full paths are never transmitted.
+For the implemented Open Library books slice, explicit operations may transmit normalized title, author, optional year and ISBN, plus ordinary HTTPS connection metadata. Full paths, filenames, basenames, file stems and catalogue structure are prohibited. Filename-stem comparisons remain local-only.
 
 ---
 
@@ -379,7 +387,7 @@ Safe enrichment section in runtime snapshot:
 | Provider schema change | Adapter version pin; graceful degrade |
 | Image download fail | Placeholder; retain text enrichment |
 | Ambiguous match | No auto-apply; local presentation |
-| Provider disabled post-enrichment | Retain cache per user policy |
+| Provider disabled post-enrichment | Retain accepted metadata/artwork; no new provider work |
 
 Provider errors are **never** catalogue or playback failures.
 
@@ -463,7 +471,7 @@ Music is the second candidate; video and comics deferred until matching UX and a
 | **7.5** | Search enrichment terms, filtered browsing, enriched detail surfaces | ✅ Complete — [plan](./m7-phase-7.5-search-detail-presentation.md) · [closure](./m7-phase-7.5-closure-report.md) |
 | **7.6** | UX/workflow refinements ([post-M6 tracker](./post-milestone-ux-workflow-review.md)) | ✅ Complete (2026-09-07) — [plan](./m7-phase-7.6-ux-workflow-plan.md) · [closure](./m7-phase-7.6-closure-report.md) |
 | **7.7** | Privacy, diagnostics, performance, and resilience | Complete (2026-09-09) — [plan](./m7-phase-7.7-production-hardening-plan.md) · [closure](./m7-phase-7.7-closure-report.md) |
-| **7.8** | Windows runtime validation and milestone closure | Planned |
+| **7.8** | Windows runtime validation and milestone closure | In progress — [validation ledger](./m7-phase-7.8-validation.md); remaining gates pending |
 
 ### Phase 7.0 — Planning and Architecture
 

@@ -159,7 +159,7 @@ class OpenLibraryBookMetadataProvider implements BookMetadataProvider {
       'limit': request.limit.toString(),
       'fields':
           'key,title,subtitle,author_name,first_publish_year,publish_year,'
-          'publisher,language,subject,isbn,edition_key',
+          'publisher,language,subject,isbn,edition_key,cover_i',
     };
     final title = request.normalizedTitle;
     final author = request.normalizedAuthor;

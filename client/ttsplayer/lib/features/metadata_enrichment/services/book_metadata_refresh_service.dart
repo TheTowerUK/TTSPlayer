@@ -113,6 +113,7 @@ class BookMetadataRefreshService {
   Future<BookMetadataRefreshResult> refreshByIsbn({
     required MediaItem item,
     required String isbnInput,
+    Future<bool> Function(NormalizedBookMetadata)? confirmMatch,
     BookMetadataRequestOptions options = const BookMetadataRequestOptions(),
   }) async {
     final operation = _beginOperation();
@@ -152,6 +153,18 @@ class BookMetadataRefreshService {
           return BookMetadataRefreshConflict(
             existingRecord: _repository.getByItemId(item.id),
           );
+        }
+        if (confirmMatch != null) {
+          final existing = _repository.getByItemId(item.id);
+          if (!await confirmMatch(metadata)) {
+            return const BookMetadataRefreshRejected('Metadata link cancelled.');
+          }
+          if (!_operationIsCurrent(operation) ||
+              !identical(existing, _repository.getByItemId(item.id))) {
+            return const BookMetadataRefreshRejected(
+              'Metadata changed before the link could be saved.',
+            );
+          }
         }
         return _persistIsbnSuccess(item, metadata, request);
       case BookMetadataLookupFailure(:final failure):

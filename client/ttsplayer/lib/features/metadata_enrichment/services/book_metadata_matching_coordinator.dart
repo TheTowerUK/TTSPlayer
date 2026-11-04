@@ -6,6 +6,7 @@ import '../models/book_search_request.dart';
 import '../models/enrichment_match_state.dart';
 import '../models/isbn_lookup_request.dart';
 import '../models/metadata_enrichment_record.dart';
+import '../models/normalized_book_metadata.dart';
 import '../providers/book_metadata_provider.dart';
 import '../providers/book_metadata_provider_result.dart';
 import 'book_candidate_review_policy.dart';
@@ -65,6 +66,7 @@ class BookMetadataMatchingCoordinator {
   Future<BookIsbnMatchResult> lookupByIsbn({
     required MediaItem item,
     required String isbnInput,
+    Future<bool> Function(NormalizedBookMetadata)? confirmMatch,
     BookMetadataRequestOptions options = const BookMetadataRequestOptions(),
   }) async {
     final rejection = _validateOperationalRequest(item);
@@ -82,6 +84,7 @@ class BookMetadataMatchingCoordinator {
     final result = await _refreshService.refreshByIsbn(
       item: item,
       isbnInput: isbnInput,
+      confirmMatch: confirmMatch,
       options: options,
     );
     return _mapIsbnRefreshResult(result);

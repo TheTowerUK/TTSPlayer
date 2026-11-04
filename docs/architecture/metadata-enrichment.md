@@ -329,7 +329,7 @@ ADR-029 is **Accepted**: search/detail consumers, lifecycle, and the Phase 7.5 W
 - **Credential storage:** [ADR-030](./decisions/ADR-030-windows-provider-credential-storage.md) proposes Windows Credential Manager behind a provider-neutral vault abstraction. It remains Proposed pending implementation, packaging, rotation/deletion and leak-audit evidence. **Until accepted secure storage exists, credentialed providers are unsupported for persistent configuration.** Open Library requires no credential. Application-managed reversible encryption, plaintext/settings persistence and automatic desktop-to-NAS secret transfer are prohibited.
 - **Provider query inputs (Open Library):** explicit ISBN, normalized title, author, and optional year only — never full paths, filenames, or file stems
 - **Local-only comparison:** filename stem may be used locally as a weak title fallback signal during candidate evaluation; derived text is never transmitted to the provider
-- Matching queries use normalized titles and basenames — not full paths
+- Provider requests never include basenames or file stems. Any filename-derived comparison remains local-only; explicit provider inputs are ISBN, normalized title, author and optional year.
 - Export bundle includes enrichment **counts and states** only
 
 ## Phase 7.7 production operation boundary

@@ -114,6 +114,24 @@ void main() {
       expect(candidates.first.metadata.coverArtworkId, '8230111');
     });
 
+    test('extracts Books API cover ID from a provider image URL', () {
+      final metadata = parser.parseBooksApiResponse(
+        {
+          'ISBN:${OpenLibraryTestFixtures.validIsbn13}': {
+            'title': 'Edition Cover',
+            'cover': {
+              'large': 'https://example.com/b/id/111-L.jpg',
+              'medium': 'http://covers.openlibrary.org/b/id/8230111-M.jpg',
+            },
+          },
+        },
+        OpenLibraryTestFixtures.validIsbn13,
+        fetchedAt: fetchedAt,
+      );
+
+      expect(metadata?.coverArtworkId, '8230111');
+    });
+
     test('parses Books API covers array as coverArtworkId', () {
       final metadata = parser.parseBooksApiResponse(
         {
@@ -221,6 +239,7 @@ void main() {
       expect(uri.queryParameters['author'], 'Author One');
       expect(uri.queryParameters['first_publish_year'], '2001');
       expect(uri.queryParameters['limit'], '5');
+      expect(uri.queryParameters['fields']?.split(','), contains('cover_i'));
       expect(
         uri.queryParameters.keys,
         unorderedEquals([

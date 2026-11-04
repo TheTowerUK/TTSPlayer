@@ -410,14 +410,22 @@ Future<void> openIsbnDialog(WidgetTester tester) async {
 Future<void> submitIsbnDialog(
   WidgetTester tester, {
   required String isbn,
+  bool awaitsConfirmation = false,
 }) async {
   await tester.enterText(
     find.byKey(const Key('book_metadata_enrichment_isbn_field')),
     isbn,
   );
-  await tester
-      .tap(find.byKey(const Key('book_metadata_enrichment_isbn_submit')));
-  await tester.pumpAndSettle();
+  await tester.tap(
+    find.byKey(const Key('book_metadata_enrichment_isbn_submit')),
+  );
+
+  if (awaitsConfirmation) {
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+  } else {
+    await tester.pumpAndSettle();
+  }
 }
 
 Future<void> cancelIsbnDialog(WidgetTester tester) async {

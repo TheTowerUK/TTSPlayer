@@ -303,7 +303,12 @@ void main() {
       await tester.pumpAndSettle();
 
       await openIsbnDialog(tester);
-      await submitIsbnDialog(tester, isbn: '9780140449136');
+      await submitIsbnDialog(tester, isbn: '9780140449136',awaitsConfirmation: true);
+      expect(harness.provider.lookupInvocationCount, 1);
+      expect(find.text('Confirm ISBN match'), findsOneWidget);
+      expect(find.text('Linked by ISBN'), findsNothing);
+      await tester.tap(find.byKey(const Key('book_metadata_confirm_isbn')));
+      await tester.pumpAndSettle();
       expect(harness.provider.lookupInvocationCount, 1);
       expect(find.text('Linked by ISBN'), findsOneWidget);
       expect(find.text('Metadata linked by ISBN.'), findsOneWidget);
@@ -424,7 +429,9 @@ void main() {
       await tester.pumpAndSettle();
 
       await openIsbnDialog(tester);
-      await submitIsbnDialog(tester, isbn: '9780140449136');
+      await submitIsbnDialog(tester, isbn: '9780140449136', awaitsConfirmation: true);
+      await tester.tap(find.byKey(const Key('book_metadata_confirm_isbn')));
+      await tester.pumpAndSettle();
       expect(find.text('Metadata could not be saved.'), findsOneWidget);
       expect(find.text('Metadata linked by ISBN.'), findsNothing);
       expect(find.text('Not linked'), findsOneWidget);
