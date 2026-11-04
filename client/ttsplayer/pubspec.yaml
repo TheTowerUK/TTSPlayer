@@ -1,6 +1,6 @@
 name: ttsplayer
 description: Lightweight local-first home media player.
-version: 0.8.0-rc.1+1
+version: 0.8.0+2
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
