@@ -12,6 +12,9 @@ class TtsFolderCard extends StatefulWidget {
   final MediaFolder folder;
   final VoidCallback onTap;
 
+  /// Optional details action (single-reader leaf folders).
+  final VoidCallback? onDetails;
+
   /// Optional overlay placed top-left on artwork (e.g. favourite toggle).
   final Widget? topLeftOverlay;
 
@@ -19,6 +22,7 @@ class TtsFolderCard extends StatefulWidget {
     super.key,
     required this.folder,
     required this.onTap,
+    this.onDetails,
     this.topLeftOverlay,
   });
 
@@ -83,6 +87,22 @@ class _TtsFolderCardState extends State<TtsFolderCard> {
                               top: AppSpacing.xs,
                               left: AppSpacing.xs,
                               child: widget.topLeftOverlay!,
+                            ),
+                          if (widget.onDetails != null)
+                            Positioned(
+                              right: AppSpacing.xs,
+                              bottom: AppSpacing.xs,
+                              child: IconButton.filledTonal(
+                                key: Key('folder_details_${widget.folder.id}'),
+                                tooltip:
+                                    'View details for ${widget.folder.name}',
+                                icon: const Icon(
+                                  Icons.info_outline,
+                                  size: AppIcons.md,
+                                ),
+                                onPressed: widget.onDetails,
+                                visualDensity: VisualDensity.compact,
+                              ),
                             ),
                         ],
                       ),

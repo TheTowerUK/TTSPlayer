@@ -11,6 +11,7 @@ import '../models/media_folder.dart';
 import '../models/media_item.dart';
 import '../navigation/folder_navigation.dart';
 import '../navigation/media_item_navigation.dart';
+import '../navigation/single_reader_folder.dart';
 import '../services/catalog_service.dart';
 import '../services/library/library_metadata_repository.dart';
 import '../services/scanner_service.dart';
@@ -424,6 +425,7 @@ class _FolderContent extends StatelessWidget {
                 (context, index) {
                   FolderPresentationMetrics.folderCardBuildCount++;
                   final sub = view.subfolders[index];
+                  final readerItem = singlePlayableReaderItem(sub);
                   return RepaintBoundary(
                     child: TtsFolderCard(
                       key: ValueKey('folder-card-${sub.id}'),
@@ -432,7 +434,16 @@ class _FolderContent extends StatelessWidget {
                         folderId: sub.id,
                         compact: true,
                       ),
-                      onTap: () => openFolderScreen(context, sub),
+                      onTap: () {
+                        if (readerItem != null) {
+                          activateMediaItem(context, readerItem);
+                        } else {
+                          openFolderScreen(context, sub);
+                        }
+                      },
+                      onDetails: readerItem == null
+                          ? null
+                          : () => openMediaItemDetails(context, readerItem),
                     ),
                   );
                 },
