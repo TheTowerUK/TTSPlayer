@@ -35,6 +35,8 @@ import 'package:ttsplayer/services/scanner_service.dart';
 import 'package:ttsplayer/services/settings/settings_repository.dart';
 import 'package:ttsplayer/theme/app_theme.dart';
 import 'package:ttsplayer/utils/media_kind_presentation.dart';
+import 'package:ttsplayer/widgets/artwork/media_placeholder.dart';
+import 'package:ttsplayer/widgets/artwork/resolved_media_artwork_image.dart';
 import 'package:ttsplayer/widgets/folder_browse_controls.dart';
 import 'package:ttsplayer/widgets/tts_media_card.dart';
 
@@ -385,6 +387,45 @@ void main() {
       expect(find.byKey(const Key('item_detail_reader_pending')), findsNothing);
       expect(find.byType(PlayerScreen), findsNothing);
     });
+
+    testWidgets('book and comic posters are portrait contain with placeholder',
+        (tester) async {
+      final catalog = _catalog();
+      final book = catalog.allItems.firstWhere((i) => i.id == 'book-epub');
+      final comic = catalog.allItems.firstWhere((i) => i.id == 'comic-cbz');
+
+      Future<void> pumpItem(MediaItem item) async {
+        await tester.pumpWidget(
+          _harness(
+            catalog: catalog,
+            home: ItemDetailScreen(item: item),
+          ),
+        );
+        await tester.pumpAndSettle();
+      }
+
+      await pumpItem(book);
+      var poster = tester.widget<AspectRatio>(
+        find.byKey(const Key('item_detail_poster')),
+      );
+      expect(poster.aspectRatio, closeTo(2 / 3, 0.001));
+      var artwork = tester.widget<ResolvedMediaArtworkImage>(
+        find.byType(ResolvedMediaArtworkImage),
+      );
+      expect(artwork.fit, BoxFit.contain);
+      expect(find.byType(MediaPlaceholder), findsOneWidget);
+
+      await pumpItem(comic);
+      poster = tester.widget<AspectRatio>(
+        find.byKey(const Key('item_detail_poster')),
+      );
+      expect(poster.aspectRatio, closeTo(2 / 3, 0.001));
+      artwork = tester.widget<ResolvedMediaArtworkImage>(
+        find.byType(ResolvedMediaArtworkImage),
+      );
+      expect(artwork.fit, BoxFit.contain);
+      expect(find.byKey(const Key('item_detail_open_comic')), findsOneWidget);
+    });
   });
 
   group('A/V isolation', () {
@@ -408,7 +449,8 @@ void main() {
   });
 
   group('Folder UI', () {
-    testWidgets('mixed folder shows all kinds and filter chips', (tester) async {
+    testWidgets('mixed folder shows all kinds and filter chips',
+        (tester) async {
       final catalog = _catalog();
       final mixed = catalog.findFolderById('mixed')!;
 

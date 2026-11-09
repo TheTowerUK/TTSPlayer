@@ -62,7 +62,8 @@ class ItemDetailScreen extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Poster — 16:9, placeholder on null or load failure
+// Poster — 16:9 landscape for video/audio/image; 2:3 contain for books/comics.
+// Placeholder on null or load failure.
 // ---------------------------------------------------------------------------
 
 class _PosterArea extends StatelessWidget {
@@ -72,17 +73,26 @@ class _PosterArea extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AspectRatio(
-      aspectRatio: 16 / 9,
+    final literature = item.isBook || item.isComic;
+    final aspectRatio = literature ? 2 / 3 : 16 / 9;
+    final fit = literature ? BoxFit.contain : BoxFit.cover;
+    final decodeSize = literature
+        ? ArtworkSurfaceSizes.itemDetailLiteraturePoster()
+        : ArtworkSurfaceSizes.itemDetailPoster(
+            MediaQuery.sizeOf(context).width,
+          );
+
+    Widget poster = AspectRatio(
+      key: const Key('item_detail_poster'),
+      aspectRatio: aspectRatio,
       child: Stack(
         fit: StackFit.expand,
         children: [
           ResolvedMediaArtworkImage(
             item: item,
+            fit: fit,
             iconSize: 64,
-            logicalDecodeSize: ArtworkSurfaceSizes.itemDetailPoster(
-              MediaQuery.sizeOf(context).width,
-            ),
+            logicalDecodeSize: decodeSize,
           ),
           Positioned(
             top: 12,
@@ -122,6 +132,16 @@ class _PosterArea extends StatelessWidget {
               child: _StatusBadge(status: item.status),
             ),
         ],
+      ),
+    );
+
+    if (!literature) return poster;
+
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: decodeSize.width),
+        child: poster,
       ),
     );
   }

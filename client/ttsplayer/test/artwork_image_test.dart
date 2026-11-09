@@ -11,7 +11,8 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('ArtworkImage decode sizing', () {
-    testWidgets('applies cacheWidth and cacheHeight from logical size', (tester) async {
+    testWidgets('placeholder decode path does not create an Image widget',
+        (tester) async {
       const candidate = ArtworkCandidate(
         kind: ArtworkKind.mediaItem,
         source: ArtworkSource.placeholder,

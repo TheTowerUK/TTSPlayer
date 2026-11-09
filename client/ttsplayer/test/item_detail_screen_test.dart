@@ -11,6 +11,8 @@ import 'package:ttsplayer/features/metadata_enrichment/models/enrichment_field_v
 import 'package:ttsplayer/features/metadata_enrichment/models/enrichment_match_state.dart';
 import 'package:ttsplayer/features/metadata_enrichment/models/metadata_enrichment_record.dart';
 import 'package:ttsplayer/features/metadata_enrichment/providers/book_metadata_provider_result.dart';
+import 'package:ttsplayer/widgets/artwork/resolved_media_artwork_image.dart';
+
 import 'support/book_metadata_enrichment_section_test_support.dart';
 import 'support/metadata_enrichment_test_support.dart';
 
@@ -108,6 +110,30 @@ void main() {
 
       expect(find.byKey(const Key('book_metadata_enrichment_section')),
           findsNothing);
+    });
+
+    testWidgets('video detail poster stays landscape cover', (tester) async {
+      final repository = await initializedMetadataEnrichmentRepository();
+      final harness = await EnrichmentTestHarness.create();
+
+      await tester.pumpWidget(
+        itemDetailEnrichmentHarness(
+          item: enrichmentVideoItem(),
+          repository: repository,
+          coordinator: harness.coordinator,
+          config: MetadataEnrichmentFeatureConfig.defaults,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final poster = tester.widget<AspectRatio>(
+        find.byKey(const Key('item_detail_poster')),
+      );
+      expect(poster.aspectRatio, closeTo(16 / 9, 0.001));
+      final artwork = tester.widget<ResolvedMediaArtworkImage>(
+        find.byType(ResolvedMediaArtworkImage),
+      );
+      expect(artwork.fit, BoxFit.cover);
     });
   });
 

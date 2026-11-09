@@ -13,6 +13,10 @@ class ArtworkDecodeSize {
   const ArtworkDecodeSize({this.cacheWidth, this.cacheHeight});
 
   /// Converts a logical layout [size] to rounded physical decode pixels.
+  ///
+  /// Only the longer axis is used as a cache hint. Passing both
+  /// [cacheWidth] and [cacheHeight] to [Image] resamples to that exact
+  /// size and can stretch the source. A single axis preserves aspect ratio.
   static ArtworkDecodeSize fromLogicalSize({
     required Size size,
     required double devicePixelRatio,
@@ -25,7 +29,10 @@ class ArtworkDecodeSize {
         : 1.0;
     final width = _toPhysicalPixels(size.width * dpr);
     final height = _toPhysicalPixels(size.height * dpr);
-    return ArtworkDecodeSize(cacheWidth: width, cacheHeight: height);
+    if (width >= height) {
+      return ArtworkDecodeSize(cacheWidth: width);
+    }
+    return ArtworkDecodeSize(cacheHeight: height);
   }
 
   static int _toPhysicalPixels(double value) {
@@ -78,5 +85,10 @@ abstract final class ArtworkSurfaceSizes {
     final width = screenWidth;
     final height = width * 9 / 16;
     return Size(width, height);
+  }
+
+  /// Portrait book/comic detail cover (2:3), capped at grid media width.
+  static Size itemDetailLiteraturePoster() {
+    return const Size(AppSpacing.gridMedia, AppSpacing.gridMedia * 3 / 2);
   }
 }
