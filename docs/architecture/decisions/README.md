@@ -109,7 +109,7 @@ Every ADR must include these headings (use [ADR-template.md](./ADR-template.md))
 
 | ADR | Title | Status |
 |---|---|---|
-| [ADR-028](./ADR-028-external-metadata-enrichment-boundary.md) | External Metadata Enrichment Boundary | **Proposed** |
+| [ADR-028](./ADR-028-external-metadata-enrichment-boundary.md) | External Metadata Enrichment Boundary | **Accepted** (9 November 2026) |
 | [ADR-029](./ADR-029-metadata-precedence-provenance-and-matching.md) | Metadata Precedence, Provenance, and Matching | **Proposed** |
 
 ---

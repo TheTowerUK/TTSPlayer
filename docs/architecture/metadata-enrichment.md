@@ -2,7 +2,7 @@
 
 **Status:** Implemented through M7 Phase 7.7; final Windows/release validation remains in Phase 7.8
 **Milestone:** M7 — Metadata Enrichment and Library Experience
-**Related ADRs:** [ADR-028](./decisions/ADR-028-external-metadata-enrichment-boundary.md) (Proposed), [ADR-029](./decisions/ADR-029-metadata-precedence-provenance-and-matching.md) (Accepted), [ADR-030](./decisions/ADR-030-windows-provider-credential-storage.md) (Proposed)
+**Related ADRs:** [ADR-028](./decisions/ADR-028-external-metadata-enrichment-boundary.md) (Accepted), [ADR-029](./decisions/ADR-029-metadata-precedence-provenance-and-matching.md) (Accepted), [ADR-030](./decisions/ADR-030-windows-provider-credential-storage.md) (Proposed)
 
 → [M7 plan](../roadmap/m7-plan.md) · [Phase 7.1 closure](../roadmap/m7-phase-7.1-closure-report.md) · [Books provider evaluation](./books-metadata-provider-evaluation.md)
 → [Phase 7.7 production-hardening plan](../roadmap/m7-phase-7.7-production-hardening-plan.md)

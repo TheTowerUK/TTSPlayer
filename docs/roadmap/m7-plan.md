@@ -651,11 +651,11 @@ These are **not** Phase 7.0–7.2 blockers. Phase 7.6 is the dedicated UX/workfl
 
 | ADR | Title | Status |
 |---|---|---|
-| [ADR-028](../architecture/decisions/ADR-028-external-metadata-enrichment-boundary.md) | External Metadata Enrichment Boundary | **Proposed** |
+| [ADR-028](../architecture/decisions/ADR-028-external-metadata-enrichment-boundary.md) | External Metadata Enrichment Boundary | **Accepted** (9 November 2026) |
 | [ADR-029](../architecture/decisions/ADR-029-metadata-precedence-provenance-and-matching.md) | Metadata Precedence, Provenance, and Matching | **Accepted** (Phase 7.5 closure) |
 | [ADR-030](../architecture/decisions/ADR-030-windows-provider-credential-storage.md) | Windows Provider Credential Storage | **Proposed** — Credential Manager is the future target; implementation evidence is deferred |
 
-ADR-028 owns the client-side enrichment boundary, ADR-029 owns precedence/matching/artwork, and ADR-030 isolates the future credential-storage choice. ADR-029 was accepted after its Phase 7.5 evidence gate passed; ADR-030 remains Proposed until native integration, packaging, rotation/deletion and leak-audit evidence exists.
+ADR-028 owns the client-side enrichment boundary, ADR-029 owns precedence/matching/artwork, and ADR-030 isolates the future credential-storage choice. ADR-028 was accepted after Phase 7.8 validation (9 November 2026). ADR-029 was accepted after its Phase 7.5 evidence gate passed; ADR-030 remains Proposed until native integration, packaging, rotation/deletion and leak-audit evidence exists. M7 release closure remains pending.
 
 ---
 

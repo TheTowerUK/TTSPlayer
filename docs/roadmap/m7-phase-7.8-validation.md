@@ -69,7 +69,7 @@ Reconciled against the Phase 7.7 handoff. No additional Windows runtime test is 
 ## Release gates after validation
 
 1. P78-01–09, P78-A, P78-B and P78-C are recorded above. Remaining UI/process gaps for P78-C are explicitly dispositioned as accepted with limitation. Optional timings remain informational. Historical skips are unchanged.
-2. Reconcile ADR-028's actual acceptance gate and decision; do not auto-accept on the basis of tests. ADR-029 remains Accepted. ADR-030 stays Proposed; credential storage remains deferred.
+2. ADR-028 is **Accepted** (9 November 2026) with the limitations recorded in that ADR and under P78-C. Do not treat tests as auto-acceptance of remaining release gates. ADR-029 remains Accepted. ADR-030 stays Proposed; credential storage remains deferred.
 3. Prepare final v0.8.0 release notes, M7 closure report and version/build update. Keep pubspec unchanged until that release-preparation step. This documentation update does not bump the version.
 4. Build versioned Windows release; smoke-check its visible version and retained user state. Package the complete Release directory (exe, DLLs and data), never the exe alone. Verify a launch from the packaged/extracted directory. A prior unversioned Release compilation remains recorded in the baseline table; it is not this versioned packaging gate.
 5. Review all local commits; preserve the 16 existing M7 commits. Refresh/reconcile remote state and select the established release branch/tag workflow before publication. This package runs no remote Git operations. No new remote evidence is recorded here.

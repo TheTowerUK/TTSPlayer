@@ -1,8 +1,9 @@
 # ADR-028: External Metadata Enrichment Boundary
 
-**Status:** Proposed  
-**Date:** 2026-07-29  
-**Milestone:** M7 Phase 7.0  
+**Status:** Accepted
+**Date:** 2026-07-29
+**Accepted:** 2026-11-09 (M7 Phase 7.8 validation)
+**Milestone:** M7 Phase 7.0
 **Authors:** M7 planning
 
 ---
@@ -106,10 +107,28 @@ Implement backend bulk enrichment and client correction concurrently.
 
 ---
 
+## Acceptance (9 November 2026)
+
+Accepted against [Phase 7.8 validation ledger](../../roadmap/m7-phase-7.8-validation.md) (P78-01–09, P78-A/B/C). The six boundary rules above are unchanged. Implemented and evidenced scope:
+
+- Enrichment is client-side and stored in `ttsplayer_metadata_enrichment_v1`, separate from `catalog.json`.
+- Provider network requests are triggered by **explicit user actions only**. They do not run on catalogue load or rescan.
+- Configured background refresh and detail-screen stale-while-revalidate (Decision §4 optional paths) are **deferred**.
+- Backend bulk enrichment and `enrichment.json` sidecar files remain **deferred**.
+- No provider credentials are persisted. OS-backed credential storage remains [ADR-030](./ADR-030-windows-provider-credential-storage.md) (Proposed).
+- P78-C limitations are accepted: Details has no separate retry/queue/cancel statuses; Diagnostics pending/in-flight counts are snapshots, not live values during a held request.
+- Metadata and downloaded artwork retention after disabling External Metadata and restarting Windows TTSPlayer have been manually validated (P78-A; restart evidence under P78-C).
+
+This acceptance does not close M7 or change ADR-029/ADR-030.
+
+---
+
 ## Related documents
 
 - [M7 plan](../../roadmap/m7-plan.md)
 - [Metadata enrichment architecture](../metadata-enrichment.md)
+- [Phase 7.8 validation ledger](../../roadmap/m7-phase-7.8-validation.md)
 - [ADR-029](./ADR-029-metadata-precedence-provenance-and-matching.md)
+- [ADR-030](./ADR-030-windows-provider-credential-storage.md)
 - [ADR-014 Catalogue Revision Cache Invalidation](./ADR-014-catalogue-revision-cache-invalidation.md)
 - [ADR-025 Book/Comic Identity and Metadata Precedence](./ADR-025-book-comic-identity-and-metadata-precedence.md)
