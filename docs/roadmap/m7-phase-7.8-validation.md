@@ -1,6 +1,6 @@
 # M7 Phase 7.8 — Windows validation and release ledger
 
-Prepared 3 November 2026. Status: IN PROGRESS. This is evidence reconciliation, not a release or milestone closure.
+Prepared 3 November 2026. Updated 8–9 November 2026 to record P78 matrix execution and P78-A/B/C dispositions. Status: IN PROGRESS. This is evidence reconciliation, not a release or milestone closure. M7 release closure remains pending.
 
 Baseline: m7-development, ec403c17d2ef2c0fbbcc8a60fbf21a36fb740acd; last reported 16 commits ahead of locally recorded origin/m7-development. Tracked source clean on 2 November. No remote refresh/alignment has been verified in this package. Application remains 0.7.0+1 until release preparation.
 
@@ -19,53 +19,60 @@ Baseline: m7-development, ec403c17d2ef2c0fbbcc8a60fbf21a36fb740acd; last reporte
 | Master/provider preference | Open Library selected but inactive when master disabled | MANUAL PASS |
 | Missing-file notification | No longer reproduced after fresh launch; previously two processes existed | NOT REPRODUCED; cause unconfirmed, no code fix claimed |
 
-Historical test evidence is not a guarantee of every final Windows UI scenario. The 21 baseline skips and one matching-harness skip are retained, not marked passed. Unit coverage for coordinator retry, spacing, bounds, cancellation, lifecycle, parser and diagnostics is already green; this package adds HTTP integration rather than rerunning all those tests.
+Historical test evidence is not a guarantee of every final Windows UI scenario. The 21 baseline skips and one matching-harness skip are retained, not marked passed. Unit coverage for coordinator retry, spacing, bounds, cancellation, lifecycle, parser and diagnostics is already green; the Phase 7.8 HTTP integration suite is additional evidence, not a substitute for that baseline.
 
-## New automated local-server matrix — pending execution
+## Automated local-server matrix — executed
 
 File: client/ttsplayer/test/phase_78_provider_windows_runtime_test.dart. Windows-only and PHASE_78_RUNTIME=1; ordinary test runs skip it. Binds a temporary IPv4 loopback port. Uses production HTTP transport, Open Library response adapter, coordinated provider and lifecycle with mocked SharedPreferences and synthetic data. No public API, real catalogue, media or production settings are read or changed.
 
+Executed on Windows 8 November 2026: **9 passed, 0 failed**.
+
 | ID | New integration check | Status |
 |---|---|---|
-| P78-01 | Disabled request blocked; enabling sends no request; explicit search uses local HTTP | PENDING |
-| P78-02 | HTTP 500 maps to bounded failure with three attempts and 2s/4s delay policy | PENDING |
-| P78-03 | HTTP 429 Retry-After policy followed before success | PENDING |
-| P78-04 | Malformed JSON and HTTP 403 are not retried | PENDING |
-| P78-05 | Queue cancellation while an actual HTTP request is held; no second request | PENDING |
-| P78-06 | Disable during held ISBN HTTP request blocks late persistence and queued work | PENDING |
-| P78-07 | Cancellation interrupts a deliberately held retry backoff | PENDING |
-| P78-08 | Accepted ISBN persistence survives disable/repository reload; fresh coordinator has no queue/telemetry | PENDING |
-| P78-09 | Live pending/in-flight diagnostic counters and export redaction; export sends no HTTP | PENDING |
+| P78-01 | Disabled request blocked; enabling sends no request; explicit search uses local HTTP | PASS, 8 November 2026 |
+| P78-02 | HTTP 500 maps to bounded failure with three attempts and 2s/4s delay policy | PASS, 8 November 2026 |
+| P78-03 | HTTP 429 Retry-After policy followed before success | PASS, 8 November 2026 |
+| P78-04 | Malformed JSON and HTTP 403 are not retried | PASS, 8 November 2026 |
+| P78-05 | Queue cancellation while an actual HTTP request is held; no second request | PASS, 8 November 2026 |
+| P78-06 | Disable during held ISBN HTTP request blocks late persistence and queued work | PASS, 8 November 2026 |
+| P78-07 | Cancellation interrupts a deliberately held retry backoff | PASS, 8 November 2026 |
+| P78-08 | Accepted ISBN persistence survives disable/repository reload; fresh coordinator has no queue/telemetry | PASS, 8 November 2026 |
+| P78-09 | Live pending/in-flight diagnostic counters and export redaction; export sends no HTTP | PASS, 8 November 2026 |
 
-Retry delays use injected clock/wait controls; this validates policy values without waiting through wall-clock delays. Minimum provider spacing is zero only in this isolated HTTP suite; its actual one-second policy is covered in the existing coordinator tests. Fresh-coordinator reconstruction is not an OS process-kill test. The synthetic diagnostics harness does not prove the app's clipboard/plugin or production composition-root UI wiring. Existing manual and widget checks provide separate evidence. No benchmark/large-index timing gate is added.
+Retry delays use injected clock/wait controls; this validates policy values without waiting through wall-clock delays. Minimum provider spacing is zero only in this isolated HTTP suite; its actual one-second policy is covered in the existing coordinator tests. Fresh-coordinator reconstruction is not an OS process-kill test (see P78-C). The synthetic diagnostics harness does not prove the app's clipboard/plugin or production composition-root UI wiring; P78-B covers Copy Diagnostics in the running application separately. No benchmark/large-index timing gate is added.
 
-This newly written suite has NOT been compiled or executed in the preparation environment (Dart/Flutter unavailable). Run focused analysis and all nine scenarios on Windows; any failure is a validation issue to investigate, never permission to weaken assertions or change production policy.
+A passing service or snapshot test does not prove a user-visible Windows UI state. Those distinctions are recorded under P78-C.
 
-## Remaining manual checks
+## Manual checks
 
-### A. Artwork download and retained cache
+### A. Artwork download and retained cache — PASS
 
-Use one disposable/test book linked to a correct candidate that actually advertises a cover. Paddy's Cover unavailable and zero cache entries demonstrated safe fallback, not successful download. Enable master/provider, use the existing explicit Download cover action, and verify success. Local sidecar artwork may take precedence, so inspect the enrichment section as well as the card.
+One successful explicit Download cover produced **one artwork cache entry, 18.2 KB**. After disabling External Metadata, closing TTSPlayer, and restarting, that downloaded artwork remained. This proves provider-disabled retained presentation, not physical network disconnection. NAS and remote session were not disconnected.
 
-Check Diagnostics: artwork cache entries and indexed bytes should increase above zero if the downloaded cover is newly cached. Disable External metadata, close all instances, reopen one instance, and confirm the cached cover and indexed cache totals remain. This proves provider-disabled retained presentation, not physical network disconnection. Do not disconnect the NAS or remote session. Record PASS/FAIL/NOT AVAILABLE with the actual outcome. A provider item without a cover cannot satisfy the successful-download gate.
+### B. Application Copy diagnostics — PASS
 
-### B. Application Copy diagnostics
+Copy Diagnostics from the running application pasted successfully into Notepad. The Metadata Enrichment information in that paste was confirmed correct against the Diagnostics screen. This does **not** claim a full sensitive-field audit of the entire report beyond the Metadata Enrichment confirmation actually performed. Automated export redaction remains covered by P78-09 and existing formatter tests, not by this manual paste check.
 
-Use the built application's existing Copy diagnostics control. Paste into a local text editor. Confirm the Metadata Enrichment section agrees with the screen (master off, retained record count) and excludes book titles, authors, ISBNs, filenames, paths, provider record IDs, request URLs, headers and raw responses. Other diagnostic sections have their own contracts; do not assume all counts apply to the entire report. Record clipboard success or exact error; no need to publish the whole export.
+### C. Controlled status and restart coverage — ACCEPTED WITH LIMITATION
 
-### C. Controlled status and restart coverage
+Reconciled against the Phase 7.7 handoff. No additional Windows runtime test is required for this gate. Distinct user-visible retry, queue and cancellation statuses are **not implemented** on Details; they are not silently marked passed.
 
-P78-02/03/05/06/07/09 test service integration under controlled failure. They do not verify user-visible retry/cancellation status in the running application. Before closure, reconcile this with the Phase 7.7 handoff: provide an app/harness UI run if controls expose these states, or explicitly record the scope adjustment and acceptance of deterministic service integration plus existing widget evidence. Do not silently mark these UI scenarios passed.
-
-Restart queue abandonment requires controlled work pending at process exit if claimed as a full runtime result; P78-08 only checks fresh object state. Metadata persistence across a real app restart is separately manually passed. Any remaining process/UI gap must be resolved or explicitly dispositioned before closure.
+| Claim | Disposition |
+|---|---|
+| Retry, cancellation and provider disabling | Validated by service integration (P78-02/03/05/06/07/09) plus existing coordinator tests. Implementation correctness: PASS. |
+| Details loading and disabled/hidden controls | Existing widget tests cover the implemented busy indicator, disabled actions while loading, and section hidden when the provider gate is off. |
+| Distinct Details retry / queue / cancellation status | Not a product surface. Not claimed as Windows UI acceptance. |
+| Diagnostics pending/in-flight values | Snapshot-based (open or Refresh). P78-09 proves snapshot/export counters. Live Windows Diagnostics values during a held request were not tested. |
+| P78-08 | Repository reload and fresh-coordinator reconstruction. Not termination of a Windows process with work pending. |
+| Real Windows restart | Confirms retained metadata/artwork (including P78-A). Does not prove recovery of an in-memory operation queue; queues are process memory only and start empty. |
 
 ## Release gates after validation
 
-1. Attach Windows analysis/matrix results and manual artwork/export outcomes to this ledger. Resolve or explicitly disposition remaining UI/process gaps, warnings and skipped coverage. Leave optional timings informational.
+1. P78-01–09, P78-A, P78-B and P78-C are recorded above. Remaining UI/process gaps for P78-C are explicitly dispositioned as accepted with limitation. Optional timings remain informational. Historical skips are unchanged.
 2. Reconcile ADR-028's actual acceptance gate and decision; do not auto-accept on the basis of tests. ADR-029 remains Accepted. ADR-030 stays Proposed; credential storage remains deferred.
-3. Prepare final v0.8.0 release notes, M7 closure report and version/build update. Keep pubspec unchanged in this validation package.
-4. Build versioned Windows release; smoke-check its visible version and retained user state. Package the complete Release directory (exe, DLLs and data), never the exe alone. Verify a launch from the packaged/extracted directory.
-5. Review all local commits; preserve the 16 existing M7 commits. Refresh/reconcile remote state and select the established release branch/tag workflow before publication. This package runs no remote Git operations.
+3. Prepare final v0.8.0 release notes, M7 closure report and version/build update. Keep pubspec unchanged until that release-preparation step. This documentation update does not bump the version.
+4. Build versioned Windows release; smoke-check its visible version and retained user state. Package the complete Release directory (exe, DLLs and data), never the exe alone. Verify a launch from the packaged/extracted directory. A prior unversioned Release compilation remains recorded in the baseline table; it is not this versioned packaging gate.
+5. Review all local commits; preserve the 16 existing M7 commits. Refresh/reconcile remote state and select the established release branch/tag workflow before publication. This package runs no remote Git operations. No new remote evidence is recorded here.
 6. Update Development Dashboard: current remains verified v0.7.0, next v0.8.0, phase Validation. Close the dated M7 release milestone only after acceptance/publication and build evidence exist. No live dashboard has been edited by this package.
 
 ## Explicit deferrals retained
