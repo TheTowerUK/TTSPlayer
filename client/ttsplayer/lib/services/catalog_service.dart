@@ -108,19 +108,16 @@ class CatalogService extends ChangeNotifier {
   bool get isDegradedLoad => providerSnapshot.isDegradedLoad;
 
   /// True when the bundled demo asset is active (auto-fallback or user-selected).
-  bool get isDemoCatalogue =>
-      _isUsingFallback || _catalogPath == 'bundled';
+  bool get isDemoCatalogue => _isUsingFallback || _catalogPath == 'bundled';
 
   /// True when a live NAS catalogue file is loaded (drive letter or UNC).
-  bool get isLiveNasCatalogue =>
-      _catalog != null && !isDemoCatalogue;
+  bool get isLiveNasCatalogue => _catalog != null && !isDemoCatalogue;
 
   /// Short label for dashboard/debug UI.
   String get catalogueSourceLabel => catalogueSourceKind.label;
 
   /// Three-way source classification for Storage Status and Library Manager.
-  CatalogueSourceKind get catalogueSourceKind =>
-      classifyCataloguePath(
+  CatalogueSourceKind get catalogueSourceKind => classifyCataloguePath(
         catalogPath: _catalogPath,
         isDemoFallback: isDemoCatalogue,
       );
@@ -130,9 +127,7 @@ class CatalogService extends ChangeNotifier {
     required String? catalogPath,
     required bool isDemoFallback,
   }) {
-    if (isDemoFallback ||
-        catalogPath == null ||
-        catalogPath == 'bundled') {
+    if (isDemoFallback || catalogPath == null || catalogPath == 'bundled') {
       return CatalogueSourceKind.demo;
     }
     final path = _normalizeCataloguePath(catalogPath);
@@ -185,6 +180,7 @@ class CatalogService extends ChangeNotifier {
   void setProviderConfig(MediaProviderConfig config) {
     _activeProviderConfig = config;
   }
+
   /// Persisted in shared_preferences — does not modify catalog.json.
   String? _dismissedWarningsCatalogueId;
   bool _dismissedStateLoaded = false;
@@ -223,8 +219,7 @@ class CatalogService extends ChangeNotifier {
 
     await _loadDismissedState();
 
-    final attempt =
-        await _tryProviderCatalogue(activeProviderConfig);
+    final attempt = await _tryProviderCatalogue(activeProviderConfig);
 
     if (attempt.didSucceed) {
       _isUsingFallback = false;
@@ -296,7 +291,7 @@ class CatalogService extends ChangeNotifier {
     } else {
       _errorMessage = attempt.lastError ??
           'Could not load catalogue from configured providers. '
-          'Check network, drive mounts, and Settings.';
+              'Check network, drive mounts, and Settings.';
       _finalizeProviderSnapshot(
         chainSucceeded: false,
         demoFallback: isUsingFallback,
@@ -504,8 +499,7 @@ class CatalogService extends ChangeNotifier {
       config: config,
       legacyLocalProviders: legacyLocal,
     );
-    final skipped =
-        CatalogueProviderSelector.configurationExcludedProviders(
+    final skipped = CatalogueProviderSelector.configurationExcludedProviders(
       config: config,
       attemptChain: attemptChain,
     );
@@ -565,6 +559,56 @@ class CatalogService extends ChangeNotifier {
       demoWithoutProvider: false,
     );
     return _ProviderCatalogueAttempt.failed(lastError);
+  }
+
+  /// Updates session provider state after a successful explicit catalogue load.
+  /// Does not persist [MediaProviderConfig] or change selector ordering.
+  void _recordSuccessfulManualLoad(
+    CatalogSource source,
+    String identifier,
+  ) {
+    final at = DateTime.now().toUtc();
+    _sessionStartedAt ??= at;
+    _lastLoadStartedAt = at;
+    _lastCatalogueLoadAt = at;
+
+    MediaCatalogueProviderDefinition? provider;
+    var demoWithoutProvider = false;
+    switch (source) {
+      case CatalogSource.bundled:
+        provider = null;
+        demoWithoutProvider = true;
+      case CatalogSource.localFile:
+        provider = MediaCatalogueProviderDefinition.localFile(identifier);
+      case CatalogSource.remoteUrl:
+        provider = MediaCatalogueProviderDefinition.http(identifier);
+    }
+
+    _activeCatalogueProvider = provider;
+    _ensureManualLoadTracker();
+    _loadTracker!.applyManualSessionSource(provider, at);
+    _finalizeProviderSnapshot(
+      chainSucceeded: provider != null,
+      demoFallback: false,
+      demoWithoutProvider: demoWithoutProvider,
+    );
+  }
+
+  void _ensureManualLoadTracker() {
+    if (_loadTracker != null) return;
+    final config = activeProviderConfig;
+    final attemptChain = CatalogueProviderSelector.orderedProviders(
+      config: config,
+    );
+    final skipped = CatalogueProviderSelector.configurationExcludedProviders(
+      config: config,
+      attemptChain: attemptChain,
+    );
+    _loadTracker = CatalogueProviderLoadTracker(
+      config: config,
+      attemptChain: attemptChain,
+      skippedProviders: skipped,
+    );
   }
 
   void _finalizeProviderSnapshot({
@@ -805,6 +849,8 @@ class CatalogService extends ChangeNotifier {
         _lastRefreshedAt = DateTime.now();
       }
       _notifyCatalogReplaced();
+      _isUsingFallback = false;
+      _recordSuccessfulManualLoad(source, identifier);
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_prefKeySource, source.name);

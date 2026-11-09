@@ -5,6 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ttsplayer/features/search/models/search_filters.dart';
+import 'package:ttsplayer/features/search/search_service.dart';
 import 'package:ttsplayer/models/catalogue_provider_snapshot.dart';
 import 'package:ttsplayer/services/catalog_service.dart';
 import 'package:ttsplayer/services/media_access/media_access_config.dart';
@@ -41,6 +43,38 @@ void main() {
         'total_items': 0,
         'folders': [],
       };
+
+  Map<String, dynamic> catalogJsonWithUniqueTitle({
+    required String id,
+    required String title,
+  }) {
+    final json = minimalCatalogJson(id: id);
+    json['total_items'] = 1;
+    json['scan'] = {
+      ...(json['scan'] as Map<String, dynamic>),
+      'folders': 1,
+      'items': 1,
+    };
+    json['folders'] = [
+      {
+        'id': 'lib-test',
+        'name': 'Test Library',
+        'path': r'D:\TTSPlayer-Test',
+        'item_count': 1,
+        'items': [
+          {
+            'id': 'item-unique-epub',
+            'title': title,
+            'file_path': r'D:\TTSPlayer-Test\unique.epub',
+            'status': 'unavailable',
+            'media_kind': 'book',
+          },
+        ],
+        'subfolders': [],
+      },
+    ];
+    return json;
+  }
 
   late Directory tempDir;
 
@@ -85,7 +119,8 @@ void main() {
 
     test('localPreferred tries local file before HTTP fallback', () async {
       final localFile = File('${tempDir.path}/local-first.json');
-      await localFile.writeAsString(jsonEncode(minimalCatalogJson(id: 'LOCAL')));
+      await localFile
+          .writeAsString(jsonEncode(minimalCatalogJson(id: 'LOCAL')));
 
       var httpCalled = false;
       final client = MockClient((request) async {
@@ -128,7 +163,8 @@ void main() {
       expect(service.lastLoadStartedAt, isNotNull);
     });
 
-    test('localPreferred falls back to HTTP when local files missing', () async {
+    test('localPreferred falls back to HTTP when local files missing',
+        () async {
       final client = MockClient((request) async {
         expect(request.url.toString(), httpCatalogUrl);
         return http.Response(
@@ -166,8 +202,7 @@ void main() {
       );
     });
 
-    test(
-        'localPreferred with legacy prefs tries HTTP before bundled demo',
+    test('localPreferred with legacy prefs tries HTTP before bundled demo',
         () async {
       const missingLocal = r'Z:\TTSPlayerTestMissing\catalog.json';
       SharedPreferences.setMockInitialValues({
@@ -226,7 +261,8 @@ void main() {
       expect(service.isUsingFallback, isTrue);
       expect(service.catalogPath, 'bundled');
       expect(service.errorMessage, isNotNull);
-      expect(service.errorMessage!.toLowerCase(), contains('secure connection'));
+      expect(
+          service.errorMessage!.toLowerCase(), contains('secure connection'));
       expect(
         service.fallbackBannerMessage,
         contains('configured remote catalogue'),
@@ -237,7 +273,8 @@ void main() {
       );
     });
 
-    test('saved provider config loads remote URL before demo fallback', () async {
+    test('saved provider config loads remote URL before demo fallback',
+        () async {
       const missingLocal = r'Z:\TTSPlayerTestMissing\catalog.json';
       final custom = MediaProviderConfig(
         catalogueProviders: const [
@@ -277,7 +314,8 @@ void main() {
 
     test('httpRequired loads HTTP provider only', () async {
       final localFile = File('${tempDir.path}/ignored-local.json');
-      await localFile.writeAsString(jsonEncode(minimalCatalogJson(id: 'LOCAL')));
+      await localFile
+          .writeAsString(jsonEncode(minimalCatalogJson(id: 'LOCAL')));
 
       final client = MockClient((request) async {
         return http.Response(
@@ -308,8 +346,7 @@ void main() {
         () async {
       SharedPreferences.setMockInitialValues({});
 
-      final service = CatalogService()
-        ..includeLegacyCataloguePaths = false;
+      final service = CatalogService()..includeLegacyCataloguePaths = false;
       await service.loadOnStartup(
         providerConfig: MediaProviderConfig(
           catalogueProviders: const [
@@ -331,8 +368,7 @@ void main() {
       final goodFile = File('${tempDir.path}/good.json');
       await goodFile.writeAsString(jsonEncode(minimalCatalogJson(id: 'GOOD')));
 
-      final service = CatalogService()
-        ..includeLegacyCataloguePaths = false;
+      final service = CatalogService()..includeLegacyCataloguePaths = false;
       await service.loadOnStartup(
         providerConfig: MediaProviderConfig(
           catalogueProviders: [
@@ -372,8 +408,7 @@ void main() {
       await first.writeAsString(jsonEncode(minimalCatalogJson(id: 'FIRST')));
       await second.writeAsString(jsonEncode(minimalCatalogJson(id: 'SECOND')));
 
-      final service = CatalogService()
-        ..includeLegacyCataloguePaths = false;
+      final service = CatalogService()..includeLegacyCataloguePaths = false;
       await service.loadOnStartup(
         providerConfig: MediaProviderConfig(
           catalogueProviders: [
@@ -391,16 +426,21 @@ void main() {
       expect(service.catalog?.catalogueIdentity, 'SECOND');
       final snapshot = service.providerSnapshot;
       expect(
-        snapshot.providers.firstWhere((r) => r.definition.location == first.path).health,
+        snapshot.providers
+            .firstWhere((r) => r.definition.location == first.path)
+            .health,
         CatalogueProviderHealth.failed,
       );
       expect(
-        snapshot.providers.firstWhere((r) => r.definition.location == second.path).health,
+        snapshot.providers
+            .firstWhere((r) => r.definition.location == second.path)
+            .health,
         CatalogueProviderHealth.degraded,
       );
     });
 
-    test('startup demo fallback snapshot records failed providers and demo flags',
+    test(
+        'startup demo fallback snapshot records failed providers and demo flags',
         () async {
       final client = MockClient((request) async {
         throw HandshakeException('CERTIFICATE_VERIFY_FAILED');
@@ -440,11 +480,11 @@ void main() {
       );
     });
 
-    test('httpRequired demo fallback includes skipped local providers', () async {
+    test('httpRequired demo fallback includes skipped local providers',
+        () async {
       SharedPreferences.setMockInitialValues({});
 
-      final service = CatalogService()
-        ..includeLegacyCataloguePaths = false;
+      final service = CatalogService()..includeLegacyCataloguePaths = false;
       await service.loadOnStartup(
         providerConfig: MediaProviderConfig(
           catalogueProviders: const [
@@ -473,7 +513,8 @@ void main() {
 
     test('httpRequired marks local providers skipped in snapshot', () async {
       final localFile = File('${tempDir.path}/skipped-local.json');
-      await localFile.writeAsString(jsonEncode(minimalCatalogJson(id: 'LOCAL')));
+      await localFile
+          .writeAsString(jsonEncode(minimalCatalogJson(id: 'LOCAL')));
 
       final client = MockClient((request) async {
         return http.Response(
@@ -505,6 +546,143 @@ void main() {
           (r) => r.definition.kind == MediaCatalogueProviderKind.localFile,
         ),
         isTrue,
+      );
+    });
+  });
+
+  group('CatalogService manual load snapshot sync', () {
+    setUp(() {
+      SharedPreferences.setMockInitialValues({});
+    });
+
+    test(
+        'manual load replaces active provider; failed load and refresh preserve chain',
+        () async {
+      const uniqueTitle = 'TEST — Unavailable NAS EPUB';
+      final primary = File('${tempDir.path}/primary.json');
+      final manual = File('${tempDir.path}/manual.json');
+      await primary.writeAsString(
+        jsonEncode(minimalCatalogJson(id: 'PRIMARY-CAT')),
+      );
+      await manual.writeAsString(
+        jsonEncode(
+          catalogJsonWithUniqueTitle(id: 'MANUAL-CAT', title: uniqueTitle),
+        ),
+      );
+
+      final search = SearchService();
+      final service = CatalogService(
+        onCatalogReplaced: search.onCatalogReplaced,
+      )..includeLegacyCataloguePaths = false;
+      final config = MediaProviderConfig(
+        catalogueProviders: [
+          MediaCatalogueProviderDefinition.localFile(primary.path),
+        ],
+        mediaAccess: MediaAccessConfig.defaults(),
+      );
+
+      await service.loadOnStartup(providerConfig: config);
+
+      expect(service.catalog?.catalogueIdentity, 'PRIMARY-CAT');
+      expect(service.catalogPath, primary.path);
+      expect(service.activeCatalogueProvider?.location, primary.path);
+      expect(
+        service.providerSnapshot.providers
+            .firstWhere((r) => r.definition.location == primary.path)
+            .health,
+        CatalogueProviderHealth.success,
+      );
+      expect(
+        service.providerSnapshot.loadedCatalogueIdentity,
+        'PRIMARY-CAT',
+      );
+      final loadAtAfterStartup = service.lastCatalogueLoadAt;
+      expect(loadAtAfterStartup, isNotNull);
+
+      await service.loadFromFile(manual.path);
+
+      expect(service.errorMessage, isNull);
+      expect(service.catalog?.catalogueIdentity, 'MANUAL-CAT');
+      expect(service.catalogPath, manual.path);
+      expect(service.activeCatalogueProvider?.location, manual.path);
+      expect(service.providerSnapshot.catalogPath, manual.path);
+      expect(
+        service.providerSnapshot.loadedCatalogueIdentity,
+        'MANUAL-CAT',
+      );
+      expect(service.providerSnapshot.activeProvider?.location, manual.path);
+      expect(service.lastCatalogueLoadAt, isNotNull);
+      expect(
+        service.lastCatalogueLoadAt!.isAfter(loadAtAfterStartup!) ||
+            service.lastCatalogueLoadAt == loadAtAfterStartup,
+        isTrue,
+      );
+
+      final primaryRecord = service.providerSnapshot.providers.firstWhere(
+        (r) => r.definition.location == primary.path,
+      );
+      expect(primaryRecord.isActive, isFalse);
+      expect(primaryRecord.health, CatalogueProviderHealth.idle);
+
+      final manualRecord = service.providerSnapshot.providers.firstWhere(
+        (r) => r.definition.location == manual.path,
+      );
+      expect(manualRecord.health, CatalogueProviderHealth.success);
+      expect(manualRecord.isActive, isTrue);
+
+      final hits = await search.searchCatalog(
+        service.catalog!,
+        uniqueTitle,
+        const SearchFilters.empty(),
+      );
+      expect(hits, isNotEmpty);
+      expect(hits.single.item.title, uniqueTitle);
+
+      final snapshotBeforeFailure = service.providerSnapshot;
+      final catalogBeforeFailure = service.catalog;
+      final pathBeforeFailure = service.catalogPath;
+      final activeBeforeFailure = service.activeCatalogueProvider?.location;
+      final loadAtBeforeFailure = service.lastCatalogueLoadAt;
+
+      await service.loadFromFile('${tempDir.path}/missing.json');
+
+      expect(service.errorMessage, isNotNull);
+      expect(service.catalog, catalogBeforeFailure);
+      expect(service.catalogPath, pathBeforeFailure);
+      expect(service.activeCatalogueProvider?.location, activeBeforeFailure);
+      expect(
+        service.providerSnapshot.loadedCatalogueIdentity,
+        snapshotBeforeFailure.loadedCatalogueIdentity,
+      );
+      expect(service.providerSnapshot.catalogPath, pathBeforeFailure);
+      expect(
+        service.providerSnapshot.activeProvider?.location,
+        activeBeforeFailure,
+      );
+      expect(service.lastCatalogueLoadAt, loadAtBeforeFailure);
+
+      await service.refreshCatalogue();
+
+      expect(service.errorMessage, isNull);
+      expect(service.catalog?.catalogueIdentity, 'PRIMARY-CAT');
+      expect(service.catalogPath, primary.path);
+      expect(service.activeCatalogueProvider?.location, primary.path);
+      expect(service.providerSnapshot.catalogPath, primary.path);
+      expect(
+        service.providerSnapshot.loadedCatalogueIdentity,
+        'PRIMARY-CAT',
+      );
+      expect(
+        service.providerSnapshot.providers
+            .where((r) => r.definition.location == primary.path)
+            .single
+            .health,
+        CatalogueProviderHealth.success,
+      );
+      expect(
+        service.providerSnapshot.providers
+            .where((r) => r.definition.location == manual.path),
+        isEmpty,
       );
     });
   });

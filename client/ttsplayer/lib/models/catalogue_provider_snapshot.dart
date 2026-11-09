@@ -1,3 +1,4 @@
+import '../services/media_access/catalogue_provider_selector.dart';
 import '../services/media_access/media_access_config.dart';
 import '../services/media_access/media_catalogue_provider.dart';
 import '../services/media_access/media_provider_config.dart';
@@ -107,6 +108,7 @@ class CatalogueProviderLoadTracker {
     required List<MediaCatalogueProviderDefinition> skippedProviders,
   })  : _config = config,
         _attemptChainLength = attemptChain.length,
+        _configuredRecordCount = attemptChain.length + skippedProviders.length,
         _records = [
           for (final definition in attemptChain)
             CatalogueProviderAttemptRecord(
@@ -122,6 +124,7 @@ class CatalogueProviderLoadTracker {
 
   final MediaProviderConfig _config;
   final int _attemptChainLength;
+  final int _configuredRecordCount;
   final List<CatalogueProviderAttemptRecord> _records;
 
   DateTime? _lastLoadStartedAt;
@@ -135,6 +138,9 @@ class CatalogueProviderLoadTracker {
     _lastLoadStartedAt = startedAt;
     _lastCycleError = null;
     _activeProvider = null;
+    if (_records.length > _configuredRecordCount) {
+      _records.removeRange(_configuredRecordCount, _records.length);
+    }
     for (var i = 0; i < _attemptChainLength; i++) {
       _records[i] = _records[i].copyWith(
         health: CatalogueProviderHealth.idle,
@@ -168,8 +174,9 @@ class CatalogueProviderLoadTracker {
     required bool hadEarlierFailure,
   }) {
     _ensureAttemptIndex(attemptIndex);
-    final degraded = _config.mediaAccess.mode == MediaAccessMode.localPreferred &&
-        hadEarlierFailure;
+    final degraded =
+        _config.mediaAccess.mode == MediaAccessMode.localPreferred &&
+            hadEarlierFailure;
     final health = degraded
         ? CatalogueProviderHealth.degraded
         : CatalogueProviderHealth.success;
@@ -191,6 +198,67 @@ class CatalogueProviderLoadTracker {
         );
       }
     }
+  }
+
+  /// Records a successful explicit [loadFromFile] / [loadFromUrl] / bundled
+  /// load without changing persisted provider configuration.
+  ///
+  /// Matching configured (non-skipped) rows become [success]. A path that is
+  /// not in the attempt chain is appended as a session-only source. Previous
+  /// [success] / [degraded] rows are demoted to [idle]. Manual loads are never
+  /// [degraded] (ADR-001).
+  void applyManualSessionSource(
+    MediaCatalogueProviderDefinition? provider,
+    DateTime at,
+  ) {
+    _lastLoadStartedAt = at;
+    _lastCycleError = null;
+    _activeProvider = provider;
+
+    if (_records.length > _configuredRecordCount) {
+      _records.removeRange(_configuredRecordCount, _records.length);
+    }
+
+    for (var i = 0; i < _records.length; i++) {
+      if (_records[i].isActive) {
+        _records[i] = _records[i].copyWith(
+          health: CatalogueProviderHealth.idle,
+        );
+      }
+    }
+
+    if (provider == null) return;
+
+    final key = CatalogueProviderSelector.providerKey(provider);
+    var matchIndex = -1;
+    for (var i = 0; i < _configuredRecordCount; i++) {
+      if (CatalogueProviderSelector.providerKey(_records[i].definition) ==
+          key) {
+        matchIndex = i;
+        break;
+      }
+    }
+
+    if (matchIndex >= 0 &&
+        _records[matchIndex].health != CatalogueProviderHealth.skipped) {
+      _records[matchIndex] = _records[matchIndex].copyWith(
+        health: CatalogueProviderHealth.success,
+        lastAttemptAt: at,
+        lastSuccessAt: at,
+        clearError: true,
+      );
+      _activeProvider = _records[matchIndex].definition;
+      return;
+    }
+
+    _records.add(
+      CatalogueProviderAttemptRecord(
+        definition: provider,
+        health: CatalogueProviderHealth.success,
+        lastAttemptAt: at,
+        lastSuccessAt: at,
+      ),
+    );
   }
 
   void markAllAttemptedFailed(String? error) {

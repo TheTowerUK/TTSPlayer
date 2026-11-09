@@ -131,11 +131,85 @@ void main() {
       );
 
       expect(
-        snapshot.providers.every((r) => r.health == CatalogueProviderHealth.failed),
+        snapshot.providers
+            .every((r) => r.health == CatalogueProviderHealth.failed),
         isTrue,
       );
       expect(snapshot.activeRecord, isNull);
       expect(snapshot.lastCycleError, 'TLS error');
+    });
+
+    test('applyManualSessionSource demotes chain success and adds session row',
+        () {
+      final tracker = CatalogueProviderLoadTracker(
+        config: localPreferredConfig(),
+        attemptChain: const [localA, httpProvider],
+        skippedProviders: const [],
+      );
+      final started = DateTime.utc(2026, 7, 12, 10);
+      tracker.beginCycle(started);
+      tracker.markLoading(0, started);
+      tracker.markSuccess(0, started, hadEarlierFailure: false);
+
+      const session = MediaCatalogueProviderDefinition.localFile(
+        r'D:\TTSPlayer-Test\catalog-unavailable-nas.json',
+      );
+      final manualAt = started.add(const Duration(minutes: 1));
+      tracker.applyManualSessionSource(session, manualAt);
+
+      final snapshot = tracker.build(
+        loadedCatalogueIdentity: 'TEST-CAT',
+        catalogPath: session.location,
+        lastCatalogueLoadAt: manualAt,
+        sessionStartedAt: started,
+        isDemoFallback: false,
+        demoActiveWithoutProvider: false,
+      );
+
+      expect(snapshot.providers[0].health, CatalogueProviderHealth.idle);
+      expect(snapshot.providers[0].isActive, isFalse);
+      expect(snapshot.providers[1].health, CatalogueProviderHealth.idle);
+      expect(snapshot.providers[2].definition, session);
+      expect(snapshot.providers[2].health, CatalogueProviderHealth.success);
+      expect(snapshot.activeProvider, session);
+      expect(snapshot.isDegradedLoad, isFalse);
+    });
+
+    test('applyManualSessionSource reuses matching configured provider', () {
+      final tracker = CatalogueProviderLoadTracker(
+        config: localPreferredConfig(),
+        attemptChain: const [localA, httpProvider],
+        skippedProviders: const [],
+      );
+      final started = DateTime.utc(2026, 7, 12, 10);
+      tracker.beginCycle(started);
+      tracker.markLoading(1, started);
+      tracker.markSuccess(1, started, hadEarlierFailure: false);
+
+      tracker.applyManualSessionSource(localA, started);
+
+      expect(tracker.records.length, 2);
+      expect(tracker.records[0].health, CatalogueProviderHealth.success);
+      expect(tracker.records[1].health, CatalogueProviderHealth.idle);
+    });
+
+    test('beginCycle drops session-only rows', () {
+      final tracker = CatalogueProviderLoadTracker(
+        config: localPreferredConfig(),
+        attemptChain: const [localA],
+        skippedProviders: const [],
+      );
+      final t0 = DateTime.utc(2026, 7, 12, 10);
+      tracker.beginCycle(t0);
+      tracker.applyManualSessionSource(
+        const MediaCatalogueProviderDefinition.localFile(r'D:\tmp\a.json'),
+        t0,
+      );
+      expect(tracker.records.length, 2);
+
+      tracker.beginCycle(t0.add(const Duration(minutes: 1)));
+      expect(tracker.records.length, 1);
+      expect(tracker.records.single.health, CatalogueProviderHealth.idle);
     });
 
     test('beginCycle resets attempt chain to idle', () {
