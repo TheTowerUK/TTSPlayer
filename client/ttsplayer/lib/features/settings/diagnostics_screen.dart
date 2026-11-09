@@ -26,6 +26,7 @@ class DiagnosticsScreen extends StatefulWidget {
 }
 
 class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
+  final _scrollController = ScrollController();
   RuntimeDiagnosticsSnapshot? _snapshot;
   bool _initialLoading = true;
   bool _refreshing = false;
@@ -43,6 +44,12 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _captureSnapshot(initial: true);
     });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -201,7 +208,11 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
     }
 
     return Scrollbar(
+      controller: _scrollController,
+      thumbVisibility: true,
       child: SingleChildScrollView(
+        controller: _scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: AppSpacing.insetPage,
         child: Align(
           alignment: Alignment.topCenter,

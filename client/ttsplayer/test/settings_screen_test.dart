@@ -77,7 +77,10 @@ Future<void> _pumpSettingsScreen(
   for (var i = 0; i < 10; i++) {
     await tester.pump(const Duration(milliseconds: 100));
     if (find.byKey(const Key('save_network_settings')).evaluate().isNotEmpty &&
-        (find.byKey(const Key('default_playback_speed')).evaluate().isNotEmpty ||
+        (find
+                .byKey(const Key('default_playback_speed'))
+                .evaluate()
+                .isNotEmpty ||
             find
                 .byKey(const Key('playback_speed_readonly'))
                 .evaluate()
@@ -134,6 +137,37 @@ void main() {
       expect(find.byKey(const Key('http_catalogue_url')), findsOneWidget);
     });
 
+    testWidgets(
+        'uses a visible scrollbar that scrolls when the window is short',
+        (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final repository = SettingsRepository();
+      await _pumpSettingsScreen(tester, repository);
+
+      tester.view.physicalSize = const Size(900, 420);
+      await tester.pump();
+
+      final scrollbar = tester.widget<Scrollbar>(find.byType(Scrollbar));
+      expect(scrollbar.thumbVisibility, isTrue);
+      expect(scrollbar.controller, isNotNull);
+
+      final scrollView = tester.widget<SingleChildScrollView>(
+        find.byType(SingleChildScrollView),
+      );
+      expect(identical(scrollView.controller, scrollbar.controller), isTrue);
+      expect(scrollView.physics, isA<AlwaysScrollableScrollPhysics>());
+
+      final position = scrollbar.controller!.position;
+      expect(position.maxScrollExtent, greaterThan(0));
+
+      await tester.drag(
+          find.byType(SingleChildScrollView), const Offset(0, -300));
+      await tester.pump();
+
+      expect(position.pixels, greaterThan(0));
+      expect(find.text('Diagnostics & Advanced'), findsOneWidget);
+    });
+
     testWidgets('loads network timeout from repository', (tester) async {
       SharedPreferences.setMockInitialValues({});
       final repository = SettingsRepository();
@@ -160,7 +194,8 @@ void main() {
         '30',
       );
       await tester.pump();
-      await tester.ensureVisible(find.byKey(const Key('save_network_settings')));
+      await tester
+          .ensureVisible(find.byKey(const Key('save_network_settings')));
       await tester.tap(find.byKey(const Key('save_network_settings')));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -172,7 +207,8 @@ void main() {
       expect(reloaded.catalogueFetchTimeoutSeconds, 30);
     });
 
-    testWidgets('blocks invalid timeout with validation errors', (tester) async {
+    testWidgets('blocks invalid timeout with validation errors',
+        (tester) async {
       SharedPreferences.setMockInitialValues({});
       final repository = SettingsRepository();
       await _pumpSettingsScreen(tester, repository);
@@ -182,12 +218,14 @@ void main() {
         '999',
       );
       await tester.pump();
-      await tester.ensureVisible(find.byKey(const Key('save_network_settings')));
+      await tester
+          .ensureVisible(find.byKey(const Key('save_network_settings')));
       await tester.tap(find.byKey(const Key('save_network_settings')));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.byKey(const Key('network_validation_errors')), findsOneWidget);
+      expect(
+          find.byKey(const Key('network_validation_errors')), findsOneWidget);
     });
 
     testWidgets('scrolls at constrained height', (tester) async {
@@ -217,7 +255,8 @@ void main() {
   });
 
   group('SettingsScreen — playback (M4.4 Step 3)', () {
-    testWidgets('15 playback section shows current saved speed', (tester) async {
+    testWidgets('15 playback section shows current saved speed',
+        (tester) async {
       SharedPreferences.setMockInitialValues({});
       final repository = SettingsRepository();
       await repository.initialize();
@@ -248,7 +287,8 @@ void main() {
       await _pumpSettingsScreen(tester, repository);
 
       await _selectPlaybackRate(tester, 2.0);
-      await tester.ensureVisible(find.byKey(const Key('save_playback_settings')));
+      await tester
+          .ensureVisible(find.byKey(const Key('save_playback_settings')));
       await tester.tap(find.byKey(const Key('save_playback_settings')));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -260,25 +300,30 @@ void main() {
       expect(reloaded.defaultPlaybackRate, 2.0);
     });
 
-    testWidgets('18 validation failure shows feedback and preserves prior value',
+    testWidgets(
+        '18 validation failure shows feedback and preserves prior value',
         (tester) async {
       SharedPreferences.setMockInitialValues({
         SettingsRepository.storageKey: jsonEncode(
-          ApplicationSettings.defaults().copyWith(
-            playback: const PlaybackSettings(defaultPlaybackSpeed: 1.25),
-          ).toJson(),
+          ApplicationSettings.defaults()
+              .copyWith(
+                playback: const PlaybackSettings(defaultPlaybackSpeed: 1.25),
+              )
+              .toJson(),
         ),
       });
       final repository = _RejectPlaybackSaveRepository();
       await _pumpSettingsScreen(tester, repository);
 
       await _selectPlaybackRate(tester, 1.5);
-      await tester.ensureVisible(find.byKey(const Key('save_playback_settings')));
+      await tester
+          .ensureVisible(find.byKey(const Key('save_playback_settings')));
       await tester.tap(find.byKey(const Key('save_playback_settings')));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.byKey(const Key('playback_validation_errors')), findsOneWidget);
+      expect(
+          find.byKey(const Key('playback_validation_errors')), findsOneWidget);
       expect(repository.defaultPlaybackRate, 1.25);
     });
 
@@ -289,7 +334,8 @@ void main() {
       await repository.saveDefaultPlaybackRate(2.0);
       await _pumpSettingsScreen(tester, repository);
 
-      await tester.ensureVisible(find.byKey(const Key('reset_playback_settings')));
+      await tester
+          .ensureVisible(find.byKey(const Key('reset_playback_settings')));
       await tester.tap(find.byKey(const Key('reset_playback_settings')));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('confirm_reset_playback')));
@@ -367,7 +413,8 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(metadata.favouriteItems.map((item) => item.id), contains('item-1'));
+      expect(
+          metadata.favouriteItems.map((item) => item.id), contains('item-1'));
       expect(repository.defaultPlaybackRate, PlaybackRatePresets.defaultRate);
     });
 
@@ -537,7 +584,8 @@ void main() {
       expect(wrapped.captureCount, greaterThanOrEqualTo(1));
     });
 
-    testWidgets('unsaved network changes remain after returning from diagnostics',
+    testWidgets(
+        'unsaved network changes remain after returning from diagnostics',
         (tester) async {
       PackageInfo.setMockInitialValues(
         appName: 'TTSPlayer',

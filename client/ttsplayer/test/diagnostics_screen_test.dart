@@ -73,6 +73,37 @@ void main() {
       expect(find.text('Library'), findsOneWidget);
       expect(find.textContaining('Instance of'), findsNothing);
     });
+
+    testWidgets(
+        'uses a visible scrollbar that scrolls when the window is short',
+        (tester) async {
+      final service = await _fakeService();
+      await _pumpDiagnostics(tester, service);
+      await tester.pumpAndSettle();
+
+      tester.view.physicalSize = const Size(900, 420);
+      await tester.pump();
+
+      final scrollbar = tester.widget<Scrollbar>(find.byType(Scrollbar));
+      expect(scrollbar.thumbVisibility, isTrue);
+      expect(scrollbar.controller, isNotNull);
+
+      final scrollView = tester.widget<SingleChildScrollView>(
+        find.byType(SingleChildScrollView),
+      );
+      expect(identical(scrollView.controller, scrollbar.controller), isTrue);
+      expect(scrollView.physics, isA<AlwaysScrollableScrollPhysics>());
+
+      final position = scrollbar.controller!.position;
+      expect(position.maxScrollExtent, greaterThan(0));
+
+      await tester.drag(
+          find.byType(SingleChildScrollView), const Offset(0, -300));
+      await tester.pump();
+
+      expect(position.pixels, greaterThan(0));
+      expect(find.text('Application'), findsOneWidget);
+    });
   });
 
   group('section rendering', () {

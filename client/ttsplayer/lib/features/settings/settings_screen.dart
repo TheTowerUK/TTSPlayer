@@ -26,6 +26,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final _providerFormKey = GlobalKey<MediaProviderSettingsFormState>();
   final _timeoutController = TextEditingController();
+  final _scrollController = ScrollController();
 
   bool _ready = false;
   bool _savingNetwork = false;
@@ -59,6 +60,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void dispose() {
     _timeoutController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -369,7 +371,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         body: !_ready
             ? const Center(child: CircularProgressIndicator())
             : Scrollbar(
+                controller: _scrollController,
+                thumbVisibility: true,
                 child: SingleChildScrollView(
+                  controller: _scrollController,
+                  physics: const AlwaysScrollableScrollPhysics(),
                   padding: AppSpacing.insetPage,
                   child: Align(
                     alignment: Alignment.topCenter,
