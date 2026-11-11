@@ -28,6 +28,7 @@ import 'package:ttsplayer/navigation/media_item_navigation.dart';
 import 'package:ttsplayer/navigation/single_reader_folder.dart';
 import 'package:ttsplayer/screens/folder_screen.dart';
 import 'package:ttsplayer/screens/item_detail_screen.dart';
+import 'package:ttsplayer/screens/player_screen.dart';
 import 'package:ttsplayer/services/artwork/artwork_service.dart';
 import 'package:ttsplayer/services/catalog_service.dart';
 import 'package:ttsplayer/services/library/library_metadata_repository.dart';
@@ -206,6 +207,16 @@ Future<void> _pumpUntilFound(
   });
 }
 
+/// PlayerScreen.dispose calls [PlaybackService.stop] without awaiting it.
+Future<void> _closePlayer(WidgetTester tester) async {
+  tester.state<NavigatorState>(find.byType(Navigator)).pop();
+  await tester.pump();
+  await tester.runAsync(() async {
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+  });
+  await tester.pump();
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -315,7 +326,7 @@ void main() {
       );
     });
 
-    test('rejects videos, multi-item folders, and nested folders', () {
+    test('rejects videos, leaving them to the shared shortcut helper', () {
       final video = _item(
         id: 'vid',
         title: 'Film',
@@ -367,6 +378,43 @@ void main() {
         ],
       );
       expect(singlePlayableReaderItem(nested), isNull);
+    });
+
+    test(
+        'folderGridUsesReaderCovers requires every leaf to be a reader shortcut',
+        () {
+      final blott = _folder(
+        id: 'blott',
+        name: 'Blott on the Landscape',
+        items: [
+          _item(
+            id: 'blott-book',
+            title: 'Blott on the Landscape',
+            filePath: r'Y:\Media\blott.epub',
+            kind: 'book',
+          ),
+        ],
+      );
+      final riotous = _folder(
+        id: 'riotous',
+        name: 'Riotous Assembly',
+        items: [
+          _item(
+            id: 'riotous-book',
+            title: 'Riotous Assembly',
+            filePath: r'Y:\Media\riotous.epub',
+            kind: 'book',
+          ),
+        ],
+      );
+      final series = _folder(
+        id: 'series',
+        name: 'Series',
+        subfolders: [blott],
+      );
+      expect(folderGridUsesReaderCovers([blott, riotous]), isTrue);
+      expect(folderGridUsesReaderCovers([blott, series]), isFalse);
+      expect(folderGridUsesReaderCovers(const []), isFalse);
     });
   });
 

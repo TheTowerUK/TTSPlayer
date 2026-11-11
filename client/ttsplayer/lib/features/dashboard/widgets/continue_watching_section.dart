@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../../screens/player_screen.dart';
 import '../../../services/playback_service.dart';
 import '../../../theme/app_theme.dart';
-import '../../../widgets/artwork/card_artwork_band.dart';
 import '../../../widgets/artwork/resolved_media_artwork_image.dart';
 import '../../../widgets/card_layout.dart';
 import '../../../widgets/empty_state.dart';
@@ -65,7 +64,8 @@ class _ContinueWatchingCarouselState extends State<_ContinueWatchingCarousel> {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: CardLayout.continueWatchingListHeight,
+      height: CardLayout.continueWatchingVideoCardHeight +
+          CardLayout.continueWatchingScrollbarGutter,
       child: Scrollbar(
         controller: _scrollController,
         thumbVisibility: true,
@@ -73,7 +73,11 @@ class _ContinueWatchingCarouselState extends State<_ContinueWatchingCarousel> {
             notification.metrics.axis == Axis.horizontal,
         child: ListView.separated(
           controller: _scrollController,
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          padding: const EdgeInsets.only(
+            left: AppSpacing.lg,
+            right: AppSpacing.lg,
+            bottom: CardLayout.continueWatchingScrollbarGutter,
+          ),
           scrollDirection: Axis.horizontal,
           physics: const ClampingScrollPhysics(
             parent: AlwaysScrollableScrollPhysics(),
@@ -98,106 +102,78 @@ class _ContinueWatchingCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final progress = entry.progressFraction;
 
+    void resume() {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => PlayerScreen(item: entry.item)),
+      );
+    }
+
     return SizedBox(
-      width: AppSpacing.continueWatchingCardWidth,
-      height: CardLayout.continueWatchingCardHeight,
+      width: CardLayout.continueWatchingCardWidth,
+      height: CardLayout.continueWatchingVideoCardHeight,
       child: Material(
         color: AppColors.card,
         borderRadius: AppRadius.heroRadius,
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           borderRadius: AppRadius.heroRadius,
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => PlayerScreen(item: entry.item),
-            ),
-          ),
+          onTap: resume,
           child: Container(
+            padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
               borderRadius: AppRadius.heroRadius,
               border: Border.all(color: AppColors.border),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+            child: Row(
               children: [
-                Expanded(
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          return ResolvedMediaArtworkImage(
-                            item: entry.item,
-                            logicalDecodeSize: Size(
-                              constraints.maxWidth,
-                              constraints.maxHeight,
-                            ),
-                          );
-                        },
-                      ),
-                      if (progress != null)
-                        Positioned(
-                          left: 0,
-                          right: 0,
-                          bottom: 0,
-                          child: LinearProgressIndicator(
-                            value: progress.clamp(0.0, 1.0),
-                            minHeight: 4,
-                            backgroundColor: AppColors.progressTrack,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                    ],
+                SizedBox(
+                  width: CardLayout.continueWatchingArtworkWidth,
+                  height: double.infinity,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) =>
+                        ResolvedMediaArtworkImage(
+                      item: entry.item,
+                      fit: BoxFit.contain,
+                      borderRadius: AppRadius.heroRadius,
+                      iconSize: AppIcons.lg,
+                      logicalDecodeSize: constraints.biggest,
+                    ),
                   ),
                 ),
-                Padding(
-                  padding: kHeroCardFooterPadding,
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
-                        entry.item.title,
-                        style: AppTypography.cardTitle.copyWith(
-                          fontSize: AppTypography.size16,
-                          height: 1.2,
+                      Flexible(
+                        child: Text(
+                          entry.item.title,
+                          style: AppTypography.cardTitle,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: AppSpacing.xs),
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              entry.resume.formattedPosition,
-                              style: AppTypography.cardSubtitle,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          TextButton.icon(
-                            onPressed: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => PlayerScreen(item: entry.item),
-                              ),
-                            ),
-                            icon: const Icon(
-                              Icons.play_arrow_outlined,
-                              size: AppIcons.lg,
-                            ),
-                            label: const Text('Resume'),
-                            style: TextButton.styleFrom(
-                              foregroundColor: AppColors.primary,
-                              padding: AppSpacing.buttonSm,
-                              minimumSize: Size.zero,
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              visualDensity: VisualDensity.compact,
-                            ),
-                          ),
-                        ],
+                      FilledButton.icon(
+                        onPressed: resume,
+                        icon: const Icon(Icons.play_arrow, size: AppIcons.lg),
+                        label: const Text('Resume'),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      if (progress != null)
+                        LinearProgressIndicator(
+                          value: progress.clamp(0.0, 1.0),
+                          minHeight: 4,
+                          backgroundColor: AppColors.progressTrack,
+                          color: AppColors.primary,
+                        ),
+                      Text(
+                        entry.resume.formattedPosition,
+                        style: AppTypography.cardSubtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),

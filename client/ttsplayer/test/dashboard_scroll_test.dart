@@ -259,11 +259,24 @@ void main() {
     expect(find.text('CONTINUE WATCHING'), findsOneWidget);
     expect(find.text('STORAGE STATUS'), findsNothing);
 
-    await tester.drag(find.byType(CustomScrollView), const Offset(0, -2200));
-    await tester.pumpAndSettle();
-
-    expect(tester.takeException(), isNull);
-    expect(find.text('PROVIDER STATUS'), findsOneWidget);
+    // SliverList only lays out a window of children. A single magic drag can
+    // stop at a stale maxScrollExtent before later sections exist, so page
+    // until Provider Status is on screen or the extent stops growing.
+    final controller = tester
+        .widget<CustomScrollView>(find.byType(CustomScrollView))
+        .controller!;
+    final providerStatus = find.text('PROVIDER STATUS');
+    for (var i = 0; i < 24; i++) {
+      if (providerStatus.evaluate().isNotEmpty) break;
+      final max = controller.position.maxScrollExtent;
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -420));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      final atEnd = controller.position.pixels >=
+          controller.position.maxScrollExtent - 0.5;
+      final extentStable = controller.position.maxScrollExtent <= max + 0.5;
+      if (atEnd && extentStable) break;
+    }
     expect(
       tester.getTopLeft(find.text('PROVIDER STATUS')).dy,
       lessThan(tester.view.physicalSize.height),

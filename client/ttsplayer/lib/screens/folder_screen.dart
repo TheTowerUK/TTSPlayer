@@ -9,6 +9,7 @@ import '../models/library_filter.dart';
 import '../models/library_sort_mode.dart';
 import '../models/media_folder.dart';
 import '../models/media_item.dart';
+import '../models/media_kind.dart';
 import '../navigation/folder_navigation.dart';
 import '../navigation/media_item_navigation.dart';
 import '../navigation/single_reader_folder.dart';
@@ -409,6 +410,10 @@ class _FolderContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final showVideoPosters = view.items.isNotEmpty &&
+        view.items.every((item) => item.mediaKind == MediaKind.video);
+    final showReaderCovers = folderGridUsesReaderCovers(view.subfolders);
+
     return CustomScrollView(
       key: PageStorageKey<String>(
         FolderPresentationConfig.scrollStorageKey(folder.id),
@@ -454,7 +459,9 @@ class _FolderContent extends StatelessWidget {
                     FolderPresentationConfig.addRepaintBoundaries,
                 addSemanticIndexes: FolderPresentationConfig.addSemanticIndexes,
               ),
-              gridDelegate: FolderPresentationConfig.subfolderGridDelegate,
+              gridDelegate: showReaderCovers
+                  ? FolderPresentationConfig.readerCoverGridDelegate
+                  : FolderPresentationConfig.subfolderGridDelegate,
             ),
           ),
           const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.section)),
@@ -473,6 +480,7 @@ class _FolderContent extends StatelessWidget {
                       key: ValueKey('media-card-${item.id}'),
                       item: item,
                       parentFolder: folder,
+                      showVideoPoster: showVideoPosters,
                       topLeftOverlay: FavouriteItemToggle(
                         itemId: item.id,
                         compact: true,
@@ -489,7 +497,9 @@ class _FolderContent extends StatelessWidget {
                     FolderPresentationConfig.addRepaintBoundaries,
                 addSemanticIndexes: FolderPresentationConfig.addSemanticIndexes,
               ),
-              gridDelegate: FolderPresentationConfig.mediaGridDelegate,
+              gridDelegate: showVideoPosters
+                  ? FolderPresentationConfig.videoPosterGridDelegate
+                  : FolderPresentationConfig.mediaGridDelegate,
             ),
           ),
         ],

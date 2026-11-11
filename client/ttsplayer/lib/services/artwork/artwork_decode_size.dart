@@ -63,11 +63,10 @@ abstract final class ArtworkSurfaceSizes {
   }
 
   static Size continueWatchingCard() {
-    const width = AppSpacing.continueWatchingCardWidth;
-    const footerAllowance = 96.0;
-    final artworkHeight =
-        CardLayout.continueWatchingCardHeight - footerAllowance;
-    return Size(width, artworkHeight);
+    return const Size(
+      CardLayout.continueWatchingArtworkWidth,
+      CardLayout.continueWatchingVideoCardHeight - 2 * (AppSpacing.md + 1),
+    );
   }
 
   static Size searchResultThumbnail() {

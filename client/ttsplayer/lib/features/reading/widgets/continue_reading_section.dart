@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../theme/app_theme.dart';
+import '../../../widgets/artwork/resolved_media_artwork_image.dart';
 import '../../../widgets/card_layout.dart';
 import '../../../widgets/section_header.dart';
 import '../reading_navigation.dart';
@@ -73,7 +74,11 @@ class _ContinueReadingCarouselState extends State<_ContinueReadingCarousel> {
         child: ListView.separated(
           key: const Key('continue_reading_carousel'),
           controller: _scrollController,
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          padding: const EdgeInsets.only(
+            left: AppSpacing.lg,
+            right: AppSpacing.lg,
+            bottom: CardLayout.continueWatchingScrollbarGutter,
+          ),
           scrollDirection: Axis.horizontal,
           physics: const ClampingScrollPhysics(
             parent: AlwaysScrollableScrollPhysics(),
@@ -126,19 +131,38 @@ class _ContinueReadingCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Expanded(
+                    child: LayoutBuilder(
+                      builder: (context, constraints) =>
+                          ResolvedMediaArtworkImage(
+                        item: item,
+                        fit: BoxFit.contain,
+                        borderRadius: AppRadius.cardRadius,
+                        iconSize: AppIcons.lg,
+                        logicalDecodeSize: constraints.biggest,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
                   Row(
                     children: [
                       Icon(
-                        item.isBook ? Icons.menu_book_outlined : Icons.image_outlined,
+                        item.isBook
+                            ? Icons.menu_book_outlined
+                            : Icons.image_outlined,
                         size: 18,
                         color: AppColors.textMedium,
                       ),
                       const SizedBox(width: AppSpacing.xs),
-                      Text(
-                        kindLabel,
-                        style: const TextStyle(
-                          color: AppColors.textMedium,
-                          fontSize: AppTypography.size12,
+                      Expanded(
+                        child: Text(
+                          kindLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: AppColors.textMedium,
+                            fontSize: AppTypography.size12,
+                          ),
                         ),
                       ),
                     ],
@@ -154,7 +178,7 @@ class _ContinueReadingCard extends StatelessWidget {
                       fontSize: AppTypography.size14,
                     ),
                   ),
-                  const Spacer(),
+                  const SizedBox(height: AppSpacing.sm),
                   Semantics(
                     label: '${entry.progressPercent} percent read',
                     value: '${entry.progressPercent}%',

@@ -16,6 +16,7 @@ class TtsMediaCard extends StatefulWidget {
   final VoidCallback onTap;
   final VoidCallback? onDetails;
   final MediaFolder? parentFolder;
+  final bool showVideoPoster;
 
   /// Optional overlay placed top-left on artwork (e.g. favourite toggle).
   final Widget? topLeftOverlay;
@@ -26,6 +27,7 @@ class TtsMediaCard extends StatefulWidget {
     required this.onTap,
     this.onDetails,
     this.parentFolder,
+    this.showVideoPoster = false,
     this.topLeftOverlay,
   });
 
@@ -76,19 +78,24 @@ class _TtsMediaCardState extends State<TtsMediaCard> {
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
-                        LayoutBuilder(
-                          builder: (context, constraints) {
-                            return ResolvedMediaArtworkImage(
-                              item: widget.item,
-                              parentFolder: widget.parentFolder,
-                              fit: BoxFit.cover,
-                              logicalDecodeSize: Size(
-                                constraints.maxWidth,
-                                constraints.maxHeight,
+                        if (widget.showVideoPoster)
+                          Center(
+                            child: AspectRatio(
+                              aspectRatio: 2 / 3,
+                              child: ColoredBox(
+                                color: AppColors.card,
+                                child: LayoutBuilder(
+                                  builder: (context, constraints) =>
+                                      _artwork(constraints, BoxFit.contain),
+                                ),
                               ),
-                            );
-                          },
-                        ),
+                            ),
+                          )
+                        else
+                          LayoutBuilder(
+                            builder: (context, constraints) =>
+                                _artwork(constraints, BoxFit.cover),
+                          ),
                         if (widget.item.status != MediaItemStatus.available)
                           Positioned(
                             top: AppSpacing.sm,
@@ -157,6 +164,15 @@ class _TtsMediaCardState extends State<TtsMediaCard> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _artwork(BoxConstraints constraints, BoxFit fit) {
+    return ResolvedMediaArtworkImage(
+      item: widget.item,
+      parentFolder: widget.parentFolder,
+      fit: fit,
+      logicalDecodeSize: constraints.biggest,
     );
   }
 }

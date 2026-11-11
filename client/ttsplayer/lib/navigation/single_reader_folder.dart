@@ -16,3 +16,15 @@ MediaItem? singlePlayableReaderItem(MediaFolder folder) {
   }
   return item;
 }
+
+/// True when every [subfolders] entry is a single-book/comic leaf.
+///
+/// Used by FolderScreen to switch the shared subfolder grid to a 2:3 cover
+/// layout. Mixed collections keep the landscape folder grid.
+bool folderGridUsesReaderCovers(Iterable<MediaFolder> subfolders) {
+  if (subfolders.isEmpty) return false;
+  for (final folder in subfolders) {
+    if (singlePlayableReaderItem(folder) == null) return false;
+  }
+  return true;
+}

@@ -32,6 +32,14 @@ abstract final class FolderPresentationConfig {
     childAspectRatio: AppSpacing.gridAspectMedia,
   );
 
+  static const SliverGridDelegateWithMaxCrossAxisExtent
+      videoPosterGridDelegate = SliverGridDelegateWithMaxCrossAxisExtent(
+    maxCrossAxisExtent: 220,
+    mainAxisSpacing: AppSpacing.gridGap,
+    crossAxisSpacing: AppSpacing.gridGap,
+    childAspectRatio: 0.54,
+  );
+
   /// Subfolder grid delegate.
   static const SliverGridDelegateWithMaxCrossAxisExtent subfolderGridDelegate =
       SliverGridDelegateWithMaxCrossAxisExtent(
@@ -39,5 +47,14 @@ abstract final class FolderPresentationConfig {
     mainAxisSpacing: AppSpacing.gridGap,
     crossAxisSpacing: AppSpacing.gridGap,
     childAspectRatio: AppSpacing.gridAspectLibrary,
+  );
+
+  /// Taller cells for a folder whose children are all single-reader leaves.
+  static const SliverGridDelegateWithMaxCrossAxisExtent
+      readerCoverGridDelegate = SliverGridDelegateWithMaxCrossAxisExtent(
+    maxCrossAxisExtent: AppSpacing.gridSubfolder,
+    mainAxisSpacing: AppSpacing.gridGap,
+    crossAxisSpacing: AppSpacing.gridGap,
+    childAspectRatio: 0.52,
   );
 }

@@ -546,15 +546,15 @@ void main() {
 
       expect(displayedSource(tester), ArtworkSource.providerCache);
       final artwork = tester.widget<ArtworkImage>(find.byType(ArtworkImage));
-      expect(artwork.fit, BoxFit.cover);
+      expect(artwork.fit, BoxFit.contain);
       expect(artwork.logicalDecodeSize, isNotNull);
       expect(
         artwork.logicalDecodeSize!.width,
-        AppSpacing.continueWatchingCardWidth - 2,
+        CardLayout.continueWatchingArtworkWidth,
       );
       expect(
         artwork.logicalDecodeSize!.height,
-        lessThan(CardLayout.continueWatchingCardHeight),
+        lessThan(CardLayout.continueWatchingVideoCardHeight),
       );
     });
 
