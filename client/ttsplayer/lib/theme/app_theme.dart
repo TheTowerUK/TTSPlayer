@@ -71,12 +71,12 @@ abstract final class AppTheme {
           space: 1,
         ),
 
-        // Scrollbars — visible on desktop, thin and unobtrusive
+        // Scrollbars — visible on desktop, slightly thicker for easier grabbing
         scrollbarTheme: const ScrollbarThemeData(
           thumbColor: WidgetStatePropertyAll(AppColors.textLow),
           trackColor: WidgetStatePropertyAll(AppColors.divider),
-          radius: Radius.circular(4),
-          thickness: WidgetStatePropertyAll(4),
+          radius: Radius.circular(6),
+          thickness: WidgetStatePropertyAll(6),
           thumbVisibility: WidgetStatePropertyAll(true),
         ),
 
