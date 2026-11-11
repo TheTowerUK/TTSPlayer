@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../models/catalog.dart';
 import '../../../models/media_item.dart';
 import '../../../models/media_kind.dart';
+import '../../../services/continue_row_dismissal_store.dart';
 import '../models/reading_location_payload.dart';
 import '../models/reading_progress_policy.dart';
 import '../models/reading_progress_record.dart';
@@ -67,6 +68,8 @@ class ReadingProgressRepository extends ChangeNotifier {
 
   static const storageKey = 'ttsplayer_reading_progress_v1';
   static const currentStateVersion = 1;
+  final ContinueRowDismissalStore _continueReadingHidden =
+      ContinueRowDismissalStore(ContinueRowDismissalStore.readingStorageKey);
 
   List<ReadingProgressRecord> _records;
   bool _isLoaded = false;
@@ -110,7 +113,27 @@ class ReadingProgressRepository extends ChangeNotifier {
     return load();
   }
 
+  static String continueReadingProgressToken(ReadingProgressRecord record) {
+    return '${record.lastReadAt.toUtc().millisecondsSinceEpoch}|'
+        '${record.progressFraction.toStringAsFixed(4)}';
+  }
+
+  /// Hide [mediaId] from Continue Reading without deleting the progress record.
+  Future<void> hideFromContinueReading(String mediaId) async {
+    final record = getByMediaId(mediaId);
+    final token = record == null ? '0' : continueReadingProgressToken(record);
+    await _continueReadingHidden.hide(mediaId, token);
+    notifyListeners();
+  }
+
+  /// Undo a Continue Reading dismissal. The progress record is unchanged.
+  Future<void> restoreToContinueReading(String mediaId) async {
+    await _continueReadingHidden.restore(mediaId);
+    notifyListeners();
+  }
+
   Future<ReadingProgressLoadResult> load() async {
+    await _continueReadingHidden.ensureLoaded();
     final prefs = await SharedPreferences.getInstance();
     final warnings = <String>[];
 
@@ -167,6 +190,11 @@ class ReadingProgressRepository extends ChangeNotifier {
     };
     byId[withFirstRead.mediaId] = withFirstRead;
 
+    await _continueReadingHidden.revealIfProgressChanged(
+      withFirstRead.mediaId,
+      continueReadingProgressToken(withFirstRead),
+    );
+
     return _persist(byId.values.toList());
   }
 
@@ -174,8 +202,7 @@ class ReadingProgressRepository extends ChangeNotifier {
     if (mediaId.trim().isEmpty) {
       return const ReadingProgressSaveResult(success: true);
     }
-    final next =
-        _records.where((record) => record.mediaId != mediaId).toList();
+    final next = _records.where((record) => record.mediaId != mediaId).toList();
     if (next.length == _records.length) {
       return const ReadingProgressSaveResult(success: true);
     }
@@ -281,7 +308,11 @@ class ReadingProgressRepository extends ChangeNotifier {
         .where(
           (record) =>
               !record.completed &&
-              ReadingProgressRecord.hasMeaningfulProgress(record),
+              ReadingProgressRecord.hasMeaningfulProgress(record) &&
+              !_continueReadingHidden.hides(
+                record.mediaId,
+                continueReadingProgressToken(record),
+              ),
         )
         .toList(growable: false);
     final cap = limit ?? ReadingProgressPolicy.defaultContinueReadingQueryCap;
@@ -418,8 +449,7 @@ class ReadingProgressRepository extends ChangeNotifier {
     final byId = <String, ReadingProgressRecord>{};
     for (final record in records) {
       final existing = byId[record.mediaId];
-      if (existing == null ||
-          record.lastReadAt.isAfter(existing.lastReadAt)) {
+      if (existing == null || record.lastReadAt.isAfter(existing.lastReadAt)) {
         byId[record.mediaId] = record;
       }
     }

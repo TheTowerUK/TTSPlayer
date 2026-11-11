@@ -16,6 +16,7 @@ import '../models/playback/playback_rate_presets.dart';
 import '../models/playback/playback_session_mode.dart';
 import '../models/playback/playback_subtitle_track.dart';
 import 'media_access/media_location_resolver.dart';
+import 'continue_row_dismissal_store.dart';
 import 'media_access/media_provider_config.dart';
 import 'media_access/resolved_media_location.dart';
 import 'playback/playback_error_mapper.dart';
@@ -52,8 +53,8 @@ class PlaybackFilePresence {
 }
 
 Future<PlaybackFilePresence> checkFilePresence(String pathOrUri) async {
-  final isRemote = pathOrUri.startsWith('http://') ||
-      pathOrUri.startsWith('https://');
+  final isRemote =
+      pathOrUri.startsWith('http://') || pathOrUri.startsWith('https://');
 
   if (isRemote) {
     return PlaybackFilePresence(path: pathOrUri, isLocal: false);
@@ -233,6 +234,8 @@ class PlaybackService extends ChangeNotifier {
   int get resumeDataVersion => _resumeDataVersion;
 
   static const _posKeyPrefix = 'position_';
+  final ContinueRowDismissalStore _continueWatchingHidden =
+      ContinueRowDismissalStore(ContinueRowDismissalStore.watchingStorageKey);
   static const _durKeyPrefix = 'duration_';
   static const _initTimeout = Duration(seconds: 15);
 
@@ -331,12 +334,14 @@ class PlaybackService extends ChangeNotifier {
               (isAudioSession || _mediaKitVideoController != null)
           : (_videoController?.value.isInitialized ?? false));
 
-  Duration get duration => _forcedDurationForTest ??
+  Duration get duration =>
+      _forcedDurationForTest ??
       (usesMediaKit
           ? _mediaKitPlayer!.state.duration
           : (_videoController?.value.duration ?? Duration.zero));
 
-  Duration get position => _forcedPositionForTest ??
+  Duration get position =>
+      _forcedPositionForTest ??
       (usesMediaKit
           ? _mediaKitPlayer!.state.position
           : (_videoController?.value.position ?? Duration.zero));
@@ -383,14 +388,46 @@ class PlaybackService extends ChangeNotifier {
     final durSeconds = prefs.getInt('$_durKeyPrefix$itemId');
     return ResumeInfo(
       savedPosition: Duration(seconds: posSeconds),
-      totalDuration:
-          durSeconds != null ? Duration(seconds: durSeconds) : null,
+      totalDuration: durSeconds != null ? Duration(seconds: durSeconds) : null,
+    );
+  }
+
+  static String continueWatchingProgressToken(Duration position) =>
+      '${position.inSeconds}';
+
+  /// Hide [itemId] from Continue Watching without clearing saved position.
+  Future<void> hideFromContinueWatching(
+    String itemId, {
+    Duration? savedPosition,
+  }) async {
+    final position = savedPosition ??
+        (await resumeInfoFor(itemId))?.savedPosition ??
+        Duration.zero;
+    final token = continueWatchingProgressToken(position);
+    await _continueWatchingHidden.hide(itemId, token);
+    _markResumeDataChanged();
+    notifyListeners();
+  }
+
+  /// Undo a Continue Watching dismissal. Saved position is unchanged.
+  Future<void> restoreToContinueWatching(String itemId) async {
+    await _continueWatchingHidden.restore(itemId);
+    _markResumeDataChanged();
+    notifyListeners();
+  }
+
+  bool hidesContinueWatching(String itemId, Duration savedPosition) {
+    return _continueWatchingHidden.hides(
+      itemId,
+      continueWatchingProgressToken(savedPosition),
     );
   }
 
   /// All in-progress items eligible for Continue Watching on the dashboard.
-  Future<List<ContinueWatchingEntry>> getContinueWatching(Catalog catalog) async {
+  Future<List<ContinueWatchingEntry>> getContinueWatching(
+      Catalog catalog) async {
     final prefs = await SharedPreferences.getInstance();
+    await _continueWatchingHidden.ensureLoaded();
     final entries = <ContinueWatchingEntry>[];
 
     for (final key in prefs.getKeys()) {
@@ -402,6 +439,10 @@ class PlaybackService extends ChangeNotifier {
       final item = catalog.findItemById(itemId);
       if (item == null || !item.status.isPlayable) continue;
       if (!item.isContinueWatchingEligible) continue;
+
+      final token = continueWatchingProgressToken(resume.savedPosition);
+      await _continueWatchingHidden.revealIfProgressChanged(itemId, token);
+      if (_continueWatchingHidden.hides(itemId, token)) continue;
 
       entries.add(ContinueWatchingEntry(item: item, resume: resume));
     }
@@ -418,8 +459,7 @@ class PlaybackService extends ChangeNotifier {
 
   Future<void> play(MediaItem item, {Duration? startPosition}) async {
     if (!item.canStartAvPlayback) {
-      _errorMessage =
-          'This item is not playable in the audio/video player.';
+      _errorMessage = 'This item is not playable in the audio/video player.';
       _logState(
         'Error: refused non-A/V play (${item.mediaKind.name})',
       );
@@ -614,10 +654,12 @@ class PlaybackService extends ChangeNotifier {
       return const PlaybackActionResult.invalidArgument('Playback not ready');
     }
     if (!PlaybackRatePresets.isSupported(rate)) {
-      return const PlaybackActionResult.invalidArgument('Unsupported playback rate');
+      return const PlaybackActionResult.invalidArgument(
+          'Unsupported playback rate');
     }
     if (!_sessionControls!.supportsPlaybackRate) {
-      return const PlaybackActionResult.unsupported('Playback rate not supported');
+      return const PlaybackActionResult.unsupported(
+          'Playback rate not supported');
     }
 
     final result = await _sessionControls!.setPlaybackRate(rate);
@@ -634,7 +676,8 @@ class PlaybackService extends ChangeNotifier {
       return const PlaybackActionResult.invalidArgument('Playback not ready');
     }
     if (!_sessionControls!.supportsTrackSelection) {
-      return const PlaybackActionResult.unsupported('Audio tracks not supported');
+      return const PlaybackActionResult.unsupported(
+          'Audio tracks not supported');
     }
 
     if (_selectedAudioTrackId == trackId) {
@@ -797,11 +840,11 @@ class PlaybackService extends ChangeNotifier {
 
     final media = Media(mediaUriForPlayback(mediaUri));
     await _mediaKitPlayer!.open(media, play: false).timeout(
-      _initTimeout,
-      onTimeout: () => throw TimeoutException(
-        'MediaKit open timed out after ${_initTimeout.inSeconds}s',
-      ),
-    );
+          _initTimeout,
+          onTimeout: () => throw TimeoutException(
+            'MediaKit open timed out after ${_initTimeout.inSeconds}s',
+          ),
+        );
 
     if (generation != _playGeneration) return;
 
@@ -831,11 +874,11 @@ class PlaybackService extends ChangeNotifier {
     _sessionControls = const UnsupportedSessionControls();
     _syncCapabilityStateFromControls();
     await _videoController!.initialize().timeout(
-      _initTimeout,
-      onTimeout: () => throw TimeoutException(
-        'Video initialization timed out after ${_initTimeout.inSeconds}s',
-      ),
-    );
+          _initTimeout,
+          onTimeout: () => throw TimeoutException(
+            'Video initialization timed out after ${_initTimeout.inSeconds}s',
+          ),
+        );
     if (generation != _playGeneration) return;
     _videoController!.addListener(_onVideoPlayerTick);
   }
@@ -906,6 +949,10 @@ class PlaybackService extends ChangeNotifier {
     }
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('$_posKeyPrefix$itemId', position.inSeconds);
+    await _continueWatchingHidden.revealIfProgressChanged(
+      itemId,
+      continueWatchingProgressToken(position),
+    );
     _markResumeDataChanged();
     notifyListeners();
   }
@@ -1118,7 +1165,8 @@ class PlaybackService extends ChangeNotifier {
     _playbackErrorKind = mapping.kind;
     _errorMessage = mapping.userMessage;
     if (mapping.debugDetail != null) {
-      debugPrint('[PlaybackService] ${mapping.kind.name}: ${mapping.debugDetail}');
+      debugPrint(
+          '[PlaybackService] ${mapping.kind.name}: ${mapping.debugDetail}');
     }
   }
 
@@ -1192,7 +1240,8 @@ class PlaybackService extends ChangeNotifier {
       return;
     }
 
-    final target = PlaybackRatePresets.normalize(_defaultPlaybackRateProvider());
+    final target =
+        PlaybackRatePresets.normalize(_defaultPlaybackRateProvider());
     final result = await controls.setPlaybackRate(target);
     if (result.isSuccess) {
       _playbackRate = _readPlaybackRateFromControls(fallback: target);

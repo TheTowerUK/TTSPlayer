@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../../screens/player_screen.dart';
 import '../../../services/playback_service.dart';
@@ -6,6 +7,7 @@ import '../../../theme/app_theme.dart';
 import '../../../utils/video_display_title.dart';
 import '../../../widgets/artwork/resolved_media_artwork_image.dart';
 import '../../../widgets/card_layout.dart';
+import '../../../widgets/continue_row_overflow_menu.dart';
 import '../../../widgets/empty_state.dart';
 import '../../../widgets/horizontal_carousel_nav_buttons.dart';
 import '../../../widgets/section_header.dart';
@@ -36,8 +38,38 @@ class _ContinueWatchingSectionState extends State<ContinueWatchingSection> {
   }
 
   @override
+  void didUpdateWidget(ContinueWatchingSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _clampScroll();
+  }
+
+  void _clampScroll() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scrollController.hasClients) return;
+      final position = _scrollController.position;
+      if (position.pixels > position.maxScrollExtent) {
+        _scrollController.jumpTo(position.maxScrollExtent);
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final entries = widget.entries;
+    var entries = widget.entries;
+    try {
+      final playback = context.watch<PlaybackService>();
+      entries = entries
+          .where(
+            (entry) => !playback.hidesContinueWatching(
+              entry.item.id,
+              entry.resume.savedPosition,
+            ),
+          )
+          .toList();
+    } on ProviderNotFoundException {
+      // Widget tests that only pump the section still render the given entries.
+    }
+    _clampScroll();
     return LayoutBuilder(
       builder: (context, constraints) {
         return Column(
@@ -142,70 +174,107 @@ class _ContinueWatchingCard extends StatelessWidget {
         child: InkWell(
           borderRadius: AppRadius.heroRadius,
           onTap: resume,
-          child: Container(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            decoration: BoxDecoration(
-              borderRadius: AppRadius.heroRadius,
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: CardLayout.continueWatchingArtworkWidth,
-                  height: double.infinity,
-                  child: LayoutBuilder(
-                    builder: (context, constraints) =>
-                        ResolvedMediaArtworkImage(
-                      item: entry.item,
-                      fit: BoxFit.contain,
-                      borderRadius: AppRadius.heroRadius,
-                      iconSize: AppIcons.lg,
-                      logicalDecodeSize: constraints.biggest,
+          child: Stack(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  borderRadius: AppRadius.heroRadius,
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: CardLayout.continueWatchingArtworkWidth,
+                      height: double.infinity,
+                      child: LayoutBuilder(
+                        builder: (context, constraints) =>
+                            ResolvedMediaArtworkImage(
+                          item: entry.item,
+                          fit: BoxFit.contain,
+                          borderRadius: AppRadius.heroRadius,
+                          iconSize: AppIcons.lg,
+                          logicalDecodeSize: constraints.biggest,
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              VideoDisplayTitle.forItem(entry.item),
+                              style: AppTypography.cardTitle,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.xs),
+                          FilledButton.icon(
+                            onPressed: resume,
+                            icon:
+                                const Icon(Icons.play_arrow, size: AppIcons.lg),
+                            label: const Text('Resume'),
+                          ),
+                          const SizedBox(height: AppSpacing.xs),
+                          if (progress != null)
+                            LinearProgressIndicator(
+                              value: progress.clamp(0.0, 1.0),
+                              minHeight: 4,
+                              backgroundColor: AppColors.progressTrack,
+                              color: AppColors.primary,
+                            ),
+                          Text(
+                            entry.resume.formattedPosition,
+                            style: AppTypography.cardSubtitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          VideoDisplayTitle.forItem(entry.item),
-                          style: AppTypography.cardTitle,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
-                      FilledButton.icon(
-                        onPressed: resume,
-                        icon: const Icon(Icons.play_arrow, size: AppIcons.lg),
-                        label: const Text('Resume'),
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
-                      if (progress != null)
-                        LinearProgressIndicator(
-                          value: progress.clamp(0.0, 1.0),
-                          minHeight: 4,
-                          backgroundColor: AppColors.progressTrack,
-                          color: AppColors.primary,
-                        ),
-                      Text(
-                        entry.resume.formattedPosition,
-                        style: AppTypography.cardSubtitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
+              ),
+              Positioned(
+                top: 0,
+                right: 0,
+                child: ContinueRowOverflowMenu(
+                  menuKey: Key('continue_watching_menu_${entry.item.id}'),
+                  removeKey: Key('continue_watching_remove_${entry.item.id}'),
+                  tooltip: 'More options for ${entry.item.title}',
+                  removeLabel: 'Remove from Continue Watching',
+                  onRemove: () => _removeFromContinueWatching(context, entry),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
+    );
+  }
+
+  Future<void> _removeFromContinueWatching(
+    BuildContext context,
+    ContinueWatchingEntry entry,
+  ) async {
+    final playback = context.read<PlaybackService>();
+    await playback.hideFromContinueWatching(
+      entry.item.id,
+      savedPosition: entry.resume.savedPosition,
+    );
+    if (!context.mounted) return;
+    showContinueRowRemovedSnackBar(
+      context,
+      message: 'Removed from Continue Watching',
+      undoLabel: 'Undo',
+      snackBarKey: const Key('continue_watching_removed_snackbar'),
+      onUndo: () {
+        playback.restoreToContinueWatching(entry.item.id);
+      },
     );
   }
 }

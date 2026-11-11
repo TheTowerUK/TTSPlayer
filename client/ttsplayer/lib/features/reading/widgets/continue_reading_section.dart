@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../../theme/app_theme.dart';
 import '../../../widgets/artwork/resolved_media_artwork_image.dart';
 import '../../../widgets/card_layout.dart';
+import '../../../widgets/continue_row_overflow_menu.dart';
 import '../../../widgets/horizontal_carousel_nav_buttons.dart';
 import '../../../widgets/section_header.dart';
 import '../reading_navigation.dart';
 import '../services/continue_reading_projection.dart';
+import '../services/reading_progress_repository.dart';
 
 /// Horizontal Continue Reading carousel for the dashboard (M6.5).
 class ContinueReadingSection extends StatefulWidget {
@@ -34,6 +37,18 @@ class _ContinueReadingSectionState extends State<ContinueReadingSection> {
   void dispose() {
     _scrollController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(ContinueReadingSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scrollController.hasClients) return;
+      final position = _scrollController.position;
+      if (position.pixels > position.maxScrollExtent) {
+        _scrollController.jumpTo(position.maxScrollExtent);
+      }
+    });
   }
 
   @override
@@ -144,87 +159,121 @@ class _ContinueReadingCard extends StatelessWidget {
                     openReadingItem(context, item: item);
                   }
                 : null,
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: LayoutBuilder(
-                      builder: (context, constraints) =>
-                          ResolvedMediaArtworkImage(
-                        item: item,
-                        fit: BoxFit.contain,
-                        borderRadius: AppRadius.cardRadius,
-                        iconSize: AppIcons.lg,
-                        logicalDecodeSize: constraints.biggest,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Row(
+            child: Stack(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        item.isBook
-                            ? Icons.menu_book_outlined
-                            : Icons.image_outlined,
-                        size: 18,
-                        color: AppColors.textMedium,
-                      ),
-                      const SizedBox(width: AppSpacing.xs),
                       Expanded(
-                        child: Text(
-                          kindLabel,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: AppColors.textMedium,
-                            fontSize: AppTypography.size12,
+                        child: LayoutBuilder(
+                          builder: (context, constraints) =>
+                              ResolvedMediaArtworkImage(
+                            item: item,
+                            fit: BoxFit.contain,
+                            borderRadius: AppRadius.cardRadius,
+                            iconSize: AppIcons.lg,
+                            logicalDecodeSize: constraints.biggest,
                           ),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Row(
+                        children: [
+                          Icon(
+                            item.isBook
+                                ? Icons.menu_book_outlined
+                                : Icons.image_outlined,
+                            size: 18,
+                            color: AppColors.textMedium,
+                          ),
+                          const SizedBox(width: AppSpacing.xs),
+                          Expanded(
+                            child: Text(
+                              kindLabel,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: AppColors.textMedium,
+                                fontSize: AppTypography.size12,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(
+                        item.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w700,
+                          fontSize: AppTypography.size14,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Semantics(
+                        label: '${entry.progressPercent} percent read',
+                        value: '${entry.progressPercent}%',
+                        child: LinearProgressIndicator(
+                          value: entry.progressPercent / 100,
+                          backgroundColor: Colors.white12,
+                          color: AppColors.primary,
+                          minHeight: 4,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        label,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: entry.isPlayable
+                              ? AppColors.textLow
+                              : AppColors.textMedium,
+                          fontSize: AppTypography.size12,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Text(
-                    item.title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w700,
-                      fontSize: AppTypography.size14,
-                    ),
+                ),
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  child: ContinueRowOverflowMenu(
+                    menuKey: Key('continue_reading_menu_${item.id}'),
+                    removeKey: Key('continue_reading_remove_${item.id}'),
+                    tooltip: 'More options for ${item.title}',
+                    removeLabel: 'Remove from Continue Reading',
+                    onRemove: () =>
+                        _removeFromContinueReading(context, item.id),
                   ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Semantics(
-                    label: '${entry.progressPercent} percent read',
-                    value: '${entry.progressPercent}%',
-                    child: LinearProgressIndicator(
-                      value: entry.progressPercent / 100,
-                      backgroundColor: Colors.white12,
-                      color: AppColors.primary,
-                      minHeight: 4,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    label,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: entry.isPlayable
-                          ? AppColors.textLow
-                          : AppColors.textMedium,
-                      fontSize: AppTypography.size12,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Future<void> _removeFromContinueReading(
+    BuildContext context,
+    String mediaId,
+  ) async {
+    final repository = context.read<ReadingProgressRepository>();
+    await repository.hideFromContinueReading(mediaId);
+    if (!context.mounted) return;
+    showContinueRowRemovedSnackBar(
+      context,
+      message: 'Removed from Continue Reading',
+      undoLabel: 'Undo',
+      snackBarKey: const Key('continue_reading_removed_snackbar'),
+      onUndo: () {
+        repository.restoreToContinueReading(mediaId);
+      },
     );
   }
 }
