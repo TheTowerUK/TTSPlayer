@@ -759,4 +759,24 @@ void main() {
       expect(identical(service.sessionControls, controls), isTrue);
     });
   });
+
+  group('stop after disposal', () {
+    test('stop completing after dispose does not notify', () async {
+      final service = PlaybackService();
+      service.simulateReadyForTest(
+        _item(id: 'gone', filePath: r'Y:\Media\gone.mp4'),
+      );
+      service.dispose();
+
+      await expectLater(service.stop(), completes);
+    });
+
+    test('in-flight stop does not notify after dispose', () async {
+      final service = PlaybackService();
+      final pending = service.stop();
+      service.dispose();
+
+      await expectLater(pending, completes);
+    });
+  });
 }

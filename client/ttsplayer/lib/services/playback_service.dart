@@ -189,6 +189,7 @@ class PlaybackService extends ChangeNotifier {
   final MediaKitInitOverride? _mediaKitInitOverride;
 
   PlaybackSessionControls? _sessionControls;
+  bool _disposed = false;
 
   static MediaLocationResolver _defaultMediaLocationResolver() {
     return MediaLocationResolver(
@@ -636,7 +637,7 @@ class PlaybackService extends ChangeNotifier {
       _resetCapabilityState();
       _isInitializing = false;
       clearReadySimulationForTest();
-      notifyListeners();
+      _notifyIfActive();
       return;
     }
     await _flushPosition();
@@ -646,7 +647,7 @@ class PlaybackService extends ChangeNotifier {
     _resetCapabilityState();
     _isInitializing = false;
     clearReadySimulationForTest();
-    notifyListeners();
+    _notifyIfActive();
   }
 
   Future<PlaybackActionResult> setPlaybackRate(double rate) async {
@@ -1267,8 +1268,14 @@ class PlaybackService extends ChangeNotifier {
     };
   }
 
+  void _notifyIfActive() {
+    if (_disposed) return;
+    notifyListeners();
+  }
+
   @override
   void dispose() {
+    _disposed = true;
     _disposeController();
     super.dispose();
   }
