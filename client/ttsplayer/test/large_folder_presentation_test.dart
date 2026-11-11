@@ -10,6 +10,7 @@ import 'package:ttsplayer/models/catalog.dart';
 import 'package:ttsplayer/models/media_folder.dart';
 import 'package:ttsplayer/screens/folder_screen.dart';
 import 'package:ttsplayer/screens/item_detail_screen.dart';
+import 'package:ttsplayer/screens/player_screen.dart';
 import 'package:ttsplayer/services/artwork/artwork_service.dart';
 import 'package:ttsplayer/services/catalog_cache_coordinator.dart';
 import 'package:ttsplayer/services/catalog_service.dart';
@@ -116,7 +117,8 @@ Finder _folderScrollable() {
   );
 }
 
-Future<void> _scrollFolderDown(WidgetTester tester, {required double delta}) async {
+Future<void> _scrollFolderDown(WidgetTester tester,
+    {required double delta}) async {
   var remaining = delta;
   while (remaining > 0) {
     final step = remaining > 500 ? 500.0 : remaining;
@@ -138,7 +140,10 @@ Finder _activeFolderScrollable() {
 }
 
 double _scrollOffset(WidgetTester tester) {
-  return tester.state<ScrollableState>(_activeFolderScrollable()).position.pixels;
+  return tester
+      .state<ScrollableState>(_activeFolderScrollable())
+      .position
+      .pixels;
 }
 
 void main() {
@@ -198,7 +203,8 @@ void main() {
       );
     });
 
-    testWidgets('builder child count matches source collection', (tester) async {
+    testWidgets('builder child count matches source collection',
+        (tester) async {
       await tester.pumpWidget(
         _folderHarness(
           catalog: largeCatalog,
@@ -225,7 +231,8 @@ void main() {
       final scrollView = tester.widget<CustomScrollView>(
         find.byType(CustomScrollView),
       );
-      expect(scrollView.scrollCacheExtent, FolderPresentationConfig.gridScrollCacheExtent);
+      expect(scrollView.scrollCacheExtent,
+          FolderPresentationConfig.gridScrollCacheExtent);
       expect(
         scrollView.key,
         isA<PageStorageKey<String>>().having(
@@ -248,30 +255,42 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await _scrollFolderDown(tester, delta: 1800);
+      expect(find.byType(FolderScreen), findsOneWidget);
+      expect(find.byType(PlayerScreen), findsNothing);
+      expect(find.byType(ItemDetailScreen), findsNothing);
 
+      const cardKey = ValueKey('media-card-item-15');
+      const detailsKey = Key('media_details_item-15');
       await tester.scrollUntilVisible(
-        find.byKey(const ValueKey('media-card-item-15')),
-        400,
-        scrollable: _folderScrollable(),
+        find.byKey(cardKey),
+        300,
+        scrollable: _activeFolderScrollable(),
       );
       await tester.pumpAndSettle();
+
+      expect(find.byType(FolderScreen), findsOneWidget);
+      expect(find.byType(PlayerScreen), findsNothing);
+      expect(find.byKey(cardKey), findsOneWidget);
+      expect(find.byKey(detailsKey), findsOneWidget);
 
       final offsetBefore = _scrollOffset(tester);
       expect(offsetBefore, greaterThan(100));
 
-      await tester.tap(find.byKey(const Key('media_details_item-15')));
+      await tester.tap(find.byKey(detailsKey));
       await tester.pumpAndSettle();
       expect(find.byType(ItemDetailScreen), findsOneWidget);
+      expect(find.byType(PlayerScreen), findsNothing);
 
       await tester.pageBack();
       await tester.pumpAndSettle();
 
       expect(find.byType(FolderScreen), findsOneWidget);
+      expect(find.byType(ItemDetailScreen), findsNothing);
       expect(_scrollOffset(tester), closeTo(offsetBefore, 4));
     });
 
-    testWidgets('child folder opens at top; parent preserves scroll on item pop',
+    testWidgets(
+        'child folder opens at top; parent preserves scroll on item pop',
         (tester) async {
       final catalog = buildLargeCatalog(
         itemCount: 20,

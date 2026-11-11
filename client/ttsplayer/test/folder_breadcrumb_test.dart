@@ -58,7 +58,7 @@ MediaItem _item({
 Catalog _nestedCatalog() {
   return Catalog.fromJson({
     'generated_at': '2026-07-13T10:00:00+00:00',
-    'total_items': 1,
+    'total_items': 2,
     'folders': [
       _folder(
         id: 'folder-root',
@@ -74,6 +74,11 @@ Catalog _nestedCatalog() {
                 id: 'item-nested',
                 title: 'Arrival',
                 filePath: r'Y:\Media\Films\Science Fiction\Arrival.mp4',
+              ),
+              _item(
+                id: 'item-nested-2',
+                title: 'Dune',
+                filePath: r'Y:\Media\Films\Science Fiction\Dune.mp4',
               ),
             ],
           ),
@@ -155,8 +160,7 @@ Catalog _httpStyleCatalog() {
               _item(
                 id: 'http-item',
                 title: 'Sample',
-                filePath:
-                    'https://nas.example/media/Films/Drama/sample.mp4',
+                filePath: 'https://nas.example/media/Films/Drama/sample.mp4',
               ),
             ],
           ),
@@ -306,7 +310,8 @@ void main() {
   });
 
   group('FolderBreadcrumb widget', () {
-    testWidgets('1 root folder breadcrumb contains one segment', (tester) async {
+    testWidgets('1 root folder breadcrumb contains one segment',
+        (tester) async {
       final catalog = _nestedCatalog();
       final root = catalog.folders.single;
 
@@ -314,7 +319,8 @@ void main() {
 
       expect(find.byType(FolderBreadcrumb), findsOneWidget);
       expect(find.text('Films'), findsWidgets);
-      expect(find.byKey(const Key('breadcrumb_segment_folder-root')), findsNothing);
+      expect(find.byKey(const Key('breadcrumb_segment_folder-root')),
+          findsNothing);
     });
 
     testWidgets('2 nested folder breadcrumb is root-to-target', (tester) async {
@@ -468,8 +474,15 @@ void main() {
       await tester.tap(find.text('Science Fiction'));
       await tester.pumpAndSettle();
 
+      expect(find.byType(FolderScreen), findsOneWidget);
+      expect(
+        find.byType(FolderScreen, skipOffstage: false),
+        findsNWidgets(2),
+      );
       expect(find.text('Films'), findsOneWidget);
       expect(find.text('Science Fiction'), findsWidgets);
+      expect(find.text('Arrival'), findsOneWidget);
+      expect(find.text('Dune'), findsOneWidget);
     });
   });
 
@@ -676,8 +689,7 @@ void main() {
 
       expect(chain.every((f) => !f.name.contains(r'\')), isTrue);
       expect(chain.every((f) => !f.name.contains('Y:')), isTrue);
-      expect(chain.map((f) => f.id).toList(),
-          ['folder-root', 'folder-child']);
+      expect(chain.map((f) => f.id).toList(), ['folder-root', 'folder-child']);
     });
   });
 }
