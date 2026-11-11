@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../screens/player_screen.dart';
 import '../../../services/playback_service.dart';
 import '../../../theme/app_theme.dart';
+import '../../../utils/video_display_title.dart';
 import '../../../widgets/artwork/resolved_media_artwork_image.dart';
 import '../../../widgets/card_layout.dart';
 import '../../../widgets/empty_state.dart';
@@ -149,7 +150,7 @@ class _ContinueWatchingCard extends StatelessWidget {
                     children: [
                       Flexible(
                         child: Text(
-                          entry.item.title,
+                          VideoDisplayTitle.forItem(entry.item),
                           style: AppTypography.cardTitle,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,

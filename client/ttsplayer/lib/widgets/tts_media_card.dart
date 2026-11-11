@@ -5,6 +5,7 @@ import '../models/media_item.dart';
 import '../services/artwork/artwork_decode_size.dart';
 import '../theme/app_theme.dart';
 import '../utils/media_kind_presentation.dart';
+import '../utils/video_display_title.dart';
 import 'artwork/resolved_media_artwork_image.dart';
 
 /// Premium media item card with artwork, desktop hover, and press effects.
@@ -44,6 +45,7 @@ class _TtsMediaCardState extends State<TtsMediaCard> {
 
   @override
   Widget build(BuildContext context) {
+    final displayTitle = VideoDisplayTitle.forItem(widget.item);
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       onEnter: (_) => setState(() => _hovered = true),
@@ -53,7 +55,7 @@ class _TtsMediaCardState extends State<TtsMediaCard> {
       }),
       child: Semantics(
         button: true,
-        label: MediaKindPresentation.semanticsLabel(widget.item),
+        label: '${MediaKindPresentation.labelFor(widget.item)}: $displayTitle',
         child: GestureDetector(
           onTap: widget.onTap,
           onTapDown: (_) => setState(() => _pressed = true),
@@ -121,7 +123,7 @@ class _TtsMediaCardState extends State<TtsMediaCard> {
                             bottom: AppSpacing.xs,
                             child: IconButton.filledTonal(
                               key: Key('media_details_${widget.item.id}'),
-                              tooltip: 'View details for ${widget.item.title}',
+                              tooltip: 'View details for $displayTitle',
                               icon: const Icon(
                                 Icons.info_outline,
                                 size: AppIcons.md,
@@ -144,7 +146,7 @@ class _TtsMediaCardState extends State<TtsMediaCard> {
                         children: [
                           Flexible(
                             child: Text(
-                              widget.item.title,
+                              displayTitle,
                               style: AppTypography.cardTitle.copyWith(
                                 fontSize: AppTypography.size14,
                               ),
