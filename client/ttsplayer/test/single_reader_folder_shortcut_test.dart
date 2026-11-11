@@ -418,6 +418,123 @@ void main() {
     });
   });
 
+  group('singlePlayableShortcutItem', () {
+    test('returns a playable video in a leaf folder', () {
+      final item = _item(
+        id: 'ep-1',
+        title: 'S01E01',
+        filePath: r'Y:\Media\S01E01.mkv',
+        kind: 'video',
+      );
+      final folder = _folder(
+        id: 'ep-folder',
+        name: 'S01E01',
+        items: [item],
+      );
+      expect(singlePlayableShortcutItem(folder), same(item));
+      expect(mediaItemActivationFor(item), MediaItemActivation.videoPlayer);
+      expect(singlePlayableReaderItem(folder), isNull);
+    });
+
+    test('returns a playable movie in a leaf folder', () {
+      final item = _item(
+        id: 'movie-1',
+        title: 'Film',
+        filePath: r'Y:\Media\film.mp4',
+        kind: 'video',
+      );
+      expect(
+        singlePlayableShortcutItem(
+          _folder(id: 'movie-folder', name: 'Film (1)', items: [item]),
+        ),
+        same(item),
+      );
+    });
+
+    test('still returns a playable reader leaf', () {
+      final item = _item(
+        id: 'epub-1',
+        title: 'Act of Will',
+        filePath: r'Y:\Media\Act of Will.epub',
+        kind: 'book',
+      );
+      expect(
+        singlePlayableShortcutItem(
+          _folder(id: 'leaf', name: 'Act of Will (7565)', items: [item]),
+        ),
+        same(item),
+      );
+    });
+
+    test('rejects audio, unplayable video, multi-item, and nested folders', () {
+      final audio = _item(
+        id: 'track',
+        title: 'Track',
+        filePath: r'Y:\Media\track.flac',
+        kind: 'audio',
+      );
+      expect(
+        singlePlayableShortcutItem(
+          _folder(id: 'album', name: 'Album', items: [audio]),
+        ),
+        isNull,
+      );
+
+      final missing = _item(
+        id: 'missing-vid',
+        title: 'Gone',
+        filePath: r'Y:\Media\gone.mkv',
+        kind: 'video',
+        status: MediaItemStatus.missing,
+      );
+      expect(
+        singlePlayableShortcutItem(
+          _folder(id: 'gone', name: 'Gone', items: [missing]),
+        ),
+        isNull,
+      );
+
+      final a = _item(
+        id: 'a',
+        title: 'S01E01',
+        filePath: r'Y:\Media\S01E01.mkv',
+        kind: 'video',
+      );
+      final b = _item(
+        id: 'b',
+        title: 'S01E02',
+        filePath: r'Y:\Media\S01E02.mkv',
+        kind: 'video',
+      );
+      expect(
+        singlePlayableShortcutItem(
+          _folder(id: 'season', name: 'Season 1', items: [a, b]),
+        ),
+        isNull,
+      );
+
+      final nested = _folder(
+        id: 'series',
+        name: 'American Horror Story',
+        subfolders: [
+          _folder(
+            id: 's01',
+            name: 'Season 1',
+            items: [
+              _item(
+                id: 'ep',
+                title: 'S01E01',
+                filePath: r'Y:\Media\S01E01.mkv',
+                kind: 'video',
+              ),
+            ],
+          ),
+        ],
+      );
+      expect(singlePlayableShortcutItem(nested), isNull);
+    });
+  });
+
   group('FolderScreen shortcut', () {
     testWidgets('single playable EPUB leaf opens the reader directly',
         (tester) async {
@@ -632,6 +749,189 @@ void main() {
       );
     });
 
+    testWidgets('single playable episode folder opens the player directly',
+        (tester) async {
+      final episode = _item(
+        id: 'item-s01e01',
+        title: 'Pilot',
+        filePath: r'Y:\Media\Videos\TV Shows\AHS\Season 1\S01E01\Pilot.mkv',
+        kind: 'video',
+      );
+      final leaf = _folder(
+        id: 'folder-s01e01',
+        name: 'S01E01',
+        items: [episode],
+      );
+      final catalog = _catalogOf(
+        _folder(
+          id: 'folder-season-1',
+          name: 'Season 1',
+          path: r'Y:\Media\Videos\TV Shows\American Horror Story\Season 1',
+          subfolders: [leaf],
+        ),
+      );
+
+      await _openParent(tester, catalog: catalog, metadata: metadata);
+      await tester.tap(find.byKey(const ValueKey('folder-card-folder-s01e01')));
+      await _pumpUntilFound(tester, find.byType(PlayerScreen));
+
+      expect(find.byType(PlayerScreen), findsOneWidget);
+      expect(find.byType(FolderScreen, skipOffstage: false), findsOneWidget);
+      expect(find.byType(ItemDetailScreen), findsNothing);
+      final player = tester.widget<PlayerScreen>(find.byType(PlayerScreen));
+      expect(player.item.id, 'item-s01e01');
+      expect(player.startPosition, isNull);
+
+      await _closePlayer(tester);
+    });
+
+    testWidgets('single playable movie folder opens the player directly',
+        (tester) async {
+      final movie = _item(
+        id: 'item-movie',
+        title: 'Film',
+        filePath: r'Y:\Media\Videos\Movies\Film\Film.mp4',
+        kind: 'video',
+      );
+      final leaf = _folder(
+        id: 'folder-movie',
+        name: 'Film',
+        items: [movie],
+      );
+      final catalog = _catalogOf(
+        _folder(
+          id: 'folder-movies',
+          name: 'Movies',
+          path: r'Y:\Media\Videos\Movies',
+          subfolders: [leaf],
+        ),
+      );
+
+      await _openParent(tester, catalog: catalog, metadata: metadata);
+      await tester.tap(find.byKey(const ValueKey('folder-card-folder-movie')));
+      await _pumpUntilFound(tester, find.byType(PlayerScreen));
+
+      expect(find.byType(PlayerScreen), findsOneWidget);
+      expect(find.byType(ItemDetailScreen), findsNothing);
+      final player = tester.widget<PlayerScreen>(find.byType(PlayerScreen));
+      expect(player.item.id, 'item-movie');
+      expect(player.startPosition, isNull);
+
+      await _closePlayer(tester);
+    });
+
+    testWidgets('episode folder Details opens details without the player',
+        (tester) async {
+      final episode = _item(
+        id: 'item-s01e01-details',
+        title: 'Pilot',
+        filePath: r'Y:\Media\Videos\TV Shows\AHS\Season 1\S01E01\Pilot.mkv',
+        kind: 'video',
+      );
+      final leaf = _folder(
+        id: 'folder-s01e01-details',
+        name: 'S01E01',
+        items: [episode],
+      );
+      final catalog = _catalogOf(
+        _folder(
+          id: 'folder-season-details',
+          name: 'Season 1',
+          path: r'Y:\Media\Videos\TV Shows\American Horror Story\Season 1',
+          subfolders: [leaf],
+        ),
+      );
+
+      await _openParent(tester, catalog: catalog, metadata: metadata);
+      expect(
+        find.byKey(const Key('folder_details_folder-s01e01-details')),
+        findsOneWidget,
+      );
+
+      await tester.tap(
+        find.byKey(const Key('folder_details_folder-s01e01-details')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ItemDetailScreen), findsOneWidget);
+      expect(find.byType(PlayerScreen), findsNothing);
+      expect(find.byType(FolderScreen, skipOffstage: false), findsOneWidget);
+    });
+
+    testWidgets('multi-episode and nested TV folders retain browsing',
+        (tester) async {
+      final multi = _folder(
+        id: 'folder-season-flat',
+        name: 'Season 1',
+        items: [
+          _item(
+            id: 'item-e01',
+            title: 'S01E01',
+            filePath: r'Y:\Media\S01E01.mkv',
+            kind: 'video',
+          ),
+          _item(
+            id: 'item-e02',
+            title: 'S01E02',
+            filePath: r'Y:\Media\S01E02.mkv',
+            kind: 'video',
+          ),
+        ],
+      );
+      final nested = _folder(
+        id: 'folder-series',
+        name: 'American Horror Story',
+        subfolders: [
+          _folder(
+            id: 'folder-s01',
+            name: 'Season 1',
+            subfolders: [
+              _folder(
+                id: 'folder-s01e01-nested',
+                name: 'S01E01',
+                items: [
+                  _item(
+                    id: 'item-nested-ep',
+                    title: 'Pilot',
+                    filePath: r'Y:\Media\Pilot.mkv',
+                    kind: 'video',
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      );
+      final catalog = _catalogOf(
+        _folder(
+          id: 'folder-tv',
+          name: 'TV Shows',
+          path: r'Y:\Media\Videos\TV Shows',
+          subfolders: [multi, nested],
+        ),
+      );
+
+      await _openParent(tester, catalog: catalog, metadata: metadata);
+
+      await tester
+          .tap(find.byKey(const ValueKey('folder-card-folder-season-flat')));
+      await tester.pumpAndSettle();
+      expect(find.byType(FolderScreen, skipOffstage: false), findsNWidgets(2));
+      expect(find.text('S01E01'), findsOneWidget);
+      expect(find.text('S01E02'), findsOneWidget);
+      expect(find.byType(PlayerScreen), findsNothing);
+
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('folder-card-folder-series')));
+      await tester.pumpAndSettle();
+      expect(find.byType(FolderScreen, skipOffstage: false), findsNWidgets(2));
+      expect(find.text('Season 1'), findsOneWidget);
+      expect(find.byType(PlayerScreen), findsNothing);
+      expect(find.byType(TtsFolderCard), findsWidgets);
+    });
+
     testWidgets('back from reader returns to the parent folder',
         (tester) async {
       final file = writeEpub(
@@ -712,6 +1012,53 @@ void main() {
       expect(find.byType(TtsMediaCard), findsOneWidget);
       expect(find.byType(BookReaderScreen), findsNothing);
       expect(find.text('Act of Will (7565)'), findsWidgets);
+    });
+
+    testWidgets('Search Browse Folder still opens a single-episode folder',
+        (tester) async {
+      final leaf = _folder(
+        id: 'folder-search-ep',
+        name: 'S01E01',
+        path: r'Y:\Media\Videos\TV Shows\American Horror Story\Season 1\S01E01',
+        items: [
+          _item(
+            id: 'item-search-ep',
+            title: 'Pilot',
+            filePath:
+                r'Y:\Media\Videos\TV Shows\American Horror Story\Season 1\S01E01\Pilot.mkv',
+            kind: 'video',
+          ),
+        ],
+      );
+      final catalog = _catalogOf(
+        _folder(
+          id: 'folder-season-search',
+          name: 'Season 1',
+          path: r'Y:\Media\Videos\TV Shows\American Horror Story\Season 1',
+          subfolders: [leaf],
+        ),
+      );
+
+      await tester.pumpWidget(
+        _harness(
+          catalog: catalog,
+          metadata: metadata,
+          home: const SearchScreen(autofocus: false),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField), 'Pilot');
+      await tester.pumpAndSettle(const Duration(milliseconds: 200));
+
+      await tester
+          .tap(find.byKey(const Key('search_browse_folder_item-search-ep')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(FolderScreen), findsOneWidget);
+      expect(find.byType(TtsMediaCard), findsOneWidget);
+      expect(find.byType(PlayerScreen), findsNothing);
+      expect(find.text('S01E01'), findsWidgets);
     });
 
     testWidgets('Favourites folder opening still browses the folder',

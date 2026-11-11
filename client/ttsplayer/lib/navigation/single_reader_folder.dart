@@ -2,15 +2,30 @@ import '../models/media_folder.dart';
 import '../models/media_item.dart';
 import 'media_item_navigation.dart';
 
-/// Returns the single playable book/comic in [folder] when a FolderScreen
+/// Returns the single playable item in [folder] when a FolderScreen card
 /// shortcut is eligible; otherwise null.
 ///
 /// Eligibility is catalogue-only: no subfolders, exactly one direct item, and
-/// that item's primary activation is the reader.
-MediaItem? singlePlayableReaderItem(MediaFolder folder) {
+/// that item's primary activation is the video player or the reader.
+MediaItem? singlePlayableShortcutItem(MediaFolder folder) {
   if (folder.subfolders.isNotEmpty) return null;
   if (folder.items.length != 1) return null;
   final item = folder.items.single;
+  switch (mediaItemActivationFor(item)) {
+    case MediaItemActivation.videoPlayer:
+    case MediaItemActivation.reader:
+      return item;
+    case MediaItemActivation.audioPlayer:
+    case MediaItemActivation.details:
+      return null;
+  }
+}
+
+/// Returns the single playable book/comic in [folder] when a FolderScreen
+/// shortcut is eligible; otherwise null.
+MediaItem? singlePlayableReaderItem(MediaFolder folder) {
+  final item = singlePlayableShortcutItem(folder);
+  if (item == null) return null;
   if (mediaItemActivationFor(item) != MediaItemActivation.reader) {
     return null;
   }

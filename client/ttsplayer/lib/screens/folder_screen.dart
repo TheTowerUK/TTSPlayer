@@ -430,7 +430,7 @@ class _FolderContent extends StatelessWidget {
                 (context, index) {
                   FolderPresentationMetrics.folderCardBuildCount++;
                   final sub = view.subfolders[index];
-                  final readerItem = singlePlayableReaderItem(sub);
+                  final shortcutItem = singlePlayableShortcutItem(sub);
                   return RepaintBoundary(
                     child: TtsFolderCard(
                       key: ValueKey('folder-card-${sub.id}'),
@@ -440,15 +440,15 @@ class _FolderContent extends StatelessWidget {
                         compact: true,
                       ),
                       onTap: () {
-                        if (readerItem != null) {
-                          activateMediaItem(context, readerItem);
+                        if (shortcutItem != null) {
+                          activateMediaItem(context, shortcutItem);
                         } else {
                           openFolderScreen(context, sub);
                         }
                       },
-                      onDetails: readerItem == null
+                      onDetails: shortcutItem == null
                           ? null
-                          : () => openMediaItemDetails(context, readerItem),
+                          : () => openMediaItemDetails(context, shortcutItem),
                     ),
                   );
                 },
