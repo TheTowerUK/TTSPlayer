@@ -7,47 +7,20 @@ import '../../../utils/video_display_title.dart';
 import '../../../widgets/artwork/resolved_media_artwork_image.dart';
 import '../../../widgets/card_layout.dart';
 import '../../../widgets/empty_state.dart';
+import '../../../widgets/horizontal_carousel_nav_buttons.dart';
 import '../../../widgets/section_header.dart';
 
-class ContinueWatchingSection extends StatelessWidget {
+class ContinueWatchingSection extends StatefulWidget {
   final List<ContinueWatchingEntry> entries;
 
   const ContinueWatchingSection({super.key, required this.entries});
 
   @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SectionHeader(title: 'Continue Watching'),
-        const SizedBox(height: AppSpacing.md),
-        if (entries.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            child: EmptyState(
-              icon: Icons.play_circle_outline,
-              title: 'Nothing in progress.',
-              subtitle: 'Items you start watching will appear here.',
-            ),
-          )
-        else
-          _ContinueWatchingCarousel(entries: entries),
-      ],
-    );
-  }
+  State<ContinueWatchingSection> createState() =>
+      _ContinueWatchingSectionState();
 }
 
-class _ContinueWatchingCarousel extends StatefulWidget {
-  final List<ContinueWatchingEntry> entries;
-
-  const _ContinueWatchingCarousel({required this.entries});
-
-  @override
-  State<_ContinueWatchingCarousel> createState() =>
-      _ContinueWatchingCarouselState();
-}
-
-class _ContinueWatchingCarouselState extends State<_ContinueWatchingCarousel> {
+class _ContinueWatchingSectionState extends State<ContinueWatchingSection> {
   late final ScrollController _scrollController;
 
   @override
@@ -64,16 +37,65 @@ class _ContinueWatchingCarouselState extends State<_ContinueWatchingCarousel> {
 
   @override
   Widget build(BuildContext context) {
+    final entries = widget.entries;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SectionHeader(
+              title: 'Continue Watching',
+              trailing: entries.isEmpty
+                  ? null
+                  : HorizontalCarouselNavButtons(
+                      controller: _scrollController,
+                      sectionLabel: 'Continue Watching',
+                      semanticsId: 'continue_watching',
+                    ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            if (entries.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                child: EmptyState(
+                  icon: Icons.play_circle_outline,
+                  title: 'Nothing in progress.',
+                  subtitle: 'Items you start watching will appear here.',
+                ),
+              )
+            else
+              _ContinueWatchingCarousel(
+                entries: entries,
+                scrollController: _scrollController,
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _ContinueWatchingCarousel extends StatelessWidget {
+  final List<ContinueWatchingEntry> entries;
+  final ScrollController scrollController;
+
+  const _ContinueWatchingCarousel({
+    required this.entries,
+    required this.scrollController,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return SizedBox(
       height: CardLayout.continueWatchingVideoCardHeight +
           CardLayout.continueWatchingScrollbarGutter,
       child: Scrollbar(
-        controller: _scrollController,
+        controller: scrollController,
         thumbVisibility: true,
         notificationPredicate: (notification) =>
             notification.metrics.axis == Axis.horizontal,
         child: ListView.separated(
-          controller: _scrollController,
+          controller: scrollController,
           padding: const EdgeInsets.only(
             left: AppSpacing.lg,
             right: AppSpacing.lg,
@@ -83,10 +105,10 @@ class _ContinueWatchingCarouselState extends State<_ContinueWatchingCarousel> {
           physics: const ClampingScrollPhysics(
             parent: AlwaysScrollableScrollPhysics(),
           ),
-          itemCount: widget.entries.length,
+          itemCount: entries.length,
           separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
           itemBuilder: (context, index) {
-            return _ContinueWatchingCard(entry: widget.entries[index]);
+            return _ContinueWatchingCard(entry: entries[index]);
           },
         ),
       ),

@@ -3,12 +3,13 @@ import 'package:flutter/material.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/artwork/resolved_media_artwork_image.dart';
 import '../../../widgets/card_layout.dart';
+import '../../../widgets/horizontal_carousel_nav_buttons.dart';
 import '../../../widgets/section_header.dart';
 import '../reading_navigation.dart';
 import '../services/continue_reading_projection.dart';
 
 /// Horizontal Continue Reading carousel for the dashboard (M6.5).
-class ContinueReadingSection extends StatelessWidget {
+class ContinueReadingSection extends StatefulWidget {
   const ContinueReadingSection({
     super.key,
     required this.entries,
@@ -17,37 +18,10 @@ class ContinueReadingSection extends StatelessWidget {
   final List<ContinueReadingEntry> entries;
 
   @override
-  Widget build(BuildContext context) {
-    if (entries.isEmpty) return const SizedBox.shrink();
-
-    return Semantics(
-      header: true,
-      container: true,
-      label: 'Continue Reading',
-      child: Column(
-        key: const Key('continue_reading_section'),
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SectionHeader(title: 'Continue Reading'),
-          const SizedBox(height: AppSpacing.md),
-          _ContinueReadingCarousel(entries: entries),
-        ],
-      ),
-    );
-  }
+  State<ContinueReadingSection> createState() => _ContinueReadingSectionState();
 }
 
-class _ContinueReadingCarousel extends StatefulWidget {
-  const _ContinueReadingCarousel({required this.entries});
-
-  final List<ContinueReadingEntry> entries;
-
-  @override
-  State<_ContinueReadingCarousel> createState() =>
-      _ContinueReadingCarouselState();
-}
-
-class _ContinueReadingCarouselState extends State<_ContinueReadingCarousel> {
+class _ContinueReadingSectionState extends State<ContinueReadingSection> {
   late final ScrollController _scrollController;
 
   @override
@@ -64,16 +38,60 @@ class _ContinueReadingCarouselState extends State<_ContinueReadingCarousel> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.entries.isEmpty) return const SizedBox.shrink();
+
+    return Semantics(
+      header: true,
+      container: true,
+      label: 'Continue Reading',
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return Column(
+            key: const Key('continue_reading_section'),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SectionHeader(
+                title: 'Continue Reading',
+                trailing: HorizontalCarouselNavButtons(
+                  controller: _scrollController,
+                  sectionLabel: 'Continue Reading',
+                  semanticsId: 'continue_reading',
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _ContinueReadingCarousel(
+                entries: widget.entries,
+                scrollController: _scrollController,
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _ContinueReadingCarousel extends StatelessWidget {
+  const _ContinueReadingCarousel({
+    required this.entries,
+    required this.scrollController,
+  });
+
+  final List<ContinueReadingEntry> entries;
+  final ScrollController scrollController;
+
+  @override
+  Widget build(BuildContext context) {
     return SizedBox(
       height: CardLayout.continueWatchingListHeight,
       child: Scrollbar(
-        controller: _scrollController,
+        controller: scrollController,
         thumbVisibility: true,
         notificationPredicate: (notification) =>
             notification.metrics.axis == Axis.horizontal,
         child: ListView.separated(
           key: const Key('continue_reading_carousel'),
-          controller: _scrollController,
+          controller: scrollController,
           padding: const EdgeInsets.only(
             left: AppSpacing.lg,
             right: AppSpacing.lg,
@@ -83,10 +101,10 @@ class _ContinueReadingCarouselState extends State<_ContinueReadingCarousel> {
           physics: const ClampingScrollPhysics(
             parent: AlwaysScrollableScrollPhysics(),
           ),
-          itemCount: widget.entries.length,
+          itemCount: entries.length,
           separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
           itemBuilder: (context, index) {
-            final entry = widget.entries[index];
+            final entry = entries[index];
             return _ContinueReadingCard(entry: entry);
           },
         ),
